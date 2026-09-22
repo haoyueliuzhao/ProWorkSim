@@ -1,6 +1,6 @@
 # ProWorkSim
 
-**面向智能体学习的专业工作世界模拟与任务流合成。** 当前 v0.2 将已有经营估值模型、披露材料、邮件口径和研究备忘录编译成可执行项目，让分析师通过工具完成实际工作，并导出可验证经历。
+**面向智能体学习的专业工作世界模拟与任务流合成。** 当前 v0.3.1 将经营估值模型、披露材料、版本化批准依据和研究备忘录编译成可执行项目。当前重点是工作世界语义与生命周期：确认、阻塞、需求变化、审阅和交付须产生可核验的后果。
 
 保留三个交付粒度，并新增可配置的工作结构与布局：
 
@@ -29,7 +29,7 @@ python -m venv .venv
 .venv/bin/proworksim export runs/demo runs/demo-export
 ```
 
-基线只用于验证任务可解，不是模型能力实验。存在历史失败提交时，`evaluate` 会完整展示失败记录；退出码按每项工作的最后提交判定。
+基线只用于验证任务可解，不是模型能力实验。存在历史失败提交时，`evaluate` 会完整展示失败记录；退出码按当前适用工作项的最后提交判定。`blocked_unavailable` 是合法停止且 `complete=false`，不计为业务完成。
 
 真实模型运行先在项目 `.env` 配置 `DEEPSEEK_API_KEY`（可参考 `.env.example`，已有 `.env` 不要覆盖）：
 
@@ -67,24 +67,40 @@ python -m venv .venv
 
 若输入世界不属于开发集，其结果会被明确排除，配额使用均衡先验。当前“压力池”是对既有结构的重点采样标签，不自动注入矛盾或沟通噪声。
 
-## 审计后修订与实验
+## 当前修订与实验
 
-已修复公开引用与评分漂移、正文/元数据依赖不一致及百分号优先级错误。新版本支持链式、分叉、选择性更新和实时信息协调，通过规格定义节点和事件，支持标准/移动表格布局。
+已修复工作—发布互相等待的规格准入漏洞和 scope 回复误解无关阻塞的问题。新增正式批准依据、按版本授权、多个独立 blocker、编辑／等待／待审期间的需求变更、撤回重交，以及不同受众的有限内容要求。
+
+数据来源新鲜度、依据适用性和数值正确性分别记录。缺适用批准时允许合理阻塞；不能用隐藏生成规格替代业务确认进行数值打分。模型仅改成“新版依据”标签而沿用旧数值时，独立评价仍会拒绝。
 
 ```bash
-.venv/bin/proworksim build runs/fork --seed 211 --topology fork --layout shifted
-.venv/bin/proworksim run runs/fork --provider deepseek
-.venv/bin/proworksim evaluate runs/fork
+# 在待审期间发生依据变更
+.venv/bin/proworksim build runs/review-change --scenario during_review --information clarification
+.venv/bin/proworksim run runs/review-change --provider baseline
+.venv/bin/proworksim evaluate runs/review-change
+
+# 程序机制验收；不调用模型
+.venv/bin/python scripts/world_mechanism_suite.py --output runs/world-mechanisms --workers 4
+.venv/bin/python scripts/basis_error_diagnosis.py runs/basis-diagnosis --workers 4
+
+# 固定模型作为测试工作人员，无参数训练
+.venv/bin/python scripts/world_staff_trials.py runs/world-staff --workers 3 --max-turns 45
 ```
 
-验证结果：60 项整套测试及新增课程准入回归通过；原 12 配置和新增 16 配置机制矩阵通过；四种新结构的真实 DeepSeek 试跑全部通过。历史 43 次调用保持不变，37 条候选 SFT 经修订评价复核后保留。
+本轮结果：**142 项回归通过；10/10 程序机制情境和 4/4 错误策略预期通过。**固定 DeepSeek 的 7 个情境中，6 个完成并通过独立评价；信息不可得的一例最终阻塞，但此前两次尝试提交无适用批准的成果，均被拒绝，因此仍记失败。共 118 次 API 调用，未启动本地模型或 GPU 训练。
 
-匹配的第二阶段快照实验中，保留/清空历史上下文各通过 1/2，两次失败均沿用旧假设，尚无一致优势。本地 Qwen 已完成真实 LoRA 更新、保存、精确参数重载和工具环境回接，但未在 12 轮预算内完成后续任务；本轮没有证明训练收益。
+该失败还暴露了依据状态标签与无批准数值诊断的缺口，已补修。对原 7 个世界的副本重评保持文件、调用、消息、审阅和业务终态不变，新增 API 调用为 0；不把事后重评称作新的模型成功。
 
-- [审计后实现说明](docs/post-audit-implementation.md)
-- [本轮详细实验与失败记录](docs/experiments/post-audit-v02.md)
-- [初版架构记录](docs/implementation-v0.1.md)与[初版实验](docs/experiments/v0.1.md)
+配置维度为四种工作配置、三种工作图（chain/fork/selective），coordination 是 chain 配 clarification。shifted 布局提供对应指南，selective 明示只改 note；这些实验不证明任意布局理解或自主发现全部影响范围。
+
+- [本轮详细实验、失败轨迹与补修复核](docs/experiments/world-semantics-v03.md)
+- [工作世界语义与生命周期设计](docs/world-semantics-v03.md)
 - [数据格式与扩展接口](docs/data-contracts.md)
-- [原始设计](docs/reference/design-v0.1.md)、[补充资料](docs/reference/apex-supplement.md)、[审计结论](docs/reference/audit-v0.1.md)
+- [本轮审计](docs/reference/world-semantics-audit.md)
+- [v0.2 实现](docs/post-audit-implementation.md)与[历史实验／训练接口归档](docs/experiments/post-audit-v02.md)
+- [初版架构](docs/implementation-v0.1.md)与[初版实验](docs/experiments/v0.1.md)
+- [原始设计](docs/reference/design-v0.1.md)、[补充资料](docs/reference/apex-supplement.md)、[首轮审计](docs/reference/audit-v0.1.md)
+
+旧上下文对照和本地 LoRA 冒烟保留为历史诊断与接口验证，本轮未扩大该分支，也未证明训练收益。
 
 目标模型仅通过绑定身份的工具会话访问资料。当前计算器为显式定义的 XLSX 子集，不提供宿主机 Shell。真实原始轨迹、导出包和 LoRA 检查点保存在本地 `runs/`，Git 保存代码、报告及精简结果。
