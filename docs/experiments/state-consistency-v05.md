@@ -1,3 +1,5 @@
+> **2026-09-22 E2 勘误：**[后续审计](../reference/multiproject-audit.md)确认，原 E2 的 `formal_confirmation` 直接比较 `object_id` 与 `artifact_id` 两种引用字典，导致合法确认共同误报为 false。原 **31/31** 保留为当时脚本实际输出，但不能再解释为正式确认维度已正确测量；该缺陷不自动推翻其他比较维度、K1–K3 或其他实验。修正采用精确 `VersionRef` 规范化、签发关联核验和独立预期，复验见 [v0.6 设计与测量修订](../world-core-v06.md)。本报告原始结果和 JSON 证据不作回填。
+
 # v0.5 内核状态一致性与有界恢复：实验报告
 
 日期：2026-09-22。依据：[本轮审计](../reference/state-consistency-audit.md)。实现规格见 [状态一致性设计](../state-consistency-v05.md)、[核心语义](../../CORE_SEMANTICS.md)、[状态归属](../../STATE_OWNERSHIP.md)、[行动合同](../../ACTION_CONTRACTS.md)。

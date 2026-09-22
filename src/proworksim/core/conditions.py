@@ -177,6 +177,8 @@ def _match_response(state, condition, response, replay=False):
             condition["required_power"],
             condition["subject"],
             item.get("node_id", item["work_item_id"]),
+            project_id=item.get("project_id"),
+            object_id=(_reference(response.get("reference")) or (None, None))[0],
         ):
             return _check("FAIL", "provider_lacks_authority")
     if response.get("status") == "unavailable":

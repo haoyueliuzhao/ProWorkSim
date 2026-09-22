@@ -187,3 +187,107 @@ def test_missing_committed_journal_is_an_explicit_recovery_error(world_factory):
     with pytest.raises(ValueError, match="no operation journal"):
         World(world.store.root)
     assert (world.store.control / "state.json").read_bytes() == before
+
+
+def test_neutral_runner_recovers_new_object_mirror_and_preserves_unmanaged_files(tmp_path):
+    """A new object's mirror is not a committed fact until its command commits."""
+    import json
+
+    from proworksim.core.runner import WorldRunner
+    from proworksim.core.transitions import ActionFrame
+    from proworksim.storage import Store
+
+    class ProbeRunner(WorldRunner):
+        runtime_schema = "world-core-v0.6"
+
+        def _role(self, actor):
+            if actor != "writer":
+                raise ValueError("Unknown actor")
+
+        def _derive(self, state):
+            pass
+
+        def _complete_frame(self, frame):
+            return frame
+
+        def _action_frame(self, actor, action, arguments):
+            return ActionFrame("Create", (("artifacts", arguments["artifact_id"]),))
+
+        def _tool_create(self, actor, artifact_id, content):
+            artifact = {
+                "artifact_id": artifact_id,
+                "filename": "same.txt",
+                "storage_path": f"artifacts/{artifact_id}/same.txt",
+                "materialization": "workspace",
+                "versions": {},
+                "readers": [actor],
+            }
+            self.state["artifacts"][artifact_id] = artifact
+            self.store.put(self.state, artifact_id, content.encode(), actor)
+            return {"artifact_id": artifact_id}
+
+    root = tmp_path / "neutral"
+    (root / "control").mkdir(parents=True)
+    store = Store(root)
+    store.save(
+        {
+            "schema_version": ProbeRunner.runtime_schema,
+            "runtime_kind": "world_core",
+            "instance_id": "neutral-instance",
+            "branch_id": "initial",
+            "clock": 0,
+            "state_revision": 0,
+            "checkpoint_revision": 0,
+            "operation_commits": {},
+            "artifacts": {},
+            "events": [],
+            "event_history": [],
+            "interactions": [],
+        }
+    )
+    runner = ProbeRunner(root)
+    assert runner.act(
+        "writer", "create", {"artifact_id": "project-a-object", "content": "a"}, "a"
+    )["ok"]
+    protected = root / "workspace" / "user-note.txt"
+    protected.write_text("keep this user file")
+
+    def interrupt(phase, context):
+        if phase == "after_apply":
+            raise Interrupted("new object staged")
+
+    runner.fault_hook = interrupt
+    arguments = {"artifact_id": "project-b-object", "content": "b"}
+    with pytest.raises(Interrupted):
+        runner.act("writer", "create", arguments, "b")
+    orphan = root / "workspace" / "artifacts" / "project-b-object" / "same.txt"
+    assert orphan.read_text() == "b"
+    reopened = ProbeRunner(root)
+    assert not orphan.exists()
+    assert protected.read_text() == "keep this user file"
+    assert reopened.act("writer", "create", arguments, "b")["ok"]
+    artifacts = reopened.store.load()["artifacts"]
+    assert reopened.store.content(artifacts["project-a-object"]) == b"a"
+    assert reopened.store.content(artifacts["project-b-object"]) == b"b"
+    assert artifacts["project-b-object"]["freshness"] == "unknown"
+    snapshot = reopened.snapshot(tmp_path / "snapshot")
+    assert json.loads((snapshot / "snapshot.json").read_text())["schema_version"] == (
+        ProbeRunner.runtime_schema
+    )
+    restored = ProbeRunner.restore(snapshot, tmp_path / "restored")
+    assert restored.state["parent_branch_id"] == "initial"
+    assert restored.store.content(restored.state["artifacts"]["project-b-object"]) == b"b"
+
+
+@pytest.mark.parametrize("storage_path", ["../outside.txt", "/tmp/outside.txt"])
+def test_storage_paths_cannot_escape_materialization_root(tmp_path, storage_path):
+    from proworksim.storage import Store
+
+    with pytest.raises(ValueError, match="safe relative path"):
+        Store(tmp_path).current_path(
+            {
+                "filename": "same.txt",
+                "storage_path": storage_path,
+                "materialization": "workspace",
+            }
+        )

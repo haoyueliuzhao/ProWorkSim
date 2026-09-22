@@ -3,7 +3,7 @@
 import hashlib
 import random
 
-from .schema import ProjectSpec, RoleSpec, WorldSpec
+from .schema import ProjectSpec, RoleSpec, OperatingTemplateSpec
 from .layouts import LayoutMap
 from .workflow import make_workflow
 
@@ -24,7 +24,7 @@ def design(
     topology: str = "chain",
     layout: str = "standard",
     scenario: str = "standard",
-) -> WorldSpec:
+) -> OperatingTemplateSpec:
     if delivery not in DELIVERIES or information not in INFORMATION_MODES:
         raise ValueError("Unsupported delivery or information mode")
     if pool not in ("representative", "stress"):
@@ -147,7 +147,7 @@ def design(
         if delivery == "short"
         else ("retrieve", "recalculate", "compare", "modify"),
     )
-    return WorldSpec(
+    return OperatingTemplateSpec(
         project=project,
         roles=roles,
         seed=seed,

@@ -9,8 +9,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from .freshness import refresh_freshness
-
 
 def json_bytes(value) -> bytes:
     return (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode()
@@ -71,7 +69,15 @@ class Store:
         placement = artifact.get("materialization")
         public = placement == "workspace" if placement else "analyst" in artifact["readers"]
         base = self.workspace if public else self.control / "role_files"
-        return base / artifact["filename"]
+        relative = Path(artifact.get("storage_path", artifact["filename"]))
+        if relative.is_absolute() or not relative.parts or any(
+            part in {".", ".."} for part in relative.parts
+        ):
+            raise ValueError("Artifact storage_path must be a safe relative path")
+        result = base / relative
+        if not result.resolve().is_relative_to(base.resolve()):
+            raise ValueError("Artifact storage_path escapes its materialization root")
+        return result
 
     def content(self, artifact: dict, version_id: str | None = None) -> bytes:
         version_id = version_id or artifact["current_version"]
@@ -110,7 +116,13 @@ class Store:
                 "version_staged", {"artifact_id": artifact_id, "version_id": version_id}
             )
         atomic_write(self.current_path(artifact), content)
-        refresh_freshness(state)
+        if state.get("runtime_kind") == "world_core":
+            # A neutral runtime has no business-specific freshness oracle.
+            artifact["freshness"] = "unknown"
+        else:
+            from .freshness import refresh_freshness
+
+            refresh_freshness(state)
         version["freshness_at_creation"] = artifact["freshness"]
         return version
 
@@ -133,6 +145,18 @@ class Store:
                     if target.exists():
                         shutil.rmtree(target)
                     shutil.move(str(version_dir), str(target))
+        if state.get("runtime_kind") == "world_core":
+            # These two namespaces belong exclusively to WorldCore mirrors.
+            # Never scan or remove arbitrary files elsewhere in the workspace.
+            registered = {self.current_path(a) for a in state["artifacts"].values()}
+            for base in (self.workspace, self.control / "role_files"):
+                managed = base / "artifacts"
+                if managed.is_symlink():
+                    raise ValueError("Managed artifact namespace must not be a symlink")
+                if managed.exists():
+                    for path in managed.rglob("*"):
+                        if (path.is_file() or path.is_symlink()) and path not in registered:
+                            path.unlink()
         for artifact in state["artifacts"].values():
             # Check the immutable committed prefix, not only the latest mirror.
             for vid, metadata in artifact["versions"].items():

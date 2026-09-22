@@ -16,6 +16,7 @@ from state_projection_experiment import AdapterTrace, SEED, TEMPLATES, file_hash
 
 from proworksim.audit import code_identity
 from proworksim.core.projections import derive_condition_view, derive_current_work_view
+from proworksim.core.references import VersionRef
 from proworksim.core.rules import confirm_credential
 from proworksim.core.types import Credential
 from proworksim.storage import digest
@@ -43,6 +44,67 @@ LOCAL_CHECKS = (
     "no_model_calls",
     "current_work_accepted",
 )
+
+
+# Constants follow the declared trace, never either adapter's measured output.
+EXPECTED_CREDENTIAL_COUNTS = {
+    "withdraw_resubmit": dict.fromkeys(MARKERS["withdraw_resubmit"], 1),
+    "revision_late_reply": {
+        marker: 1 if marker in ("ConfirmGrant", "OldRequest") else 2
+        for marker in MARKERS["revision_late_reply"]
+    },
+}
+
+
+def formal_confirmation_fact(state, reference):
+    """Read exact historical issuance, independently of current applicability.
+
+    Normalize accepted reference spellings, then check the registered version,
+    credential and attestation agree on the exact reference and issuance links.
+    Historical issuance may exist while a newer requirement is not satisfied.
+    """
+    try:
+        ref = VersionRef.from_mapping(reference)
+        version = state["artifacts"][ref.object_id]["versions"][ref.version_id]
+        credential = version["credential"]
+        attestation = state["attestations"][credential["attestation_ref"]]
+        return bool(
+            credential.get("kind") == "credential"
+            and VersionRef.from_mapping(credential["reference"]) == ref
+            and VersionRef.from_mapping(attestation["reference"]) == ref
+            and attestation["attestation_id"] == credential["attestation_ref"]
+            and attestation["actor_id"] == credential["confirmed_by"]
+            and attestation["requirement_dimension"] == credential["requirement_dimension"]
+            and attestation["requirement_version"] == credential["requirement_version"]
+            and set(attestation["work_nodes"]) == set(credential["work_nodes"])
+            and attestation["power"] == "confirm"
+            and attestation["subject"] == credential["requirement_dimension"]
+            and version["logical_time"] <= attestation["at"] <= state["clock"]
+        )
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return False
+
+
+def expected_confirmation_check(trajectory, marker, projection):
+    """One independently specified truth assertion per adapter checkpoint."""
+    count = EXPECTED_CREDENTIAL_COUNTS[trajectory][marker]
+    expected = [
+        {"credential": f"C{index + 1}", "formal_confirmation": True, "coordinator_signed": True}
+        for index in range(count)
+    ]
+    actual = [
+        {key: value.get(key) for key in expected[0]}
+        for value in (projection or {}).get("credentials", [])
+    ]
+    return {
+        "name": "declared_credentials_have_exact_formal_issuance",
+        "trajectory": trajectory,
+        "marker": marker,
+        "expected": expected,
+        "observed": actual,
+        "passed": actual == expected,
+        "not_executed": projection is None,
+    }
 
 
 def semantic_projection(trace, state):
@@ -78,7 +140,7 @@ def semantic_projection(trace, state):
         credentials.append(
             {
                 "credential": credential_alias(ref),
-                "formal_confirmation": bool(attestation) and attestation.get("reference") == ref,
+                "formal_confirmation": formal_confirmation_fact(state, ref),
                 "coordinator_signed": attestation.get("actor_id") == trace.coordinator,
                 "worker_has_exact_version": trace.worker in artifact.get("readers", [])
                 or trace.worker in exact_readers,
@@ -177,7 +239,10 @@ def run_trace(entry):
     output, template, name = entry
     root = output / f"{name}-{template}"
     root.mkdir()
-    result = {"template": template, "trajectory": name, "markers": {}, "checks": []}
+    result = {
+        "template": template, "trajectory": name, "markers": {},
+        "checks": [], "independent_expectations": [],
+    }
     states = []
     trace = None
     try:
@@ -196,6 +261,11 @@ def run_trace(entry):
                 "files": file_hashes(trace.world),
                 "action_count": len(trace.actions),
             }
+            result["independent_expectations"].append(
+                expected_confirmation_check(
+                    name, marker, result["markers"][marker]["semantic_projection"]
+                )
+            )
 
         if name == "withdraw_resubmit":
             mark("ConfirmGrant")
@@ -245,7 +315,11 @@ def run_trace(entry):
     if trace is not None:
         result["actions"] = write_json(root / "adapter-actions.json", trace.actions)
         result["final_state"] = write_json(root / "final-state.json", trace.world.store.load())
-    result["passed"] = all(c["passed"] for c in result["checks"])
+    result["passed"] = (
+        all(c["passed"] for c in result["checks"])
+        and len(result["independent_expectations"]) == len(MARKERS[name])
+        and all(c["passed"] for c in result["independent_expectations"])
+    )
     write_json(root / "result.json", result)
     return result
 
@@ -349,19 +423,23 @@ def main():
     }
     started = datetime.now(timezone.utc).isoformat()
     protocol = {
-        "version": "adapter-conformance-e2-v1",
+        "version": "adapter-conformance-e2-v2",
         "templates": TEMPLATES,
         "markers": MARKERS,
         "world_count": 4,
         "cross_template_comparisons": 11,
         "world_local_checks": 16,
         "separate_shared_core_scope_checks": 4,
-        "expected_check_count": 31,
+        "legacy_relation_check_count": 31,
+        "independent_expected_confirmation_checks": 22,
+        "expected_credential_counts": EXPECTED_CREDENTIAL_COUNTS,
+        "expected_check_count": 53,
         "normalization": {
             "aliases": "Participating work by requirement revision; credentials/requests/conditions/submissions by creation order; actor by action-specific institutional role.",
             "selected_relations": "Exact credential confirmation and grant, current work/status/readiness/actions, bound condition status, recorded response and current request target, submission invalidation/applicability/decision and presence of every pinned deliverable.",
             "excluded": "Domain content, extra nonparticipating bootstrap credentials, artifact count/format, message text, numeric logical time, staff transport details (including differing outdated_reply/delivered labels). Full raw states and exact pins remain archived.",
             "history_fields_preserved_exactly_within_each_template": PINNED_FIELDS,
+            "formal_confirmation": "Normalize target, credential and attestation with VersionRef; require exact object/version and matching issuance links. Historical issuance is separate from current-work applicability.",
         },
         "timing": "Operating scheduled replies run when a tool advances the clock; publication replies use editor actions. ReviseLateReply is an explicit macro boundary, not equality at every lower-level event.",
         "bootstrap": "Compilation confirms and grants the initial credentials. The revision trajectory requests and replies once before ConfirmGrant to establish equivalent public scope.",
@@ -391,10 +469,26 @@ def main():
                 }
             )
     scope = scope_fixture(args.output)
-    checks = [*comparisons, *(c for result in results for c in result["checks"]), *scope["checks"]]
+    legacy_checks = [
+        *comparisons, *(c for result in results for c in result["checks"]), *scope["checks"]
+    ]
+    expectations = [
+        {
+            "template": template,
+            **expected_confirmation_check(
+                name,
+                marker,
+                lookup[name, template]["markers"].get(marker, {}).get("semantic_projection"),
+            ),
+        }
+        for name, markers in MARKERS.items()
+        for template in TEMPLATES
+        for marker in markers
+    ]
+    checks = [*legacy_checks, *expectations]
     after = code_identity()
     report = {
-        "suite": "adapter-conformance-e2-v0.5",
+        "suite": "adapter-conformance-e2-g0-corrected",
         "protocol": protocol,
         "seed": SEED,
         "started_at": started,
@@ -415,11 +509,16 @@ def main():
         "cross_template_pass_count": sum(c["passed"] for c in comparisons),
         "check_count": len(checks),
         "check_pass_count": sum(c["passed"] for c in checks),
+        "legacy_relation_check_count": len(legacy_checks),
+        "legacy_relation_check_pass_count": sum(c["passed"] for c in legacy_checks),
+        "independent_expectation_count": len(expectations),
+        "independent_expectation_pass_count": sum(c["passed"] for c in expectations),
         "api_calls": 0,
         "gpu_used": False,
         "training_performed": False,
         "interpretation": "Finite agreement of specified institutional relations, not domain equivalence, quality agreement, arbitrary adapter conformance or model performance. Static A/B scope is separate state-only evidence.",
         "comparisons": comparisons,
+        "independent_expectations": expectations,
         "adapter_results": results,
         "scope_fixture": scope,
     }

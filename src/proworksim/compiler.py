@@ -14,7 +14,7 @@ from .audience import audience_requirement, public_audience_requirements
 from .renderers.xlsx import relocate
 from .workflow import configure, activate_ready, validate_workflow, make_workflow
 from .lifecycle import validate_lifecycle_policies
-from .schema import SCHEMA_VERSION, WorkItem, WorldSpec
+from .schema import SCHEMA_VERSION, WorkItem, OperatingTemplateSpec
 from .spreadsheet import Spreadsheet
 from .storage import Store, atomic_write, json_bytes
 from .policies.organization import operating_organization
@@ -154,7 +154,7 @@ def create_workbook(spec: dict) -> bytes:
     return Spreadsheet(stream.getvalue()).serialize()
 
 
-def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
+def compile_world(spec: OperatingTemplateSpec, destination: str | Path) -> Path:
     workflow = spec.workflow or make_workflow(spec.project.delivery).public_spec()
     validate_workflow(workflow)
     validate_lifecycle_policies(spec.lifecycle_events, workflow)

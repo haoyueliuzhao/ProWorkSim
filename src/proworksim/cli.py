@@ -19,7 +19,9 @@ from .validation import evaluate
 
 
 def parser():
-    root = argparse.ArgumentParser(prog="proworksim", description="ProWorkSim v0.5.0 工作世界模拟器")
+    root = argparse.ArgumentParser(
+        prog="proworksim", description="ProWorkSim v0.6.0 工作世界模拟器"
+    )
     commands = root.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="合成并编译一个独立世界")
     build.add_argument("destination")
@@ -89,10 +91,65 @@ def parser():
     curriculum.add_argument("--generate", help="可选：按建议并行生成新的训练集世界")
     curriculum.add_argument("--seed-start", type=int, default=1000)
     curriculum.add_argument("--workers", type=int, default=4)
+    create = commands.add_parser("world-create", help="从主体和世界服务配置创建零项目世界")
+    create.add_argument("destination")
+    create.add_argument("--spec", required=True)
+    load = commands.add_parser("project-load", help="向已有世界原子装载项目包")
+    load.add_argument("world")
+    load.add_argument("package")
+    load.add_argument("--actor", required=True)
+    for name in ("world-act", "world-inspect"):
+        cmd = commands.add_parser(name, help="在可信身份与项目范围内操作或观察 World Core")
+        cmd.add_argument("world")
+        cmd.add_argument("--actor", required=True)
+        cmd.add_argument("--project")
+        if name == "world-act":
+            cmd.add_argument("action")
+            cmd.add_argument("--arguments", default="{}")
+            cmd.add_argument("--request-key")
+    check = commands.add_parser("world-evaluate", help="独立检查固定提交的有限内容合同")
+    check.add_argument("world")
+    check.add_argument("--project", required=True)
+    check.add_argument("--work", required=True)
+    check.add_argument("--submission", required=True)
+    recover = commands.add_parser("world-recover", help="恢复已提交文件并继续到期环境事件")
+    recover.add_argument("world")
     return root
 
 
 def execute(args):
+    if args.command in {
+        "world-create",
+        "project-load",
+        "world-act",
+        "world-inspect",
+        "world-evaluate",
+        "world-recover",
+    }:
+        from .world_core import WorldCore
+        from .core.world import WorldSpec
+
+        if args.command == "world-create":
+            world = WorldCore.create(args.destination, WorldSpec(**read_json(Path(args.spec))))
+            return {
+                "world": str(world.store.root),
+                "world_id": world.state["world_id"],
+                "projects": [],
+            }
+        world = WorldCore(args.world)
+        if args.command == "project-load":
+            return world.session(args.actor).call(
+                "install_project", package=read_json(Path(args.package))
+            )
+        if args.command == "world-act":
+            return world.session(args.actor, args.project).call(
+                args.action, request_key=args.request_key, **json.loads(args.arguments)
+            )
+        if args.command == "world-inspect":
+            return world.session(args.actor, args.project).observe()
+        if args.command == "world-recover":
+            return world.recover()
+        return world.evaluate_submission(args.project, args.work, args.submission)
     if args.command == "build":
         spec = design(
             args.seed,
@@ -125,8 +182,22 @@ def execute(args):
         records = evaluate(args.world, args.work_item)
         return {"evaluations": records, "all_submissions_passed": all(r["passed"] for r in records)}
     if args.command == "snapshot":
-        return {"snapshot": str(World(args.world).snapshot(args.destination))}
+        from .world_core import WorldCore
+
+        runtime = (
+            WorldCore if Store(args.world).load().get("runtime_kind") == "world_core" else World
+        )
+        return {"snapshot": str(runtime(args.world).snapshot(args.destination))}
     if args.command == "restore":
+        from .world_core import WorldCore
+
+        if Store(args.snapshot).load().get("runtime_kind") == "world_core":
+            world = WorldCore.restore(args.snapshot, args.destination, branch=not args.same_branch)
+            return {
+                "world_id": world.state["world_id"],
+                "branch_id": world.state["branch_id"],
+                "world": str(world.store.root),
+            }
         return World.restore(args.snapshot, args.destination, branch=not args.same_branch).observe()
     if args.command == "export":
         return export_bundle(args.world, args.destination)

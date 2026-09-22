@@ -146,7 +146,7 @@ def execute_transition(
         # state differences explicitly instead of inventing a zero phase delta.
         receipt = {
             "receipt_version": "phase-deltas-v0.5",
-            "semantics_version": SEMANTICS_VERSION,
+            "semantics_version": before.get("semantics_version", SEMANTICS_VERSION),
             "contract": frame.name,
             "rolled_back": True,
             "failed_phase": phase,
@@ -169,7 +169,7 @@ def execute_transition(
         raise
     receipt = {
         "receipt_version": "phase-deltas-v0.5",
-        "semantics_version": SEMANTICS_VERSION,
+        "semantics_version": before.get("semantics_version", SEMANTICS_VERSION),
         "contract": frame.name,
         "allowed_business_paths": [list(p) for p in frame.paths],
         "apply_delta": [list(p) for p in changed_paths(before, applied)],

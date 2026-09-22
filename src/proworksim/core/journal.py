@@ -44,7 +44,7 @@ def record_operation(state, operation_id, actor, request_digest, result, receipt
         bound_actor=actor,
         request_digest=request_digest,
         pre_state_revision=previous,
-        semantics_version=SEMANTICS_VERSION,
+        semantics_version=state.get("semantics_version", SEMANTICS_VERSION),
         committed_revision=revision,
         execution_outcome="committed" if result.get("ok", True) else "rejected_attempt_committed",
     )

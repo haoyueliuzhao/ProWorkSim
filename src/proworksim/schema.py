@@ -56,7 +56,7 @@ class ProjectSpec:
 
 
 @dataclass(frozen=True)
-class WorldSpec:
+class OperatingTemplateSpec:
     project: ProjectSpec
     roles: tuple[RoleSpec, ...]
     seed: int

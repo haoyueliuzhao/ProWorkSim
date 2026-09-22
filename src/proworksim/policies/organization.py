@@ -71,20 +71,65 @@ def request_provider(state, topic):
     return position(state, key)
 
 
-def authority(state, actor, power, subject, work_node=None):
-    if actor not in {r["role_id"] for r in state.get("roles", [])}:
+def authority(state, actor, power, subject, work_node=None, project_id=None, object_id=None):
+    """Check explicit powers, with strict project/work/object scope in World Core.
+
+    v0.5 worlds retain their recorded single-project interpretation. In v0.6,
+    omitting context cannot turn a project grant into a world-wide grant. A full
+    world work identifier can resolve its project without trusting a local name.
+    """
+    scoped_world = "projects" in state
+    actors = (
+        state.get("actors", {})
+        if scoped_world
+        else {role["role_id"]: role for role in state.get("roles", [])}
+    )
+    if actor not in actors:
         return False
+    if scoped_world:
+        inferred = {
+            item.get("project_id")
+            for key, item in state.get("work_items", {}).items()
+            if work_node is not None and (key == work_node or item.get("node_id") == work_node)
+        }
+        if len(inferred) > 1 or (inferred and project_id not in (None, next(iter(inferred)))):
+            return False
+        if inferred:
+            project_id = next(iter(inferred))
+        if work_node is not None and not inferred:
+            return False
+        if project_id is not None and project_id not in state["projects"]:
+            return False
+        if object_id is not None and object_id not in state.get("artifacts", {}):
+            return False
+        if (
+            object_id is not None
+            and project_id is not None
+            and object_id not in state.get("workspaces", {}).get(project_id, {}).values()
+        ):
+            return False
     for grant in organization(state).get("grants", []):
         if grant.get("actor_id") != actor or grant.get("power") not in (power, "*"):
             continue
         if grant.get("subject") not in (subject, "*"):
             continue
+        if scoped_world:
+            if grant.get("scope") == "world":
+                if project_id is not None or work_node is not None:
+                    continue
+            elif not project_id or grant.get("project_id") != project_id:
+                continue
+            objects = grant.get("object_ids", ["*"])
+            if "*" not in objects and (object_id is None or object_id not in objects):
+                continue
         nodes = grant.get("work_nodes", ["*"])
         if "*" in nodes or (work_node is not None and work_node in nodes):
             return True
     return False
 
 
-def require_authority(state, actor, power, subject, work_node=None):
-    if not authority(state, actor, power, subject, work_node):
+def require_authority(
+    state, actor, power, subject, work_node=None, project_id=None, object_id=None
+):
+    if not authority(state, actor, power, subject, work_node, project_id, object_id):
         raise ValueError(f"Actor lacks institutional power: {power} ({subject})")

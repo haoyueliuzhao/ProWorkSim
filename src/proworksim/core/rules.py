@@ -79,7 +79,15 @@ def confirm_credential(state, actor, reference, credential):
     if not nodes or not record.get("attestation_ref"):
         raise ValueError("Confirmation requires a work scope and attestation identifier")
     for node in nodes:
-        require_authority(state, actor, "confirm", record["requirement_dimension"], node)
+        require_authority(
+            state,
+            actor,
+            "confirm",
+            record["requirement_dimension"],
+            node,
+            project_id=record.get("project_id"),
+            object_id=ref.object_id,
+        )
     if "credential" in version:
         if version["credential"] == record:
             return state["attestations"][record["attestation_ref"]]
@@ -132,6 +140,8 @@ def registered_applicability(state, reference, context):
         "confirm",
         record.get("requirement_dimension"),
         query.get("work_node"),
+        project_id=query.get("project_id"),
+        object_id=VersionRef.from_mapping(reference).object_id,
     ):
         return CheckResult(
             CheckStatus.UNASSESSED,

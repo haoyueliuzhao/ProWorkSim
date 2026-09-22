@@ -1,6 +1,29 @@
-# 数据合同与扩展接口（v0.5）
+# 数据合同与扩展接口（v0.6）
 
-本文对应冻结实现 `fe80b02a69df7cfe8eabf4a62cce2031c4e3035c`、软件包 `0.5.0`、`schema_version: "0.5"`、经营模板 `contract_version: "operating-world-v0.5"` 及独立评价器 `operating-world-v0.5`。转换语义版本为 `work-world-v0.5`，阶段收据版本为 `phase-deltas-v0.5`。文稿微模板复用相同 schema，但使用独立的 `publication-micro-v0.1` 合同；它不是经营评价器的另一套输入，也不是第二个行业基准。
+当前软件包为 `0.6.0`。新增世界运行时的 schema 为 `world-core-v0.6`、语义版本为 `work-world-v0.6`；经营与文稿单项目运行时继续使用 schema `0.5`。两者共用 `core.runner.WorldRunner` 和 `phase-deltas-v0.5` 回执格式。完整世界合同与 CLI 见 [v0.6 设计](world-core-v06.md)，推进与验收见 [执行计划](world-core-v06-plan.md)。
+
+## v0.6 新世界接口
+
+`proworksim.WorldSpec` / `core.world.WorldSpec` 允许零项目，无金融事实和假设字段。旧 `schema.WorldSpec` 已明确改名 `OperatingTemplateSpec`，由经营编译器使用；本轮没有隐式转换旧世界。
+
+- `WorldCore.create(path, WorldSpec(...))`：在新目录初始化稳定主体、文件应用和显式世界权力。
+- `WorldCore.session(actor, project_id=None)`：可信调用方绑定上下文；`call(tool, request_key=..., **arguments)` 不允许模型覆盖 actor/project。
+- `install_project(package=...)`：完整预检后，项目注册、初始版本、别名、义务和局部授权同一提交；不能携入预制审批历史或世界管理员。
+- `create_object(alias, filename, data, deliverable_role, dependencies)`：限定 JSON object、相对安全文件名和可读精确引用。实际对象身份来自无歧义的项目/别名元组；镜像位于 artifacts 专用空间。
+- `share(object_id, version_id, target_project, actor_ids, follow_updates=False)`：单版读取和持续发布分开；不开放上游。世界操作者可为未来项目准备明确授权。
+- `adopt(alias, object_id, version_id, policy, work_ids)`：current_applicable 或 fixed；`adopt_version(alias, version_id)` 仅更新 current 声明并记录历史，不改产物字节。
+- `submit(work_id, artifacts=[aliases], answer=None)`：合同可按类型/角色/文件数声明，不列死路径；required_credentials 在提交与批准时都必须可读、已签发且适用；公开使能使用同样门槛。
+- `close_project(mode, reason)` 与 episode 起止：项目、工作、世界及实验切片分离。retain/cancel 对待处理义务的行为必须由项目包声明。
+
+`WorkContext` 包含 world/project/work/requirement/purpose/period；实际授权同时核对明确 project 与无歧义 work node，可另限定 object。原角色名或同名 work-1 不产生跨项目权力。当前 grants 为固定配置，未实现运行时任意组织重构。
+
+项目包 provenance 支持 observed/reconstructed/synthetic/unknown；observed 必须有 source_evidence_refs。来源标记是证据声明，不自动验证外部真实性。没有实际过程证据时，不得从财报与最终文件推造历史批准或返工。当前 `required_fields` 仅检查 JSON 聚合字段和冲突；未实现的 `content_rules` 明确拒绝。
+
+以下 v0.5 章节保留两套单项目适配器及共用机制的详细合同。其单 project、预制 XLSX、经营 freshness 和模型导出接口不自动等于 v0.6 的动态项目能力。
+
+## v0.5 单项目适配器与共用机制
+
+以下章节对应冻结实现 `fe80b02a69df7cfe8eabf4a62cce2031c4e3035c`、软件包 `0.5.0`、`schema_version: "0.5"`、经营模板 `contract_version: "operating-world-v0.5"` 及独立评价器 `operating-world-v0.5`。转换语义版本为 `work-world-v0.5`，阶段收据版本为 `phase-deltas-v0.5`。文稿微模板复用相同 schema，但使用独立的 `publication-micro-v0.1` 合同；它不是经营评价器的另一套输入，也不是第二个行业基准。
 
 内核规范、状态归属和行动效果分别见 [CORE_SEMANTICS.md](../CORE_SEMANTICS.md)、[STATE_OWNERSHIP.md](../STATE_OWNERSHIP.md)、[ACTION_CONTRACTS.md](../ACTION_CONTRACTS.md)。[v0.3 设计](world-semantics-v03.md)和既有实验保持历史含义。
 

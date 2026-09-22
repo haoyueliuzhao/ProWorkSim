@@ -1,4 +1,4 @@
-# 状态归属与重算（v0.5）
+# 状态归属与重算（v0.6）
 
 | 字段或对象 | 归属 | 权威与修改规则 |
 | --- | --- | --- |
@@ -20,6 +20,22 @@
 | event_attempts | Q/O | 失败或提交后交付异常的持久诊断，关联已知提交前缀，不算第二次正式效果 |
 | messages、interactions、读取与模型上下文 | O/B | 已实际提供或发生的记录，不由新版投影改写 |
 | evaluations / verified_dependencies | 世界外证据 | 独立版本化评价；不替工作人员改产物或删除错误批准 |
+
+## 新增多项目状态
+
+| 字段或对象 | 归属 | 权威与修改规则 |
+| --- | --- | --- |
+| world_id、actors、applications | B | 可信零项目世界规格；项目包不得重建人员或升级世界权力 |
+| world_status | Q | 运行／暂停的显式世界操作；idle 是活动项目集合的观察结果 |
+| projects、project_history | B | 包装载和显式完成／归档；历史保持，不等于删除世界 |
+| workspaces / world_workspace | B | 别名指向世界对象；对象 ID 与文件名分离，别名不能越权 |
+| organization.grants | B | 项目包的明确 project/work/object 作用域；无上下文不能借项目权力执行世界动作 |
+| shares | B | 精确版本和接收主体的显式授权；后续发布授权须有 follow_updates |
+| adoptions / adoption.history | B | 明确的 current_applicable/fixed 政策及实际采用版本；显式 adopt_version 保存前后引用 |
+| adoption_view | P | 当前目标和已采用版的关系；不会更新交付文件或自动创建批准 |
+| episodes | Q/O | 本次观察范围的起止项目和修订号；结束不删除项目、事件或人员阅读历史 |
+| artifact.storage_path | B/物化位置 | 仅受控 artifacts 子目录；镜像恢复不将同名文件混为同一对象 |
+
 
 E1 的缓存操作仅使用 `core.projections.projection_paths` 明确列出的两个视图缓存。它不删除正式提交、历史消息、版本指针或签发登记，也不声称清除了全部可能存在的缓存。纯函数不产生新文件、消息、批准或阅读收据。
 

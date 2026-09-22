@@ -29,6 +29,8 @@ REQUIREMENT_FIELDS = frozenset(
         "requirement_dimension",
         "purpose",
         "owner_role",
+        "deliverable_contract",
+        "approval_policy",
     }
 )
 
@@ -111,6 +113,7 @@ def revise_requirement(state, targets, updates, actor, reason):
             "revise_requirement",
             dimension,
             work_node=item.get("node_id", item["work_item_id"]),
+            project_id=item.get("project_id"),
         )
     if "owner_role" in updates and updates["owner_role"] not in {
         role["role_id"] for role in state.get("roles", [])
@@ -202,7 +205,23 @@ def submit_work(
     if "answer" in item.get("deliverables", []) and answer is None:
         raise ValueError("This task requires an answer")
     expected = set(item.get("deliverables", [])) - {"answer"}
-    if not isinstance(pinned_versions, dict) or set(pinned_versions) != expected:
+    if not isinstance(pinned_versions, dict):
+        raise ValueError("Submission must pin deliverable versions")
+    contract = item.get("deliverable_contract")
+    if contract is not None:
+        if (
+            not contract.get("min_files", 1)
+            <= len(pinned_versions)
+            <= contract.get("max_files", 10)
+        ):
+            raise ValueError("Submission violates deliverable file count contract")
+        allowed_roles = contract.get("allowed_roles", [])
+        if allowed_roles and any(
+            state.get("artifacts", {}).get(aid, {}).get("deliverable_role") not in allowed_roles
+            for aid in pinned_versions
+        ):
+            raise ValueError("Submission contains an unsupported deliverable role")
+    elif set(pinned_versions) != expected:
         raise ValueError("Submission must pin every deliverable version")
     for artifact_id, version in pinned_versions.items():
         if version not in state.get("artifacts", {}).get(artifact_id, {}).get("versions", {}):
@@ -227,6 +246,14 @@ def submit_work(
         if not isinstance(extensions, dict) or set(extensions) & set(submission):
             raise ValueError("Submission extensions cannot overwrite core fields")
         submission.update(copy.deepcopy(extensions))
+    if item.get("approval_policy") == "delivery_only":
+        submission["review"] = {
+            "decision": "accepted",
+            "actor_id": actor,
+            "at": state["clock"],
+            "decision_basis": "delivery_only",
+            "defects": [],
+        }
     item["submissions"].append(submission)
     rebuild_projections(state)
     return copy.deepcopy(submission)
@@ -263,7 +290,12 @@ def approve_submission(state, actor, work_item_id, submission_id):
     """Exercise approval authority; this is not an independent quality judgment."""
     item = _current_item(state, work_item_id)
     require_authority(
-        state, actor, "approve", "deliverable", work_node=item.get("node_id", work_item_id)
+        state,
+        actor,
+        "approve",
+        "deliverable",
+        work_node=item.get("node_id", work_item_id),
+        project_id=item.get("project_id"),
     )
     if not dependencies_ready(state, item):
         raise ValueError("Current work dependencies have not been accepted")
