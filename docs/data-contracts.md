@@ -86,11 +86,11 @@ mail 配置公开适用依据；clarification 配置通过定向回复授权请�
 
 | 产物字段 | 值与计算范围 |
 | --- | --- |
-| `freshness` | `current` / `stale` / `unknown`，根据实际声明依赖与必要输入边递归计算 |
+| `freshness` | `current` / `stale` / `unknown`，合并数据依赖新鲜度与当前工作批准依据适用性 |
 | `data_freshness` | 同三种状态，沿依赖链计算时排除 basis 输入，用于区分数据变化与假设变化 |
 | `basis_applicability` | `current` / `stale` / `unknown` / `not_applicable`，沿声明依赖链检查采用的 basis 版本与当前所需确认；缺少当前适用确认时为 `unknown`，没有相关依据要求或依赖边时为 `not_applicable` |
 | `possibly_stale` | `freshness != "current"` 的便捷标记，包含 unknown |
-| `freshness_basis` | 当前为 `declared_dependencies_and_required_edges`，显式记录判断依据 |
+| `freshness_basis` | v0.3.1 为 `declared_dependencies_and_current_work_approval`；冻结 v0.3 历史记录为 `declared_dependencies_and_required_edges` |
 
 `basis_applicability` 根据依据依赖链与当前工作所需确认判断，不替代独立评价中的完整确认者、工作范围与期间适用性检查。当前工作 `required_basis: null` 时，不能将历史 basis 中最新的文件版本当成当前适用确认；相关状态为 unknown。`current` 也不代表数值正确或内容已经专业审阅。
 
