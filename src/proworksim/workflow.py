@@ -2,6 +2,8 @@
 
 from dataclasses import asdict, dataclass
 
+from .lifecycle import current_id, current_item, current_work_items
+
 
 @dataclass(frozen=True)
 class WorkNode:
@@ -74,7 +76,11 @@ def make_workflow(delivery, topology="chain"):
                 WorkNode("memo-2", ("memo",), ("model-2",), "second", 2, 2, "future", "v3"),
                 WorkNode("note-2", ("note",), ("model-2",), "second", 2, 2, "future", "v3"),
             )
-    return WorkflowSpec(topology, nodes, (EventRule("next-release", guards, effects, "second"),))
+    return WorkflowSpec(
+        "chain" if topology == "coordination" else topology,
+        nodes,
+        (EventRule("next-release", guards, effects, "second"),),
+    )
 
 
 def configure(state, spec):
@@ -96,14 +102,20 @@ def activate_ready(state, spec, origin):
         ):
             continue
         if any(
-            state["work_items"].get(dep, {}).get("status") != "accepted"
+            (current_item(state, dep) or {}).get("status") != "accepted"
             for dep in node["dependencies"]
         ):
             continue
         item = work_item(spec, node["requirement_version"], origin)
         item.update(
             work_item_id=node["node_id"],
-            dependencies=node["dependencies"],
+            node_id=node["node_id"],
+            applicability="current",
+            activated_at=state["clock"],
+            source_period=spec["facts"][node["source_stage"]]["period"],
+            basis_requirement_version=node["scenario_revision"],
+            required_basis=state.get("basis_by_scenario", {}).get(str(node["scenario_revision"])),
+            dependencies=[current_id(state, dep) for dep in node["dependencies"]],
             deliverables=node["deliverables"],
             owner_role=node["owner_role"],
             scenario_revision=node["scenario_revision"],
@@ -114,6 +126,20 @@ def activate_ready(state, spec, origin):
                 for aid in node["protected_artifacts"]
             },
         )
+        for dep in item["dependencies"]:
+            prior = state["work_items"][dep]
+            if (
+                prior.get("scenario_revision") == node["scenario_revision"]
+                and prior.get("source_stage") == node["source_stage"]
+            ):
+                item["requirement_version"] = max(
+                    item["requirement_version"], prior["requirement_version"]
+                )
+                if prior.get("required_basis"):
+                    item["required_basis"] = prior["required_basis"]
+                    item["basis_requirement_version"] = prior.get(
+                        "basis_requirement_version", prior["requirement_version"]
+                    )
         if list(node["deliverables"]) == ["memo"]:
             item["goal"] = "将研究备忘录同步到已提交模型，维护实际依赖和证据引用。"
             item["visible_requirements"] = [
@@ -124,7 +150,7 @@ def activate_ready(state, spec, origin):
             item["goal"] = "按 brief 的当前受众要求同步情景说明 note。"
             item["visible_requirements"] = [
                 "阅读 guide 的 note_schema、brief、model。",
-                "note 绑定 model/brief 的实际版本，包含股价与敏感性结果；写入 dependencies 后提交。",
+                "note 绑定 model/brief 的实际版本，包含股价、敏感性结果和当前 brief 要求的 audience_content；写入 dependencies 后提交。",
             ]
         elif list(node["deliverables"]) == ["model"]:
             item["visible_requirements"] = [
@@ -146,12 +172,23 @@ def on_accept(world):
     spec = read_json(world.store.control / "spec.json")
     if "workflow" not in world.state:
         configure(world.state, spec)
+    for item in current_work_items(world.state):
+        item["dependencies"] = [current_id(world.state, dep) for dep in item["dependencies"]]
+        if item["status"] == "waiting_dependencies" and all(
+            (current_item(world.state, dep) or {}).get("status") == "accepted"
+            for dep in item["dependencies"]
+        ):
+            item["status"] = "open"
+        if item["status"] == "blocked":
+            from .blockers import reopen_if_ready
+
+            reopen_if_ready(world.state, item["work_item_id"])
     activate_ready(world.state, spec, "predecessor-accepted")
     for rule in world.state["workflow"]["event_rules"]:
         if rule["rule_id"] in world.state["fired_rules"]:
             continue
         if all(
-            world.state["work_items"].get(node, {}).get("status") == "accepted"
+            (current_item(world.state, node) or {}).get("status") == "accepted"
             for node in rule["after_accepted"]
         ):
             world.state["fired_rules"].append(rule["rule_id"])
@@ -163,37 +200,88 @@ def is_complete(state):
     return (
         expected <= set(state["work_items"])
         and not state["events"]
-        and all(w["status"] == "accepted" for w in state["work_items"].values())
+        and all(w["status"] == "accepted" for w in current_work_items(state))
     )
+
+
+def _reachable_workflow(nodes, rules):
+    """Optimistic closure: every available work item can be accepted.
+
+    Work prerequisites are conjunctive; independent producers of the same
+    release are alternatives. This does not prove professional solvability
+    or success under every possible schedule.
+    """
+    accepted, fired, released = set(), set(), {"initial"}
+    while True:
+        next_work = {
+            node["node_id"]
+            for node in nodes
+            if node["release"] in released and set(node["dependencies"]) <= accepted
+        }
+        next_rules = {rule["rule_id"] for rule in rules if set(rule["after_accepted"]) <= accepted}
+        if next_work <= accepted and next_rules <= fired:
+            return accepted, fired, released
+        accepted |= next_work
+        fired |= next_rules
+        released |= {rule["release"] for rule in rules if rule["rule_id"] in fired}
 
 
 def validate_workflow(workflow):
     nodes = workflow["nodes"]
+    rules = workflow["event_rules"]
     ids = {node["node_id"] for node in nodes}
     if not nodes or len(ids) != len(nodes):
         raise ValueError("Workflow nodes must have unique IDs")
-    releases = {"initial"} | {r["release"] for r in workflow["event_rules"]}
-    rule_ids = [r["rule_id"] for r in workflow["event_rules"]]
+    releases = {"initial"} | {r["release"] for r in rules}
+    rule_ids = [r["rule_id"] for r in rules]
     if len(set(rule_ids)) != len(rule_ids):
         raise ValueError("Event rules must have unique IDs")
     for node in nodes:
-        if not set(node["dependencies"]) <= ids or node["release"] not in releases:
-            raise ValueError("Unresolvable work dependency or release")
+        unknown = set(node["dependencies"]) - ids
+        if unknown:
+            raise ValueError(f"Work {node['node_id']} has unknown dependencies: {sorted(unknown)}")
+        if node["release"] not in releases:
+            raise ValueError(
+                f"Work {node['node_id']} requires release {node['release']!r} with no producer"
+            )
         if not set(node["deliverables"]) <= {"model", "memo", "note", "answer"}:
             raise ValueError("Unsupported artifact role in this domain template")
-    ready = set()
-    while True:
-        added = {node["node_id"] for node in nodes if set(node["dependencies"]) <= ready} - ready
-        if not added:
-            break
-        ready |= added
-    if ready != ids:
-        raise ValueError("Cyclic work dependencies")
-    for rule in workflow["event_rules"]:
-        if not set(rule["after_accepted"]) <= ids or not 1 <= rule["delay"] <= 100:
-            raise ValueError("Invalid event guard or delay")
+    for rule in rules:
+        unknown = set(rule["after_accepted"]) - ids
+        if unknown:
+            raise ValueError(
+                f"Event {rule['rule_id']} has unknown accepted-work guards: {sorted(unknown)}"
+            )
+        if not isinstance(rule["delay"], int) or not 1 <= rule["delay"] <= 100:
+            raise ValueError(f"Invalid event delay for {rule['rule_id']}: expected 1..100")
         if any(
             effect["kind"] not in {"publish_disclosure", "publish_scope", "revise_brief"}
             for effect in rule["effects"]
         ):
             raise ValueError("Unsupported event effect")
+
+    accepted, fired, released = _reachable_workflow(nodes, rules)
+    if accepted == ids and fired == set(rule_ids):
+        return
+    reasons = []
+    for node in nodes:
+        if node["node_id"] in accepted:
+            continue
+        waiting = []
+        if node["release"] not in released:
+            producers = sorted(
+                rule["rule_id"] for rule in rules if rule["release"] == node["release"]
+            )
+            waiting.append(f"release {node['release']!r} from events {producers}")
+        missing = set(node["dependencies"]) - accepted
+        if missing:
+            waiting.append(f"accepted dependencies {sorted(missing)}")
+        reasons.append(f"work {node['node_id']}: waiting for {' and '.join(waiting)}")
+    for rule in rules:
+        if rule["rule_id"] not in fired:
+            missing = sorted(set(rule["after_accepted"]) - accepted)
+            reasons.append(f"event {rule['rule_id']}: waiting for accepted work {missing}")
+    raise ValueError(
+        "Unreachable workflow from initial (Cyclic dependencies or release deadlock): "
+        + "; ".join(reasons)
+    )

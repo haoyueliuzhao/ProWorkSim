@@ -5,6 +5,8 @@ This is not an LLM experiment and its actions are not eligible target-model SFT.
 
 import json
 
+from .audience import witness_audience_content
+
 
 def _call(session, action, **kwargs):
     result = session.call(action, **kwargs)
@@ -13,29 +15,47 @@ def _call(session, action, **kwargs):
     return result["result"]
 
 
-def _scope(session, revision):
-    headers = _call(session, "mail_list")
-    for header in reversed(headers):
-        message = _call(session, "mail_read", message_id=header["message_id"])
-        body = message["body"]
-        if (
-            isinstance(body, dict)
-            and body.get("requirement_version") == revision
-            and "assumptions" in body
-        ):
-            return body
-    _call(session, "mail_send", to="manager", topic="scope", body="请确认当前期间和情景假设。")
+def _scope(session, work):
+    reference = work.get("required_basis")
+    if reference:
+        result = session.call("read_file", artifact_id="basis", version_id=reference["version_id"])
+        if result["ok"]:
+            basis = json.loads(result["result"]["content"])
+            if basis["requirement_version"] == work.get(
+                "basis_requirement_version", work["requirement_version"]
+            ):
+                return {**basis, "approved_basis": reference}
+    blocker = _call(
+        session,
+        "block_work",
+        work_item_id=work["work_item_id"],
+        kind="scope",
+        requested_role="manager",
+        required_scope_version=work.get("basis_requirement_version", work["requirement_version"]),
+        reason="缺少适用于本工作版本的批准依据",
+    )
+    _call(
+        session,
+        "mail_send",
+        to="manager",
+        topic="scope",
+        work_item_id=work["work_item_id"],
+        blocker_id=blocker["blocker_id"],
+        body="请提供适用于本工作和需求版本的批准依据凭据。",
+    )
     _call(session, "wait", ticks=2)
-    headers = _call(session, "mail_list")
-    for header in reversed(headers):
-        body = _call(session, "mail_read", message_id=header["message_id"])["body"]
-        if (
-            isinstance(body, dict)
-            and body.get("requirement_version") == revision
-            and "assumptions" in body
-        ):
-            return body
-    raise RuntimeError("No feasible scope response")
+    current = next(
+        w for w in _call(session, "work_list") if w["work_item_id"] == work["work_item_id"]
+    )
+    if not current.get("is_current", True) or current["status"] == "blocked":
+        return None
+    reference = current.get("required_basis")
+    if reference:
+        result = _call(
+            session, "read_file", artifact_id="basis", version_id=reference["version_id"]
+        )
+        return {**json.loads(result["content"]), "approved_basis": reference}
+    return None
 
 
 def sensitivity_formulas(assumptions, guide=None):
@@ -78,6 +98,12 @@ def run_baseline(session, inject_stale_memo=False, max_rounds=32):
     injected = False
     for _ in range(max_rounds):
         observation = session.observe()
+        if observation.get("terminal_reason"):
+            return {
+                "provider": "rule_based",
+                "complete": False,
+                "reason": observation["terminal_reason"],
+            }
         if observation["complete"]:
             return {
                 "provider": "rule_based",
@@ -88,14 +114,15 @@ def run_baseline(session, inject_stale_memo=False, max_rounds=32):
             (
                 w
                 for w in _call(session, "work_list")
-                if w["status"] not in ("accepted", "in_review")
+                if w["status"]
+                not in ("accepted", "in_review", "superseded", "cancelled", "waiting_dependencies")
+                and w.get("is_current", True)
             ),
             None,
         )
         if work is None:
             _call(session, "wait", ticks=2)
             continue
-        revision = work.get("scenario_revision", work["requirement_version"])
         source = _call(session, "read_file", artifact_id="financials")
         facts = json.loads(source["content"])["values"]
         if work["deliverables"] == ["answer"]:
@@ -129,8 +156,12 @@ def run_baseline(session, inject_stale_memo=False, max_rounds=32):
             )
         else:
             assumptions = None
+            mandate = None
             if "model" in work["deliverables"] or "memo" in work["deliverables"]:
-                assumptions = _scope(session, revision)["assumptions"]
+                mandate = _scope(session, work)
+                if mandate is None:
+                    continue
+                assumptions = mandate["assumptions"]
             if "model" in work["deliverables"]:
                 _call(session, "sheet_read")
                 cells = {
@@ -143,10 +174,16 @@ def run_baseline(session, inject_stale_memo=False, max_rounds=32):
                     "sheet_update",
                     cells=cells,
                     dependencies=[
-                        {"artifact_id": "financials", "version_id": source["version_id"]}
+                        {"artifact_id": "financials", "version_id": source["version_id"]},
+                        mandate["approved_basis"],
                     ],
                 )
             model = _call(session, "sheet_read")
+            current = next(
+                w for w in _call(session, "work_list") if w["work_item_id"] == work["work_item_id"]
+            )
+            if not current.get("is_current", True):
+                continue
             if "memo" in work["deliverables"]:
                 _call(session, "read_file", artifact_id="memo")
                 if inject_stale_memo and not injected:
@@ -200,6 +237,9 @@ def run_baseline(session, inject_stale_memo=False, max_rounds=32):
                 brief = _call(session, "read_file", artifact_id="brief")
                 note = {
                     "audience": json.loads(brief["content"])["audience"],
+                    "audience_content": witness_audience_content(
+                        json.loads(brief["content"])["audience"]
+                    ),
                     "share_price": model["sheets"][output_sheet][
                         guide["output_cells"]["share_price"]
                     ]["value"],

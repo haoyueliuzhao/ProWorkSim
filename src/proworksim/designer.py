@@ -23,6 +23,7 @@ def design(
     pool: str = "representative",
     topology: str = "chain",
     layout: str = "standard",
+    scenario: str = "standard",
 ) -> WorldSpec:
     if delivery not in DELIVERIES or information not in INFORMATION_MODES:
         raise ValueError("Unsupported delivery or information mode")
@@ -32,7 +33,49 @@ def design(
         raise ValueError("Unsupported layout")
     if topology == "coordination":
         information = "clarification"
-    workflow = make_workflow(delivery, topology)
+    if scenario not in (
+        "standard",
+        "basis_only",
+        "during_update",
+        "waiting_reply",
+        "during_review",
+        "unavailable",
+    ):
+        raise ValueError("Unknown lifecycle scenario")
+    if scenario != "standard" and (
+        delivery != "continuous" or topology not in ("chain", "coordination")
+    ):
+        raise ValueError("Lifecycle scenarios currently use the continuous chain configuration")
+    if scenario in ("waiting_reply", "unavailable"):
+        information = "clarification"
+    workflow = make_workflow(delivery, topology).public_spec()
+    lifecycle_events = []
+    if scenario == "basis_only":
+        workflow["event_rules"][0]["effects"] = [{"kind": "publish_scope", "revision": 2}]
+        workflow["nodes"][1].update(source_stage="current", source_version="v2")
+    elif scenario in ("during_update", "waiting_reply", "during_review", "unavailable"):
+        workflow["nodes"] = [workflow["nodes"][0]]
+        workflow["event_rules"] = []
+        if scenario != "unavailable":
+            action = {
+                "during_update": "sheet_update",
+                "waiting_reply": "mail_send",
+                "during_review": "submit",
+            }[scenario]
+            trigger = {"action": action, "actor_id": "analyst"}
+            if action != "sheet_update":
+                trigger["work_item_id"] = "work-1"
+            if action == "mail_send":
+                trigger["topic"] = "scope"
+            lifecycle_events = [
+                {
+                    "event_id": f"{scenario}-basis-change",
+                    "trigger": trigger,
+                    "delay": 0,
+                    "effect": {"kind": "revise_basis", "targets": ["work-1"], "growth_delta": 0.02},
+                }
+            ]
+
     layout_map = (
         LayoutMap(layout)
         if layout == "standard"
@@ -74,10 +117,12 @@ def design(
     }
     roles = (
         RoleSpec("client", "定义用途与需求变化", "client-events-v0.1"),
-        RoleSpec("manager", "分配工作、确认口径", "conditional-scope-v0.1"),
+        RoleSpec(
+            "manager", "分配工作、确认口径", "scoped-confirmation-v0.3", can_confirm_basis=True
+        ),
         RoleSpec("analyst", "发现证据、修改模型并交付", "external-policy", trainable=True),
         RoleSpec(
-            "reviewer", "审阅实际提交物并明确批准版本", "consistency-review-v0.1", can_approve=True
+            "reviewer", "审阅实际提交物并明确批准版本", "versioned-review-v0.3", can_approve=True
         ),
     )
     project = ProjectSpec(
@@ -89,7 +134,13 @@ def design(
         delivery=delivery,
         continuity=delivery == "continuous",
         pool=pool,
-        topology_id=topology,
+        topology_id="chain" if topology == "coordination" else topology,
+        configuration_id=topology,
+        work_graph_id="chain" if topology == "coordination" else topology,
+        scenario_id=scenario,
+        event_policy_id=scenario
+        if scenario != "standard"
+        else ("audience_only" if topology == "selective" else "disclosure_and_basis"),
         layout_id=layout,
         role_information_id=information,
         core_operations=("retrieve", "combine")
@@ -102,6 +153,8 @@ def design(
         seed=seed,
         facts=facts,
         assumptions=assumptions,
-        workflow=workflow.public_spec(),
+        workflow=workflow,
+        lifecycle_events=lifecycle_events,
+        unavailable_topics=("scope",) if scenario == "unavailable" else (),
         layout=layout_map.public(),
     )

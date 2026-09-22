@@ -9,6 +9,7 @@ from pathlib import Path
 from .contracts import CONTRACT_VERSION, EVALUATOR_VERSION, LEGACY_EVALUATOR_VERSION
 from .formula import ENGINE_VERSION
 from .storage import atomic_write, json_bytes, read_json
+from .lifecycle import current_work_items, blocked_terminal
 
 
 def code_identity():
@@ -43,6 +44,8 @@ def begin_run(world, backend, budget, protocol="full-observation-v1"):
         "schema_version": state["schema_version"],
         "contract_version": spec.get("contract_version", CONTRACT_VERSION),
         "evaluator_version": EVALUATOR_VERSION
+        if "basis" in state["artifacts"]
+        else "operating-toy-v0.2"
         if spec.get("workflow")
         else LEGACY_EVALUATOR_VERSION,
         "spreadsheet_engine_version": ENGINE_VERSION,
@@ -86,11 +89,11 @@ def episode_record(state):
     for evaluation in state["evaluations"]:
         latest[evaluation["work_item_id"], evaluation["submission_id"]] = evaluation
     finals = []
-    for work in state["work_items"].values():
+    for work in current_work_items(state):
         sub = work["submissions"][-1] if work["submissions"] else None
         finals.append(latest.get((work["work_item_id"], sub["submission_id"] if sub else None)))
     valid = bool(finals) and all(r and r["passed"] for r in finals)
-    accepted = all(w["status"] == "accepted" for w in state["work_items"].values())
+    accepted = all(w["status"] == "accepted" for w in current_work_items(state))
     return {
         "episode_id": state["branch_id"],
         "instance_id": state["instance_id"],
@@ -104,6 +107,12 @@ def episode_record(state):
         "work_items": state["work_items"],
         "evaluations": state["evaluations"],
         "artifact_valid": valid,
+        "world_outcome": "blocked_unavailable"
+        if blocked_terminal(state)
+        else "accepted"
+        if accepted
+        else "unfinished",
+        "archived_work_count": len(state["work_items"]) - len(current_work_items(state)),
         "business_accepted": accepted,
         "explanation_assessed": False,
         "trajectory_supervision_status": "outcome_conditioned_candidate"

@@ -13,6 +13,9 @@ from .contracts import (
     required_dependencies_match,
 )
 from .schema import EvaluationRecord
+from .basis import requirement_basis
+from .lifecycle import current_id
+from .audience import audience_content_defects
 from .layouts import SemanticSpreadsheet, layout_for
 from .storage import Store, digest, read_json
 
@@ -95,6 +98,12 @@ def evaluate_submission(
                 item.get("source_stage", "current" if revision == 1 else "future")
             ]
             assumptions = scope(spec, item.get("scenario_revision", revision))["assumptions"]
+            approved = None
+            if "basis" in state["artifacts"] and delivery != "short":
+                approved = requirement_basis(store, state, item)
+                check("approved_basis_applicable", approved is not None, "basis")
+                if approved:
+                    assumptions = approved["assumptions"]
             if delivery == "short":
                 model = SemanticSpreadsheet(
                     store.version_path(
@@ -152,6 +161,12 @@ def evaluate_submission(
                     {"artifact_id": "financials", "version_id": source_version} in deps,
                     "dependency",
                 )
+                if "basis" in state["artifacts"]:
+                    check(
+                        "model_basis_binding",
+                        approved is not None and item.get("required_basis") in deps,
+                        "basis",
+                    )
                 grid = assumptions["growth_grid"]
                 margins = assumptions["margin_delta_grid"]
                 for col, growth in zip("BC", grid):
@@ -262,6 +277,11 @@ def evaluate_submission(
                         "dependency",
                     )
                     check("note_audience", note.get("audience") == brief["audience"], "scope")
+                    if state["schema_version"] == "0.3":
+                        issues = audience_content_defects(
+                            note.get("audience_content"), brief["audience"]
+                        )
+                        check("note_audience_content", not issues, "scope", "; ".join(issues))
                     check(
                         "note_price",
                         close(note.get("share_price"), expected["share_price"]),
@@ -299,7 +319,11 @@ def evaluate_submission(
         reward=float(passed),
         checks=checks,
         uncertain=["解释的专业充分性及现实业务适用性尚未经专家评审。"],
-        evaluator_version=EVALUATOR_VERSION if spec.get("workflow") else LEGACY_EVALUATOR_VERSION,
+        evaluator_version=EVALUATOR_VERSION
+        if "basis" in state["artifacts"]
+        else "operating-toy-v0.2"
+        if spec.get("workflow")
+        else LEGACY_EVALUATOR_VERSION,
     )
     result = asdict(record)
     result["contract_version"] = spec.get("contract_version", LEGACY_CONTRACT_VERSION)
@@ -307,6 +331,46 @@ def evaluate_submission(
         "stored" if "contract_version" in spec else "inferred_from_original_public_guide"
     )
     result["artifact_valid"] = passed
+    result["currently_applicable"] = current_id(state, item["work_item_id"]) == item[
+        "work_item_id"
+    ] and not (submission and submission.get("invalidated"))
+    result["assessment_scope"] = "pinned_submission_against_its_requirement_version"
+    failed = [c for c in checks if not c["passed"]]
+    basis_errors = [c["name"] for c in failed if c["category"] == "basis"]
+    assumption_errors = [
+        c["name"]
+        for c in failed
+        if c["name"]
+        in {
+            f"input:{name}"
+            for name in (
+                "growth",
+                "margin_delta",
+                "tax_rate",
+                "earnings_multiple",
+                "net_debt",
+                "shares",
+            )
+        }
+    ]
+    result["root_causes"] = []
+    if basis_errors:
+        result["root_causes"].append(
+            {"code": "approved_basis_not_applicable_or_unbound", "evidence_checks": basis_errors}
+        )
+    elif assumption_errors:
+        result["root_causes"].append(
+            {"code": "approved_assumptions_not_applied", "evidence_checks": assumption_errors}
+        )
+    result["propagated_failures"] = [
+        c["name"]
+        for c in failed
+        if result["root_causes"]
+        and c["category"] in ("calculation", "consistency", "recalculability")
+    ]
+    result["diagnostic_interpretation"] = (
+        "Dependency-based grouping, not a claim about the worker's mental cause or independent capability deficits."
+    )
     result["business_accepted"] = bool(
         submission and (submission.get("review") or {}).get("decision") == "accepted"
     )

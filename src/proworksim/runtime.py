@@ -22,6 +22,9 @@ SYSTEM_PROMPT = """你是 ProWorkSim 中的执行分析师，承担当前可见�
 遵守当前任务交付范围：短回复不必写文件；文件任务不必写报告；连续项目需同步依赖成果。
 你没有隐藏评分器或未来材料的访问权。工具错误是可恢复的观察。遇到不可解决的缺口可 block_work。
 不要把专业假设写成已发生事实。解释应说明来源、期间、单位与不确定性。
+每项工作须采用适用的批准依据 basis；已可读的确认可直接使用，不必每轮询问。scope 是经理私有资料。
+缺信息时用 block_work 创建有类型/责任角色的阻塞，mail_send 绑定 work_item_id/blocker_id。
+旧回复可能不适用。需求修订后跟随当前工作及 required_basis，保留旧文件和批准历史；不可取得的信息应合理阻塞。
 """
 
 
@@ -217,6 +220,14 @@ def _run_loop(world, backend, max_turns, actor, progress, stop_when, run_id):
         _finish_tools(world, actor, messages, pending)
     for turn in range(max_turns):
         observation = world.observe(actor)
+        if observation.get("terminal_reason"):
+            return {
+                "provider": backend.provider,
+                "model": backend.model,
+                "complete": False,
+                "turns_this_run": turn,
+                "reason": observation["terminal_reason"],
+            }
         if observation["complete"] or (stop_when and stop_when(observation)):
             return {
                 "provider": backend.provider,

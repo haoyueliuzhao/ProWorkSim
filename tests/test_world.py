@@ -88,8 +88,24 @@ def test_acl_future_materials_and_local_knowledge(world_factory):
 
 def test_pending_clarification_survives_snapshot_and_branch(world_factory, tmp_path):
     world = world_factory(information="clarification")
-    call(world.session(), "block_work", work_item_id="work-1", reason="本轮假设尚未确认")
-    call(world.session(), "mail_send", to="manager", topic="scope", body="请确认口径")
+    blocked = call(
+        world.session(),
+        "block_work",
+        work_item_id="work-1",
+        reason="本轮假设尚未确认",
+        kind="scope",
+        requested_role="manager",
+        required_scope_version=1,
+    )
+    call(
+        world.session(),
+        "mail_send",
+        to="manager",
+        topic="scope",
+        body="请确认口径",
+        work_item_id="work-1",
+        blocker_id=blocked["blocker_id"],
+    )
     snapshot = world.snapshot(tmp_path / "snapshot")
     branch = World.restore(snapshot, tmp_path / "branch")
     resumed = World.restore(snapshot, tmp_path / "resumed", branch=False)

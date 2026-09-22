@@ -95,8 +95,15 @@ TOOLS = [
     ),
     _tool(
         "mail_send",
-        "Send simulated mail. Ask manager with topic=scope for approved assumptions; reply is asynchronous.",
-        {"to": TEXT, "body": TEXT, "topic": TEXT, "attachments": REFS},
+        "Send a request bound to work_item_id and optional blocker_id. scope uses manager, audience uses client. Replies can be old/unavailable; existing applicable basis may be reused without asking.",
+        {
+            "to": TEXT,
+            "body": TEXT,
+            "topic": TEXT,
+            "attachments": REFS,
+            "work_item_id": TEXT,
+            "blocker_id": TEXT,
+        },
         ["to", "body"],
     ),
     _tool(
@@ -106,7 +113,14 @@ TOOLS = [
     _tool(
         "block_work",
         "Record a concrete blocker and notify the simulated manager.",
-        {"work_item_id": TEXT, "reason": TEXT},
+        {
+            "work_item_id": TEXT,
+            "reason": TEXT,
+            "kind": {"type": "string", "enum": ["scope", "audience", "evidence"]},
+            "requested_role": TEXT,
+            "required_scope_version": {"type": "integer", "minimum": 1},
+            "request_id": TEXT,
+        },
         ["work_item_id", "reason"],
     ),
     _tool(
@@ -114,6 +128,12 @@ TOOLS = [
         "Submit current required artifact versions or a structured answer for business review.",
         {"work_item_id": TEXT, "answer": {"type": "object"}},
         ["work_item_id"],
+    ),
+    _tool(
+        "withdraw",
+        "Withdraw your own pending submission; preserves files and history, then permits resubmission.",
+        {"work_item_id": TEXT, "submission_id": TEXT, "reason": TEXT},
+        ["work_item_id", "submission_id", "reason"],
     ),
     _tool(
         "wait",

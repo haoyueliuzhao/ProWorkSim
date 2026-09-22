@@ -19,7 +19,7 @@ from .validation import evaluate
 
 
 def parser():
-    root = argparse.ArgumentParser(prog="proworksim", description="ProWorkSim v0.2 工作世界模拟器")
+    root = argparse.ArgumentParser(prog="proworksim", description="ProWorkSim v0.3 工作世界模拟器")
     commands = root.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="合成并编译一个独立世界")
     build.add_argument("destination")
@@ -31,6 +31,18 @@ def parser():
         "--topology", choices=("chain", "fork", "selective", "coordination"), default="chain"
     )
     build.add_argument("--layout", choices=("standard", "shifted"), default="standard")
+    build.add_argument(
+        "--scenario",
+        choices=(
+            "standard",
+            "basis_only",
+            "during_update",
+            "waiting_reply",
+            "during_review",
+            "unavailable",
+        ),
+        default="standard",
+    )
     run = commands.add_parser("run", help="运行或恢复目标工作人员")
     run.add_argument("world")
     run.add_argument("--provider", choices=("baseline", "deepseek"), default="baseline")
@@ -83,7 +95,12 @@ def parser():
 def execute(args):
     if args.command == "build":
         spec = design(
-            args.seed, args.delivery, args.information, topology=args.topology, layout=args.layout
+            args.seed,
+            args.delivery,
+            args.information,
+            topology=args.topology,
+            layout=args.layout,
+            scenario=args.scenario,
         )
         if args.workflow_spec:
             spec = replace(spec, workflow=read_json(Path(args.workflow_spec)))
@@ -165,7 +182,11 @@ def main(argv=None):
     else:
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return_code = 0
-        if args.command == "run" and not result.get("complete"):
+        if (
+            args.command == "run"
+            and not result.get("complete")
+            and result.get("reason") != "blocked_unavailable"
+        ):
             return_code = 1
         if args.command == "act" and not result.get("ok"):
             return_code = 1
@@ -174,7 +195,8 @@ def main(argv=None):
         if args.command == "evaluate":
             latest = {}
             for row in result["evaluations"]:
-                latest[row["work_item_id"]] = row
+                if row.get("currently_applicable", True):
+                    latest[row["work_item_id"]] = row
             if not all(row["passed"] for row in latest.values()):
                 return_code = 1
     if return_code:

@@ -4,8 +4,8 @@ from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from typing import Any
 
-SCHEMA_VERSION = "0.2"
-SUPPORTED_SCHEMA_VERSIONS = ("0.1", SCHEMA_VERSION)
+SCHEMA_VERSION = "0.3"
+SUPPORTED_SCHEMA_VERSIONS = ("0.1", "0.2", SCHEMA_VERSION)
 
 
 class Status(StrEnum):
@@ -15,6 +15,9 @@ class Status(StrEnum):
     IN_REVIEW = "in_review"
     REVISION_REQUIRED = "revision_required"
     ACCEPTED = "accepted"
+    SUPERSEDED = "superseded"
+    CANCELLED = "cancelled"
+    WAITING_DEPENDENCIES = "waiting_dependencies"
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,7 @@ class RoleSpec:
     policy: str
     trainable: bool = False
     can_approve: bool = False
+    can_confirm_basis: bool = False
 
 
 @dataclass(frozen=True)
@@ -44,7 +48,11 @@ class ProjectSpec:
     topology_id: str = "chain"
     layout_id: str = "standard"
     role_information_id: str = "mail"
-    scenario_id: str = "operating-update"
+    scenario_id: str = "standard"
+    configuration_id: str = "chain"
+    work_graph_id: str = "chain"
+    event_policy_id: str = "disclosure_and_basis"
+    error_injection_id: str = "none"
 
 
 @dataclass(frozen=True)
@@ -58,6 +66,8 @@ class WorldSpec:
     provenance: str = "fully_synthetic"
     workflow: dict | None = None
     layout: dict = field(default_factory=dict)
+    lifecycle_events: list[dict] = field(default_factory=list)
+    unavailable_topics: tuple[str, ...] = ()
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -79,6 +89,7 @@ class WorkItem:
     status: str = Status.OPEN
     submissions: list[dict] = field(default_factory=list)
     blocker: str | None = None
+    blocker_ids: list[str] = field(default_factory=list)
 
     def public(self) -> dict:
         return {k: v for k, v in asdict(self).items() if k != "acceptance_spec_ref"}

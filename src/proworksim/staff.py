@@ -8,6 +8,7 @@ import json
 import math
 
 from .compiler import OUTPUT_CELLS
+from .audience import audience_content_defects
 from .layouts import SemanticSpreadsheet, LayoutMap
 
 
@@ -53,6 +54,12 @@ def review_submission(read_version, submission: dict, item: dict, layout=None) -
                 defects.append("请说明情景假设及变化原因。")
         if "note" in item["deliverables"]:
             note = json.loads(read_version("note", submission["artifact_versions"]["note"]))
+            brief_version = submission["context_versions"]["brief"]
+            brief = json.loads(read_version("brief", brief_version))
+            if "audience_requirement" in brief:
+                defects.extend(
+                    audience_content_defects(note.get("audience_content"), brief["audience"])
+                )
             if note.get("source_versions", {}).get("model") != model_version:
                 defects.append("情景说明仍引用旧模型版本。")
             if not math.isclose(

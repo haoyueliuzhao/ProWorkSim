@@ -9,8 +9,11 @@ from openpyxl import Workbook
 
 from .contracts import CONTRACT_VERSION, ArtifactContract, artifact_contracts, citation_contract
 from .layouts import SemanticSpreadsheet, layout_for
+from .basis import issue_basis
+from .audience import audience_requirement, public_audience_requirements
 from .renderers.xlsx import relocate
-from .workflow import configure, activate_ready
+from .workflow import configure, activate_ready, validate_workflow, make_workflow
+from .lifecycle import validate_lifecycle_policies
 from .schema import SCHEMA_VERSION, WorkItem, WorldSpec
 from .spreadsheet import Spreadsheet
 from .storage import Store, atomic_write, json_bytes
@@ -92,7 +95,7 @@ def work_item(spec: dict, revision: int, origin: str) -> dict:
             "从 financials 获取本期收入和经营利润率，从历史邮件或负责人澄清获取 scope。",
             "更新 model 的 Inputs 并保留可重算公式；Sensitivity!B2:C3 为股价结果公式。",
             "Sensitivity!B1:C1 为 growth_grid，A2:A3 为 margin_delta_grid；所有结果引用模型输入。",
-            "写入时用 dependencies 记录实际使用的材料版本，提交 model。",
+            "写入时用 dependencies 记录 financials 和适用的 basis 版本；有可用确认可直接采用，不必重复请求。",
         ]
         deliverables = ["model"]
         if delivery == "continuous":
@@ -150,6 +153,9 @@ def create_workbook(spec: dict) -> bytes:
 
 
 def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
+    workflow = spec.workflow or make_workflow(spec.project.delivery).public_spec()
+    validate_workflow(workflow)
+    validate_lifecycle_policies(spec.lifecycle_events, workflow)
     root = Path(destination).resolve()
     if root.exists() and any(root.iterdir()):
         raise ValueError(f"Destination must be empty: {root}")
@@ -177,6 +183,13 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         "interactions": [],
         "evaluations": [],
         "calls": [],
+        "blockers": {},
+        "requests": {},
+        "work_replacements": {},
+        "basis_by_scenario": {},
+        "basis_approvals": [],
+        "lifecycle_events": raw_spec.get("lifecycle_events", []),
+        "unavailable_topics": raw_spec.get("unavailable_topics", []),
         "knowledge": {r.role_id: {"read_artifacts": [], "read_messages": []} for r in spec.roles},
         "staff_policies": {r.role_id: r.policy for r in spec.roles if not r.trainable},
     }
@@ -203,11 +216,35 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         json_bytes(disclosure(raw_spec, "old", -5)),
         "client",
     )
+    state["artifacts"]["basis"] = {
+        "artifact_id": "basis",
+        "filename": "approvals/analytical_basis.json",
+        "owner": "manager",
+        "readers": ["manager", "reviewer"],
+        "writers": [],
+        "versions": {},
+        "version_readers": {},
+        "current_version": None,
+        "possibly_stale": False,
+    }
+    issue_basis(
+        store,
+        state,
+        {**spec.assumptions, "growth": 0.02, "margin_delta": 0},
+        spec.facts["old"]["period"],
+        0,
+        ["historical"],
+        0,
+        public=True,
+    )
     add(
         "model",
         "artifacts/operating_model.xlsx",
         create_workbook(raw_spec),
-        deps=[{"artifact_id": "financials", "version_id": "v1"}],
+        deps=[
+            {"artifact_id": "financials", "version_id": "v1"},
+            {"artifact_id": "basis", "version_id": "v1"},
+        ],
     )
     initial_sheet = SemanticSpreadsheet(store.content(state["artifacts"]["model"]), layout)
     add(
@@ -245,7 +282,13 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         add(
             "brief",
             "policies/audience_brief.json",
-            json_bytes({"audience": "internal_management", "synthetic": True}),
+            json_bytes(
+                {
+                    "audience": "internal_management",
+                    "synthetic": True,
+                    "audience_requirement": audience_requirement("internal_management").public(),
+                }
+            ),
             "client",
         )
         add(
@@ -286,12 +329,19 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
             for kind in ("short", "memo")
         },
         "artifact_contracts": state["artifact_contracts"],
+        "audience_requirements": public_audience_requirements(),
+        "approved_basis": {
+            "artifact_id": "basis",
+            "adoption": "model dependencies must explicitly bind the approved version applicable to this work and requirement",
+            "discovery": "Read an available confirmation; ask manager only if unavailable or inapplicable. scope is private.",
+        },
         "note_schema": {
             "audience": "current brief audience",
             "share_price": "model share_price",
             "sensitivity": "mapping B2,C2,B3,C3 to current model sensitivity values",
             "source_versions": {"model": "version_id", "brief": "version_id"},
             "explanation": "describe audience and scenario assumptions",
+            "audience_content": "required fields in current brief.audience_requirement",
         },
         "memo_schema": {
             "period": "source period",
@@ -310,13 +360,36 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         },
         "tools": "Use artifact IDs, not filesystem paths. read_file for text, sheet_read for XLSX.",
         "formula_subset": "Arithmetic + - * / ^, sheet references, SUM MIN MAX ABS ROUND, ranges.",
-        "communications": "mail_send(to='manager', topic='scope', body=...) requests current approved assumptions.",
+        "communications": "mail_send(to='manager', topic='scope', work_item_id=..., blocker_id=..., body=...) requests a work/version-bound confirmation. Replies can be old or unavailable; verify applicability.",
         "submission": "submit(work_item_id, answer={...}) pins required artifact versions; wait for review.",
     }
     add("guide", "policies/working_guide.json", json_bytes(guide), "manager")
     state["clock"] = 0
     store.put(state, "financials", json_bytes(disclosure(raw_spec, "current", 0)), "client")
+    current_basis = None
+    if "scope" not in state["unavailable_topics"]:
+        current_basis = issue_basis(
+            store,
+            state,
+            spec.assumptions,
+            spec.facts["current"]["period"],
+            1,
+            [n["node_id"] for n in state["workflow"]["nodes"] if n["scenario_revision"] == 1],
+            1,
+            public=spec.project.information_access == "mail",
+        )
     activate_ready(state, raw_spec, "disclosure-arrival-1")
+    for rule in state["workflow"]["event_rules"]:
+        if not rule["after_accepted"]:
+            state["fired_rules"].append(rule["rule_id"])
+            state["events"].append(
+                {
+                    "event_id": uuid.uuid4().hex,
+                    "kind": "apply_rule",
+                    "at": state["clock"] + rule["delay"],
+                    "payload": {"rule_id": rule["rule_id"]},
+                }
+            )
     state["event_history"].append(
         {
             "event_id": "disclosure-arrival-1",
@@ -337,16 +410,24 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
             "attachments": [{"artifact_id": "financials", "version_id": "v2"}],
         }
     )
-    if spec.project.information_access == "mail":
+    if spec.project.information_access == "mail" and current_basis:
         state["messages"].append(
             {
                 "message_id": "mail-2",
                 "sender": "manager",
                 "recipients": ["analyst", "reviewer"],
-                "at": -1,
+                "at": 0,
                 "subject": "已确认的 scope / 情景假设",
-                "body": scope(raw_spec),
-                "attachments": [],
+                "body": {
+                    **current_basis,
+                    "approved_basis": {
+                        "artifact_id": "basis",
+                        "version_id": current_basis["version_id"],
+                    },
+                },
+                "attachments": [
+                    {"artifact_id": "basis", "version_id": current_basis["version_id"]}
+                ],
             }
         )
     atomic_write(store.control / "spec.json", json_bytes(raw_spec))

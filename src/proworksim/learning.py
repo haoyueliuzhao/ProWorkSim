@@ -34,11 +34,15 @@ def _verified_intervals(state):
         if row["action"] == "submit" and row["output"].get("ok")
     }
     for item in state["work_items"].values():
-        lower = 0
+        lower = item.get("activated_at", 0)
         # A later requirement may use earlier work as context, but not duplicate its targets.
         if item["dependencies"]:
-            previous = state["work_items"][item["dependencies"][-1]]
-            lower = max((s.get("review") or {}).get("at", s["at"]) for s in previous["submissions"])
+            previous_times = [
+                (s.get("review") or {}).get("at", s["at"])
+                for dep in item["dependencies"]
+                for s in state["work_items"][dep]["submissions"]
+            ]
+            lower = max([lower, *previous_times])
         for sub in item["submissions"]:
             evaluation = evals.get(sub["submission_id"])
             upper = action_times.get(sub["submission_id"], sub["at"])

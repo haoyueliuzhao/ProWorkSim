@@ -3,6 +3,9 @@
 import json
 
 from .compiler import disclosure, scope
+from .basis import issue_basis
+from .audience import audience_requirement
+from .lifecycle import current_item
 from .storage import json_bytes, read_json
 from .workflow import activate_ready, configure
 
@@ -19,7 +22,7 @@ def apply_rule(world, event):
         raise ValueError("Unsupported event effect")
     # Guard again at application time; activation is based on committed business state.
     if not all(
-        state["work_items"].get(node, {}).get("status") == "accepted"
+        (current_item(state, node) or {}).get("status") == "accepted"
         for node in rule["after_accepted"]
     ):
         raise ValueError("Event preconditions are not satisfied")
@@ -30,12 +33,35 @@ def apply_rule(world, event):
         elif effect["kind"] == "publish_scope":
             aid, actor = "scope", "manager"
             body = scope(spec, effect["revision"])
+            body["source_period"] = json.loads(
+                world.store.content(state["artifacts"]["financials"])
+            )["period"]
         else:
             aid, actor = "brief", "client"
             body = json.loads(world.store.content(state["artifacts"][aid]))
             body["audience"] = effect["audience"]
+            body["audience_requirement"] = audience_requirement(effect["audience"]).public()
         before = state["artifacts"][aid]["current_version"]
         version = world.store.put(state, aid, json_bytes(body), actor)
+        if aid == "scope" and "basis" in state["artifacts"]:
+            basis = issue_basis(
+                world.store,
+                state,
+                body["assumptions"],
+                body["source_period"],
+                effect["revision"],
+                [
+                    n["node_id"]
+                    for n in state["workflow"]["nodes"]
+                    if n["scenario_revision"] == effect["revision"]
+                ],
+                effect["revision"],
+                public=state["project"]["information_access"] == "mail",
+            )
+            body = {
+                **basis,
+                "approved_basis": {"artifact_id": "basis", "version_id": basis["version_id"]},
+            }
         world._staff_record(
             actor,
             effect["kind"],
@@ -53,5 +79,6 @@ def apply_rule(world, event):
             )
         elif state["project"]["information_access"] == "mail":
             world._message("manager", ["analyst", "reviewer"], "已确认的新版 scope", body)
-    state["released_groups"].append(rule["release"])
+    if rule["release"] not in state["released_groups"]:
+        state["released_groups"].append(rule["release"])
     activate_ready(state, spec, event["event_id"])

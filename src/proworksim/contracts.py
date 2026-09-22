@@ -2,11 +2,11 @@
 
 from dataclasses import asdict, dataclass, field
 
-CONTRACT_VERSION = "operating-toy-v0.2"
+CONTRACT_VERSION = "operating-world-v0.3"
 LEGACY_CONTRACT_VERSION = "operating-toy-v0.1"
-EVALUATOR_VERSION = "operating-toy-v0.2"
+EVALUATOR_VERSION = "operating-world-v0.3"
 LEGACY_EVALUATOR_VERSION = "finance-v0.1.2"
-CURRENT_EVALUATORS = (EVALUATOR_VERSION, LEGACY_EVALUATOR_VERSION)
+CURRENT_EVALUATORS = (EVALUATOR_VERSION, "operating-toy-v0.2", LEGACY_EVALUATOR_VERSION)
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ def citation_contract(kind, output_locations=None):
 
 def artifact_contracts():
     return {
-        "model": ArtifactContract("model", ("financials",)).public(),
+        "model": ArtifactContract("model", ("financials", "basis")).public(),
         "memo": ArtifactContract(
             "memo", ("financials", "model"), "source_versions", "source_period"
         ).public(),
