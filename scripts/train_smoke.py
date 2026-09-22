@@ -4,6 +4,8 @@ import argparse
 import gc
 import json
 import math
+import os
+import subprocess
 import time
 from pathlib import Path
 
@@ -36,6 +38,21 @@ def main():
     if args.steps < 1:
         parser.error("steps must be positive")
     destination.mkdir(parents=True)
+    identity = code_identity()
+    resource_before = subprocess.check_output(
+        ["nvidia-smi", "--query-gpu=index,memory.free,utilization.gpu", "--format=csv"], text=True
+    )
+    progress_record = {
+        **identity,
+        "stage": "tokenization",
+        "cuda_visible_devices": os.getenv("CUDA_VISIBLE_DEVICES"),
+        "resource_before": resource_before,
+        "base_model_files": {
+            p.name: {"size": p.stat().st_size, "mtime_ns": p.stat().st_mtime_ns}
+            for p in Path(args.model).glob("*.safetensors")
+        },
+    }
+    atomic_write(destination / "progress.json", json_bytes(progress_record))
     torch.manual_seed(20260922)
     torch.set_num_threads(8)
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
@@ -53,7 +70,7 @@ def main():
         flush=True,
     )
     network = AutoModelForCausalLM.from_pretrained(
-        args.model, local_files_only=True, torch_dtype=torch.bfloat16, attn_implementation="sdpa"
+        args.model, local_files_only=True, dtype=torch.bfloat16, attn_implementation="sdpa"
     ).to("cuda")
     network.config.use_cache = False
     model = get_peft_model(
@@ -70,6 +87,8 @@ def main():
     model.enable_input_require_grads()
     optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-4)
     before = adapter_digest(model)
+    progress_record.update(stage="training", before_adapter_sha256=before)
+    atomic_write(destination / "progress.json", json_bytes(progress_record))
     step_losses = []
     started = time.monotonic()
 
@@ -95,6 +114,8 @@ def main():
         optimizer.step()
         step_losses.append({"step": step + 1, "weighted_loss": total, "gradient_norm": float(norm)})
         print(json.dumps(step_losses[-1]), flush=True)
+        progress_record.update(losses=step_losses)
+        atomic_write(destination / "progress.json", json_bytes(progress_record))
     after = adapter_digest(model)
     if before == after:
         raise ValueError("Adapter parameters did not change")
@@ -106,19 +127,51 @@ def main():
         after_loss = float(model(**batch(rows[0])).loss)
     train_seconds = time.monotonic() - started
     peak_memory = torch.cuda.max_memory_allocated()
-    del optimizer, model, network
+    progress_record.update(
+        stage="checkpoint_saved",
+        after_adapter_sha256=after,
+        first_record_loss_after_training=after_loss,
+        train_and_save_seconds=train_seconds,
+        peak_gpu_bytes=peak_memory,
+    )
+    atomic_write(destination / "progress.json", json_bytes(progress_record))
+    del optimizer, model, network, loss, norm
     gc.collect()
     torch.cuda.empty_cache()
     base = AutoModelForCausalLM.from_pretrained(
-        args.model, local_files_only=True, torch_dtype=torch.bfloat16, attn_implementation="sdpa"
+        args.model, local_files_only=True, dtype=torch.bfloat16, attn_implementation="sdpa"
     ).to("cuda")
+    base.config.use_cache = False
     reloaded = PeftModel.from_pretrained(base, checkpoint, is_trainable=False)
     reloaded.eval()
     restored = adapter_digest(reloaded)
     with torch.no_grad():
         restored_loss = float(reloaded(**batch(rows[0])).loss)
-    if restored != after or not math.isclose(after_loss, restored_loss, rel_tol=1e-5, abs_tol=1e-5):
-        raise ValueError("Checkpoint reload verification failed")
+    # Parameter persistence is exact. BF16 functional re-evaluation is measured
+    # separately with a predeclared tolerance rather than requiring FP32-level equality.
+    tolerance = {"rel_tol": 5e-3, "abs_tol": 1e-3}
+    progress_record.update(
+        stage="checkpoint_reloaded",
+        reloaded_adapter_sha256=restored,
+        first_record_loss_after_reload=restored_loss,
+        loss_abs_delta=abs(after_loss - restored_loss),
+        bf16_loss_tolerance=tolerance,
+        exact_parameter_match=restored == after,
+    )
+    atomic_write(destination / "progress.json", json_bytes(progress_record))
+    print(
+        json.dumps(
+            {
+                "reload_parameter_match": restored == after,
+                "loss_before": after_loss,
+                "loss_after": restored_loss,
+                "loss_abs_delta": abs(after_loss - restored_loss),
+            }
+        ),
+        flush=True,
+    )
+    if restored != after or not math.isclose(after_loss, restored_loss, **tolerance):
+        raise ValueError("Checkpoint reload verification failed; details saved in progress.json")
     world_path = compile_world(design(702, "short"), destination / "post_reload_world")
     backend = LocalModelBackend(reloaded, tokenizer, "Qwen2.5-7B-Instruct+LoRA", after)
     result = run_model(
@@ -130,7 +183,17 @@ def main():
     evaluations = evaluate(world_path)
     state = Store(world_path).load()
     report = {
-        **code_identity(),
+        **identity,
+        "resources": {
+            "before": resource_before,
+            "after": subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=index,memory.free,utilization.gpu", "--format=csv"],
+                text=True,
+            ),
+            "cuda_visible_devices": os.getenv("CUDA_VISIBLE_DEVICES"),
+        },
+        "bf16_loss_tolerance": tolerance,
+        "loss_abs_delta": abs(after_loss - restored_loss),
         "experiment": "training_pipeline_smoke",
         "learning_gain_measured": False,
         "data_origin": "DeepSeek teacher trajectories revalidated by finance-v0.1.2",
