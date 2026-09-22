@@ -333,4 +333,3 @@ class WorldRunner:
             state["branch_start_action"] = len(state["interactions"])
             Store(destination).save(state)
         return cls(destination)
-
