@@ -3,6 +3,8 @@
 import copy
 from pathlib import Path
 
+from .audit import episode_record
+from .contracts import EVALUATOR_VERSION, CURRENT_EVALUATORS
 from .kernel import World
 from .storage import Store, atomic_write, json_bytes
 from .validation import evaluate
@@ -21,7 +23,11 @@ def _jsonl(path, records):
 
 def _verified_intervals(state):
     intervals = []
-    evals = {r["submission_id"]: r for r in state["evaluations"] if r["submission_id"]}
+    evals = {
+        r["submission_id"]: r
+        for r in state["evaluations"]
+        if r["submission_id"] and r.get("evaluator_version") in CURRENT_EVALUATORS
+    }
     action_times = {
         row["output"].get("result", {}).get("submission_id"): row["logical_time"]
         for row in state["interactions"]
@@ -52,8 +58,13 @@ def compile_calls(state):
     actions = {row["action_id"]: row for row in state["interactions"]}
     intervals = _verified_intervals(state)
     sft, rl, candidates = [], [], []
+    evaluator_by_submission = {
+        r["submission_id"]: r["evaluator_version"]
+        for r in state["evaluations"]
+        if r.get("evaluator_version") in CURRENT_EVALUATORS
+    }
     for call in state["calls"]:
-        if call["actor_id"] != "analyst":
+        if call["actor_id"] != "analyst" or not call.get("response"):
             continue
         times = [actions[aid]["logical_time"] for aid in call["action_ids"] if aid in actions]
         source = next(
@@ -84,6 +95,10 @@ def compile_calls(state):
             "provider": call["provider"],
             "model": call["model_returned"] or call["model_requested"],
             "submission_id": source,
+            "supervision_status": "outcome_conditioned_candidate" if eligible else "excluded",
+            "explanation_assessed": False,
+            "professional_gold": False,
+            "evaluator_version": evaluator_by_submission.get(source, EVALUATOR_VERSION),
         }
         sample = {
             **common,
@@ -128,6 +143,7 @@ def export_bundle(root, destination):
     sft, rl, candidates = compile_calls(state)
     destination.mkdir(parents=True)
     _jsonl(destination / "calls.jsonl", state["calls"])
+    atomic_write(destination / "episode.json", json_bytes(episode_record(state)))
     _jsonl(destination / "interactions.jsonl", state["interactions"])
     _jsonl(destination / "evaluations.jsonl", state["evaluations"])
     _jsonl(destination / "sft.jsonl", sft)

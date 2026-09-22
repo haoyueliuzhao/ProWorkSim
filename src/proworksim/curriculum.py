@@ -10,7 +10,15 @@ def propose_quotas(records, total=24, representative_fraction=0.75):
         raise ValueError("Invalid curriculum budget")
     failures = Counter()
     excluded = Counter()
-    for row in records:
+    grouped = {}
+    for index, row in enumerate(records):
+        key = (
+            (row["episode_id"], row["work_item_id"])
+            if "episode_id" in row and "work_item_id" in row
+            else ("unidentified", index)
+        )
+        grouped[key] = row
+    for row in grouped.values():
         if row.get("split") != "dev":
             excluded["non_development"] += 1
             continue

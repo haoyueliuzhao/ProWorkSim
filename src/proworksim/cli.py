@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from .baseline import run_baseline
@@ -13,7 +14,7 @@ from .experiments import run_matrix
 from .kernel import World
 from .learning import export_bundle
 from .runtime import DeepSeekBackend, load_env, run_model
-from .storage import Store, atomic_write, json_bytes
+from .storage import Store, atomic_write, json_bytes, read_json
 from .validation import evaluate
 
 
@@ -22,9 +23,14 @@ def parser():
     commands = root.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="合成并编译一个独立世界")
     build.add_argument("destination")
+    build.add_argument("--workflow-spec", help="JSON WorkflowSpec，替换预设节点和事件规则")
     build.add_argument("--seed", type=int, default=1)
     build.add_argument("--delivery", choices=DELIVERIES, default="continuous")
     build.add_argument("--information", choices=INFORMATION_MODES, default="mail")
+    build.add_argument(
+        "--topology", choices=("chain", "fork", "selective", "coordination"), default="chain"
+    )
+    build.add_argument("--layout", choices=("standard", "shifted"), default="standard")
     run = commands.add_parser("run", help="运行或恢复目标工作人员")
     run.add_argument("world")
     run.add_argument("--provider", choices=("baseline", "deepseek"), default="baseline")
@@ -76,7 +82,12 @@ def parser():
 
 def execute(args):
     if args.command == "build":
-        path = compile_world(design(args.seed, args.delivery, args.information), args.destination)
+        spec = design(
+            args.seed, args.delivery, args.information, topology=args.topology, layout=args.layout
+        )
+        if args.workflow_spec:
+            spec = replace(spec, workflow=read_json(Path(args.workflow_spec)))
+        path = compile_world(spec, args.destination)
         return {"world": str(path), "observation": World(path).observe()}
     if args.command == "run":
         world = World(args.world)
@@ -128,8 +139,11 @@ def execute(args):
             state = Store(path).load()
             latest = {}
             for row in state["evaluations"]:
-                latest[(row["work_item_id"], row["submission_id"])] = row
-            rows += [{**row, "split": state["project"]["split"]} for row in latest.values()]
+                latest[row["work_item_id"]] = row
+            rows += [
+                {**row, "split": state["project"]["split"], "episode_id": state["branch_id"]}
+                for row in latest.values()
+            ]
         proposal = propose_quotas(rows, args.total)
         output = Path(args.output)
         if output.exists():

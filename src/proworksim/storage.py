@@ -8,6 +8,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from .freshness import refresh_freshness
+
 
 def json_bytes(value) -> bytes:
     return (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode()
@@ -98,22 +100,10 @@ class Store:
         }
         artifact["versions"][version_id] = version
         artifact["current_version"] = version_id
-        artifact["possibly_stale"] = False
         atomic_write(self.version_path(artifact, version_id), content)
         atomic_write(self.current_path(artifact), content)
-        # Propagate invalidation; never change dependent content or its input versions.
-        impacted = {artifact_id}
-        changed = True
-        while changed:
-            changed = False
-            for other_id, other in state["artifacts"].items():
-                if other_id in impacted or not other["current_version"]:
-                    continue
-                deps = other["versions"][other["current_version"]]["derived_from"]
-                if any(d["artifact_id"] in impacted for d in deps):
-                    other["possibly_stale"] = True
-                    impacted.add(other_id)
-                    changed = True
+        refresh_freshness(state)
+        version["freshness_at_creation"] = artifact["freshness"]
         return version
 
     def recover(self, state: dict):

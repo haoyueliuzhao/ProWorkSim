@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .audit import begin_run, finish_run
 from .kernel import World
 from .storage import json_bytes
 from .tools import TOOLS
@@ -72,7 +73,18 @@ class DeepSeekBackend:
         }
 
     def complete(self, request):
-        for attempt in range(3):
+        for index in range(3):
+            attempt = {
+                "attempt_id": uuid.uuid4().hex,
+                "attempt_index": index,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "status": "started",
+                "usage": None,
+                "http_status": None,
+            }
+            start = time.monotonic()
+            sink = getattr(self, "attempt_sink", lambda record: None)
+            sink(copy.deepcopy(attempt))
             http_request = urllib.request.Request(
                 self.base_url + "/chat/completions",
                 data=json_bytes(request),
@@ -82,24 +94,39 @@ class DeepSeekBackend:
                 },
                 method="POST",
             )
+            retry = False
             try:
                 with urllib.request.urlopen(http_request, timeout=self.timeout) as response:
+                    attempt["http_status"] = response.status
                     result = json.load(response)
                 if not result.get("choices"):
                     raise ValueError("Provider returned no choices")
+                attempt.update(status="success", usage=result.get("usage"))
                 return result
             except urllib.error.HTTPError as exc:
-                if exc.code in (429, 500, 502, 503, 504) and attempt < 2:
-                    time.sleep(2**attempt)
-                    continue
-                raise RuntimeError(
-                    f"DeepSeek HTTP {exc.code}; no credentials are recorded"
-                ) from None
+                attempt.update(status="http_error", http_status=exc.code)
+                retry = exc.code in (429, 500, 502, 503, 504) and index < 2
+                if not retry:
+                    raise RuntimeError(
+                        f"DeepSeek HTTP {exc.code}; no credentials are recorded"
+                    ) from None
             except (urllib.error.URLError, TimeoutError) as exc:
-                if attempt < 2:
-                    time.sleep(2**attempt)
-                    continue
-                raise RuntimeError(f"DeepSeek connection failed ({type(exc).__name__})") from None
+                attempt.update(
+                    status="timeout" if isinstance(exc, TimeoutError) else "connection_error"
+                )
+                retry = index < 2
+                if not retry:
+                    raise RuntimeError(
+                        f"DeepSeek connection failed ({type(exc).__name__})"
+                    ) from None
+            except Exception:
+                attempt["status"] = "invalid_response"
+                raise
+            finally:
+                attempt["wall_seconds"] = time.monotonic() - start
+                sink(copy.deepcopy(attempt))
+            if retry:
+                time.sleep(2**index)
         raise RuntimeError("Provider retry budget exhausted")
 
 
@@ -121,7 +148,7 @@ def _save_runtime(world, actor, messages, call=None):
 
 def _finish_tools(world, actor, messages, call):
     assistant = call["response"]["choices"][0]["message"]
-    replied = {m.get("tool_call_id") for m in messages if m["role"] == "tool"}
+    replied = set(call.get("completed_tool_call_ids", []))
     for candidate in assistant.get("tool_calls", []):
         candidate_id = candidate["id"]
         if candidate_id in replied:
@@ -142,6 +169,7 @@ def _finish_tools(world, actor, messages, call):
         if "action_id" in result:
             call["action_ids"].append(result["action_id"])
         call["tool_results"].append(result)
+        call.setdefault("completed_tool_call_ids", []).append(candidate_id)
         messages.append(
             {
                 "role": "tool",
@@ -154,9 +182,22 @@ def _finish_tools(world, actor, messages, call):
     _save_runtime(world, actor, messages, call)
 
 
-def run_model(world: World, backend, max_turns=80, actor="analyst", progress=None):
+def run_model(world: World, backend, max_turns=80, actor="analyst", progress=None, stop_when=None):
     if max_turns < 1:
         raise ValueError("max_turns must be positive")
+    manifest = begin_run(world, backend, {"max_turns": max_turns})
+    try:
+        result = _run_loop(
+            world, backend, max_turns, actor, progress, stop_when, manifest["run_id"]
+        )
+    except BaseException:
+        finish_run(world, manifest, "exception")
+        raise
+    finish_run(world, manifest, result.get("reason", "complete"))
+    return {**result, "run_id": manifest["run_id"]}
+
+
+def _run_loop(world, backend, max_turns, actor, progress, stop_when, run_id):
     state = world.store.load()
     saved = state.get("runtime", {}).get(actor)
     messages = (
@@ -168,7 +209,7 @@ def run_model(world: World, backend, max_turns=80, actor="analyst", progress=Non
         (
             c
             for c in reversed(state["calls"])
-            if c["actor_id"] == actor and not c.get("tools_complete")
+            if c["actor_id"] == actor and c.get("response") and not c.get("tools_complete")
         ),
         None,
     )
@@ -176,46 +217,78 @@ def run_model(world: World, backend, max_turns=80, actor="analyst", progress=Non
         _finish_tools(world, actor, messages, pending)
     for turn in range(max_turns):
         observation = world.observe(actor)
-        if observation["complete"]:
+        if observation["complete"] or (stop_when and stop_when(observation)):
             return {
                 "provider": backend.provider,
                 "model": backend.model,
-                "complete": True,
+                "complete": observation["complete"],
                 "turns_this_run": turn,
+                "reason": "complete" if observation["complete"] else "experiment_boundary",
             }
         messages.append({"role": "user", "content": json.dumps(observation, ensure_ascii=False)})
         request = backend.payload(copy.deepcopy(messages))
-        start = time.monotonic()
-        requested_at = datetime.now(timezone.utc).isoformat()
-        try:
-            response = backend.complete(request)
-        except Exception:
-            _save_runtime(world, actor, messages)
-            raise
-        assistant = response["choices"][0]["message"]
-        if assistant.get("role") != "assistant":
-            raise ValueError("Provider response must contain an assistant message")
         call = {
             "call_id": uuid.uuid4().hex,
+            "run_id": run_id,
             "actor_id": actor,
             "provider": backend.provider,
             "model_requested": backend.model,
-            "model_returned": response.get("model"),
+            "model_returned": None,
+            "policy_version": getattr(backend, "policy_version", backend.model),
             "instance_id": state["instance_id"],
             "branch_id": world.store.load()["branch_id"],
             "request": request,
-            "response": response,
-            "requested_at": requested_at,
-            "wall_seconds": time.monotonic() - start,
-            "usage": response.get("usage"),
-            "system_fingerprint": response.get("system_fingerprint"),
+            "response": None,
+            "status": "requested",
+            "attempts": [],
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+            "usage": None,
+            "system_fingerprint": None,
             "token_ids": None,
-            "token_logprobs": response["choices"][0].get("logprobs"),
+            "token_logprobs": None,
             "action_ids": [],
             "tool_results": [],
+            "completed_tool_call_ids": [],
             "tools_complete": False,
         }
-        # Preserve actual provider content, including reasoning_content if returned.
+        _save_runtime(world, actor, messages, call)
+
+        def persist_attempt(attempt):
+            old = next(
+                (a for a in call["attempts"] if a["attempt_id"] == attempt["attempt_id"]), None
+            )
+            if old is None:
+                call["attempts"].append(attempt)
+            else:
+                old.update(attempt)
+            _save_runtime(world, actor, messages, call)
+
+        backend.attempt_sink = persist_attempt
+        started = time.monotonic()
+        try:
+            response = backend.complete(request)
+            assistant = response["choices"][0]["message"]
+            if assistant.get("role") != "assistant":
+                raise ValueError("Provider response must contain an assistant message")
+        except Exception as exc:
+            call.update(
+                status="failed",
+                tools_complete=True,
+                error_type=type(exc).__name__,
+                wall_seconds=time.monotonic() - started,
+            )
+            _save_runtime(world, actor, messages, call)
+            raise
+        call.update(
+            response=response,
+            status="completed",
+            model_returned=response.get("model"),
+            wall_seconds=time.monotonic() - started,
+            usage=response.get("usage"),
+            system_fingerprint=response.get("system_fingerprint"),
+            token_ids=response.get("output_token_ids"),
+            token_logprobs=response["choices"][0].get("logprobs"),
+        )
         messages.append(copy.deepcopy(assistant))
         _save_runtime(world, actor, messages, call)
         _finish_tools(world, actor, messages, call)

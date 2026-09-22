@@ -5,8 +5,15 @@ import math
 from dataclasses import asdict
 
 from .compiler import INPUT_CELLS, OUTPUT_CELLS, scope
+from .contracts import (
+    LEGACY_CONTRACT_VERSION,
+    LEGACY_EVALUATOR_VERSION,
+    EVALUATOR_VERSION,
+    citation_contract,
+    required_dependencies_match,
+)
 from .schema import EvaluationRecord
-from .spreadsheet import Spreadsheet
+from .layouts import SemanticSpreadsheet, layout_for
 from .storage import Store, digest, read_json
 
 
@@ -41,41 +48,12 @@ def submission_bytes(store, state, submission, artifact_id):
     return store.version_path(artifact, version_id).read_bytes()
 
 
-def check_citations(
-    citations, expected_versions: dict, state: dict, store: Store, required=None
-) -> bool:
-    if not isinstance(citations, list) or not citations:
-        return False
-    cited = set()
-    for citation in citations:
-        if not isinstance(citation, dict):
-            return False
-        aid = citation.get("artifact_id")
-        version = citation.get("version_id")
-        location = citation.get("location")
-        if (
-            aid not in expected_versions
-            or version != expected_versions[aid]
-            or not isinstance(location, str)
-        ):
-            return False
-        if aid == "financials":
-            data = json.loads(store.version_path(state["artifacts"][aid], version).read_bytes())
-            if location not in {f"values.{k}" for k in data["values"]}:
-                return False
-        elif aid == "model":
-            if location not in {f"Outputs!{v}" for v in OUTPUT_CELLS.values()}:
-                return False
-        cited.add((aid, location))
-    if required is not None:
-        return set(required) <= cited
-    return set(expected_versions) <= {aid for aid, _ in cited}
-
-
 def evaluate_submission(
     store: Store, state: dict, spec: dict, item: dict, submission: dict | None
 ) -> dict:
     checks = []
+    layout = layout_for(spec)
+    output_locations = [layout.address(f"Outputs!{v}") for v in OUTPUT_CELLS.values()]
 
     def check(name, condition, category, detail=""):
         checks.append(
@@ -111,15 +89,18 @@ def evaluate_submission(
             )
         try:
             revision = item["requirement_version"]
-            source_version = f"v{revision + 1}"
+            source_version = item.get("source_version", f"v{revision + 1}")
             delivery = state["project"]["delivery"]
-            facts = spec["facts"]["current" if revision == 1 else "future"]
-            assumptions = scope(spec, revision)["assumptions"]
+            facts = spec["facts"][
+                item.get("source_stage", "current" if revision == 1 else "future")
+            ]
+            assumptions = scope(spec, item.get("scenario_revision", revision))["assumptions"]
             if delivery == "short":
-                model = Spreadsheet(
+                model = SemanticSpreadsheet(
                     store.version_path(
                         state["artifacts"]["model"], submission["context_versions"]["model"]
-                    ).read_bytes()
+                    ).read_bytes(),
+                    layout,
                 )
                 answer = submission["answer"]
                 expected = round(model.value("Outputs!B6") / facts["diluted_eps"], 2)
@@ -131,15 +112,12 @@ def evaluate_submission(
                 check(
                     "answer_citations",
                     isinstance(answer, dict)
-                    and check_citations(
+                    and citation_contract("short", output_locations).validate(
                         answer.get("citations"),
                         {
                             "financials": source_version,
                             "model": submission["context_versions"]["model"],
                         },
-                        state,
-                        store,
-                        required=[("model", "Outputs!B6"), ("financials", "values.diluted_eps")],
                     ),
                     "provenance",
                 )
@@ -149,8 +127,11 @@ def evaluate_submission(
                     "scope",
                 )
             else:
-                content = submission_bytes(store, state, submission, "model")
-                model = Spreadsheet(content)
+                model_version = pinned.get("model", submission["context_versions"]["model"])
+                content = store.version_path(
+                    state["artifacts"]["model"], model_version
+                ).read_bytes()
+                model = SemanticSpreadsheet(content, layout)
                 inputs = {**facts, **assumptions}
                 for name, cell in INPUT_CELLS.items():
                     check(
@@ -165,7 +146,7 @@ def evaluate_submission(
                         close(model.value(f"Outputs!{cell}"), expected[name]),
                         "calculation",
                     )
-                deps = state["artifacts"]["model"]["versions"][pinned["model"]]["derived_from"]
+                deps = state["artifacts"]["model"]["versions"][model_version]["derived_from"]
                 check(
                     "model_source_version",
                     {"artifact_id": "financials", "version_id": source_version} in deps,
@@ -208,7 +189,7 @@ def evaluate_submission(
                     )
                 ):
                     perturbed = {**inputs, **change}
-                    probe = Spreadsheet(content)
+                    probe = SemanticSpreadsheet(content, layout)
                     probe.update({f"Inputs!{INPUT_CELLS[k]}": v for k, v in change.items()})
                     reference = financial_result(perturbed)
                     valid = all(
@@ -224,12 +205,26 @@ def evaluate_submission(
                                 probe.value(f"Sensitivity!{col}{row}"), value["share_price"]
                             )
                     check(f"recomputation_probe:{probe_index}", valid, "recalculability")
-                if delivery == "continuous":
+                if "memo" in item["deliverables"]:
                     memo = json.loads(submission_bytes(store, state, submission, "memo"))
                     check("memo_period", memo.get("period") == facts["period"], "period")
-                    versions = {"financials": source_version, "model": pinned["model"]}
+                    versions = {"financials": source_version, "model": model_version}
                     check(
                         "memo_bound_versions", memo.get("source_versions") == versions, "dependency"
+                    )
+                    metadata = state["artifacts"]["memo"]["versions"][pinned["memo"]]
+                    check(
+                        "memo_required_dependencies",
+                        required_dependencies_match(metadata["derived_from"], versions),
+                        "dependency",
+                    )
+                    check(
+                        "memo_dependency_body_agreement",
+                        required_dependencies_match(
+                            metadata["derived_from"], memo.get("source_versions", {})
+                        )
+                        and memo.get("source_versions") == versions,
+                        "dependency",
                     )
                     for name in OUTPUT_CELLS:
                         check(
@@ -239,12 +234,8 @@ def evaluate_submission(
                         )
                     check(
                         "memo_citations",
-                        check_citations(
-                            memo.get("citations"),
-                            versions,
-                            state,
-                            store,
-                            required=[("financials", "values.revenue")],
+                        citation_contract("memo", output_locations).validate(
+                            memo.get("citations"), versions
                         ),
                         "provenance",
                     )
@@ -253,6 +244,47 @@ def evaluate_submission(
                         isinstance(memo.get("explanation"), str)
                         and len(memo["explanation"].strip()) >= 20,
                         "explanation",
+                    )
+                if "note" in item["deliverables"]:
+                    note = json.loads(submission_bytes(store, state, submission, "note"))
+                    brief_version = submission["context_versions"]["brief"]
+                    brief = json.loads(
+                        store.version_path(state["artifacts"]["brief"], brief_version).read_bytes()
+                    )
+                    versions = {"model": model_version, "brief": brief_version}
+                    declared = state["artifacts"]["note"]["versions"][pinned["note"]][
+                        "derived_from"
+                    ]
+                    check("note_versions", note.get("source_versions") == versions, "dependency")
+                    check(
+                        "note_required_dependencies",
+                        required_dependencies_match(declared, versions),
+                        "dependency",
+                    )
+                    check("note_audience", note.get("audience") == brief["audience"], "scope")
+                    check(
+                        "note_price",
+                        close(note.get("share_price"), expected["share_price"]),
+                        "consistency",
+                    )
+                    for col, growth in zip("BC", grid):
+                        for row, delta in zip((2, 3), margins):
+                            value = financial_result(
+                                {**inputs, "growth": growth, "margin_delta": delta}
+                            )
+                            check(
+                                f"note_scenario:{col}{row}",
+                                close(
+                                    note.get("sensitivity", {}).get(f"{col}{row}"),
+                                    value["share_price"],
+                                ),
+                                "scenario",
+                            )
+                for aid, version in item.get("protected_versions", {}).items():
+                    check(
+                        f"unaffected_artifact_unchanged:{aid}",
+                        submission["context_versions"][aid] == version,
+                        "scope",
                     )
         except (KeyError, ValueError, TypeError, AttributeError, ArithmeticError) as exc:
             check("readable_required_artifacts", False, "artifact", str(exc))
@@ -267,9 +299,28 @@ def evaluate_submission(
         reward=float(passed),
         checks=checks,
         uncertain=["解释的专业充分性及现实业务适用性尚未经专家评审。"],
-        evaluator_version="finance-v0.1.1",
+        evaluator_version=EVALUATOR_VERSION if spec.get("workflow") else LEGACY_EVALUATOR_VERSION,
     )
-    return asdict(record)
+    result = asdict(record)
+    result["contract_version"] = spec.get("contract_version", LEGACY_CONTRACT_VERSION)
+    result["contract_origin"] = (
+        "stored" if "contract_version" in spec else "inferred_from_original_public_guide"
+    )
+    result["artifact_valid"] = passed
+    result["business_accepted"] = bool(
+        submission and (submission.get("review") or {}).get("decision") == "accepted"
+    )
+    result["explanation_assessed"] = False
+    result["supervision_status"] = (
+        "outcome_conditioned_candidate" if passed else "rejected_artifact"
+    )
+    result["verified_dependencies"] = {}
+    if passed and submission:
+        for aid, version in submission["artifact_versions"].items():
+            result["verified_dependencies"][aid] = state["artifacts"][aid]["versions"][version][
+                "derived_from"
+            ]
+    return result
 
 
 def evaluate(root, work_item_id: str | None = None) -> list[dict]:

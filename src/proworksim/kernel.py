@@ -8,8 +8,14 @@ import uuid
 from dataclasses import asdict
 from pathlib import Path
 
-from .compiler import disclosure, scope, work_item
-from .schema import InteractionRecord, SCHEMA_VERSION, Status, WorldSnapshot
+from .workflow import is_complete, on_accept
+from .schema import (
+    InteractionRecord,
+    SCHEMA_VERSION,
+    SUPPORTED_SCHEMA_VERSIONS,
+    Status,
+    WorldSnapshot,
+)
 from .spreadsheet import Spreadsheet, arithmetic
 from .staff import review_submission
 from .storage import Store, atomic_write, digest, json_bytes, read_json
@@ -24,7 +30,7 @@ class World:
         self.store = Store(root)
         with self.store.lock():
             self.state = self.store.load()
-            if self.state["schema_version"] != SCHEMA_VERSION:
+            if self.state["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
                 raise WorldError("Unsupported world schema")
             self.store.recover(self.state)
         self._reads = []
@@ -162,10 +168,7 @@ class World:
             }
 
     def _complete(self):
-        return (
-            all(item["status"] == Status.ACCEPTED for item in self.state["work_items"].values())
-            and not self.state["events"]
-        )
+        return is_complete(self.state)
 
     def act(self, actor, action, arguments=None, request_key=None):
         started = time.monotonic()
@@ -237,6 +240,7 @@ class World:
                 "filename": a["filename"],
                 "version_id": a["current_version"],
                 "possibly_stale": a["possibly_stale"],
+                "freshness": a.get("freshness", "unknown"),
             }
             for aid, a in self.state["artifacts"].items()
             if actor in a["readers"]
@@ -455,9 +459,7 @@ class World:
             metadata = self.state["artifacts"][aid]["versions"][version]
             metadata["review_status"] = "accepted"
             metadata["status"] = "submitted"
-        if self.state["project"]["continuity"] and item["requirement_version"] == 1:
-            if not any(e["kind"] == "requirement_change" for e in self.state["events"]):
-                self._event("requirement_change", {}, 2)
+        on_accept(self)
         return {
             "work_item_id": work_item_id,
             "submission_id": submission_id,
@@ -516,7 +518,10 @@ class World:
                     continue
                 self._reads = []
                 defects = review_submission(
-                    lambda aid, version: self._read("reviewer", aid, version), sub, item
+                    lambda aid, version: self._read("reviewer", aid, version),
+                    sub,
+                    item,
+                    self.state.get("layout"),
                 )
                 if defects:
                     sub["review"] = {
@@ -547,61 +552,10 @@ class World:
                     ],
                 )
                 self._staff_record("reviewer", "review", payload, result, self._reads)
-            elif event["kind"] == "requirement_change":
-                spec = read_json(self.store.control / "spec.json")
-                before = self.state["artifacts"]["financials"]["current_version"]
-                version = self.store.put(
-                    self.state,
-                    "financials",
-                    json_bytes(disclosure(spec, "future", self.state["clock"])),
-                    "client",
-                )
-                scope_before = self.state["artifacts"]["scope"]["current_version"]
-                scope_version = self.store.put(
-                    self.state, "scope", json_bytes(scope(spec, 2)), "manager"
-                )
-                self._staff_record(
-                    "manager",
-                    "scope_revision",
-                    {"requirement_version": 2},
-                    {"version_id": scope_version["version_id"]},
-                    writes=[
-                        {
-                            "artifact_id": "scope",
-                            "before": scope_before,
-                            "after": scope_version["version_id"],
-                        }
-                    ],
-                )
-                self.state["work_items"]["work-2"] = work_item(spec, 2, event["event_id"])
-                self._message(
-                    "client",
-                    ["analyst", "manager", "reviewer"],
-                    "修订披露到达",
-                    {
-                        "work_item_id": "work-2",
-                        "requirement_version": 2,
-                        "body": "新版披露与已批准情景发生变化，请保留历史交付并更新相关成果。",
-                    },
-                    [{"artifact_id": "financials", "version_id": version["version_id"]}],
-                )
-                if self.state["project"]["information_access"] == "mail":
-                    self._message(
-                        "manager", ["analyst", "reviewer"], "第二轮确认 scope", scope(spec, 2)
-                    )
-                self._staff_record(
-                    "client",
-                    "requirement_change",
-                    {},
-                    {"work_item_id": "work-2"},
-                    writes=[
-                        {
-                            "artifact_id": "financials",
-                            "before": before,
-                            "after": version["version_id"],
-                        }
-                    ],
-                )
+            elif event["kind"] in ("apply_rule", "requirement_change"):
+                from .events import apply_rule
+
+                apply_rule(self, event)
             self.state["event_history"].append({**event, "outcome": "applied"})
 
     def snapshot(self, destination):

@@ -4,7 +4,8 @@ from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from typing import Any
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"
+SUPPORTED_SCHEMA_VERSIONS = ("0.1", SCHEMA_VERSION)
 
 
 class Status(StrEnum):
@@ -38,6 +39,12 @@ class ProjectSpec:
     delivery: str = "continuous"
     continuity: bool = True
     pool: str = "representative"
+    source_family_id: str = "synthetic-operating-toy"
+    template_id: str = "operating-toy"
+    topology_id: str = "chain"
+    layout_id: str = "standard"
+    role_information_id: str = "mail"
+    scenario_id: str = "operating-update"
 
 
 @dataclass(frozen=True)
@@ -49,6 +56,8 @@ class WorldSpec:
     assumptions: dict[str, Any]
     schema_version: str = SCHEMA_VERSION
     provenance: str = "fully_synthetic"
+    workflow: dict | None = None
+    layout: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)

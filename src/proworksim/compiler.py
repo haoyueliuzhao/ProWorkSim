@@ -7,6 +7,10 @@ from pathlib import Path
 
 from openpyxl import Workbook
 
+from .contracts import CONTRACT_VERSION, ArtifactContract, artifact_contracts, citation_contract
+from .layouts import SemanticSpreadsheet, layout_for
+from .renderers.xlsx import relocate
+from .workflow import configure, activate_ready
 from .schema import SCHEMA_VERSION, WorkItem, WorldSpec
 from .spreadsheet import Spreadsheet
 from .storage import Store, atomic_write, json_bytes
@@ -99,6 +103,12 @@ def work_item(spec: dict, revision: int, origin: str) -> dict:
                 "接受第一轮后会收到修订披露与假设变化；继续处理新产生的工作义务。",
             ]
             deliverables.append("memo")
+    layout = layout_for(spec)
+    goal = goal.replace("Outputs!B6", layout.address("Outputs!B6"))
+    requirements = [
+        r.replace("Sensitivity", layout.sensitivity_sheet).replace("Inputs", layout.input_sheet)
+        for r in requirements
+    ]
     return asdict(
         WorkItem(
             project_id=project["project_id"],
@@ -133,6 +143,7 @@ def create_workbook(spec: dict) -> bytes:
         sheet.column_dimensions["A"].width = 36
         sheet.column_dimensions["B"].width = 22
         sheet.freeze_panes = "B2"
+    book = relocate(book, layout_for(spec))
     stream = io.BytesIO()
     book.save(stream)
     return Spreadsheet(stream.getvalue()).serialize()
@@ -146,8 +157,12 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
     store.control.mkdir(parents=True, exist_ok=True)
     store.workspace.mkdir(parents=True, exist_ok=True)
     raw_spec = spec.to_dict()
+    raw_spec["contract_version"] = CONTRACT_VERSION
+    layout = layout_for(raw_spec)
     state = {
         "schema_version": SCHEMA_VERSION,
+        "contract_version": CONTRACT_VERSION,
+        "artifact_contracts": artifact_contracts(),
         "instance_id": uuid.uuid4().hex,
         "branch_id": uuid.uuid4().hex,
         "parent_branch_id": None,
@@ -165,6 +180,9 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         "knowledge": {r.role_id: {"read_artifacts": [], "read_messages": []} for r in spec.roles},
         "staff_policies": {r.role_id: r.policy for r in spec.roles if not r.trainable},
     }
+
+    configure(state, raw_spec)
+    state["layout"] = layout.public()
 
     def add(artifact_id, filename, data, owner="analyst", readers=None, deps=None):
         state["artifacts"][artifact_id] = {
@@ -191,7 +209,7 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         create_workbook(raw_spec),
         deps=[{"artifact_id": "financials", "version_id": "v1"}],
     )
-    initial_sheet = Spreadsheet(store.content(state["artifacts"]["model"]))
+    initial_sheet = SemanticSpreadsheet(store.content(state["artifacts"]["model"]), layout)
     add(
         "memo",
         "artifacts/research_memo.json",
@@ -220,14 +238,60 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         "manager",
         readers=["manager", "reviewer"],
     )
+    if any("note" in node["deliverables"] for node in state["workflow"]["nodes"]):
+        state["artifact_contracts"]["note"] = ArtifactContract(
+            "note", ("model", "brief"), "source_versions"
+        ).public()
+        add(
+            "brief",
+            "policies/audience_brief.json",
+            json_bytes({"audience": "internal_management", "synthetic": True}),
+            "client",
+        )
+        add(
+            "note",
+            "artifacts/scenario_note.json",
+            json_bytes(
+                {
+                    "audience": "internal_management",
+                    "share_price": initial_sheet.value("Outputs!B6"),
+                    "sensitivity": {},
+                    "source_versions": {"model": "v1", "brief": "v1"},
+                    "explanation": "旧情景说明，尚待更新。",
+                }
+            ),
+            deps=[
+                {"artifact_id": "model", "version_id": "v1"},
+                {"artifact_id": "brief", "version_id": "v1"},
+            ],
+        )
     guide = {
         "synthetic": True,
-        "input_cells": INPUT_CELLS,
-        "output_cells": OUTPUT_CELLS,
+        "layout": layout.public(),
+        "input_cells": {
+            k: layout.address(f"Inputs!{v}").split("!")[1] for k, v in INPUT_CELLS.items()
+        },
+        "output_cells": {
+            k: layout.address(f"Outputs!{v}").split("!")[1] for k, v in OUTPUT_CELLS.items()
+        },
         "sensitivity": {
             "columns": "B1:C1 = growth_grid",
             "rows": "A2:A3 = margin_delta_grid",
             "results": "B2:C3 = share_price under the corresponding row/column assumptions",
+        },
+        "citation_requirements": {
+            kind: citation_contract(
+                kind, [layout.address(f"Outputs!{v}") for v in OUTPUT_CELLS.values()]
+            ).public()
+            for kind in ("short", "memo")
+        },
+        "artifact_contracts": state["artifact_contracts"],
+        "note_schema": {
+            "audience": "current brief audience",
+            "share_price": "model share_price",
+            "sensitivity": "mapping B2,C2,B3,C3 to current model sensitivity values",
+            "source_versions": {"model": "version_id", "brief": "version_id"},
+            "explanation": "describe audience and scenario assumptions",
         },
         "memo_schema": {
             "period": "source period",
@@ -237,7 +301,9 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
                 {
                     "artifact_id": "financials",
                     "version_id": "version_id",
-                    "location": "values.revenue or values.operating_margin",
+                    "location": " or ".join(
+                        loc for aid, loc in citation_contract("memo").required_any_of
+                    ),
                 }
             ],
             "explanation": "explain assumptions, direction of changes and uncertainty",
@@ -250,7 +316,7 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
     add("guide", "policies/working_guide.json", json_bytes(guide), "manager")
     state["clock"] = 0
     store.put(state, "financials", json_bytes(disclosure(raw_spec, "current", 0)), "client")
-    state["work_items"]["work-1"] = work_item(raw_spec, 1, "disclosure-arrival-1")
+    activate_ready(state, raw_spec, "disclosure-arrival-1")
     state["event_history"].append(
         {
             "event_id": "disclosure-arrival-1",
@@ -267,7 +333,7 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
             "recipients": ["analyst"],
             "at": 0,
             "subject": "项目交接",
-            "body": "请处理 work-1，阅读 guide 和历史材料。需要口径时可联系负责人。",
+            "body": "请处理当前工作列表，阅读 guide 和历史材料。需要口径时可联系负责人。",
             "attachments": [{"artifact_id": "financials", "version_id": "v2"}],
         }
     )

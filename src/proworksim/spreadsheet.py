@@ -14,12 +14,10 @@ import zipfile
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from openpyxl import load_workbook
-from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import range_boundaries
 
 
-class FormulaError(ValueError):
-    pass
+from .formula import FormulaError, evaluate_formula
 
 
 BINOPS = {
@@ -137,15 +135,7 @@ class Spreadsheet:
             return raw if raw is not None else 0
         self.active.add(key)
         try:
-            parts = []
-            for token in Tokenizer(raw).items:
-                if token.type == "OPERAND" and token.subtype == "RANGE":
-                    parts.append(f"REF({token.value!r})")
-                elif token.type == "OPERATOR-POSTFIX" and token.value == "%":
-                    parts.append("/100")
-                else:
-                    parts.append(token.value.replace("^", "**"))
-            value = arithmetic("".join(parts), resolver=lambda ref: self.value(ref, sheet))
+            value = evaluate_formula(raw, lambda ref: self.value(ref, sheet), FUNCTIONS)
             self.cache[key] = value
             return value
         finally:

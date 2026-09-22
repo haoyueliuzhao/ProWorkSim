@@ -8,10 +8,10 @@ import json
 import math
 
 from .compiler import OUTPUT_CELLS
-from .spreadsheet import Spreadsheet
+from .layouts import SemanticSpreadsheet, LayoutMap
 
 
-def review_submission(read_version, submission: dict, item: dict) -> list[str]:
+def review_submission(read_version, submission: dict, item: dict, layout=None) -> list[str]:
     defects = []
     if item["deliverables"] == ["answer"]:
         answer = submission.get("answer")
@@ -21,7 +21,12 @@ def review_submission(read_version, submission: dict, item: dict) -> list[str]:
             defects.append("请补充隐含股价与披露 EPS 的来源、版本和位置。")
         return defects
     try:
-        model = Spreadsheet(read_version("model", submission["artifact_versions"]["model"]))
+        model_version = submission["artifact_versions"].get(
+            "model", submission["context_versions"]["model"]
+        )
+        model = SemanticSpreadsheet(
+            read_version("model", model_version), LayoutMap(**(layout or {"layout_id": "standard"}))
+        )
         cells = model.read()
         errors = [
             f"{sheet}!{cell}"
@@ -31,14 +36,11 @@ def review_submission(read_version, submission: dict, item: dict) -> list[str]:
         ]
         if errors:
             defects.append("工作簿有不可计算的公式：" + ", ".join(errors[:8]))
-        if "Sensitivity" not in cells:
+        if model.layout.sensitivity_sheet not in cells:
             defects.append("缺少要求的 Sensitivity 敏感性分析表。")
         if "memo" in item["deliverables"]:
             memo = json.loads(read_version("memo", submission["artifact_versions"]["memo"]))
-            if (
-                memo.get("source_versions", {}).get("model")
-                != submission["artifact_versions"]["model"]
-            ):
+            if memo.get("source_versions", {}).get("model") != model_version:
                 defects.append("备忘录仍引用旧模型版本，请同步本次提交的 model 版本。")
             for name, address in OUTPUT_CELLS.items():
                 observed = memo.get("metrics", {}).get(name)
@@ -49,6 +51,16 @@ def review_submission(read_version, submission: dict, item: dict) -> list[str]:
                     defects.append(f"备忘录指标 {name} 与所提交工作簿不一致，请重算后同步。")
             if not memo.get("explanation"):
                 defects.append("请说明情景假设及变化原因。")
+        if "note" in item["deliverables"]:
+            note = json.loads(read_version("note", submission["artifact_versions"]["note"]))
+            if note.get("source_versions", {}).get("model") != model_version:
+                defects.append("情景说明仍引用旧模型版本。")
+            if not math.isclose(
+                float(note.get("share_price", float("nan"))),
+                model.value("Outputs!B6"),
+                rel_tol=1e-6,
+            ):
+                defects.append("情景说明的股价与提交模型不一致。")
     except (ValueError, KeyError, TypeError, AttributeError) as exc:
         defects.append(f"交付文件无法完成审阅：{exc}")
     return defects

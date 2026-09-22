@@ -4,6 +4,8 @@ import hashlib
 import random
 
 from .schema import ProjectSpec, RoleSpec, WorldSpec
+from .layouts import LayoutMap
+from .workflow import make_workflow
 
 DELIVERIES = ("short", "file", "continuous")
 INFORMATION_MODES = ("mail", "clarification")
@@ -19,11 +21,23 @@ def design(
     delivery: str = "continuous",
     information: str = "mail",
     pool: str = "representative",
+    topology: str = "chain",
+    layout: str = "standard",
 ) -> WorldSpec:
     if delivery not in DELIVERIES or information not in INFORMATION_MODES:
         raise ValueError("Unsupported delivery or information mode")
     if pool not in ("representative", "stress"):
         raise ValueError("Pool must be representative or stress")
+    if layout not in ("standard", "shifted"):
+        raise ValueError("Unsupported layout")
+    if topology == "coordination":
+        information = "clarification"
+    workflow = make_workflow(delivery, topology)
+    layout_map = (
+        LayoutMap(layout)
+        if layout == "standard"
+        else LayoutMap(layout, "Parameters", "Valuation", "Cases", "D", "E", 2, 3)
+    )
     rng = random.Random(seed)
     lineage = f"synthetic-operating-{seed}"
     revenue = rng.randrange(800, 2000, 10)
@@ -67,7 +81,7 @@ def design(
         ),
     )
     project = ProjectSpec(
-        project_id=f"project-{seed}-{delivery}-{information}",
+        project_id=f"project-{seed}-{delivery}-{information}-{topology}-{layout}",
         lineage_id=lineage,
         split=lineage_split(lineage),
         company=f"合成企业-{seed:04d}",
@@ -75,8 +89,19 @@ def design(
         delivery=delivery,
         continuity=delivery == "continuous",
         pool=pool,
+        topology_id=topology,
+        layout_id=layout,
+        role_information_id=information,
         core_operations=("retrieve", "combine")
         if delivery == "short"
         else ("retrieve", "recalculate", "compare", "modify"),
     )
-    return WorldSpec(project=project, roles=roles, seed=seed, facts=facts, assumptions=assumptions)
+    return WorldSpec(
+        project=project,
+        roles=roles,
+        seed=seed,
+        facts=facts,
+        assumptions=assumptions,
+        workflow=workflow.public_spec(),
+        layout=layout_map.public(),
+    )
