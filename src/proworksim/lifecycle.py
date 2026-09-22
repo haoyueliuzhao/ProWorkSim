@@ -219,6 +219,10 @@ def revise_basis(world, targets, growth_delta, reason):
         {"targets": targets, "reason": reason},
         {"replacements": replacements, "basis_version": basis["version_id"]},
     )
+    # Approval issuance precedes replacement creation; assess the final work scope.
+    from .freshness import refresh_freshness
+
+    refresh_freshness(state)
     return replacements
 
 

@@ -164,6 +164,10 @@ def activate_ready(state, spec, origin):
                 "本次只改 note；model 和 memo 不受此次受众变化影响，须保留其版本和内容。"
             )
         state["work_items"][node["node_id"]] = item
+    # Work-specific applicability is known only after activation has finished.
+    from .freshness import refresh_freshness
+
+    refresh_freshness(state)
 
 
 def on_accept(world):

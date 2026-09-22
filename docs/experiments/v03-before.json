@@ -1,0 +1,254 @@
+{
+  "experiment": "pre_revision_audit_reproduction",
+  "results": [
+    {
+      "case": "reachability",
+      "raw_source_path": "runs/world-audit-before/reachability.json",
+      "raw_source_sha256": "3a5470b46502ab1cb9410a0ab60088de78778aae2139f7ea5c8afd02e5ef9637",
+      "raw_source_bytes": 1003,
+      "audit_issue": "W1 work/release circular wait",
+      "method": "Direct call to unmodified validate_workflow; no world execution.",
+      "workflow": {
+        "topology_id": "audit-work-release-deadlock",
+        "nodes": [
+          {
+            "node_id": "A",
+            "deliverables": [
+              "model"
+            ],
+            "dependencies": [],
+            "release": "R",
+            "requirement_version": 1,
+            "scenario_revision": 1,
+            "source_stage": "current",
+            "source_version": "v2",
+            "protected_artifacts": [],
+            "owner_role": "analyst"
+          }
+        ],
+        "event_rules": [
+          {
+            "rule_id": "R",
+            "after_accepted": [
+              "A"
+            ],
+            "effects": [],
+            "release": "R",
+            "delay": 2
+          }
+        ]
+      },
+      "observed": {
+        "validator_accepted": true,
+        "exception": null
+      },
+      "expected": {
+        "validator_accepted": false
+      },
+      "explanation": "A requires release R; the sole producer of R requires accepted A. No initial work is reachable."
+    },
+    {
+      "case": "blockers",
+      "raw_source_path": "runs/world-audit-before/blockers.json",
+      "raw_source_sha256": "9c8feb2aaf32ebaa83c21c613bf62fd00d85660804c6c98cb033cc362872f138",
+      "raw_source_bytes": 5211,
+      "method": "original WorkerSession replay in generated fork workflow, initial model prepared by public-tool baseline until first submit",
+      "git_commit": "48429624692e7b36a5a56cebb415ab165d5a59ac",
+      "kernel_sha256": "3c4dab09299cd22846a9c797d5399458154f11639273ed6aafe692c9766a40b2",
+      "world": "runs/world-audit-before/blockers-world",
+      "before_reply": {
+        "model-1": {
+          "status": "accepted",
+          "blocker": null
+        },
+        "memo-1": {
+          "status": "blocked",
+          "blocker": "等待经理确认情景假设"
+        },
+        "note-1": {
+          "status": "blocked",
+          "blocker": "等待客户补充受众要求"
+        }
+      },
+      "after_reply": {
+        "model-1": {
+          "status": "accepted",
+          "blocker": null
+        },
+        "memo-1": {
+          "status": "open",
+          "blocker": null
+        },
+        "note-1": {
+          "status": "open",
+          "blocker": null
+        }
+      },
+      "reproduced": true,
+      "calls": [
+        {
+          "action": "submit",
+          "arguments": {
+            "work_item_id": "model-1"
+          },
+          "response": {
+            "ok": true,
+            "result": {
+              "submission_id": "model-1-submission-1",
+              "requirement_version": 1,
+              "actor_id": "analyst",
+              "artifact_versions": {
+                "model": "v2"
+              },
+              "answer": null,
+              "at": 14,
+              "context_versions": {
+                "financials": "v2",
+                "model": "v2",
+                "memo": "v1",
+                "brief": "v1",
+                "note": "v1",
+                "guide": "v1"
+              },
+              "review": null,
+              "invalidated": false
+            },
+            "action_id": "action-15",
+            "logical_time": 15
+          }
+        },
+        {
+          "action": "wait",
+          "arguments": {
+            "ticks": 2
+          },
+          "response": {
+            "ok": true,
+            "result": {
+              "advanced_ticks": 2
+            },
+            "action_id": "action-16",
+            "logical_time": 17
+          }
+        },
+        {
+          "action": "block_work",
+          "arguments": {
+            "work_item_id": "memo-1",
+            "reason": "等待经理确认情景假设"
+          },
+          "response": {
+            "ok": true,
+            "result": {
+              "project_id": "project-419-continuous-clarification-fork-standard",
+              "work_item_id": "memo-1",
+              "origin_event": "predecessor-accepted",
+              "owner_role": "analyst",
+              "goal": "将研究备忘录同步到已提交模型，维护实际依赖和证据引用。",
+              "visible_requirements": [
+                "阅读 guide、financials 和已更新 model，只提交 memo。",
+                "memo 的 source_versions 和写入 dependencies 必须绑定实际使用的 financials/model 版本。"
+              ],
+              "inputs": [
+                "financials",
+                "model",
+                "guide"
+              ],
+              "dependencies": [
+                "model-1"
+              ],
+              "deliverables": [
+                "memo"
+              ],
+              "requirement_version": 1,
+              "status": "blocked",
+              "submissions": [],
+              "blocker": "等待经理确认情景假设",
+              "scenario_revision": 1,
+              "source_stage": "current",
+              "source_version": "v2",
+              "protected_versions": {}
+            },
+            "action_id": "action-18",
+            "logical_time": 18
+          }
+        },
+        {
+          "action": "block_work",
+          "arguments": {
+            "work_item_id": "note-1",
+            "reason": "等待客户补充受众要求"
+          },
+          "response": {
+            "ok": true,
+            "result": {
+              "project_id": "project-419-continuous-clarification-fork-standard",
+              "work_item_id": "note-1",
+              "origin_event": "predecessor-accepted",
+              "owner_role": "analyst",
+              "goal": "按 brief 的当前受众要求同步情景说明 note。",
+              "visible_requirements": [
+                "阅读 guide 的 note_schema、brief、model。",
+                "note 绑定 model/brief 的实际版本，包含股价与敏感性结果；写入 dependencies 后提交。"
+              ],
+              "inputs": [
+                "financials",
+                "model",
+                "guide"
+              ],
+              "dependencies": [
+                "model-1"
+              ],
+              "deliverables": [
+                "note"
+              ],
+              "requirement_version": 1,
+              "status": "blocked",
+              "submissions": [],
+              "blocker": "等待客户补充受众要求",
+              "scenario_revision": 1,
+              "source_stage": "current",
+              "source_version": "v2",
+              "protected_versions": {}
+            },
+            "action_id": "action-19",
+            "logical_time": 19
+          }
+        },
+        {
+          "action": "mail_send",
+          "arguments": {
+            "to": "manager",
+            "topic": "scope",
+            "body": "请确认 memo-1 的情景假设。"
+          },
+          "response": {
+            "ok": true,
+            "result": {
+              "message_id": "mail-7"
+            },
+            "action_id": "action-20",
+            "logical_time": 20
+          }
+        },
+        {
+          "action": "wait",
+          "arguments": {
+            "ticks": 2
+          },
+          "response": {
+            "ok": true,
+            "result": {
+              "advanced_ticks": 2
+            },
+            "action_id": "action-21",
+            "logical_time": 22
+          }
+        }
+      ]
+    }
+  ],
+  "provenance_note": "Original reachability report did not record a git/source identity; none is inferred here. The blocker replay retains its original git_commit and kernel_sha256.",
+  "archive_kind": "condensed_frozen_experiment_evidence",
+  "archive_method": "Read-only JSON projection; original code identities, observed outcomes and failed checks retained. No model calls, evaluation rerun or source-world changes."
+}

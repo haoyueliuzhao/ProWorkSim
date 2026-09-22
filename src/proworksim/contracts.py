@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass, field
 
 CONTRACT_VERSION = "operating-world-v0.3"
 LEGACY_CONTRACT_VERSION = "operating-toy-v0.1"
-EVALUATOR_VERSION = "operating-world-v0.3"
+EVALUATOR_VERSION = "operating-world-v0.3.1"
 LEGACY_EVALUATOR_VERSION = "finance-v0.1.2"
 CURRENT_EVALUATORS = (EVALUATOR_VERSION, "operating-toy-v0.2", LEGACY_EVALUATOR_VERSION)
 

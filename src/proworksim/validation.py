@@ -55,6 +55,8 @@ def evaluate_submission(
     store: Store, state: dict, spec: dict, item: dict, submission: dict | None
 ) -> dict:
     checks = []
+    unassessed_checks = []
+    numerical_assessment = "not_submitted"
     layout = layout_for(spec)
     output_locations = [layout.address(f"Outputs!{v}") for v in OUTPUT_CELLS.values()]
 
@@ -63,9 +65,19 @@ def evaluate_submission(
             {"name": name, "passed": bool(condition), "category": category, "detail": detail}
         )
 
+    def unassessed(name, category):
+        unassessed_checks.append(
+            {
+                "name": name,
+                "category": category,
+                "reason": "missing_applicable_approved_basis",
+            }
+        )
+
     if submission is None:
         check("submitted", False, "delivery", "No actual submission")
     else:
+        numerical_assessment = "available"
         pinned = submission["artifact_versions"]
         check(
             "requirement_version",
@@ -97,13 +109,15 @@ def evaluate_submission(
             facts = spec["facts"][
                 item.get("source_stage", "current" if revision == 1 else "future")
             ]
-            assumptions = scope(spec, item.get("scenario_revision", revision))["assumptions"]
             approved = None
             if "basis" in state["artifacts"] and delivery != "short":
                 approved = requirement_basis(store, state, item)
                 check("approved_basis_applicable", approved is not None, "basis")
-                if approved:
-                    assumptions = approved["assumptions"]
+                assumptions = approved["assumptions"] if approved else None
+                if approved is None:
+                    numerical_assessment = "blocked_missing_approved_basis"
+            else:
+                assumptions = scope(spec, item.get("scenario_revision", revision))["assumptions"]
             if delivery == "short":
                 model = SemanticSpreadsheet(
                     store.version_path(
@@ -141,15 +155,21 @@ def evaluate_submission(
                     state["artifacts"]["model"], model_version
                 ).read_bytes()
                 model = SemanticSpreadsheet(content, layout)
-                inputs = {**facts, **assumptions}
+                inputs = {**facts, **(assumptions or {})}
                 for name, cell in INPUT_CELLS.items():
+                    if name not in inputs:
+                        unassessed(f"input:{name}", "inputs")
+                        continue
                     check(
                         f"input:{name}",
                         close(model.value(f"Inputs!{cell}"), inputs[name]),
                         "inputs",
                     )
-                expected = financial_result(inputs)
+                expected = financial_result(inputs) if assumptions is not None else None
                 for name, cell in OUTPUT_CELLS.items():
+                    if expected is None:
+                        unassessed(f"output:{name}", "calculation")
+                        continue
                     check(
                         f"output:{name}",
                         close(model.value(f"Outputs!{cell}"), expected[name]),
@@ -167,8 +187,18 @@ def evaluate_submission(
                         approved is not None and item.get("required_basis") in deps,
                         "basis",
                     )
-                grid = assumptions["growth_grid"]
-                margins = assumptions["margin_delta_grid"]
+                grid = assumptions["growth_grid"] if assumptions else ()
+                margins = assumptions["margin_delta_grid"] if assumptions else ()
+                if assumptions is None:
+                    for name in (
+                        "growth_header:B",
+                        "growth_header:C",
+                        "margin_header:2",
+                        "margin_header:3",
+                    ):
+                        unassessed(name, "scenario")
+                    for cell in ("B2", "B3", "C2", "C3"):
+                        unassessed(f"scenario:{cell}", "scenario")
                 for col, growth in zip("BC", grid):
                     check(
                         f"growth_header:{col}",
@@ -189,37 +219,44 @@ def evaluate_submission(
                             close(model.value(f"Sensitivity!{col}{row}"), result["share_price"]),
                             "scenario",
                         )
-                # Probe the actual submitted formulas, not saved caches or formula spelling.
-                for probe_index, change in enumerate(
-                    (
-                        {"revenue": inputs["revenue"] * 1.13, "net_debt": inputs["net_debt"] + 17},
-                        {
-                            "operating_margin": inputs["operating_margin"] + 0.017,
-                            "growth": inputs["growth"] + 0.011,
-                            "margin_delta": inputs["margin_delta"] + 0.009,
-                            "tax_rate": 0.29,
-                            "earnings_multiple": inputs["earnings_multiple"] + 2,
-                            "shares": inputs["shares"] + 13,
-                        },
-                    )
-                ):
-                    perturbed = {**inputs, **change}
-                    probe = SemanticSpreadsheet(content, layout)
-                    probe.update({f"Inputs!{INPUT_CELLS[k]}": v for k, v in change.items()})
-                    reference = financial_result(perturbed)
-                    valid = all(
-                        close(probe.value(f"Outputs!{cell}"), reference[name])
-                        for name, cell in OUTPUT_CELLS.items()
-                    )
-                    for col, growth in zip("BC", grid):
-                        for row, delta in zip((2, 3), margins):
-                            value = financial_result(
-                                {**perturbed, "growth": growth, "margin_delta": delta}
-                            )
-                            valid &= close(
-                                probe.value(f"Sensitivity!{col}{row}"), value["share_price"]
-                            )
-                    check(f"recomputation_probe:{probe_index}", valid, "recalculability")
+                if assumptions is None:
+                    for probe_index in range(2):
+                        unassessed(f"recomputation_probe:{probe_index}", "recalculability")
+                else:
+                    # Probe the actual submitted formulas, not saved caches or formula spelling.
+                    for probe_index, change in enumerate(
+                        (
+                            {
+                                "revenue": inputs["revenue"] * 1.13,
+                                "net_debt": inputs["net_debt"] + 17,
+                            },
+                            {
+                                "operating_margin": inputs["operating_margin"] + 0.017,
+                                "growth": inputs["growth"] + 0.011,
+                                "margin_delta": inputs["margin_delta"] + 0.009,
+                                "tax_rate": 0.29,
+                                "earnings_multiple": inputs["earnings_multiple"] + 2,
+                                "shares": inputs["shares"] + 13,
+                            },
+                        )
+                    ):
+                        perturbed = {**inputs, **change}
+                        probe = SemanticSpreadsheet(content, layout)
+                        probe.update({f"Inputs!{INPUT_CELLS[k]}": v for k, v in change.items()})
+                        reference = financial_result(perturbed)
+                        valid = all(
+                            close(probe.value(f"Outputs!{cell}"), reference[name])
+                            for name, cell in OUTPUT_CELLS.items()
+                        )
+                        for col, growth in zip("BC", grid):
+                            for row, delta in zip((2, 3), margins):
+                                value = financial_result(
+                                    {**perturbed, "growth": growth, "margin_delta": delta}
+                                )
+                                valid &= close(
+                                    probe.value(f"Sensitivity!{col}{row}"), value["share_price"]
+                                )
+                        check(f"recomputation_probe:{probe_index}", valid, "recalculability")
                 if "memo" in item["deliverables"]:
                     memo = json.loads(submission_bytes(store, state, submission, "memo"))
                     check("memo_period", memo.get("period") == facts["period"], "period")
@@ -242,6 +279,9 @@ def evaluate_submission(
                         "dependency",
                     )
                     for name in OUTPUT_CELLS:
+                        if expected is None:
+                            unassessed(f"memo:{name}", "consistency")
+                            continue
                         check(
                             f"memo:{name}",
                             close(memo.get("metrics", {}).get(name), expected[name]),
@@ -282,11 +322,16 @@ def evaluate_submission(
                             note.get("audience_content"), brief["audience"]
                         )
                         check("note_audience_content", not issues, "scope", "; ".join(issues))
-                    check(
-                        "note_price",
-                        close(note.get("share_price"), expected["share_price"]),
-                        "consistency",
-                    )
+                    if expected is None:
+                        unassessed("note_price", "consistency")
+                        for cell in ("B2", "B3", "C2", "C3"):
+                            unassessed(f"note_scenario:{cell}", "scenario")
+                    else:
+                        check(
+                            "note_price",
+                            close(note.get("share_price"), expected["share_price"]),
+                            "consistency",
+                        )
                     for col, growth in zip("BC", grid):
                         for row, delta in zip((2, 3), margins):
                             value = financial_result(
@@ -326,6 +371,12 @@ def evaluate_submission(
         else LEGACY_EVALUATOR_VERSION,
     )
     result = asdict(record)
+    result["numerical_assessment"] = numerical_assessment
+    result["unassessed_checks"] = unassessed_checks
+    if numerical_assessment == "blocked_missing_approved_basis":
+        result["uncertain"].append(
+            "缺少适用的已批准依据；依赖该依据的数值目标未评分，不使用隐藏规格替代确认。"
+        )
     result["contract_version"] = spec.get("contract_version", LEGACY_CONTRACT_VERSION)
     result["contract_origin"] = (
         "stored" if "contract_version" in spec else "inferred_from_original_public_guide"
