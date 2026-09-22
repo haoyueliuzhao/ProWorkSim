@@ -38,7 +38,7 @@ def test_unavailable_basis_does_not_grade_hidden_assumptions(tmp_path, monkeypat
     skipped = {c["name"] for c in record["unassessed_checks"]}
     assert {"input:growth", "output:share_price", "scenario:B2", "recomputation_probe:0"} <= skipped
     assert not record["propagated_failures"]
-    assert record["evaluator_version"] == "operating-world-v0.4"
+    assert record["evaluator_version"] == "operating-world-v0.5"
 
 
 def test_approved_basis_still_supplies_independent_numerical_targets(tmp_path, monkeypatch):

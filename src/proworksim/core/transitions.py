@@ -7,6 +7,8 @@ External adapters own file rollback and persistence under a single-writer lock.
 import copy
 from dataclasses import dataclass
 
+from .journal import canonical_digest, SEMANTICS_VERSION
+
 
 @dataclass(frozen=True)
 class ActionFrame:
@@ -41,7 +43,11 @@ def changed_paths(before, after, path=()):
 
 
 def within(path, prefixes):
-    return any(path[: len(prefix)] == prefix for prefix in prefixes)
+    return any(
+        len(path) >= len(prefix)
+        and all(expected == "*" or expected == actual for expected, actual in zip(prefix, path))
+        for prefix in prefixes
+    )
 
 
 def preserve_history(before, after, submission_extensions=(), append_extensions=()):
@@ -73,6 +79,9 @@ def preserve_history(before, after, submission_extensions=(), append_extensions=
         previous = before.get(key, [])
         if after.get(key, [])[: len(previous)] != previous:
             raise ValueError(f"Append-only history changed: {key}")
+    for response_id, response in before.get("raw_condition_responses", {}).items():
+        if after.get("raw_condition_responses", {}).get(response_id) != response:
+            raise ValueError("Historical raw response changed")
     for key, attestation in before.get("attestations", {}).items():
         if after.get("attestations", {}).get(key) != attestation:
             raise ValueError(f"Formal attestation changed: {key}")
@@ -103,13 +112,21 @@ def preserve_history(before, after, submission_extensions=(), append_extensions=
                 raise ValueError("Completed historical review changed")
 
 
-def execute_transition(state, frame, apply, derive=lambda state: None):
+def execute_transition(
+    state, frame, apply, derive=lambda state: None, metadata=None, after_apply=None
+):
     """Check an adapter's actual effects before commit; roll back state on failure."""
     before = copy.deepcopy(state)
+    applied = None
+    phase = "apply"
     try:
         result = apply()
         applied = copy.deepcopy(state)
+        if after_apply is not None:
+            after_apply()
+        phase = "derive"
         derive(state)
+        phase = "validation"
         changes = changed_paths(before, state)
         prohibited = [
             path for path in changes if not within(path, frame.paths + frame.derived_paths)
@@ -124,18 +141,60 @@ def execute_transition(state, frame, apply, derive=lambda state: None):
         preserve_history(
             before, state, frame.immutable_submission_extensions, frame.append_only_extensions
         )
-    except Exception:
+    except Exception as exc:
+        # A failed phase has no completed phase endpoint. Preserve attempted
+        # state differences explicitly instead of inventing a zero phase delta.
+        receipt = {
+            "receipt_version": "phase-deltas-v0.5",
+            "semantics_version": SEMANTICS_VERSION,
+            "contract": frame.name,
+            "rolled_back": True,
+            "failed_phase": phase,
+            "apply_delta": [list(p) for p in changed_paths(before, applied)]
+            if applied is not None
+            else None,
+            "derive_delta": [list(p) for p in changed_paths(applied, state)]
+            if phase == "validation"
+            else None,
+            "attempted_delta": [list(p) for p in changed_paths(before, state)],
+            "net_delta": [],
+            "primary_region_changes": [],
+            "projection_region_changes": [],
+            "committed_revision": None,
+            "execution_outcome": "rolled_back_uncommitted",
+        }
+        exc.transition_receipt = receipt
         state.clear()
         state.update(before)
         raise
-    return result, {
+    receipt = {
+        "receipt_version": "phase-deltas-v0.5",
+        "semantics_version": SEMANTICS_VERSION,
         "contract": frame.name,
         "allowed_business_paths": [list(p) for p in frame.paths],
-        "direct_changes": [list(p) for p in changes if not within(p, frame.derived_paths)],
-        "derived_changes": [list(p) for p in changes if within(p, frame.derived_paths)],
+        "apply_delta": [list(p) for p in changed_paths(before, applied)],
+        "derive_delta": [list(p) for p in changed_paths(applied, state)],
+        "net_delta": [list(p) for p in changes],
+        "primary_region_changes": [list(p) for p in changes if not within(p, frame.derived_paths)],
+        "projection_region_changes": [list(p) for p in changes if within(p, frame.derived_paths)],
+        "state_digests": {
+            "before": canonical_digest(before),
+            "after_apply": canonical_digest(applied),
+            "after_derive": canonical_digest(state),
+        },
+        "effect_refs": [
+            {"artifact_id": aid, "version_id": vid}
+            for aid, artifact in state.get("artifacts", {}).items()
+            for vid in artifact.get("versions", {})
+            if vid not in before.get("artifacts", {}).get(aid, {}).get("versions", {})
+        ],
         "history_preserved": True,
         "frame_respected": True,
+        "committed_revision": None,
+        "execution_outcome": "applied_uncommitted",
     }
+    receipt.update(metadata or {})
+    return result, receipt
 
 
 def ordered_due_events(events, clock):

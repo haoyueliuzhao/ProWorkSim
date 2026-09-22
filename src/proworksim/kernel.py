@@ -8,10 +8,19 @@ import uuid
 from dataclasses import asdict
 from pathlib import Path
 
-from .core.transitions import execute_transition, ordered_due_events
+from .core.transitions import execute_transition, ordered_due_events, ActionFrame, changed_paths
+from .core import journal
+from .core.projections import (
+    rebuild_projections,
+    derive_current_work_view,
+    record_artifact_edit,
+    projection_paths,
+    WORK_CACHE_FIELDS,
+    CONDITION_CACHE_FIELDS,
+)
 from .core.work import submit_work, withdraw_submission, approve_submission, dependencies_ready
 from .core.visibility import project_fields
-from .adapters.action_scopes import tool_frame, reply_frame
+from .adapters.action_scopes import tool_frame, reply_frame, projections
 from .adapters.communication import (
     deliver_reply,
     register_request,
@@ -33,7 +42,6 @@ from .lifecycle import (
 from .schema import (
     InteractionRecord,
     SCHEMA_VERSION,
-    SUPPORTED_SCHEMA_VERSIONS,
     Status,
     WorldSnapshot,
 )
@@ -51,14 +59,46 @@ class World:
         self.store = Store(root)
         with self.store.lock():
             self.state = self.store.load()
-            if self.state["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
-                raise WorldError("Unsupported world schema")
+            if self.state["schema_version"] != SCHEMA_VERSION:
+                raise WorldError(
+                    "Runtime requires the current schema; use the historical frozen runtime or an explicit trusted-checkpoint import for older worlds"
+                )
             self.store.recover(self.state)
         self._reads = []
         self._writes = []
+        self.fault_hook = None
+        self._operation_context = {}
+        self.store.fault_hook = self._storage_fault
 
     def _derive(self, state):
+        rebuild_projections(state)
         refresh_freshness(state)
+
+    def _fault(self, phase, details=None):
+        if self.fault_hook is not None:
+            self.fault_hook(phase, {**self._operation_context, **(details or {})})
+
+    def _storage_fault(self, phase, details):
+        self._fault(phase, details)
+
+    def _complete_frame(self, frame):
+        projected = (
+            projection_paths(self.state)
+            + tuple(("work_items", "*", field) for field in WORK_CACHE_FIELDS)
+            + tuple(("condition_specs", "*", field) for field in CONDITION_CACHE_FIELDS)
+        )
+        return ActionFrame(
+            frame.name,
+            frame.paths,
+            frame.derived_paths + projected,
+            frame.immutable_submission_extensions,
+            frame.append_only_extensions,
+        )
+
+    def _preflight(self):
+        previous = copy.deepcopy(self.state)
+        self._derive(self.state)
+        return [list(path) for path in changed_paths(previous, self.state)]
 
     def _action_frame(self, actor, action, arguments):
         return tool_frame(self.state, actor, action, arguments)
@@ -120,15 +160,7 @@ class World:
                 "after": version["version_id"],
             }
         )
-        for item in current_work_items(self.state):
-            if item["status"] == Status.OPEN and artifact["artifact_id"] in item["deliverables"]:
-                item["status"] = Status.IN_PROGRESS
-            if (
-                item["status"] == Status.IN_REVIEW
-                and artifact["artifact_id"] in item["deliverables"]
-            ):
-                item["submissions"][-1]["invalidated"] = True
-                item["status"] = Status.IN_PROGRESS
+        record_artifact_edit(self.state, actor, artifact["artifact_id"], version["version_id"])
         return {
             "artifact_id": artifact["artifact_id"],
             "version_id": version["version_id"],
@@ -150,7 +182,14 @@ class World:
 
     def _event(self, kind, payload, delay=1):
         event = {
-            "event_id": uuid.uuid4().hex,
+            "event_id": journal.canonical_digest(
+                {
+                    "operation_id": self._operation_context.get("operation_id", uuid.uuid4().hex),
+                    "kind": kind,
+                    "payload": payload,
+                    "ordinal": len(self.state["events"]) + len(self.state["event_history"]),
+                }
+            )[:32],
             "kind": kind,
             "at": self.state["clock"] + delay,
             "payload": payload,
@@ -173,7 +212,7 @@ class World:
             raise WorldError("Work item unavailable to this role")
         return item
 
-    def _public_item(self, item):
+    def _public_item(self, item, actor=None):
         result = project_fields(copy.deepcopy(item), {"acceptance_spec_ref"})
         result["is_current"] = current_id(self.state, item["work_item_id"]) == item["work_item_id"]
         result["blockers"] = [
@@ -184,6 +223,38 @@ class World:
             "ready": dependencies_ready(self.state, item),
             "current_predecessors": [current_id(self.state, dep) for dep in item["dependencies"]],
         }
+        view = derive_current_work_view(self.state)[item["work_item_id"]]
+        result.update(
+            status=view["status"],
+            applicability=view["applicability"],
+            enabled_actions=view["enabled_actions"],
+        )
+        result.update(
+            {
+                key: view[key]
+                for key in (
+                    "pending_submission_id",
+                    "submission_state",
+                    "submission_versions_current",
+                )
+            }
+        )
+        actor = actor or item["owner_role"]
+        result["enabled_actions"] = [
+            action
+            for action in view["enabled_actions"]
+            if (action in {"submit", "withdraw"} and actor == item["owner_role"])
+            or (
+                action == "approve"
+                and authority(
+                    self.state,
+                    actor,
+                    "approve",
+                    "deliverable",
+                    item.get("node_id", item["work_item_id"]),
+                )
+            )
+        ]
         result["conditions"] = [
             copy.deepcopy(condition)
             for condition in self.state.get("condition_specs", {}).values()
@@ -196,13 +267,14 @@ class World:
     def observe(self, actor="analyst"):
         with self.store.lock():
             self.state = self.store.load()
+            self._derive(self.state)  # Query reconstruction is memory-only.
             role = self._role(actor)
             return {
                 "role": role,
                 "logical_time": self.state["clock"],
                 "project": copy.deepcopy(self.state["project"]),
                 "work_items": [
-                    self._public_item(item)
+                    self._public_item(item, actor)
                     for item in self.state["work_items"].values()
                     if self._can_view_work(actor, item)
                 ],
@@ -225,23 +297,57 @@ class World:
         with self.store.lock():
             self.state = self.store.load()
             self._role(actor)
-            if request_key:
-                for old in self.state["interactions"]:
-                    if old.get("request_key") == request_key and old["actor_id"] == actor:
-                        self._drain_events()
-                        self.store.save(self.state)
-                        return {
-                            **old["output"],
-                            "action_id": old["action_id"],
-                            "logical_time": old["logical_time"],
-                        }
             self.store.recover(self.state)
+            preflight_delta = self._preflight()
+            try:
+                request_digest = journal.canonical_digest(
+                    {"action": action, "arguments": arguments}
+                )
+            except (ValueError, TypeError):
+                return {
+                    "ok": False,
+                    "error": {
+                        "type": "InvalidInput",
+                        "message": "Command identity requires a finite JSON payload",
+                    },
+                    "command_committed": False,
+                }
+            if request_key is not None and (not isinstance(request_key, str) or not request_key):
+                return {
+                    "ok": False,
+                    "error": {
+                        "type": "InvalidCommandIdentity",
+                        "message": "request_key must be a nonempty string",
+                    },
+                    "command_committed": False,
+                }
+            command_id = (
+                f"command:{actor}:{request_key if request_key is not None else uuid.uuid4().hex}"
+            )
+            self._operation_context = {
+                "operation_id": command_id,
+                "kind": "command",
+                "action": action,
+                "actor": actor,
+            }
+            try:
+                old = journal.lookup_operation(self.state, command_id, actor, request_digest)
+            except journal.CommandConflict as exc:
+                return {
+                    "ok": False,
+                    "error": {"type": "CommandConflict", "message": str(exc)},
+                    "command_id": command_id,
+                    "command_committed": False,
+                }
+            if old is not None:
+                event_errors = self._drain_events()
+                result = copy.deepcopy(old["public_result"])
+                return self._attach_event_errors(result, event_errors)
             before = copy.deepcopy(self.state)
             self._reads, self._writes = [], []
             try:
                 if not isinstance(arguments, dict):
                     raise WorldError("Tool arguments must be an object")
-                # JSON normalization rejects NaN and nonserializable objects BEFORE mutation.
                 json_bytes(arguments)
                 handler = (
                     getattr(self, f"_tool_{action}", None) if isinstance(action, str) else None
@@ -250,9 +356,10 @@ class World:
                     raise WorldError("Unknown tool")
                 result, transition = execute_transition(
                     self.state,
-                    self._action_frame(actor, action, arguments),
+                    self._complete_frame(self._action_frame(actor, action, arguments)),
                     lambda: handler(actor, **arguments),
                     self._derive,
+                    after_apply=lambda: self._fault("after_apply"),
                 )
                 output = {"ok": True, "result": project_fields(result, {"acceptance_spec_ref"})}
                 json_bytes(output)
@@ -260,17 +367,23 @@ class World:
                 self.state = before
                 self.store.recover(self.state)
                 self._reads, self._writes = [], []
-                transition = {
-                    "contract": action,
-                    "rolled_back": True,
-                    "direct_changes": [],
-                    "derived_changes": [],
-                }
+                transition = getattr(
+                    exc,
+                    "transition_receipt",
+                    {
+                        "receipt_version": "phase-deltas-v0.5",
+                        "contract": action,
+                        "rolled_back": True,
+                        "failed_phase": "validation_before_apply",
+                        "apply_delta": None,
+                        "derive_delta": None,
+                        "net_delta": [],
+                        "primary_region_changes": [],
+                        "projection_region_changes": [],
+                    },
+                )
                 output = {"ok": False, "error": {"type": type(exc).__name__, "message": str(exc)}}
-                try:
-                    json_bytes(arguments)
-                except (ValueError, TypeError):
-                    arguments = {"invalid_input": repr(arguments)[:2000]}
+            transition["preflight_projection_delta"] = preflight_delta
             self.state["clock"] += 1
             record = asdict(
                 InteractionRecord(
@@ -285,15 +398,24 @@ class World:
                     wall_seconds=time.monotonic() - started,
                 )
             )
-            record["request_key"] = request_key
-            record["transition"] = transition
+            record.update(request_key=request_key, transition_id=command_id, transition=transition)
             self.state["interactions"].append(record)
             schedule_interruptions(self, record)
-            # Persist the candidate action first. Events use their own explicit actor records.
+            public_result = {
+                **output,
+                "action_id": record["action_id"],
+                "logical_time": self.state["clock"],
+                "command_id": command_id,
+                "command_committed": True,
+                "committed_revision": self.state.get("state_revision", 0) + 1,
+            }
+            journal.record_operation(
+                self.state, command_id, actor, request_digest, public_result, transition, "command"
+            )
             self.store.save(self.state)
-            self._drain_events()
-            self.store.save(self.state)
-            return {**output, "action_id": record["action_id"], "logical_time": self.state["clock"]}
+            self._fault("after_command_commit")
+            event_errors = self._drain_events()
+            return self._attach_event_errors(public_result, event_errors)
 
     def _tool_list_files(self, actor):
         result = []
@@ -451,14 +573,16 @@ class World:
             candidates = [
                 w
                 for w in current_work_items(self.state)
-                if w["status"] not in ("accepted", "waiting_dependencies")
+                if derive_current_work_view(self.state)[w["work_item_id"]]["status"]
+                not in ("accepted", "waiting_dependencies")
             ]
             if len(candidates) != 1:
                 raise WorldError("Specify work_item_id for this scoped request")
             item = candidates[0]
             work_item_id = item["work_item_id"]
         if item and (
-            item["status"] in ("superseded", "cancelled")
+            derive_current_work_view(self.state)[item["work_item_id"]]["status"]
+            in ("superseded", "cancelled")
             or current_id(self.state, work_item_id) != work_item_id
         ):
             raise WorldError("This request must refer to current work")
@@ -474,7 +598,7 @@ class World:
 
     def _tool_work_list(self, actor):
         return [
-            self._public_item(item)
+            self._public_item(item, actor)
             for item in self.state["work_items"].values()
             if self._can_view_work(actor, item)
         ]
@@ -578,12 +702,6 @@ class World:
 
     def _tool_submit(self, actor, work_item_id, answer=None):
         item = self._item(actor, work_item_id)
-        if item["owner_role"] != actor or item["status"] not in (
-            Status.OPEN,
-            Status.IN_PROGRESS,
-            Status.REVISION_REQUIRED,
-        ):
-            raise WorldError("Work is not open for submission by this actor")
         if "answer" in item["deliverables"] and answer is None:
             raise WorldError("This task requires an answer")
         versions = {
@@ -644,105 +762,257 @@ class World:
             )
         )
 
+        self.state["interactions"][-1]["transition_id"] = self._operation_context.get(
+            "operation_id"
+        )
+
+    @staticmethod
+    def _attach_event_errors(result, errors):
+        pending = [error for error in errors if not error["event_committed"]]
+        delivery = [error for error in errors if error["event_committed"]]
+        if pending:
+            result["pending_event_errors"] = pending
+        if delivery:
+            result["event_delivery_errors"] = delivery
+        return result
+
+    def _event_actor(self, event):
+        if event["kind"] == "staff_reply":
+            return self.state["requests"][event["payload"]["request_id"]]["requested_role"]
+        if event["kind"] == "information_arrival":
+            return event["payload"]["actor"]
+        return position(self.state, "reviewer" if event["kind"] == "review" else "coordinator")
+
+    def _event_frame(self, event):
+        if event["kind"] == "staff_reply":
+            return reply_frame(self.state, self.state["requests"][event["payload"]["request_id"]])
+        if event["kind"] == "information_arrival":
+            args = {k: v for k, v in event["payload"].items() if k != "actor"}
+            frame = self._action_frame(event["payload"]["actor"], "restore_information", args)
+            return ActionFrame(
+                frame.name,
+                frame.paths + (("interactions",),),
+                frame.derived_paths,
+                frame.immutable_submission_extensions,
+                frame.append_only_extensions,
+            )
+        if event["kind"] == "lifecycle_change":
+            frame = self._action_frame(
+                position(self.state, "coordinator"), "revise_requirements", {}
+            )
+            return frame
+        if event["kind"] == "review":
+            item = self.state["work_items"][event["payload"]["work_item_id"]]
+            frame = self._action_frame(
+                position(self.state, "reviewer"), "approve", {"work_item_id": item["work_item_id"]}
+            )
+            return ActionFrame(
+                "Review",
+                frame.paths
+                + (
+                    ("messages",),
+                    ("interactions",),
+                    ("knowledge", position(self.state, "reviewer")),
+                ),
+                frame.derived_paths,
+                frame.immutable_submission_extensions,
+                frame.append_only_extensions,
+            )
+        if event["kind"] in {"apply_rule", "requirement_change", "manager_reply"}:
+            paths = tuple(
+                (key,)
+                for key in (
+                    "messages",
+                    "interactions",
+                    "knowledge",
+                    "events",
+                    "work_items",
+                    "workflow",
+                    "released_groups",
+                    "fired_rules",
+                    "attestations",
+                    "basis_approvals",
+                    "basis_by_scenario",
+                    "basis_visibility",
+                    "access_grants",
+                )
+            )
+            paths += tuple(("artifacts", aid) for aid in ("financials", "scope", "basis", "brief"))
+            return ActionFrame(
+                "DomainEvent",
+                paths,
+                projections(self.state),
+                ("required_basis",),
+                ("basis_approvals",),
+            )
+        raise WorldError("Unknown environment event")
+
+    def _apply_event(self, event):
+        payload = event["payload"]
+        if event["kind"] == "staff_reply":
+            return {"outcome": "applied", "result": self._deliver_reply(payload)}
+        if event["kind"] == "information_arrival":
+            args = {key: value for key, value in payload.items() if key != "actor"}
+            result = self._tool_restore_information(payload["actor"], **args)
+            self._staff_record(payload["actor"], "restore_information", args, result)
+            return {"outcome": "applied", "result": result}
+        if event["kind"] == "manager_reply":
+            body = json.loads(self._read("manager", "scope"))
+            message = self._message("manager", ["analyst"], "历史未绑定回复", body)
+            return {"outcome": "applied", "result": message}
+        if event["kind"] == "review":
+            reviewer = position(self.state, "reviewer")
+            item = self.state["work_items"][payload["work_item_id"]]
+            sub = next(
+                s for s in item["submissions"] if s["submission_id"] == payload["submission_id"]
+            )
+            view = derive_current_work_view(self.state)[item["work_item_id"]]
+            if (
+                sub["invalidated"]
+                or not view["is_current"]
+                or view["pending_submission_id"] != sub["submission_id"]
+            ):
+                return {"outcome": "superseded", "result": {"reason": "submission_not_pending"}}
+            self._reads = []
+            defects = review_submission(
+                lambda aid, version: self._read(reviewer, aid, version),
+                sub,
+                item,
+                self.state.get("layout"),
+            )
+            if not dependencies_ready(self.state, item):
+                defects.append("当前前置工作尚未获批准；请在前置义务就绪后重新提交。")
+            if view["outstanding_condition_ids"]:
+                defects.append("当前工作仍有未满足的条件；请在条件就绪后重新提交。")
+            if "basis" in self.state["artifacts"] and item["deliverables"] != ["answer"]:
+                basis = requirement_basis(self.store, self.state, item)
+                model_version = sub["artifact_versions"].get(
+                    "model", sub["context_versions"]["model"]
+                )
+                deps = self.state["artifacts"]["model"]["versions"][model_version]["derived_from"]
+                if basis is None or item.get("required_basis") not in deps:
+                    defects.append(
+                        "工作模型未绑定适用于当前工作/需求版本的批准依据，请核验 basis 凭据与实际采用版本。"
+                    )
+            if defects:
+                sub["review"] = {
+                    "decision": "revision_required",
+                    "actor_id": reviewer,
+                    "at": self.state["clock"],
+                    "defects": defects,
+                }
+                item["status"] = Status.REVISION_REQUIRED
+                result = sub["review"]
+            else:
+                result = self._tool_approve(reviewer, item["work_item_id"], sub["submission_id"])
+            self._message(
+                reviewer,
+                [item["owner_role"]],
+                "实际交付审阅",
+                {
+                    "work_item_id": item["work_item_id"],
+                    "submission_id": sub["submission_id"],
+                    "decision": item["status"],
+                    "defects": defects,
+                },
+                [{"artifact_id": a, "version_id": v} for a, v in sub["artifact_versions"].items()],
+            )
+            self._staff_record(reviewer, "review", payload, result, self._reads)
+            return {"outcome": "applied", "result": result}
+        if event["kind"] == "lifecycle_change":
+            from .lifecycle import apply_lifecycle_event
+
+            return {"outcome": "applied", "result": apply_lifecycle_event(self, event)}
+        if event["kind"] in {"apply_rule", "requirement_change"}:
+            from .events import apply_rule
+
+            return {"outcome": "applied", "result": apply_rule(self, event)}
+        raise WorldError("Unknown environment event")
+
     def _drain_events(self):
-        due = ordered_due_events(self.state["events"], self.state["clock"])
-        for event in due:
+        errors = []
+        for event in ordered_due_events(self.state["events"], self.state["clock"]):
             if event not in self.state["events"]:
                 continue
-            self.state["events"].remove(event)
-            payload = event["payload"]
-            if event["kind"] == "staff_reply":
-                request = self.state["requests"][payload["request_id"]]
-                _, receipt = execute_transition(
-                    self.state,
-                    reply_frame(self.state, request),
-                    lambda: self._deliver_reply(payload),
-                    self._derive,
+            before = copy.deepcopy(self.state)
+            committed = False
+            try:
+                operation_id = "event:" + event["event_id"]
+                digest_value = journal.canonical_digest(
+                    {k: event[k] for k in ("event_id", "kind", "at", "payload")}
                 )
-                event["transition"] = receipt
-            elif event["kind"] == "information_arrival":
-                actor = payload["actor"]
-                arguments = {key: value for key, value in payload.items() if key != "actor"}
-                result, receipt = execute_transition(
-                    self.state,
-                    self._action_frame(actor, "restore_information", arguments),
-                    lambda: self._tool_restore_information(actor, **arguments),
-                    self._derive,
-                )
-                event["transition"] = receipt
-                self._staff_record(actor, "restore_information", arguments, result)
-            elif event["kind"] == "manager_reply":
-                # Archived v0.2 events have no scope binding; deliver historical text only.
-                body = json.loads(self._read("manager", "scope"))
-                self._message("manager", ["analyst"], "历史未绑定回复", body)
-            elif event["kind"] == "review":
-                reviewer = position(self.state, "reviewer")
-                item = self.state["work_items"][payload["work_item_id"]]
-                sub = next(
-                    s for s in item["submissions"] if s["submission_id"] == payload["submission_id"]
-                )
-                if sub["invalidated"] or item["status"] != Status.IN_REVIEW:
-                    self.state["event_history"].append({**event, "outcome": "superseded"})
+                actor = self._event_actor(event)
+                self._operation_context = {
+                    "operation_id": operation_id,
+                    "kind": "event",
+                    "action": event["kind"],
+                    "actor": actor,
+                }
+                previous = journal.lookup_operation(self.state, operation_id, actor, digest_value)
+                if previous is not None:
+                    self.state["events"].remove(event)
+                    self.store.save(self.state)  # queue acknowledgement only, no second effect
                     continue
-                self._reads = []
-                defects = review_submission(
-                    lambda aid, version: self._read(reviewer, aid, version),
-                    sub,
-                    item,
-                    self.state.get("layout"),
+                frame = self._complete_frame(self._event_frame(event))
+                result, receipt = execute_transition(
+                    self.state, frame, lambda: self._apply_event(event), self._derive
                 )
-                if not dependencies_ready(self.state, item):
-                    defects.append("当前前置工作尚未获批准；请在前置义务就绪后重新提交。")
-                if "basis" in self.state["artifacts"] and item["deliverables"] != ["answer"]:
-                    basis = requirement_basis(self.store, self.state, item)
-                    model_version = sub["artifact_versions"].get(
-                        "model", sub["context_versions"]["model"]
-                    )
-                    deps = self.state["artifacts"]["model"]["versions"][model_version][
-                        "derived_from"
-                    ]
-                    if basis is None or item.get("required_basis") not in deps:
-                        defects.append(
-                            "工作模型未绑定适用于当前工作/需求版本的批准依据，请核验 basis 凭据与实际采用版本。"
-                        )
-                if defects:
-                    sub["review"] = {
-                        "decision": "revision_required",
-                        "actor_id": reviewer,
-                        "at": self.state["clock"],
-                        "defects": defects,
-                    }
-                    item["status"] = Status.REVISION_REQUIRED
-                    result = sub["review"]
-                else:
-                    result = self._tool_approve(
-                        reviewer, item["work_item_id"], sub["submission_id"]
-                    )
-                self._message(
-                    reviewer,
-                    [item["owner_role"]],
-                    "实际交付审阅",
+                self._fault("before_event_commit")
+                self.state["events"].remove(event)
+                history = {
+                    **event,
+                    "outcome": result["outcome"],
+                    "transition_id": operation_id,
+                    "transition": receipt,
+                }
+                self.state["event_history"].append(history)
+                journal.record_operation(
+                    self.state, operation_id, actor, digest_value, result, receipt, "event"
+                )
+                self.store.save(self.state)
+                committed = True
+                self._fault("after_event_commit")
+            except Exception as exc:
+                # Once the snapshot is committed, only delivery/acknowledgement
+                # failed. Never recover files using the older in-memory prefix.
+                self.state = self.store.load() if committed else before
+                self.store.recover(self.state)
+                errors.append(
                     {
-                        "work_item_id": item["work_item_id"],
-                        "submission_id": sub["submission_id"],
-                        "decision": item["status"],
-                        "defects": defects,
-                    },
-                    [
-                        {"artifact_id": a, "version_id": v}
-                        for a, v in sub["artifact_versions"].items()
-                    ],
+                        "event_id": event.get("event_id"),
+                        "event_committed": committed,
+                        "stage": "post_commit_delivery" if committed else "pre_commit",
+                        "error": {"type": type(exc).__name__, "message": str(exc)},
+                    }
                 )
-                self._staff_record(reviewer, "review", payload, result, self._reads)
-            elif event["kind"] == "lifecycle_change":
-                from .lifecycle import apply_lifecycle_event
+                attempt = {
+                    **errors[-1],
+                    "transition_id": "event:" + event.get("event_id", "missing"),
+                    "bound_actor": self._operation_context.get("actor"),
+                    "request_digest": locals().get("digest_value"),
+                    "pre_state_revision": before.get("state_revision", 0),
+                    "committed_prefix_revision": self.state.get("state_revision", 0),
+                    "semantics_version": journal.SEMANTICS_VERSION,
+                    "receipt": getattr(exc, "transition_receipt", None),
+                }
+                self.state.setdefault("event_attempts", []).append(attempt)
+                self.store.save(self.state)  # Diagnostic Q/O record, no new formal effect.
+                break  # Preserve ordered pending suffix for a later explicit retry.
+        return errors
 
-                apply_lifecycle_event(self, event)
-            elif event["kind"] in ("apply_rule", "requirement_change"):
-                from .events import apply_rule
-
-                apply_rule(self, event)
-            self.state["event_history"].append({**event, "outcome": "applied"})
+    def recover(self):
+        """Resume due events from a committed checkpoint; never rerun worker policy."""
+        with self.store.lock():
+            self.state = self.store.load()
+            self.store.recover(self.state)
+            self._preflight()
+            errors = self._drain_events()
+            return {
+                "state_revision": self.state.get("state_revision", 0),
+                "pending_event_errors": [error for error in errors if not error["event_committed"]],
+                "event_delivery_errors": [error for error in errors if error["event_committed"]],
+                "pending_events": len(self.state["events"]),
+            }
 
     def snapshot(self, destination):
         destination = Path(destination).resolve()

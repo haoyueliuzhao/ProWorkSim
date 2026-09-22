@@ -1,18 +1,16 @@
-"""Scoped blockers whose reply effects require explicit request/version bindings.
+"""Operating-tool compatibility adapter over canonical condition facts.
 
-Helpers mutate state only: no messages are sent and free text is not interpreted
-as confirmation. Every status transition preserves the earlier history entries.
+Blockers are a disposable one-way projection; no transition reads their cache.
 """
 
 import copy
 
-from .core.conditions import (
-    apply_response,
-    match_response,
-    reopen_work,
-    supersede_condition,
+from .core.conditions import apply_response, reopen_work, supersede_condition
+from .core.projections import (
+    derive_blocker_view,
+    derive_current_work_view,
+    rebuild_projections,
 )
-from .core.types import CheckStatus
 
 TERMINAL_WORK_STATUSES = frozenset({"accepted", "superseded", "cancelled", "withdrawn"})
 
@@ -25,7 +23,7 @@ def _item(state, work_item_id):
 
 
 def _blocker(state, blocker_id):
-    blocker = state.get("blockers", {}).get(blocker_id)
+    blocker = derive_blocker_view(state).get(blocker_id)
     if blocker is None:
         raise ValueError("Unknown blocker")
     return blocker
@@ -51,11 +49,6 @@ def _matches_request(state, blocker, request, actor, work_item_id):
     )
 
 
-def _transition(state, blocker, status, **details):
-    blocker["status"] = status
-    blocker["history"].append({"at": state["clock"], "status": status, **copy.deepcopy(details)})
-
-
 def reopen_if_ready(state, work_item_id):
     return reopen_work(state, work_item_id)
 
@@ -63,10 +56,12 @@ def reopen_if_ready(state, work_item_id):
 def create_blocker(
     state, item, kind, requested_role, required_scope_version, detail, request_id=None
 ):
-    """Create one condition; never replace another condition or its history."""
-    if state["work_items"].get(item["work_item_id"]) is not item:
+    """Create one explicit condition; status and legacy records are projections."""
+    wid = item["work_item_id"]
+    if state["work_items"].get(wid) is not item:
         raise ValueError("Blocker must refer to the current work item")
-    if item["status"] in TERMINAL_WORK_STATUSES | {"in_review"}:
+    view = derive_current_work_view(state)[wid]
+    if not view["is_current"] or view["status"] in TERMINAL_WORK_STATUSES | {"in_review"}:
         raise ValueError("This work cannot receive new blockers")
     from .adapters.communication import condition_template
 
@@ -79,48 +74,44 @@ def create_blocker(
         raise ValueError("required_scope_version must be a positive integer or null")
     if not isinstance(detail, str) or not detail.strip() or len(detail) > 10000:
         raise ValueError("A concrete blocker detail of up to 10000 characters is required")
-    records = state.get("blockers", {})
-    index = len(records) + 1
-    while f"blocker-{index}" in records:
+    index = len(state.get("condition_specs", {})) + 1
+    ids = {c.get("blocker_id") for c in state.get("condition_specs", {}).values()}
+    while f"blocker-{index}" in ids or f"condition-{index}" in state.get("condition_specs", {}):
         index += 1
-    blocker = {
-        "blocker_id": f"blocker-{index}",
-        "work_item_id": item["work_item_id"],
-        "condition_id": f"condition-{index}",
+    bid, cid = f"blocker-{index}", f"condition-{index}"
+    candidate = {
+        "blocker_id": bid,
+        "condition_id": cid,
+        "work_item_id": wid,
         "kind": kind,
         "requested_role": requested_role,
-        "required_scope_version": required_scope_version,
-        "creation_requirement_version": item["requirement_version"],
-        "detail": detail,
-        "created_at": state["clock"],
         "status": "open",
         "request_id": None,
-        "resolution_ref": None,
-        "history": [{"at": state["clock"], "status": "open"}],
     }
-    # Optional binding is checked before any mutation, including item status.
     if request_id is not None:
-        _validate_binding(state, blocker, request_id, item["owner_role"], item["work_item_id"])
-        blocker["request_id"] = request_id
-        blocker["history"].append(
-            {"at": state["clock"], "status": "open", "request_id": request_id}
-        )
+        _validate_binding(state, candidate, request_id, item["owner_role"], wid)
     condition.update(
-        condition_id=blocker["condition_id"],
-        blocker_id=blocker["blocker_id"],
-        request_id=blocker["request_id"],
-        history=copy.deepcopy(blocker["history"]),
+        condition_id=cid,
+        blocker_id=bid,
+        request_id=request_id,
+        detail=detail,
+        requested_role=requested_role,
+        created_at=state["clock"],
+        history=[{"at": state["clock"], "event": "created", "request_id": request_id}],
     )
-    state.setdefault("condition_specs", {})[condition["condition_id"]] = condition
-    state.setdefault("blockers", {})[blocker["blocker_id"]] = blocker
-    item.setdefault("blocker_ids", []).append(blocker["blocker_id"])
-    item["status"] = "blocked"
-    return copy.deepcopy(blocker)
+    state.setdefault("condition_specs", {})[cid] = condition
+    rebuild_projections(state)
+    return copy.deepcopy(state["blockers"][bid])
 
 
 def _validate_binding(state, blocker, request_id, actor, work_item_id):
     item = _item(state, work_item_id)
-    if item["owner_role"] != actor or item["status"] in TERMINAL_WORK_STATUSES:
+    view = derive_current_work_view(state)[work_item_id]
+    if (
+        item["owner_role"] != actor
+        or not view["is_current"]
+        or view["status"] in TERMINAL_WORK_STATUSES
+    ):
         raise ValueError("Only the current work owner can bind a blocker request")
     if blocker["status"] not in {"open", "unavailable"}:
         raise ValueError("Only an unresolved blocker can receive a request")
@@ -131,8 +122,8 @@ def _validate_binding(state, blocker, request_id, actor, work_item_id):
     if not _matches_request(state, blocker, _request(state, request_id), actor, work_item_id):
         raise ValueError("Request does not match blocker work, sender, recipient, or topic")
     if any(
-        other["request_id"] == request_id and other["work_item_id"] != work_item_id
-        for other in state.get("blockers", {}).values()
+        other.get("request_id") == request_id and other["work_item_id"] != work_item_id
+        for other in state.get("condition_specs", {}).values()
     ):
         raise ValueError("A request cannot be shared across work items")
 
@@ -140,36 +131,29 @@ def _validate_binding(state, blocker, request_id, actor, work_item_id):
 def bind_request(state, blocker_id, request_id, actor, work_item_id):
     blocker = _blocker(state, blocker_id)
     _validate_binding(state, blocker, request_id, actor, work_item_id)
-    condition = state.get("condition_specs", {}).get(blocker.get("condition_id"))
     if blocker["request_id"] != request_id:
-        if blocker["request_id"]:
-            blocker.setdefault("prior_request_ids", []).append(blocker["request_id"])
-        blocker["request_id"] = request_id
-        recipient = next(
+        condition = state["condition_specs"][blocker["condition_id"]]
+        condition["request_id"] = request_id
+        condition["requested_role"] = next(
             r for r in _request(state, request_id)["recipients"] if r in condition["providers"]
         )
-        blocker["requested_role"] = recipient
-        _transition(state, blocker, "open", request_id=request_id)
-        if condition:
-            condition["request_id"] = request_id
-            condition["status"] = "open"
-            condition["history"].append(
-                {"at": state["clock"], "status": "open", "request_id": request_id}
-            )
-    return copy.deepcopy(blocker)
+        condition.setdefault("history", []).append(
+            {
+                "at": state["clock"],
+                "event": "bound",
+                "request_id": request_id,
+            }
+        )
+    rebuild_projections(state)
+    return copy.deepcopy(state["blockers"][blocker_id])
 
 
 def resolve_for_reply(state, request_id, responder, topic, scope_version, resolution_ref):
-    """Legacy tool adapter; only generic evidence checks can satisfy conditions."""
     if not resolution_ref:
         raise ValueError("A blocker resolution needs a visible resolution reference")
     resolved = []
-    for blocker in state.get("blockers", {}).values():
-        # Existing unavailable events cannot be replayed to represent recovery.
+    for blocker in derive_blocker_view(state).values():
         if blocker["status"] != "open" or blocker["request_id"] != request_id:
-            continue
-        condition = state.get("condition_specs", {}).get(blocker.get("condition_id"))
-        if condition is None:
             continue
         response = {
             "response_id": f"{request_id}:{resolution_ref.get('message_id', 'reply')}",
@@ -182,45 +166,34 @@ def resolve_for_reply(state, request_id, responder, topic, scope_version, resolu
             "reference": resolution_ref.get("reference"),
             "status": "delivered",
         }
-        if match_response(state, condition, response).status != CheckStatus.PASS:
-            continue
-        apply_response(state, response)
-        # Preserve the legacy tool's exact resolution record shape.
-        blocker["resolution_ref"] = copy.deepcopy(resolution_ref)
-        resolved.append(blocker["blocker_id"])
+        result = apply_response(state, response)
+        if blocker["condition_id"] in result["resolved_conditions"]:
+            resolved.append(blocker["blocker_id"])
     return resolved
 
 
 def supersede_blocker(state, blocker_id, reason, replacement_ref=None):
-    """Retire an obsolete condition without representing it as a satisfied request."""
     blocker = _blocker(state, blocker_id)
-    if blocker["status"] not in {"open", "unavailable"}:
-        raise ValueError("Only outstanding blockers can be superseded")
-    if not isinstance(reason, str) or not reason.strip():
-        raise ValueError("Supersession requires a concrete reason")
-    if blocker.get("condition_id") in state.get("condition_specs", {}):
-        supersede_condition(state, blocker["condition_id"], reason, replacement_ref)
-    else:
-        _transition(state, blocker, "superseded", reason=reason, replacement_ref=replacement_ref)
-        reopen_if_ready(state, blocker["work_item_id"])
-    return copy.deepcopy(blocker)
+    supersede_condition(state, blocker["condition_id"], reason, replacement_ref)
+    return copy.deepcopy(state["blockers"][blocker_id])
 
 
 def mark_unavailable(state, blocker_id, reason, resolution_ref=None):
-    """Record unavailable information; keep the work blocked and preserve history."""
+    """Explicit provider inability fact, used by controlled scenario adapters."""
     blocker = _blocker(state, blocker_id)
     if blocker["status"] != "open":
         raise ValueError("Only an unresolved blocker can be marked unavailable")
     if not isinstance(reason, str) or not reason.strip():
         raise ValueError("Unavailability requires a concrete reason")
-    blocker["resolution_ref"] = copy.deepcopy(resolution_ref)
-    _transition(state, blocker, "unavailable", reason=reason, resolution_ref=resolution_ref)
-    condition = state.get("condition_specs", {}).get(blocker.get("condition_id"))
-    if condition:
-        condition["status"] = "unavailable"
-        if blocker["requested_role"] not in condition["unavailable_providers"]:
-            condition["unavailable_providers"].append(blocker["requested_role"])
-        condition["history"].append(
-            {"at": state["clock"], "status": "unavailable", "reason": reason}
-        )
-    return copy.deepcopy(blocker)
+    condition = state["condition_specs"][blocker["condition_id"]]
+    condition.setdefault("history", []).append(
+        {
+            "at": state["clock"],
+            "event": "unavailability_recorded",
+            "reason": reason,
+            "provider": blocker["requested_role"],
+            "resolution_ref": copy.deepcopy(resolution_ref),
+        }
+    )
+    rebuild_projections(state)
+    return copy.deepcopy(state["blockers"][blocker_id])

@@ -4,6 +4,7 @@ import copy
 
 import pytest
 
+from proworksim.core.projections import rebuild_projections
 from proworksim.core.work import (
     approve_submission,
     blocked_terminal,
@@ -32,7 +33,7 @@ def world_state(worker="writer-zoe", coordinator="desk-lee", reviewer="editor-re
             "blocker_ids": [],
         }
 
-    return {
+    state = {
         "clock": 4,
         "roles": [{"role_id": role} for role in (worker, coordinator, reviewer)],
         "organization": {
@@ -57,6 +58,8 @@ def world_state(worker="writer-zoe", coordinator="desk-lee", reviewer="editor-re
         },
         "events": [],
     }
+    rebuild_projections(state)
+    return state
 
 
 def submit(state, actor="writer-zoe", work_id="release"):
@@ -205,10 +208,13 @@ def test_unavailable_provider_is_not_terminal_with_alternative_or_future_arrival
         "status": "unavailable",
         "providers": ["desk-lee", "editor-ren"],
         "unavailable_providers": ["desk-lee"],
+        "history": [{"event": "unavailability_recorded", "provider": "desk-lee", "at": 4}],
     }
     state["condition_specs"] = {"c1": condition}
     assert not blocked_terminal(state)
-    condition["unavailable_providers"].append("editor-ren")
+    condition["history"].append(
+        {"event": "unavailability_recorded", "provider": "editor-ren", "at": 4}
+    )
     assert blocked_terminal(state)
     state["future_opportunities"] = [
         {"opportunity_id": "later", "condition_id": "c1", "status": "pending"}
@@ -218,13 +224,22 @@ def test_unavailable_provider_is_not_terminal_with_alternative_or_future_arrival
     assert blocked_terminal(state)
 
 
-def test_resolved_blocker_record_is_not_rewritten_by_revision():
+def test_resolved_condition_facts_are_not_rewritten_by_revision():
+    from proworksim.blockers import create_blocker, bind_request, resolve_for_reply
+
     state = world_state()
-    record = {"status": "resolved", "history": [{"status": "resolved", "at": 3}]}
-    state["blockers"] = {"b1": copy.deepcopy(record)}
-    state["work_items"]["release"]["blocker_ids"] = ["b1"]
+    state["messages"] = [
+        {"message_id": "r1", "sender": "writer-zoe", "recipients": ["desk-lee"], "subject": "scope"}
+    ]
+    blocker = create_blocker(
+        state, state["work_items"]["release"], "scope", "desk-lee", 1, "Need approval"
+    )
+    bind_request(state, blocker["blocker_id"], "r1", "writer-zoe", "release")
+    resolve_for_reply(state, "r1", "desk-lee", "scope", 1, {"message_id": "reply"})
+    condition = copy.deepcopy(state["condition_specs"][blocker["condition_id"]])
     revise_requirement(state, ["release"], {"goal": "Revise scope"}, "desk-lee", "New edition")
-    assert state["blockers"]["b1"] == record
+    assert state["condition_specs"][blocker["condition_id"]] == condition
+    assert state["blockers"][blocker["blocker_id"]]["status"] == "resolved"
 
 
 def test_independent_work_actions_commute_in_business_state():
@@ -247,6 +262,8 @@ def test_future_opportunity_for_unrelated_condition_does_not_hide_terminal_block
     state["condition_specs"] = {
         "c1": {
             "condition_id": "c1",
+            "work_item_id": "release",
+            "history": [{"event": "unavailability_recorded", "provider": "desk-lee", "at": 4}],
             "status": "unavailable",
             "providers": ["desk-lee"],
             "unavailable_providers": ["desk-lee"],

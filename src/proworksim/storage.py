@@ -4,6 +4,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -42,6 +43,7 @@ class Store:
         self.root = Path(root).resolve()
         self.control = self.root / "control"
         self.workspace = self.root / "workspace"
+        self.fault_hook = None
 
     @contextmanager
     def lock(self):
@@ -103,6 +105,10 @@ class Store:
         artifact["versions"][version_id] = version
         artifact["current_version"] = version_id
         atomic_write(self.version_path(artifact, version_id), content)
+        if self.fault_hook is not None:
+            self.fault_hook(
+                "version_staged", {"artifact_id": artifact_id, "version_id": version_id}
+            )
         atomic_write(self.current_path(artifact), content)
         refresh_freshness(state)
         version["freshness_at_creation"] = artifact["freshness"]
@@ -110,7 +116,28 @@ class Store:
 
     def recover(self, state: dict):
         """Materialize committed versions after an interrupted write, never recalculate."""
+        from .core.journal import validate_committed_prefix
+
+        validate_committed_prefix(state)
+        # Only referenced version directories are committed facts. Quarantine
+        # staged orphan bytes; do not mistake them for a new committed version.
+        version_root = self.control / "versions"
+        for object_dir in version_root.iterdir() if version_root.exists() else ():
+            if not object_dir.is_dir():
+                continue
+            committed = state.get("artifacts", {}).get(object_dir.name, {}).get("versions", {})
+            for version_dir in object_dir.iterdir():
+                if version_dir.is_dir() and version_dir.name not in committed:
+                    target = self.control / "uncommitted" / object_dir.name / version_dir.name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    if target.exists():
+                        shutil.rmtree(target)
+                    shutil.move(str(version_dir), str(target))
         for artifact in state["artifacts"].values():
+            # Check the immutable committed prefix, not only the latest mirror.
+            for vid, metadata in artifact["versions"].items():
+                if digest(self.version_path(artifact, vid).read_bytes()) != metadata["sha256"]:
+                    raise ValueError("Corrupt immutable artifact version")
             version = artifact["versions"][artifact["current_version"]]
             path = self.current_path(artifact)
             if not path.exists() or digest(path.read_bytes()) != version["sha256"]:

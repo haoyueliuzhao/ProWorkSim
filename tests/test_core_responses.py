@@ -8,6 +8,7 @@ from proworksim.adapters.communication import deliver_reply
 from proworksim.blockers import bind_request, create_blocker
 from proworksim.compiler import compile_world
 from proworksim.core.conditions import apply_response, condition_has_future, match_response
+from proworksim.core.projections import rebuild_projections
 from proworksim.core.rules import confirm_credential
 from proworksim.core.types import CheckStatus, Credential
 from proworksim.designer import design
@@ -16,7 +17,7 @@ from proworksim.kernel import World
 
 def protocol_state(*, providers=("licensor",)):
     state = {
-        "schema_version": "0.4",
+        "schema_version": "0.5",
         "clock": 5,
         "project": {"project_id": "p"},
         "roles": [{"role_id": role} for role in ("author", "licensor", "alternate", "stranger")],
@@ -93,7 +94,7 @@ def protocol_state(*, providers=("licensor",)):
         "purpose": "permission",
         "required_power": "confirm",
         "subject": "license",
-        "history": [],
+        "history": [{"event": "created", "request_id": "request-1", "at": 5}],
         "evidence_spec": {"kind": "credential", "reference": credential.reference},
         "context": {
             "project_id": "p",
@@ -106,7 +107,15 @@ def protocol_state(*, providers=("licensor",)):
             "at": 5,
         },
     }
+    state["condition_specs"]["unrelated-condition"] = {
+        **copy.deepcopy(state["condition_specs"]["permission"]),
+        "condition_id": "unrelated-condition",
+        "work_item_id": "unrelated",
+        "request_id": None,
+        "history": [],
+    }
     add_request(state, "request-1", "licensor")
+    rebuild_projections(state)
     return state
 
 
@@ -194,7 +203,10 @@ def test_matching_topic_cannot_override_request_identity_or_context(changes):
         != CheckStatus.PASS
     )
     assert not apply_response(state, response(**changes))["resolved_conditions"]
-    assert state == before
+    assert state["work_items"] == before["work_items"]
+    assert state["artifacts"] == before["artifacts"]
+    assert state["condition_specs"]["permission"]["status"] == "open"
+    assert state["raw_condition_responses"]["response-1"]["status"] == "delivered"
 
 
 def test_reply_effects_are_local_and_idempotent():
@@ -228,7 +240,12 @@ def test_old_request_after_requirement_replacement_does_not_reopen_work():
         == CheckStatus.NOT_APPLICABLE
     )
     assert not apply_response(state, response())["resolved_conditions"]
-    assert state == before
+    assert state["work_replacements"] == before["work_replacements"]
+    assert state["condition_specs"]["permission"]["status"] == "open"
+    assert (
+        state["condition_responses"]["response-1"]["checks"]["permission"]["status"]
+        == "NOT_APPLICABLE"
+    )
 
 
 def test_alternate_provider_or_future_opportunity_prevents_permanent_unavailable():
@@ -242,7 +259,9 @@ def test_alternate_provider_or_future_opportunity_prevents_permanent_unavailable
     assert condition["status"] == "unavailable"
     assert condition_has_future(state, condition)
     assert not blocked_terminal(state)
-    condition["unavailable_providers"].append("alternate")
+    condition["history"].append(
+        {"event": "unavailability_recorded", "provider": "alternate", "at": 5}
+    )
     assert not condition_has_future(state, condition)
     state["future_opportunities"] = [
         {
@@ -296,11 +315,13 @@ def test_unavailable_recovers_only_with_new_request_and_true_evidence():
     )
     confirm_credential(state, "licensor", record.reference, record)
     add_request(state, "request-2", "licensor")
-    condition.update(request_id="request-2", status="open")
+    condition["request_id"] = "request-2"
+    condition["history"].append({"event": "bound", "request_id": "request-2", "at": 5})
     state["future_opportunities"][0]["status"] = "consumed"
     result = apply_response(state, response(request_id="request-2", response_id="response-2"))
     assert result["resolved_conditions"] == ["permission"]
-    assert condition["history"][0]["status"] == "unavailable"
+    assert condition["history"][1]["event"] == "response_received"
+    assert state["raw_condition_responses"]["response-1"]["status"] == "unavailable"
     assert state["work_items"]["article"]["status"] == "open"
     assert not blocked_terminal(state)
 
@@ -424,6 +445,7 @@ def test_restoration_requires_formal_evidence_and_new_reply_to_reopen(tmp_path):
     restore_information(world, "manager", "scope", "manager", reference, [cid])
     assert state["artifacts"] == files
     assert item["required_basis"] == reference
+    assert item["required_credentials"] == [reference]
     assert item["status"] == "blocked"
     assert not blocked_terminal(state)
     # Replaying the old negative answer is still a no-op after arrival.
@@ -607,6 +629,21 @@ def test_reply_reopening_checks_current_predecessor_after_its_revision(
         "work_item_id": "predecessor@r2",
         "status": current_status,
     }
+    for wid, status in (("predecessor", old_status), ("predecessor@r2", current_status)):
+        state["work_items"][wid]["requirement_version"] = 2 if "@r2" in wid else 1
+        state["work_items"][wid]["submissions"] = (
+            [
+                {
+                    "submission_id": wid + "-approved",
+                    "review": {"decision": "accepted"},
+                    "requirement_version": state["work_items"][wid]["requirement_version"],
+                    "artifact_versions": {},
+                }
+            ]
+            if status == "accepted"
+            else []
+        )
+    rebuild_projections(state)
     predecessor_history = copy.deepcopy(state["work_items"]["predecessor"])
     result = apply_response(state, response())
     assert result["resolved_conditions"] == ["permission"]

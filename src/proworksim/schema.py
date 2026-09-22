@@ -4,8 +4,8 @@ from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from typing import Any
 
-SCHEMA_VERSION = "0.4"
-SUPPORTED_SCHEMA_VERSIONS = ("0.1", "0.2", "0.3", SCHEMA_VERSION)
+SCHEMA_VERSION = "0.5"
+SUPPORTED_SCHEMA_VERSIONS = ("0.1", "0.2", "0.3", "0.4", SCHEMA_VERSION)
 
 
 class Status(StrEnum):

@@ -11,12 +11,13 @@ from pathlib import Path
 
 from ..adapters.action_scopes import projections, tool_frame
 from ..core.conditions import apply_response
+from ..core.projections import derive_current_work_view, projection_paths, rebuild_projections
 from ..core.references import ApplicabilityContext
 from ..core.rules import confirm_credential, registered_applicability
-from ..core.transitions import ActionFrame, execute_transition, ordered_due_events
+from ..core.transitions import ActionFrame
 from ..core.types import CheckStatus, Credential
 from ..core.visibility import grant_version
-from ..core.work import approve_submission, current_id, current_work_items, revise_requirement
+from ..core.work import approve_submission, current_id, revise_requirement
 from ..freshness import refresh_freshness
 from ..kernel import World
 from ..policies.organization import position, require_authority
@@ -90,6 +91,7 @@ def _confirm_policy(store, state, actor, required_phrases, requirement_version, 
 
 
 def _derive_publication(state):
+    rebuild_projections(state)
     refresh_freshness(state)
     state["publication_applicability"] = {
         item["work_item_id"]: [
@@ -144,6 +146,8 @@ def compile_publication(destination, actors=None):
             ],
         },
         "clock": 0,
+        "state_revision": 0,
+        "operation_commits": {},
         "artifacts": {},
         "artifact_contracts": {},
         "work_items": {},
@@ -152,6 +156,7 @@ def compile_publication(destination, actors=None):
         "requests": {},
         "condition_specs": {},
         "condition_responses": {},
+        "raw_condition_responses": {},
         "blockers": {},
         "events": [],
         "event_history": [],
@@ -206,6 +211,8 @@ def compile_publication(destination, actors=None):
         "purpose": "publication",
         "owner_role": author,
         "status": "open",
+        "activated_at": 0,
+        "artifact_edits": [],
         "goal": "Write the source-based publication note",
         "visible_requirements": [
             "Provide nonempty title and body; cite source_note/v1.",
@@ -250,14 +257,20 @@ class PublicationWorld(World):
         return super().observe(actor or position(self.state, "worker"))
 
     def _complete(self):
-        current = current_work_items(self.state)
+        current = [
+            view for view in derive_current_work_view(self.state).values() if view["is_current"]
+        ]
         return bool(current) and all(item["status"] == "accepted" for item in current)
 
     def _derive(self, state):
         _derive_publication(state)
 
     def _action_frame(self, actor, action, arguments):
-        derived = projections(self.state) + (("publication_applicability",),)
+        derived = (
+            projections(self.state)
+            + projection_paths(self.state)
+            + (("publication_applicability",),)
+        )
         if action in {
             "list_files",
             "read_file",
@@ -295,7 +308,7 @@ class PublicationWorld(World):
                 ("condition_specs",),
                 ("blockers",),
                 ("work_items",),
-                ("condition_responses",),
+                ("raw_condition_responses",),
                 ("access_grants",),
                 ("artifacts", "editorial_policy", "version_readers"),
             ],
@@ -316,7 +329,7 @@ class PublicationWorld(World):
                 ("condition_specs", condition_id),
                 ("blockers", condition.get("blocker_id", "")),
                 ("work_items", request.get("work_item_id", "")),
-                ("condition_responses",),
+                ("raw_condition_responses",),
                 ("access_grants",),
                 ("artifacts", "editorial_policy", "version_readers", version),
             ]
@@ -356,7 +369,8 @@ class PublicationWorld(World):
         if (
             actor != item["owner_role"]
             or current_id(self.state, work_item_id) != work_item_id
-            or item["status"] not in {"open", "in_progress", "revision_required"}
+            or derive_current_work_view(self.state)[work_item_id]["status"]
+            not in {"open", "in_progress", "revision_required"}
         ):
             raise ValueError("Only the current available work owner may request its policy")
         editor = position(self.state, "coordinator")
@@ -366,7 +380,7 @@ class PublicationWorld(World):
         message["work_item_id"] = work_item_id
         request_id = message["message_id"]
         condition_id = f"policy-condition-{len(self.state['condition_specs']) + 1}"
-        blocker_id = f"policy-blocker-{len(self.state['blockers']) + 1}"
+        blocker_id = f"policy-blocker-{len(self.state['condition_specs']) + 1}"
         reference = copy.deepcopy(item["required_credentials"][0])
         self.state["requests"][request_id] = {
             "request_id": request_id,
@@ -392,18 +406,12 @@ class PublicationWorld(World):
             "required_power": "confirm",
             "evidence_spec": {"kind": "credential", "reference": reference},
             "context": publication_context(self.state, item).to_dict(),
-            "status": "open",
-            "history": [{"at": self.state["clock"], "status": "open"}],
+            "created_at": self.state["clock"],
+            "detail": "Request the applicable editorial policy",
+            "requested_role": editor,
+            "history": [{"at": self.state["clock"], "event": "created", "request_id": request_id}],
         }
-        self.state["blockers"][blocker_id] = {
-            "blocker_id": blocker_id,
-            "condition_id": condition_id,
-            "work_item_id": work_item_id,
-            "status": "open",
-            "history": [{"at": self.state["clock"], "status": "open"}],
-        }
-        item["blocker_ids"].append(blocker_id)
-        item["status"] = "blocked"
+        rebuild_projections(self.state)
         return {"request_id": request_id, "condition_id": condition_id}
 
     def _tool_reply(self, actor, request_id, version_id=None, status="delivered"):
@@ -457,77 +465,79 @@ class PublicationWorld(World):
         approve_submission(self.state, actor, work_item_id, submission_id)
         return {"work_item_id": work_item_id, "submission_id": submission_id, "status": "accepted"}
 
-    def _drain_events(self):
-        for event in ordered_due_events(self.state["events"], self.state["clock"]):
-            self.state["events"].remove(event)
-            if event["kind"] != "review":
-                raise ValueError("Unknown publication event")
-            item = self.state["work_items"][event["payload"]["work_item_id"]]
-            submission = next(
-                sub
-                for sub in item["submissions"]
-                if sub["submission_id"] == event["payload"]["submission_id"]
-            )
-            if submission["invalidated"] or item["status"] != "in_review":
-                self.state["event_history"].append({**event, "outcome": "superseded"})
-                continue
-            editor = position(self.state, "reviewer")
-            frame = ActionFrame(
-                "publication_review",
-                (
-                    ("work_items", item["work_item_id"]),
-                    ("artifacts", "draft"),
-                    ("knowledge", editor),
-                    ("messages",),
-                    ("interactions",),
-                ),
-                projections(self.state) + (("publication_applicability",),),
-            )
+    def _event_frame(self, event):
+        if event["kind"] != "review":
+            raise ValueError("Unknown publication event")
+        item = self.state["work_items"][event["payload"]["work_item_id"]]
+        editor = position(self.state, "reviewer")
+        return ActionFrame(
+            "publication_review",
+            (
+                ("work_items", item["work_item_id"]),
+                ("artifacts", "draft"),
+                ("knowledge", editor),
+                ("messages",),
+                ("interactions",),
+            ),
+            projections(self.state)
+            + projection_paths(self.state)
+            + (("publication_applicability",),),
+        )
 
-            def review():
-                self._reads = []
-                version = submission["artifact_versions"]["draft"]
-                try:
-                    content = json.loads(self._read(editor, "draft", version))
-                except (ValueError, UnicodeError):
-                    content = None
-                defects = []
-                if not isinstance(content, dict) or any(
-                    not isinstance(content.get(key), str) or not content[key].strip()
-                    for key in ("title", "body")
-                ):
-                    defects.append("Provide nonempty title and body fields")
-                reference = item["required_credentials"][0]
-                if (
-                    registered_applicability(
-                        self.state, reference, publication_context(self.state, item)
-                    ).status
-                    != CheckStatus.PASS
-                    or reference
-                    not in self.state["artifacts"]["draft"]["versions"][version]["derived_from"]
-                ):
-                    defects.append("Adopt the applicable confirmed editorial policy")
-                if defects:
-                    submission["review"] = {
-                        "decision": "revision_required",
-                        "actor_id": editor,
-                        "at": self.state["clock"],
-                        "defects": defects,
-                    }
-                    item["status"] = "revision_required"
-                    result = copy.deepcopy(submission["review"])
-                else:
-                    result = self._tool_approve(
-                        editor, item["work_item_id"], submission["submission_id"]
-                    )
-                self._message(editor, [item["owner_role"]], "Publication field review", result)
-                self._staff_record(editor, "review", event["payload"], result, self._reads)
-                return result
-
-            _, receipt = execute_transition(self.state, frame, review, self._derive)
-            self.state["event_history"].append(
-                {**event, "outcome": "applied", "transition": receipt}
-            )
+    def _apply_event(self, event):
+        if event["kind"] != "review":
+            raise ValueError("Unknown publication event")
+        item = self.state["work_items"][event["payload"]["work_item_id"]]
+        submission = next(
+            sub
+            for sub in item["submissions"]
+            if sub["submission_id"] == event["payload"]["submission_id"]
+        )
+        view = derive_current_work_view(self.state)[item["work_item_id"]]
+        if (
+            submission["invalidated"]
+            or not view["is_current"]
+            or view["pending_submission_id"] != submission["submission_id"]
+        ):
+            return {"outcome": "superseded", "result": None}
+        editor = position(self.state, "reviewer")
+        self._reads = []
+        version = submission["artifact_versions"]["draft"]
+        try:
+            content = json.loads(self._read(editor, "draft", version))
+        except (ValueError, UnicodeError):
+            content = None
+        defects = []
+        if not view["dependencies_ready"] or view["outstanding_condition_ids"]:
+            defects.append("Current prerequisites are not satisfied")
+        if not isinstance(content, dict) or any(
+            not isinstance(content.get(key), str) or not content[key].strip()
+            for key in ("title", "body")
+        ):
+            defects.append("Provide nonempty title and body fields")
+        reference = item["required_credentials"][0]
+        if (
+            registered_applicability(
+                self.state, reference, publication_context(self.state, item)
+            ).status
+            != CheckStatus.PASS
+            or reference
+            not in self.state["artifacts"]["draft"]["versions"][version]["derived_from"]
+        ):
+            defects.append("Adopt the applicable confirmed editorial policy")
+        if defects:
+            submission["review"] = {
+                "decision": "revision_required",
+                "actor_id": editor,
+                "at": self.state["clock"],
+                "defects": defects,
+            }
+            result = copy.deepcopy(submission["review"])
+        else:
+            result = self._tool_approve(editor, item["work_item_id"], submission["submission_id"])
+        self._message(editor, [item["owner_role"]], "Publication field review", result)
+        self._staff_record(editor, "review", event["payload"], result, self._reads)
+        return {"outcome": "applied", "result": result}
 
 
 def evaluate_publication(world, work_item_id=None):

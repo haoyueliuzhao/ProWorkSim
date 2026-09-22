@@ -71,8 +71,8 @@ def test_derive_is_repeatable_without_creating_new_base_records():
     after = copy.deepcopy(state)
     _, second = execute_transition(state, frame, lambda: None, derive)
     assert state == after
-    assert first["direct_changes"] == []
-    assert second["derived_changes"] == []
+    assert first["primary_region_changes"] == []
+    assert second["projection_region_changes"] == []
 
 
 def test_simultaneous_events_follow_enqueue_order_not_random_identifiers():
@@ -104,3 +104,45 @@ def test_failed_action_keeps_business_effects_but_clock_can_deliver_reply(tmp_pa
     attempt = next(r for r in after["interactions"] if r["action_id"] == result["action_id"])
     assert attempt["transition"]["rolled_back"]
     assert after["event_history"][-1]["transition"]["frame_respected"]
+
+
+def test_receipt_records_execution_phase_separately_from_field_region():
+    state = {"base": 0, "view": 0}
+    _, receipt = execute_transition(
+        state, ActionFrame("ApplyProjection", (), (("view",),)), lambda: state.update(view=1)
+    )
+    assert receipt["apply_delta"] == [["view"]]
+    assert receipt["derive_delta"] == []
+    assert receipt["net_delta"] == [["view"]]
+    assert receipt["primary_region_changes"] == []
+    assert receipt["projection_region_changes"] == [["view"]]
+    assert receipt["committed_revision"] is None
+
+
+def test_receipt_keeps_both_phases_when_their_effects_cancel():
+    state = {"base": 0, "view": 0}
+    _, receipt = execute_transition(
+        state,
+        ActionFrame("Cancel", (), (("view",),)),
+        lambda: state.update(view=1),
+        lambda s: s.update(view=0),
+    )
+    assert receipt["apply_delta"] == receipt["derive_delta"] == [["view"]]
+    assert receipt["net_delta"] == []
+    assert receipt["state_digests"]["before"] == receipt["state_digests"]["after_derive"]
+    assert receipt["state_digests"]["before"] != receipt["state_digests"]["after_apply"]
+
+
+def test_failed_phase_is_not_reported_as_a_completed_empty_delta():
+    state = {"primary": 0}
+
+    def partial_apply():
+        state["primary"] = 1
+        raise ValueError("Stopped during apply")
+
+    with pytest.raises(ValueError) as raised:
+        execute_transition(state, ActionFrame("Partial", (("primary",),)), partial_apply)
+    receipt = raised.value.transition_receipt
+    assert receipt["apply_delta"] is None and receipt["derive_delta"] is None
+    assert receipt["attempted_delta"] == [["primary"]]
+    assert receipt["net_delta"] == [] and state == {"primary": 0}

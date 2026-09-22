@@ -30,9 +30,12 @@ def _current(state, work_id):
 
 def condition_has_future(state, condition):
     """A provider's current inability does not exhaust other explicit routes."""
-    if condition.get("status") in {"resolved", "superseded"}:
+    from .projections import derive_condition_view
+
+    view = derive_condition_view(state).get(condition["condition_id"], condition)
+    if view.get("status") in {"resolved", "superseded"}:
         return False
-    unavailable = set(condition.get("unavailable_providers", []))
+    unavailable = set(view.get("unavailable_providers", []))
     if any(provider not in unavailable for provider in condition.get("providers", [])):
         return True
     return any(
@@ -79,8 +82,21 @@ def check_evidence(state, condition, response):
     return registered_applicability(state, response["reference"], context)
 
 
-def match_response(state, condition, response):
+def _match_response(state, condition, response, replay=False):
     """Pure four-valued satisfaction check over a real request and its evidence."""
+    if replay and response.get("receipt_context"):
+        receipt_facts = response["receipt_context"]
+        state = {
+            **state,
+            "organization": receipt_facts["organization"],
+            "artifacts": receipt_facts["evidence_artifacts"],
+            "objects": receipt_facts["evidence_objects"],
+            "attestations": receipt_facts["evidence_attestations"],
+        }
+        condition = {
+            **condition,
+            **receipt_facts.get("condition_facts", {}).get(condition["condition_id"], {}),
+        }
     if condition.get("status") in {"resolved", "superseded"}:
         return _check("NOT_APPLICABLE", "condition_is_closed")
     if condition.get("status") == "unavailable":
@@ -89,14 +105,28 @@ def match_response(state, condition, response):
     if request_id != condition.get("request_id"):
         return _check("NOT_APPLICABLE", "different_request")
     item = state.get("work_items", {}).get(condition.get("work_item_id"))
-    if (
-        item is None
-        or item.get("status") in INACTIVE_WORK
-        or not _current(state, item["work_item_id"])
-    ):
+    receipt = response.get("receipt_context", {}) if replay else {}
+    replacements = receipt.get("work_replacements", state.get("work_replacements", {}))
+    accepted = (
+        receipt.get("accepted_submission_id")
+        if replay and receipt
+        else next(
+            (
+                sub.get("submission_id", "accepted")
+                for sub in (item or {}).get("submissions", [])
+                if (sub.get("review") or {}).get("decision") == "accepted"
+            ),
+            None,
+        )
+    )
+    cancelled = (
+        receipt.get("cancelled_at") if replay and receipt else (item or {}).get("cancelled_at")
+    )
+    if item is None or item["work_item_id"] in replacements or accepted or cancelled is not None:
         return _check("NOT_APPLICABLE", "work_is_not_current")
     requirement_version = condition.get("requirement_version")
-    if item.get("requirement_version") != requirement_version:
+    work_revision = receipt.get("requirement_version", (item or {}).get("requirement_version"))
+    if work_revision != requirement_version:
         return _check("NOT_APPLICABLE", "condition_requirement_is_obsolete")
     request = state.get("requests", {}).get(request_id)
     message = next(
@@ -153,114 +183,142 @@ def match_response(state, condition, response):
         return _check("UNASSESSED", "provider_currently_unavailable", provider=responder)
     if response.get("status") != "delivered":
         return _check("FAIL", "response_does_not_supply_evidence")
-    return check_evidence(state, condition, response)
+    evidence_state = {
+        **state,
+        "clock": response.get("received_at", state["clock"]) if replay else state["clock"],
+    }
+    return check_evidence(evidence_state, condition, response)
+
+
+def match_response(state, condition, response):
+    """Check the same pure condition view used by work readiness and observations."""
+    from .projections import derive_condition_view
+
+    view = derive_condition_view(state).get(condition["condition_id"], {})
+    return _match_response(state, {**condition, **view}, response)
 
 
 def reopen_work(state, work_id):
-    item = state["work_items"][work_id]
-    if item.get("status") != "blocked" or not _current(state, work_id):
-        return False
-    conditions = [
-        c for c in state.get("condition_specs", {}).values() if c["work_item_id"] == work_id
-    ]
-    if any(c.get("status") not in {"resolved", "superseded"} for c in conditions):
-        return False
-    if any(
-        state.get("blockers", {}).get(bid, {}).get("status") not in {"resolved", "superseded"}
-        for bid in item.get("blocker_ids", [])
-    ):
-        return False
-    from .work import dependencies_ready
+    from .projections import derive_current_work_view, rebuild_projections
 
-    if not dependencies_ready(state, item):
-        return False
-    item["status"] = "open"
-    item["blocker"] = None
-    return True
-
-
-def _transition(state, condition, status, **details):
-    condition["status"] = status
-    condition.setdefault("history", []).append(
-        {"at": state["clock"], "status": status, **copy.deepcopy(details)}
-    )
-    blocker = state.get("blockers", {}).get(condition.get("blocker_id"))
-    if blocker:
-        blocker["status"] = status
-        if "resolution_ref" in details:
-            blocker["resolution_ref"] = copy.deepcopy(details["resolution_ref"])
-        blocker["history"].append(
-            {"at": state["clock"], "status": status, **copy.deepcopy(details)}
-        )
+    view = derive_current_work_view(state).get(work_id, {})
+    rebuild_projections(state)
+    return view.get("is_current", False) and view.get("status") == "open"
 
 
 def apply_response(state, response):
-    """Apply satisfaction effects only; callers separately deliver/record mail.
+    """Record every real response; satisfaction is a replaceable pure projection."""
+    from .projections import rebuild_projections
 
-    Idempotency is keyed by a concrete response ID. Repeated processing neither
-    extends histories nor reopens work. Failed checks do not mutate conditions.
-    """
     response_id = response.get("response_id")
     if not response_id:
         raise ValueError("A response event needs an identity")
-    previous = state.get("condition_responses", {}).get(response_id)
-    if previous is not None:
-        return copy.deepcopy(previous)
-    result = {
-        "response_id": response_id,
-        "checks": {},
-        "resolved_conditions": [],
-        "reopened_work_items": [],
-    }
-    touched = False
-    for condition in state.get("condition_specs", {}).values():
-        if condition.get("request_id") != response.get("request_id"):
-            continue
-        changed = False
-        check = match_response(state, condition, response)
-        result["checks"][condition["condition_id"]] = check.to_dict()
-        resolution = {
-            "message_id": response_id,
-            "reference": copy.deepcopy(response.get("reference")),
+    records = state.get("raw_condition_responses", {})
+    if response_id in records:
+        existing = {
+            k: v
+            for k, v in records[response_id].items()
+            if k not in {"received_at", "receipt_context", "received_sequence"}
         }
-        if check.status == CheckStatus.PASS:
-            _transition(
-                state,
-                condition,
-                "resolved",
-                responder=response["responder"],
-                resolution_ref=resolution,
-            )
-            result["resolved_conditions"].append(condition["condition_id"])
-            touched = changed = True
-        elif (
-            check.status == CheckStatus.UNASSESSED
-            and "provider_currently_unavailable" in check.reasons
+        incoming = {
+            k: v
+            for k, v in response.items()
+            if k not in {"received_at", "receipt_context", "received_sequence"}
+        }
+        if existing != incoming:
+            raise ValueError("A response identity cannot be reused for different evidence")
+        rebuild_projections(state)
+        return copy.deepcopy(state["condition_responses"][response_id])
+    item = state.get("work_items", {}).get(response.get("work_item_id"), {})
+    reference = _reference(response.get("reference"))
+    evidence_artifacts, evidence_objects, attestations = {}, {}, {}
+    if reference:
+        for registry, target in (("artifacts", evidence_artifacts), ("objects", evidence_objects)):
+            artifact = state.get(registry, {}).get(reference[0])
+            if artifact is not None:
+                version = artifact.get("versions", {}).get(reference[1])
+                target[reference[0]] = {
+                    "versions": {reference[1]: copy.deepcopy(version)}
+                    if version is not None
+                    else {}
+                }
+                attestation_id = (version or {}).get("credential", {}).get("attestation_ref")
+                if attestation_id in state.get("attestations", {}):
+                    attestations[attestation_id] = copy.deepcopy(
+                        state["attestations"][attestation_id]
+                    )
+    condition_facts = {}
+    for cid, definition in state.get("condition_specs", {}).items():
+        if response.get("request_id") in (
+            {definition.get("request_id")}
+            | {event.get("request_id") for event in definition.get("history", [])}
         ):
-            providers = condition.setdefault("unavailable_providers", [])
-            if response["responder"] not in providers:
-                providers.append(response["responder"])
-            _transition(
-                state,
-                condition,
-                "unavailable",
-                reason=response.get("reason", "Provider currently cannot supply the evidence"),
-                resolution_ref=resolution,
+            condition_facts[cid] = {
+                key: copy.deepcopy(definition[key])
+                for key in (
+                    "evidence_spec",
+                    "context",
+                    "providers",
+                    "expected_version",
+                    "purpose",
+                    "required_power",
+                    "subject",
+                )
+                if key in definition
+            }
+    state.setdefault("raw_condition_responses", {})[response_id] = {
+        **copy.deepcopy(response),
+        "received_at": state["clock"],
+        "received_sequence": len(records) + 1,
+        # Pin source facts at receipt, not a success/failure conclusion. Later
+        # approval or replacement cannot change what was current when mail arrived.
+        "receipt_context": {
+            "organization": copy.deepcopy(state.get("organization", {})),
+            "evidence_artifacts": evidence_artifacts,
+            "evidence_objects": evidence_objects,
+            "evidence_attestations": attestations,
+            "condition_facts": condition_facts,
+            "work_replacements": copy.deepcopy(state.get("work_replacements", {})),
+            "requirement_version": item.get("requirement_version"),
+            "cancelled_at": item.get("cancelled_at"),
+            "accepted_submission_id": next(
+                (
+                    sub.get("submission_id", "accepted")
+                    for sub in item.get("submissions", [])
+                    if (sub.get("review") or {}).get("decision") == "accepted"
+                ),
+                None,
+            ),
+        },
+    }
+    for condition in state.get("condition_specs", {}).values():
+        # Keep obsolete and unsatisfied responses as receipt facts too.
+        bindings = {condition.get("request_id")} | {
+            event.get("request_id") for event in condition.get("history", [])
+        }
+        if response.get("request_id") in bindings:
+            condition.setdefault("history", []).append(
+                {"at": state["clock"], "event": "response_received", "response_id": response_id}
             )
-            touched = changed = True
-        if changed and reopen_work(state, condition["work_item_id"]):
-            result["reopened_work_items"].append(condition["work_item_id"])
-    if touched:
-        state.setdefault("condition_responses", {})[response_id] = copy.deepcopy(result)
-    return result
+    rebuild_projections(state)
+    return copy.deepcopy(state["condition_responses"][response_id])
 
 
 def supersede_condition(state, condition_id, reason, replacement_ref=None):
+    from .projections import derive_condition_view, rebuild_projections
+
     condition = state["condition_specs"][condition_id]
-    if condition["status"] not in {"open", "unavailable"}:
+    if derive_condition_view(state)[condition_id]["status"] not in {"open", "unavailable"}:
         raise ValueError("Only outstanding conditions can be superseded")
     if not isinstance(reason, str) or not reason.strip():
         raise ValueError("Supersession requires a concrete reason")
-    _transition(state, condition, "superseded", reason=reason, replacement_ref=replacement_ref)
-    reopen_work(state, condition["work_item_id"])
+    condition.setdefault("history", []).append(
+        {
+            "at": state["clock"],
+            "event": "superseded",
+            "reason": reason,
+            "replacement_ref": copy.deepcopy(replacement_ref),
+        }
+    )
+    rebuild_projections(state)
     return copy.deepcopy(condition)

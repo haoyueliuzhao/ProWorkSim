@@ -2,6 +2,7 @@ import copy
 
 import pytest
 
+from proworksim.core.projections import rebuild_projections
 from proworksim.blockers import (
     bind_request,
     create_blocker,
@@ -61,7 +62,7 @@ def test_reply_resolves_only_its_work_and_preserves_other_blockers(state):
     resolved = state["blockers"][scope["blocker_id"]]
     assert resolved["detail"] == scope["detail"]
     assert resolved["history"][:2] == scope["history"]
-    assert resolved["resolution_ref"] == {"message_id": "reply-1"}
+    assert resolved["resolution_ref"] == {"message_id": "request-1:reply-1", "reference": None}
 
 
 @pytest.mark.parametrize(
@@ -76,11 +77,14 @@ def test_reply_resolves_only_its_work_and_preserves_other_blockers(state):
         {"version": None},
     ],
 )
-def test_irrelevant_and_old_replies_do_not_change_any_state(state, kwargs):
+def test_irrelevant_and_old_replies_preserve_work_while_recording_receipt(state, kwargs):
     request(state, block(state), "request-1")
     before = copy.deepcopy(state)
     assert reply(state, **kwargs) == []
-    assert state == before
+    assert state["work_items"] == before["work_items"]
+    assert state["condition_specs"]["condition-1"]["status"] == "open"
+    if kwargs.get("request_id") != "unrelated-request":
+        assert state["raw_condition_responses"]
 
 
 def test_multiple_conditions_and_predecessor_must_all_be_satisfied(state):
@@ -91,8 +95,10 @@ def test_multiple_conditions_and_predecessor_must_all_be_satisfied(state):
     assert reply(state) == [scope["blocker_id"]]
     assert item["status"] == "blocked"
     assert reply(state, "request-2", topic="evidence", version=None) == [evidence["blocker_id"]]
-    assert item["status"] == "blocked"
-    state["work_items"]["note-1"]["status"] = "accepted"
+    assert item["status"] == "waiting_dependencies"
+    state["work_items"]["note-1"]["submissions"] = [
+        {"submission_id": "approved-note", "review": {"decision": "accepted"}}
+    ]
     assert reopen_if_ready(state, "memo-1")
     assert item["status"] == "open"
     before = copy.deepcopy(state)
@@ -136,7 +142,20 @@ def test_invalid_request_on_creation_does_not_leave_partial_blocker(state):
 def test_terminal_work_is_never_reopened_by_old_reply_or_retired_blocker(state, status):
     blocker = request(state, block(state), "request-1")
     item = state["work_items"]["memo-1"]
-    item["status"] = status
+    if status == "accepted":
+        item["submissions"] = [
+            {"submission_id": "approved-memo", "review": {"decision": "accepted"}}
+        ]
+    elif status == "cancelled":
+        item["cancelled_at"] = state["clock"]
+    else:
+        state["work_replacements"] = {"memo-1": "memo-2"}
+        state["work_items"]["memo-2"] = {
+            **copy.deepcopy(item),
+            "work_item_id": "memo-2",
+            "requirement_version": 2,
+        }
+    rebuild_projections(state)
     assert reply(state) == []
     supersede_blocker(state, blocker["blocker_id"], "该工作已经被替代")
     assert item["status"] == status
@@ -147,7 +166,8 @@ def test_late_reply_for_previous_requirement_does_not_apply_to_new_requirement(s
     state["work_items"]["memo-1"]["requirement_version"] = 2
     before = copy.deepcopy(state)
     assert reply(state) == []
-    assert state == before
+    assert state["work_items"] == before["work_items"]
+    assert state["condition_specs"]["condition-1"]["status"] == "open"
 
 
 def test_unavailable_condition_keeps_work_blocked_until_explicitly_superseded(state):

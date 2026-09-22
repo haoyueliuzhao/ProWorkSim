@@ -239,10 +239,12 @@ def test_short_answer_requires_the_specified_locations(world_factory):
     assert not next(c for c in record["checks"] if c["name"] == "answer_citations")["passed"]
 
 
-def test_nonfinite_input_is_a_recorded_error_not_a_broken_world(world_factory):
+def test_nonfinite_input_is_rejected_before_command_identity_without_breaking_world(world_factory):
     world = world_factory("file")
     session = world.session()
+    before = world.store.load()
     result = session.call("sheet_update", cells={"Inputs!B2": float("nan")})
-    assert not result["ok"]
-    assert "invalid_input" in world.store.load()["interactions"][-1]["inputs"]
+    assert not result["ok"] and result["error"]["type"] == "InvalidInput"
+    assert not result["command_committed"]
+    assert world.store.load() == before
     assert session.call("sheet_read")["ok"]

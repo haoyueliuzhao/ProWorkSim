@@ -140,6 +140,10 @@ def activate_ready(state, spec, origin):
                     item["basis_requirement_version"] = prior.get(
                         "basis_requirement_version", prior["requirement_version"]
                     )
+        item["required_credentials"] = (
+            [dict(item["required_basis"])]
+            if item.get("required_basis") and list(node["deliverables"]) != ["answer"] else []
+        )
         if list(node["deliverables"]) == ["memo"]:
             item["goal"] = "将研究备忘录同步到已提交模型，维护实际依赖和证据引用。"
             item["visible_requirements"] = [
@@ -166,7 +170,9 @@ def activate_ready(state, spec, origin):
         state["work_items"][node["node_id"]] = item
     # Work-specific applicability is known only after activation has finished.
     from .freshness import refresh_freshness
+    from .core.projections import rebuild_projections
 
+    rebuild_projections(state)
     refresh_freshness(state)
 
 
@@ -176,17 +182,6 @@ def on_accept(world):
     spec = read_json(world.store.control / "spec.json")
     if "workflow" not in world.state:
         configure(world.state, spec)
-    for item in current_work_items(world.state):
-        item["dependencies"] = [current_id(world.state, dep) for dep in item["dependencies"]]
-        if item["status"] == "waiting_dependencies" and all(
-            (current_item(world.state, dep) or {}).get("status") == "accepted"
-            for dep in item["dependencies"]
-        ):
-            item["status"] = "open"
-        if item["status"] == "blocked":
-            from .blockers import reopen_if_ready
-
-            reopen_if_ready(world.state, item["work_item_id"])
     activate_ready(world.state, spec, "predecessor-accepted")
     for rule in world.state["workflow"]["event_rules"]:
         if rule["rule_id"] in world.state["fired_rules"]:

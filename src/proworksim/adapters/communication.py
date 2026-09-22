@@ -4,6 +4,7 @@ import copy
 import json
 
 from ..core.conditions import apply_response
+from ..core.projections import derive_condition_view, derive_current_work_view, rebuild_projections
 from ..core.types import CheckStatus
 from ..policies.organization import authority
 
@@ -128,7 +129,8 @@ def _current(state, request):
     return (
         item["work_item_id"] not in state.get("work_replacements", {})
         and item["requirement_version"] == request["requirement_version"]
-        and item["status"] not in {"superseded", "cancelled"}
+        and derive_current_work_view(state)[item["work_item_id"]]["status"]
+        not in {"superseded", "cancelled"}
     )
 
 
@@ -325,6 +327,8 @@ def restore_information(
     if len(set(condition_ids)) != len(condition_ids):
         raise ValueError("Restoration condition identifiers must be unique")
     validated = []
+    conditions_view = derive_condition_view(state)
+    work_view = derive_current_work_view(state)
     for condition_id in condition_ids:
         condition = state.get("condition_specs", {}).get(condition_id)
         if condition is None or condition.get("purpose") != topic:
@@ -333,8 +337,8 @@ def restore_information(
         if (
             item["work_item_id"] in state.get("work_replacements", {})
             or item["requirement_version"] != condition["requirement_version"]
-            or item["status"] in {"accepted", "superseded", "cancelled"}
-            or condition["status"] not in {"open", "unavailable"}
+            or work_view[item["work_item_id"]]["status"] in {"accepted", "superseded", "cancelled"}
+            or conditions_view[condition_id]["status"] not in {"open", "unavailable"}
         ):
             raise ValueError("Restoration cannot change historical or completed obligations")
         node = item.get("node_id", item["work_item_id"])
@@ -384,7 +388,6 @@ def restore_information(
         condition.setdefault("history", []).append(
             {
                 "at": state["clock"],
-                "status": condition["status"],
                 "event": "information_available",
                 "actor_id": actor,
                 "provider": provider,
@@ -392,10 +395,10 @@ def restore_information(
                 "reason": reason,
             }
         )
-        if provider in condition.get("unavailable_providers", []):
-            condition["unavailable_providers"].remove(provider)
         if source and item.get(source) is None:
             item[source] = copy.deepcopy(reference)
+            if source == "required_basis":
+                item["required_credentials"] = [copy.deepcopy(reference)]
     if opportunity:
         opportunity["status"] = "consumed"
         opportunity["consumed_at"] = state["clock"]
@@ -434,4 +437,5 @@ def restore_information(
         )
         result.setdefault("notice_message_ids", []).append(notice["message_id"])
     state.setdefault("information_restorations", []).append(result)
+    rebuild_projections(state)
     return copy.deepcopy(result)

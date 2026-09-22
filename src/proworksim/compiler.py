@@ -18,6 +18,7 @@ from .schema import SCHEMA_VERSION, WorkItem, WorldSpec
 from .spreadsheet import Spreadsheet
 from .storage import Store, atomic_write, json_bytes
 from .policies.organization import operating_organization
+from .core.projections import rebuild_projections
 
 INPUT_CELLS = {
     "revenue": "B2",
@@ -168,6 +169,8 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
     layout = layout_for(raw_spec)
     state = {
         "schema_version": SCHEMA_VERSION,
+        "state_revision": 0,
+        "operation_commits": {},
         "contract_version": CONTRACT_VERSION,
         "artifact_contracts": artifact_contracts(),
         "instance_id": uuid.uuid4().hex,
@@ -445,5 +448,6 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
             }
         )
     atomic_write(store.control / "spec.json", json_bytes(raw_spec))
+    rebuild_projections(state)
     store.save(state)
     return root

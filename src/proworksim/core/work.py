@@ -9,6 +9,12 @@ import copy
 
 from ..policies.organization import require_authority
 from .references import resolve_version
+from .projections import (
+    derive_condition_view,
+    derive_current_work_view,
+    rebuild_projections,
+    submission_versions_current,
+)
 
 INACTIVE = frozenset({"superseded", "cancelled"})
 REQUIREMENT_FIELDS = frozenset(
@@ -43,23 +49,25 @@ def current_item(state, work_id):
 
 def dependencies_ready(state, item):
     """Readiness follows the current replacement of each declared predecessor."""
-    return all(
-        (current_item(state, dep) or {}).get("status") == "accepted"
-        for dep in item.get("dependencies", [])
-    )
+    return derive_current_work_view(state)[item["work_item_id"]]["dependencies_ready"]
 
 
 def current_work_items(state):
+    views = derive_current_work_view(state)
     return [
         item
         for key, item in state["work_items"].items()
-        if current_id(state, key) == key and item["status"] not in INACTIVE
+        if views[key]["is_current"] and views[key]["status"] not in INACTIVE
     ]
 
 
 def _current_item(state, work_id):
     item = state.get("work_items", {}).get(work_id)
-    if item is None or current_id(state, work_id) != work_id or item["status"] in INACTIVE:
+    if (
+        item is None
+        or current_id(state, work_id) != work_id
+        or derive_current_work_view(state)[work_id]["status"] in INACTIVE
+    ):
         raise ValueError("Work is not a current obligation")
     return item
 
@@ -119,6 +127,8 @@ def revise_requirement(state, targets, updates, actor, reason):
         work_id in state["work_items"] for work_id in replacements.values()
     ):
         raise ValueError("Requirement revision already exists")
+    condition_views = derive_condition_view(state)
+    work_views = derive_current_work_view(state)
     for old in items:
         old_id = old["work_item_id"]
         new_id = replacements[old_id]
@@ -129,6 +139,7 @@ def revise_requirement(state, targets, updates, actor, reason):
             requirement_version=revision,
             status="open",
             submissions=[],
+            artifact_edits=[],
             blocker=None,
             blocker_ids=[],
             activated_at=state["clock"],
@@ -142,39 +153,25 @@ def revise_requirement(state, targets, updates, actor, reason):
         state.setdefault("work_replacements", {})[old_id] = new_id
         old["applicability"] = "superseded_requirements"
         old["superseded_by"] = new_id
-        if old["status"] != "accepted":
+        if work_views[old_id]["status"] != "accepted":
             old["status"] = "superseded"
         for submission in old.get("submissions", []):
             submission["current_applicability"] = "superseded_requirements"
             if submission.get("review") is None:
                 submission["invalidated"] = True
                 submission["invalidation_reason"] = reason
-        for blocker_id in old.get("blocker_ids", []):
-            blocker = state.get("blockers", {}).get(blocker_id, {})
-            if blocker.get("status") not in {"open", "unavailable"}:
+        for cid, condition in state.get("condition_specs", {}).items():
+            if condition["work_item_id"] != old_id or condition_views[cid]["status"] not in {
+                "open",
+                "unavailable",
+            }:
                 continue
-            if blocker.get("condition_id"):
-                from .conditions import supersede_condition
+            from .conditions import supersede_condition
 
-                supersede_condition(
-                    state, blocker["condition_id"], reason, {"work_item_id": new_id}
-                )
-            else:
-                # Pre-core worlds retain their recorded blocker representation.
-                blocker["status"] = "superseded"
-                blocker.setdefault("history", []).append(
-                    {
-                        "at": state["clock"],
-                        "status": "superseded",
-                        "reason": reason,
-                        "replacement_ref": {"work_item_id": new_id},
-                    }
-                )
+            supersede_condition(state, cid, reason, {"work_item_id": new_id})
     for new_id in replacements.values():
         item = state["work_items"][new_id]
         item["dependencies"] = [current_id(state, dep) for dep in item.get("dependencies", [])]
-        if any(state["work_items"][dep]["status"] != "accepted" for dep in item["dependencies"]):
-            item["status"] = "waiting_dependencies"
     state.setdefault("requirement_events", []).append(
         {
             "actor_id": actor,
@@ -184,6 +181,7 @@ def revise_requirement(state, targets, updates, actor, reason):
             "updates": copy.deepcopy(updates),
         }
     )
+    rebuild_projections(state)
     return replacements
 
 
@@ -197,10 +195,10 @@ def submit_work(
     """
     item = _current_item(state, work_item_id)
     _require_owner(state, item, actor)
-    if item["status"] not in {"open", "in_progress", "revision_required"}:
-        raise ValueError("Work is not open for submission by this actor")
     if not dependencies_ready(state, item):
         raise ValueError("Work dependencies have not been accepted")
+    if "submit" not in derive_current_work_view(state)[work_item_id]["enabled_actions"]:
+        raise ValueError("Work is not open for submission by this actor")
     if "answer" in item.get("deliverables", []) and answer is None:
         raise ValueError("This task requires an answer")
     expected = set(item.get("deliverables", [])) - {"answer"}
@@ -230,17 +228,17 @@ def submit_work(
             raise ValueError("Submission extensions cannot overwrite core fields")
         submission.update(copy.deepcopy(extensions))
     item["submissions"].append(submission)
-    item["status"] = "in_review"
+    rebuild_projections(state)
     return copy.deepcopy(submission)
 
 
 def _pending_submission(state, item, submission_id):
-    if item["status"] != "in_review" or not item.get("submissions"):
+    view = derive_current_work_view(state)[item["work_item_id"]]
+    if view["pending_submission_id"] is None:
         raise ValueError("Work is not awaiting review")
-    submission = item["submissions"][-1]
-    if submission["submission_id"] != submission_id or submission.get("invalidated"):
+    if view["pending_submission_id"] != submission_id:
         raise ValueError("Submission is not current and pending")
-    return submission
+    return item["submissions"][-1]
 
 
 def withdraw_submission(state, actor, work_item_id, submission_id, reason):
@@ -257,7 +255,7 @@ def withdraw_submission(state, actor, work_item_id, submission_id, reason):
         "at": state["clock"],
         "reason": reason,
     }
-    item["status"] = "in_progress"
+    rebuild_projections(state)
     return {"submission_id": submission_id, "status": "withdrawn"}
 
 
@@ -270,16 +268,11 @@ def approve_submission(state, actor, work_item_id, submission_id):
     if not dependencies_ready(state, item):
         raise ValueError("Current work dependencies have not been accepted")
     submission = _pending_submission(state, item, submission_id)
-    if (
-        submission["requirement_version"] != item["requirement_version"]
-        or submission.get("required_credentials", []) != item.get("required_credentials", [])
-        or any(
-            state["artifacts"][aid]["current_version"] != version
-            for aid, version in submission["artifact_versions"].items()
-        )
-    ):
+    view = derive_current_work_view(state)[work_item_id]
+    if view["outstanding_condition_ids"]:
+        raise ValueError("Work conditions have not been satisfied")
+    if not submission_versions_current(state, item, submission):
         raise ValueError("Submission versions are no longer current")
-    item["status"] = "accepted"
     submission["review"] = {
         "decision": "accepted",
         "actor_id": actor,
@@ -290,56 +283,36 @@ def approve_submission(state, actor, work_item_id, submission_id):
         metadata = state["artifacts"][aid]["versions"][version]
         metadata["review_status"] = "accepted"
         metadata["status"] = "submitted"
+    rebuild_projections(state)
     return copy.deepcopy(submission)
 
 
 def blocked_terminal(state):
-    """Whether currently blocked work has no configured recovery opportunity.
+    """Finite configured recovery exhaustion, derived from canonical conditions."""
+    from .conditions import condition_has_future
 
-    A provider saying "unavailable" is not enough if another provider or a future
-    arrival remains. This finite-horizon decision says nothing about real-world
-    permanent impossibility.
-    """
-    active = [item for item in current_work_items(state) if item["status"] != "accepted"]
+    work = derive_current_work_view(state)
+    active = [view for view in work.values() if view["is_current"] and view["status"] != "accepted"]
     if not active or state.get("events"):
         return False
-    for item in active:
-        if item["status"] != "blocked":
+    conditions = derive_condition_view(state)
+    for view in active:
+        if view["status"] != "blocked":
             return False
-        unavailable = []
-        for bid in item.get("blocker_ids", []):
-            blocker = state.get("blockers", {}).get(bid, {})
-            if blocker.get("status") != "unavailable":
-                continue
-            condition = state.get("condition_specs", {}).get(blocker.get("condition_id"))
-            if condition:
-                from .conditions import condition_has_future
-
-                if condition_has_future(state, condition):
-                    return False
-            unavailable.append(blocker)
-        conditions = [
-            condition
-            for condition in state.get("condition_specs", {}).values()
-            if condition.get("work_item_id") == item["work_item_id"]
-            and condition.get("status") == "unavailable"
+        unavailable = [
+            cid
+            for cid in view["outstanding_condition_ids"]
+            if conditions[cid]["status"] == "unavailable"
         ]
-        if conditions:
-            from .conditions import condition_has_future
-
-            if any(condition_has_future(state, condition) for condition in conditions):
-                return False
-        if not unavailable and not conditions:
+        if not unavailable or any(
+            condition_has_future(state, state["condition_specs"][cid]) for cid in unavailable
+        ):
             return False
-        condition_ids = (
-            {blocker.get("condition_id") for blocker in unavailable}
-            | {condition["condition_id"] for condition in conditions}
-        ) - {None}
         if any(
             opportunity.get("status") in {"pending", "available"}
             and (
-                opportunity.get("work_item_id") == item["work_item_id"]
-                or opportunity.get("condition_id") in condition_ids
+                opportunity.get("work_item_id") == view["work_item_id"]
+                or opportunity.get("condition_id") in unavailable
             )
             for opportunity in state.get("future_opportunities", [])
         ):

@@ -116,7 +116,12 @@ def reply_frame(state, request):
         aid, vid = reference["artifact_id"], reference["version_id"]
         paths.append(("artifacts", aid, "version_readers", vid))
     paths += [("basis_visibility",)]
-    paths += [("access_grants",), ("communication_grants",), ("condition_responses",)]
+    paths += [
+        ("access_grants",),
+        ("communication_grants",),
+        ("condition_responses",),
+        ("raw_condition_responses",),
+    ]
     return ActionFrame(
         "Reply", tuple(paths), projections(state), ("required_basis",), ("basis_approvals",)
     )
