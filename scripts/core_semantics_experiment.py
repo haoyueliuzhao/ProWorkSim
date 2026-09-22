@@ -595,17 +595,31 @@ def composed_lifecycle(case):
             late["blockers"][new_blocker]["status"] == "open"
             and late["work_items"][replacement]["status"] == "blocked",
         )
+        # The worker's submit result is a public projection: private acceptance
+        # metadata is intentionally absent. Compare persisted facts with persisted
+        # facts, retaining both raw checkpoints and explicit field-level hashes.
+        pinned_keys = (
+            "submission_id",
+            "artifact_versions",
+            "required_basis",
+            "requirement_snapshot",
+        )
+        prior_submission = before["work_items"]["work-1"]["submissions"][0]
+        prior_pins = {key: prior_submission[key] for key in pinned_keys}
+        archived_pins = {key: archived[key] for key in pinned_keys}
         case.check(
             f"{order}:historical_submission_pins_preserved",
-            all(
-                archived[key] == submission[key]
-                for key in (
-                    "submission_id",
-                    "artifact_versions",
-                    "required_basis",
-                    "requirement_snapshot",
-                )
-            ),
+            prior_pins == archived_pins,
+            {
+                "comparison": "persisted_submission_to_persisted_submission",
+                "compared_keys": pinned_keys,
+                "before_pinned_fields_sha256": digest(json_bytes(prior_pins)),
+                "after_pinned_fields_sha256": digest(json_bytes(archived_pins)),
+                "raw_snapshot_pair": [
+                    case.report["checkpoints"][f"{order}/pending-submission-and-reply"],
+                    case.report["checkpoints"][f"{order}/old-reply-delivered"],
+                ],
+            },
         )
         hashes_after = version_hashes(world, late)
         case.check(
