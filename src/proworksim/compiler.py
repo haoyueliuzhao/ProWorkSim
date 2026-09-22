@@ -17,6 +17,7 @@ from .lifecycle import validate_lifecycle_policies
 from .schema import SCHEMA_VERSION, WorkItem, WorldSpec
 from .spreadsheet import Spreadsheet
 from .storage import Store, atomic_write, json_bytes
+from .policies.organization import operating_organization
 
 INPUT_CELLS = {
     "revenue": "B2",
@@ -175,6 +176,9 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
         "clock": -5,
         "project": raw_spec["project"],
         "roles": raw_spec["roles"],
+        "organization": raw_spec.get("organization") or operating_organization(raw_spec["roles"]),
+        "attestations": {},
+        "condition_specs": {},
         "artifacts": {},
         "messages": [],
         "events": [],
@@ -200,7 +204,15 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
     def add(artifact_id, filename, data, owner="analyst", readers=None, deps=None):
         state["artifacts"][artifact_id] = {
             "artifact_id": artifact_id,
+            "semantic_kind": "fact"
+            if artifact_id == "financials"
+            else "assumption"
+            if artifact_id == "scope"
+            else "claim",
             "filename": filename,
+            "materialization": "workspace"
+            if readers is None or "analyst" in readers
+            else "private",
             "owner": owner,
             "readers": readers or list(dict.fromkeys([owner, "analyst", "manager", "reviewer"])),
             "writers": [owner],
@@ -218,7 +230,9 @@ def compile_world(spec: WorldSpec, destination: str | Path) -> Path:
     )
     state["artifacts"]["basis"] = {
         "artifact_id": "basis",
+        "semantic_kind": "credential",
         "filename": "approvals/analytical_basis.json",
+        "materialization": "private",
         "owner": "manager",
         "readers": ["manager", "reviewer"],
         "writers": [],

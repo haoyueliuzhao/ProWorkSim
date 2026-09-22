@@ -317,7 +317,7 @@ def evaluate_submission(
                         "dependency",
                     )
                     check("note_audience", note.get("audience") == brief["audience"], "scope")
-                    if state["schema_version"] == "0.3":
+                    if state["schema_version"] in {"0.3", "0.4"}:
                         issues = audience_content_defects(
                             note.get("audience_content"), brief["audience"]
                         )

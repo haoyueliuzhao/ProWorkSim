@@ -1,6 +1,8 @@
 """Separate declared data freshness from approval applicability to current work."""
 
 from .contracts import artifact_contracts, declared_bindings
+from .core.rules import registered_applicability
+from .core.types import CheckStatus
 
 
 def refresh_freshness(state):
@@ -45,20 +47,11 @@ def refresh_freshness(state):
             and item.get("applicability", "current") == "current"
             and aid in item.get("deliverables", [])
         ]
-        if not candidates:
-            return ()
-        # A shared artifact serves the most recently activated analytical stage.
-        # Completed earlier stages retain their own historical approval records.
-        latest = max(
-            (item.get("scenario_revision", 1), item.get("activated_at", 0)) for item in candidates
-        )
-        return tuple(
-            item["work_item_id"]
-            for item in candidates
-            if (item.get("scenario_revision", 1), item.get("activated_at", 0)) == latest
-        )
+        return tuple(item["work_item_id"] for item in candidates)
 
     def approved_for_work(work_id):
+        from .basis import basis_context, legacy_basis_applicability
+
         item = state["work_items"][work_id]
         reference = item.get("required_basis")
         if (
@@ -67,37 +60,32 @@ def refresh_freshness(state):
             or reference.get("version_id") not in artifacts.get("basis", {}).get("versions", {})
         ):
             return None
-        manager_authorized = any(
-            role["role_id"] == "manager" and role.get("can_confirm_basis", False)
-            for role in state.get("roles", [])
-        )
-        if not manager_authorized:
-            return None
         version = reference["version_id"]
-        if any(
-            approval.get("basis_version") == version
-            and approval.get("actor_id") == "manager"
-            and approval.get("approval_id")
-            and approval.get("requirement_version")
-            == item.get("basis_requirement_version", item["requirement_version"])
-            and item.get("node_id", work_id) in approval.get("work_nodes", [])
-            and approval.get("at", state["clock"] + 1) <= state["clock"]
-            for approval in state.get("basis_approvals", [])
+        if "attestations" in state or state.get("schema_version") not in (
+            None,
+            "0.1",
+            "0.2",
+            "0.3",
         ):
-            return version
-        return None
+            result = registered_applicability(
+                state,
+                reference,
+                basis_context(item, state["project"]["project_id"], state["clock"]),
+            )
+            return version if result.status == CheckStatus.PASS else None
+        return version if legacy_basis_applicability(state, item, version) else None
 
     def pinned_basis_status(version, work_ids):
         if version not in artifacts.get("basis", {}).get("versions", {}):
             return "unknown"
-        if work_ids:
-            required = [approved_for_work(work_id) for work_id in work_ids]
-            if any(reference is None for reference in required):
-                return "unknown"
-            return "current" if all(reference == version for reference in required) else "stale"
-        # Artifacts not requested by any current work get dependency information
-        # only; do not invent work-node approval obligations for e.g. unused memo.
-        return "current" if version == artifacts["basis"]["current_version"] else "stale"
+        if not work_ids:
+            # No work context means no applicability conclusion. This is not a
+            # comparison against the globally newest credential.
+            return "not_applicable"
+        required = [approved_for_work(work_id) for work_id in work_ids]
+        if any(reference is None for reference in required):
+            return "unknown"
+        return "current" if all(reference == version for reference in required) else "stale"
 
     def requires_basis(aid, path=()):
         if aid == "basis":
@@ -130,7 +118,9 @@ def refresh_freshness(state):
         ]
         for parent, pinned in declared.items():
             if parent == "basis":
-                flags.append(pinned_basis_status(pinned, work_ids))
+                status = pinned_basis_status(pinned, work_ids)
+                if status != "not_applicable":
+                    flags.append(status)
             else:
                 # Follow the version actually adopted, not an unrelated newer
                 # parent version that happens to have a current approval.
@@ -152,10 +142,31 @@ def refresh_freshness(state):
     for aid, artifact in artifacts.items():
         if artifact["current_version"]:
             data = artifact["data_freshness"] = data_status(aid)
-            basis = artifact["basis_applicability"] = basis_status(aid)
+            by_work = {wid: basis_status(aid, work_ids=(wid,)) for wid in applicable_work(aid)}
+            artifact["basis_applicability_by_work"] = by_work
+            artifact["basis_applicability_relations"] = [
+                {
+                    "artifact_id": aid,
+                    "version_id": artifact["current_version"],
+                    "work_item_id": wid,
+                    "requirement_version": state["work_items"][wid].get(
+                        "basis_requirement_version", state["work_items"][wid]["requirement_version"]
+                    ),
+                    "applicability": status,
+                }
+                for wid, status in by_work.items()
+            ]
+            statuses = set(by_work.values())
+            basis = artifact["basis_applicability"] = (
+                next(iter(statuses))
+                if len(statuses) == 1
+                else "unknown"
+                if statuses
+                else basis_status(aid)
+            )
             flags = (data, basis)
             artifact["freshness"] = (
                 "stale" if "stale" in flags else "unknown" if "unknown" in flags else "current"
             )
-            artifact["freshness_basis"] = "declared_dependencies_and_current_work_approval"
+            artifact["freshness_basis"] = "declared_dependencies_and_per_work_approval"
             artifact["possibly_stale"] = artifact["freshness"] != "current"

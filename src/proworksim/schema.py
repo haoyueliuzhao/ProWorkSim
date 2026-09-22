@@ -4,8 +4,8 @@ from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from typing import Any
 
-SCHEMA_VERSION = "0.3"
-SUPPORTED_SCHEMA_VERSIONS = ("0.1", "0.2", SCHEMA_VERSION)
+SCHEMA_VERSION = "0.4"
+SUPPORTED_SCHEMA_VERSIONS = ("0.1", "0.2", "0.3", SCHEMA_VERSION)
 
 
 class Status(StrEnum):
@@ -68,6 +68,7 @@ class WorldSpec:
     layout: dict = field(default_factory=dict)
     lifecycle_events: list[dict] = field(default_factory=list)
     unavailable_topics: tuple[str, ...] = ()
+    organization: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)

@@ -70,7 +70,11 @@ def test_work_confirmation_requires_authorized_matching_approval_metadata(tmp_pa
     state = world.store.load()
     before_data = state["artifacts"]["model"]["data_freshness"]
     ref = state["work_items"]["work-1"]["required_basis"]
-    approval = next(a for a in state["basis_approvals"] if a["basis_version"] == ref["version_id"])
+    approval = next(
+        a
+        for a in state["attestations"].values()
+        if a["reference"] == {"object_id": "basis", "version_id": ref["version_id"]}
+    )
     if invalid_field == "role":
         approval["actor_id"] = "reviewer"
     elif invalid_field == "version":
@@ -80,9 +84,11 @@ def test_work_confirmation_requires_authorized_matching_approval_metadata(tmp_pa
     elif invalid_field == "time":
         approval["at"] = state["clock"] + 1
     else:
-        next(role for role in state["roles"] if role["role_id"] == "manager")[
-            "can_confirm_basis"
-        ] = False
+        state["organization"]["grants"] = [
+            grant
+            for grant in state["organization"]["grants"]
+            if not (grant["actor_id"] == "manager" and grant["power"] == "confirm")
+        ]
     refresh_freshness(state)
     assert state["artifacts"]["model"]["basis_applicability"] == "unknown"
     assert state["artifacts"]["model"]["freshness"] == "unknown"
@@ -95,7 +101,8 @@ def test_file_delivery_does_not_invent_a_separate_memo_confirmation_requirement(
     state = world.store.load()
     assert state["work_items"]["work-1"]["deliverables"] == ["model"]
     assert state["artifacts"]["model"]["basis_applicability"] == "current"
-    assert state["artifacts"]["memo"]["basis_applicability"] == "stale"
+    assert state["artifacts"]["memo"]["basis_applicability"] == "not_applicable"
+    assert state["artifacts"]["memo"]["basis_applicability_by_work"] == {}
     assert state["artifacts"]["memo"]["data_freshness"] == "stale"
 
 
@@ -108,9 +115,12 @@ def test_later_stage_approval_does_not_make_final_artifacts_match_old_work_requi
     assert first["required_basis"] != second["required_basis"]
     historical = copy.deepcopy(first["submissions"])
     refresh_freshness(state)
-    assert all(
-        state["artifacts"][aid]["basis_applicability"] == "current" for aid in ("model", "memo")
-    )
+    for aid in ("model", "memo"):
+        assert state["artifacts"][aid]["basis_applicability"] == "unknown"
+        assert state["artifacts"][aid]["basis_applicability_by_work"] == {
+            "work-1": "stale",
+            "work-2": "current",
+        }
     assert first["submissions"] == historical
     assert all(submission["review"]["decision"] == "accepted" for submission in historical)
 
@@ -144,8 +154,8 @@ def test_basis_propagation_follows_the_adopted_parent_version(tmp_path):
         ],
     )
     state = world.store.load()
-    assert state["artifacts"]["model"]["basis_applicability"] == "current"
-    assert state["artifacts"]["memo"]["basis_applicability"] == "stale"
+    assert state["artifacts"]["model"]["basis_applicability_by_work"]["work-2"] == "current"
+    assert state["artifacts"]["memo"]["basis_applicability_by_work"]["work-2"] == "stale"
 
 
 def test_replacement_marks_new_work_basis_stale_without_rewriting_approved_history(tmp_path):

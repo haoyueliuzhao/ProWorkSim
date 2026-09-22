@@ -66,7 +66,9 @@ class Store:
         )
 
     def current_path(self, artifact: dict) -> Path:
-        base = self.workspace if "analyst" in artifact["readers"] else self.control / "role_files"
+        placement = artifact.get("materialization")
+        public = placement == "workspace" if placement else "analyst" in artifact["readers"]
+        base = self.workspace if public else self.control / "role_files"
         return base / artifact["filename"]
 
     def content(self, artifact: dict, version_id: str | None = None) -> bytes:

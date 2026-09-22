@@ -115,6 +115,7 @@ class Case:
                 "freshness": artifact.get("freshness"),
                 "data_freshness": artifact.get("data_freshness"),
                 "basis_applicability": artifact.get("basis_applicability"),
+                "basis_applicability_by_work": artifact.get("basis_applicability_by_work", {}),
             }
         checkpoint = {
             "clock": state["clock"],
@@ -271,8 +272,17 @@ def basis_only(case):
         fingerprint(initial, "basis") != fingerprint(boundary, "basis"),
     )
     case.check(
-        "adopted_model_and_memo_marked_stale",
-        all(boundary["artifacts"][aid]["freshness"] == "stale" for aid in ("model", "memo")),
+        "adopted_model_and_memo_stale_for_new_work_but_applicable_to_old_work",
+        all(
+            boundary["artifacts"][aid]["basis_applicability_by_work"]
+            == {"work-1": "current", "work-2": "stale"}
+            and boundary["artifacts"][aid]["basis_applicability"] == "unknown"
+            for aid in ("model", "memo")
+        ),
+        {
+            aid: boundary["artifacts"][aid]["basis_applicability_by_work"]
+            for aid in ("model", "memo")
+        },
     )
     case.complete()
     final = case.checkpoint("after_second_stage")
