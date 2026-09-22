@@ -76,4 +76,4 @@ print(world.session().call("read_file", artifact_id="source_note"))
 .venv/bin/python scripts/publication_kernel_experiment.py --output runs/publication-kernel-new --workers 4
 ```
 
-原十情境保留为回归；新增属性实验关注局部性、历史保持、观察与采用、适用关系、越权、错误执行与授权批准、以及动作组合。文稿实验只检查字段、精确引用和指定短语，不评价专业表达。详细实验报告另行归档。
+原十情境保留为回归；新增属性实验关注局部性、历史保持、观察与采用、适用关系、越权、错误执行与授权批准、以及动作组合。文稿实验只检查字段、精确引用和指定短语，不评价专业表达。详细结果见 [实验报告](experiments/semantics-kernel-v04.md)。

@@ -34,7 +34,7 @@ attestation_ref, status, expires_at, kind="credential"
 
 `Attestation` 保存 `attestation_id`、`actor_id`、准确版本 `reference`、`requirement_dimension`、`requirement_version`、`work_nodes`、签发时间 `at` 及 `power` / `subject`。`confirm_credential` 校验真实版本、确认者身份、该主题和节点的权力以及未冲突的签发 ID；相同确认重复执行为无变化，不可把同一版本的既有凭据改写为另一份。
 
-`registered_applicability` 从版本元数据和登记表读取证据。响应中的 `approved: true`、产物正文自称被批准、某个旧兼容列表或收信事实，都不能代替登记。查询上下文完整包含：
+`registered_applicability` 从版本元数据和登记表读取证据。响应中的 `approved: true`、产物正文自称被批准、某个旧兼容列表或收信事实，都不能代替登记。新 schema 缺少整个 attestations 或 organization 容器也不会静默降级信任旧投影或取得旧权限；兼容判断只用于明确的历史格式。查询上下文完整包含：
 
 ```text
 project_id, work_id, requirement_dimension, requirement_version,
@@ -104,7 +104,7 @@ NOT_APPLICABLE   其他请求、关闭条件或已过时工作/需求，不对�
 
 重复处理已经有 `reply_message_id` 的请求不再追加邮件、授权、条件或工作人员历史。`condition_responses` 对真正产生条件效果的 response ID 保存结果，重复应用无新增效果。无关工作、无关 blocker、模型和文稿字节保持。
 
-单项工作全部条件已 resolved 或 superseded、前驱已接受时，才可从 blocked 重开。superseded 表示义务撤换，不表示旧问题被答对。经营 blocker 的 `condition_id` 指向该规则；`required_scope_version` 只是旧工具参数名称，仍使用分析需求整数。
+单项工作全部条件已 resolved 或 superseded、前驱的当前替代实例已接受时，才可从 blocked 重开。提交与批准共用该当前依赖查询；公开 `dependency_readiness` 显示当前前驱与就绪结果，粗粒度 activity status 不等于完整执行前置条件。superseded 表示义务撤换，不表示旧问题被答对。经营 blocker 的 `condition_id` 指向该规则；`required_scope_version` 只是旧工具参数名称，仍使用分析需求整数。
 
 ## 不可得、后续机会与显式恢复
 
