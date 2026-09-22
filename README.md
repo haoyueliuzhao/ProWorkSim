@@ -45,7 +45,7 @@ python -m venv .venv
 
 ## 本轮实验
 
-正式实验冻结于 `470d412`；**291 项测试通过**，Ruff 通过。
+G0/E2 冻结于 `470d412`；最终 WorldCore 实验与完整回归冻结于 `b97e5c6`。**292 项测试通过**，Ruff 通过。
 
 | 组别 | 正式结果 |
 | --- | --- |
@@ -55,6 +55,7 @@ python -m venv .venv
 | M1 世界与项目生命周期 | 13/13 |
 | M2 名称、职责与访问隔离 | 14/14 |
 | M3 不同采用政策与定向影响 | 10/10 |
+| M3F 正式批准依据换版及隔离 | 8/8 |
 | M4 动态产物与不同合法交付方式 | 14/14 |
 | M5 多项目交错 | 8/8 |
 | 新增恢复切点 | 两个真实 `os._exit(73)`，16/16 检查 |
@@ -68,6 +69,7 @@ python -m venv .venv
 .venv/bin/python scripts/adapter_conformance_experiment.py --output runs/e2-new --workers 4
 .venv/bin/python scripts/world_core_experiment.py --output runs/m124-new --groups M1 M2 M4 --workers 3
 .venv/bin/python scripts/world_core_relations_experiment.py --output runs/m35-new --groups M3 M5 --workers 2
+.venv/bin/python scripts/world_core_basis_experiment.py --output runs/m3f-new
 .venv/bin/python -m pytest -q
 .venv/bin/python -m ruff check src tests scripts
 ```

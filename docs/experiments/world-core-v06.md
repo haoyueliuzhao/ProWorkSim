@@ -8,11 +8,13 @@
 
 ## 1. 版本、执行与分母
 
-正式四个任务开始和结束均记录同一提交与源码摘要，`code_dirty=false`：
+首轮 G0、E2、M1/M2/M4、M3/M5 四个正式任务冻结于 `470d412561815d58e3007650088506ef9eeb4a9b`，源码摘要 `7bdd4a87539bf3b608443d6a1d5aecdbde3ab20006b56e6e35b1257e13d1add8`，首尾均 `code_dirty=false`。随后归档核对发现 M3 的依据引用检查不能替代正式批准依据换版，因而新增 M3F；同时补齐 WorldCore 观察的公开交付合同、需求版本与可读别名。
+
+最终 WorldCore 复验及完整测试冻结于：
 
 ```text
-formal commit: 470d412561815d58e3007650088506ef9eeb4a9b
-source_tree_sha256: 7bdd4a87539bf3b608443d6a1d5aecdbde3ab20006b56e6e35b1257e13d1add8
+final commit: b97e5c6e483e357a8d9dc1f4851db9bd8f0def56
+source_tree_sha256: 02a6dc1487d57387ffc88d7716140cc6a3073737589420a8537da29dce97ad6b
 package: 0.6.0
 World Core schema: world-core-v0.6
 World Core semantics: work-world-v0.6
@@ -20,25 +22,28 @@ existing single-project adapter schema: 0.5
 receipt format: phase-deltas-v0.5
 ```
 
-主要实现提交为 `448dd48`；随后 `470d412` 仅规范化审计附件换行和 runner 文件尾空行，再冻结正式运行。源码摘要覆盖 `src/**/*.py` 的相对路径和字节。各脚本记录自身摘要；后续报告归档提交不回填为实验条件。
+这一冻结上重新执行受观察接口变更影响的 M1–M5、两个恢复切点、新 M3F 和完整回归；G0/E2 不受新世界观察字段影响，保留原冻结结果，没有重跑。最终四任务首尾同为上述提交、源码摘要和 clean 状态；[最终验证归档](v06-final-validation.json)保存调度器记录。
 
-完整回归在冻结前通过：**291 passed in 39.93s**，Ruff 通过。其后源码只有 runner 末尾空行规范化；实验脚本的 M4 项目数收窄与测量元数据补充另行验证。没有记录该次 pytest 开始时的源码摘要，因此不把后续提交身份伪装成测试当时采集的身份。39.93 秒是一次本机时间，不是性能比较。另有 9 条 CLI 开发冒烟操作通过，包括世界创建、双项目装载、动态产物、提交、独立评价、快照、恢复与观察；它们不是冻结后的正式实验。
+主要实现提交为 `448dd48`，`470d412` 规范化审计附件换行和 runner 文件尾空行，`b97e5c6` 补齐公开观察并冻结补充协议。源码摘要覆盖 `src/**/*.py` 的相对路径和字节；各脚本另记自身摘要。报告归档提交不回填为实验条件。
+
+最终完整回归为 **292 passed in 39.36s**，Ruff 通过。39.36 秒只是本机单次记录，不是性能比较。较早开发回归的 291 passed in 39.93s 保留，不混成最终成绩。9 条 CLI 开发冒烟操作也保留，包括世界创建、双项目装载、动态产物、提交、独立评价、快照、恢复与观察；它们不是冻结后的正式实验。
 
 | 实验 | 预声明对象 | 正式结果 | 精简证据 |
 | --- | --- | --- | --- |
 | G0 原证据重投影 | 原 E2 的 22 个轨迹快照副本 | 22/22；30 处合法确认由 false 变 true；原目录不变 | [v06-measurement.json](v06-measurement.json) |
 | G0 独立测量检查 | 9 个真值夹具、3 个指定测量变异 | 9/9；3/3 触发指定断言 | 同上 |
 | E2 相同四条真实轨迹 | 两条轨迹 × 两个原适配器 | 4/4 世界；11/11 跨模板点；53/53=原关系 31＋独立预期 22；未执行 0 | [v06-conformance.json](v06-conformance.json) |
-| M1 世界与项目生命周期 | 零项目→A/B→结束 A、继续 B→C | 13/13 | [v06-world-lifecycle.json](v06-world-lifecycle.json) |
+| M1 世界与项目生命周期 | 零项目→A/B→结束 A、继续 B→C | 13/13 | [v06-final-validation.json](v06-final-validation.json) |
 | M2 名称、职责与访问 | A/B 同名工作与文件、同一人切换职责 | 14/14 | 同上 |
-| M3 采用与定向影响 | A 当前政策、B 固定快照 | 10/10 | [v06-world-relations.json](v06-world-relations.json) |
-| M4 动态产物 | A/B 两项目，一份／两份交付与额外草稿 | 14/14 | [v06-world-lifecycle.json](v06-world-lifecycle.json) |
-| M5 多项目交错 | A 旧回复、新义务、B 完成与独立等待、episode 边界 | 8/8 | [v06-world-relations.json](v06-world-relations.json) |
+| M3 采用与定向影响 | A 当前政策、B 固定快照 | 10/10 | [v06-final-relations.json](v06-final-relations.json) |
+| M3F 正式批准依据换版 | 两版真实签发、实际批准与局部需求替代 | 8/8 | [v06-final-relations.json](v06-final-relations.json) |
+| M4 动态产物 | A/B 两项目，一份／两份交付与额外草稿 | 14/14 | [v06-final-validation.json](v06-final-validation.json) |
+| M5 多项目交错 | A 旧回复、新义务、B 完成与独立等待、episode 边界 | 8/8 | [v06-final-relations.json](v06-final-relations.json) |
 | M5 新增恢复 | 共享发布提交前／提交后两个真实进程终止点 | 2/2 切点，16/16 检查 | 同上 |
 
-M1–M5 的场景检查共 59 项，恢复另列 16 项；两者不替代各组语义说明，也不与 291 项测试、E2 或测量变异合成一个总分。五个场景各使用独立世界，组内为同一世界的交错执行；多个 workers 并行不同世界，不是同一世界多写者实验。原 E2 使用 seed907；新场景是固定有限声明与动作，未做统计抽样。
+M1–M5 的基础场景检查共 59 项，M3F 另列 8 项，恢复另列 16 项；这些计数不替代各组语义说明，也不与 292 项测试、E2 或测量变异合成一个总分。五个场景各使用独立世界，组内为同一世界的交错执行；多个 workers 并行不同世界，不是同一世界多写者实验。原 E2 使用 seed907；新场景是固定有限声明与动作，未做统计抽样。
 
-原始报告目录分别为：`runs/e2-measurement-v06`、`runs/adapter-conformance-v06`、`runs/world-core-v06`、`runs/world-core-relations-v06`。
+原始 G0/E2 目录为 `runs/e2-measurement-v06`、`runs/adapter-conformance-v06`；最终世界实验目录为 `runs/world-core-v06-final`、`runs/world-core-relations-v06-final`、`runs/world-core-basis-v06`。首轮 `runs/world-core-v06`、`runs/world-core-relations-v06` 及其精简归档均保留，未被最终复验覆盖。
 
 ## 2. G0：修正共同误测，保留原输出
 
@@ -75,7 +80,7 @@ M1–M5 的场景检查共 59 项，恢复另列 16 项；两者不替代各组�
 | 对象与文件名分开 | 规范项目/别名元组摘要生成对象 ID；workspace 别名与 storage_path 分离 | M2 同名文件、M4 动态创建；受控 JSON 路径，无宿主 Shell |
 | 共享与读取分开 | 精确 share、follow_updates、原始读取记录；不递归开放 derived_from | M2/M3 分享前后、未分享新版本、私有上游与人员历史 |
 | 项目包整体装载 | 纯预检，再在一个命令提交项目/对象/义务/授权与初版文件 | M1 非法包拒绝，无半个项目或正式文件；拒绝交互仍可提交 |
-| 不同采用政策 | current_applicable/fixed、adoption_view、显式 adopt_version 历史 | M3 关系/通知/字节分开；目标回归验证采用更新与 fixed 拒绝 |
+| 不同采用政策与批准依据 | current_applicable/fixed、adoption_view、显式 adopt_version 历史；两版凭据独立签发 | M3 关系/通知/字节分开；M3F 正式换版；目标回归验证采用更新与 fixed 拒绝 |
 | 多种合法组织方式 | 角色/文件数/类型合同，运行中对象创建，聚合字段独立评价 | M4 一份与两份文件、额外草稿；仅有限字段合同 |
 | 可执行错误与非审批工作 | delivery_only 记录 owner 完成依据；错误内容不自动修正 | M4 缺字段提交仍正式 accepted，独立评价失败；未执行经理 approve |
 | 交错与少量新增恢复 | 同一时钟/事件队列；项目化事件、命令身份覆盖上下文 | M5 旧回复隔离与两个新增切点；未扩展分布式或断电要求 |
@@ -111,11 +116,23 @@ A 另有 work-2，实际提交缺 cost 的内容。delivery_only 仍留下 owner
 
 ### M3：同一发布的不同后果
 
+原 M3 的依据修订只验证 requirements 中的显式引用，不能单独支持“正式批准依据换版”；该不足由下列 M3F 补充，原 10 项分母不变。
+
 世界资料 v1 明确共享：A 使用 current_applicable 并订阅后续发布，B 固定 v1。共同模型也实际分享给两个项目并固定采用。发布资料 v2 后，A 的关系为 update_required 并收到通知，B 仍 current；A 获得明确订阅的新版本读取权，B 只能读取原 v1。
 
 发布、A 局部依据修订及受众修订均不改变工作人员文件字节；B 的无关业务事实保持，共同模型不被后台重写。无共享的局部对象编辑也不影响 B。最后的工作人员显式写入才创建 A 的新交付版本。10 项通过。
 
 本组验证已声明关系的定向后果。current_applicable 在本轮资料上表示发布版本跟随政策，不是内核自动证明任意金融资料的领域适用性。资料变化目前形成需检查标记和通知，没有自动替工作人员计算新答案。
+
+### M3F：实际批准依据换版
+
+补充协议在第二次冻结前预注册 8 项检查，独立建立同一世界内 A/B 及共同模型。A 的 basis/v1 先绑定到 r2 要求，再由有权 manager 实际 Confirm，查询为 PASS；alice 实际提交、bob 实际批准。B 也留下真实提交与 bob 批准。
+
+随后只在 A 写 basis/v2、修订为绑定 v2 的 r3、正式确认 v2；新凭据在 r3 查询为 PASS，新 A 义务处于待交付。旧 v1 的签发和旧批准原样保留；旧 v1 对新 r3 为 FAIL。B 的完整局部事实、正式提交和文件保持；A/B 报告与显式共享共同模型字节不变，新增不可变版本仅为 basis/v2。
+
+另从基线后的世界复制一个明确分开的分支，在该副本中将 v2 分享给 B、采用并实际读取，然后查询其对 B 的工作适用性，仍为 FAIL，包含 project_id_mismatch 等原因。这样负例建立在真实可读之上，且该共享不会污染主世界的“B 未改变”比较基线。8 项全部通过。
+
+本组实际执行了签发、绑定、版本写入、提交和批准，支持本轮要求的正式依据作用域隔离。它仍不证明依据正文的金融正确性。
 
 ### M5：等待与完成并存
 
@@ -149,6 +166,8 @@ A 等待回复时，B 的一个工作实际交付完成，另一个工作有独�
 
 另收口了初始 JSON 数据类型、未来项目采用的预分享路径、归档 retain/cancel、显式采用更新和世界材料读取。针对这些合同的回归通过，不将“实现已改”代替检查证据。
 
+另一个归档期发现是观察只返回状态和目标，未完整提供公开交付合同与别名。现向绑定会话提供这些行动必需信息，并过滤私有别名；新增一项目标回归后，在最终冻结重新执行相关世界实验和全套测试。
+
 原探针、世界和报告保存在 `runs/world-core-v06-integration-before`。探针执行时未采集源码摘要；归档中 b433… 摘要来自归档时、且已含部分后续修订，**不能作为 before 实现的精确身份**。这些缺陷属于本轮开发树，不归因于冻结 v0.5。
 
 ### 实验夹具的修订
@@ -173,6 +192,7 @@ A 等待回复时，B 的一个工作实际交付完成，另一个工作有独�
   --output runs/m124-new --groups M1 M2 M4 --workers 3
 .venv/bin/python scripts/world_core_relations_experiment.py \
   --output runs/m35-new --groups M3 M5 --workers 2
+.venv/bin/python scripts/world_core_basis_experiment.py --output runs/m3f-new
 .venv/bin/python -m pytest -q
 .venv/bin/python -m ruff check src tests scripts
 ```
