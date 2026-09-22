@@ -2,7 +2,7 @@
 
 ## 世界对象
 
-所有持久化世界带有 `schema_version: "0.1"`。`WorldSpec` 包含 `ProjectSpec`、`RoleSpec`、种子、来源与情景配置；完整规格仅供编译器和独立验证器使用。
+新世界带有 `schema_version: "0.2"`；保留对 0.1 历史实例的读取与复核。`WorldSpec` 包含 `ProjectSpec`、`RoleSpec`、种子、来源与情景配置；完整规格仅供编译器和独立验证器使用。
 
 | 对象 | 关键字段与语义 |
 | --- | --- |
@@ -104,3 +104,15 @@ v0.1 没有实现跨外部公开来源的聚类，也没有专门保留未见结
 新的训练后端应读取原始 messages/tools，使用对应模型的 tokenizer 和 chat template，严格落实消息级掩码。当前包是中间格式，不宣称可以不经转换直接送入所有 SFT/RL 框架。参数训练器应运行在世界外部，固定一批 rollout 的目标模型版本，再进行更新。
 
 Archipelago、Harbor 和 Agent Lightning 目前均未接入；核心世界对象没有依赖其目录格式。后续可在边界增加适配层，而无需改变当前任务和产物的概念。
+
+
+## 审计后扩展
+
+新增 `WorkflowSpec / WorkNode / EventRule / LayoutMap / CitationRequirement / ArtifactContract`。
+公开引用指南与评价来自同一要求对象，参考数值仍独立计算。freshness 分为 current、stale、unknown；新写入不会自动证明来源关系完整。
+
+导出增加 `episode.json`，分别保存 artifact_valid、business_accepted、explanation_assessed、trajectory_supervision_status。各次模型 run 的 manifest 位于 `control/runs/<run_id>/manifest.json`；调用记录内 `attempts` 独立描述底层 HTTP 尝试。未知失败 usage 为 null。
+
+新增 source_family_id、template_id、topology_id、layout_id、role_information_id、scenario_id 作为结构标注。当前谱系分组仍不能独立证明结构泛化。
+
+本地训练适配将 message mask 转为真实 tokenizer 的 token labels，训练工具参数以目标 chat template 要求的对象表示。`reasoning_content` 不转入另一模型的隐藏思考格式。Teacher 来源和目标权重分开记录，训练/重载/后续执行结果见本轮实验报告。

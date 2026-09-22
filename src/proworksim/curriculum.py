@@ -2,6 +2,8 @@
 
 from collections import Counter
 
+from .contracts import CURRENT_EVALUATORS
+
 AXES = ("source_selection", "inputs", "scenario", "dependency", "recalculability", "consistency")
 
 
@@ -21,6 +23,12 @@ def propose_quotas(records, total=24, representative_fraction=0.75):
     for row in grouped.values():
         if row.get("split") != "dev":
             excluded["non_development"] += 1
+            continue
+        if (
+            row.get("evaluator_version") is not None
+            and row["evaluator_version"] not in CURRENT_EVALUATORS
+        ):
+            excluded["obsolete_evaluator"] += 1
             continue
         if row.get("validity", "valid") != "valid":
             excluded["invalid_environment_or_evaluation"] += 1

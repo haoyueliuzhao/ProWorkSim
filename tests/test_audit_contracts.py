@@ -141,3 +141,22 @@ def test_failed_http_attempts_are_recorded_separately(world_factory, monkeypatch
     assert [a["status"] for a in logical_call["attempts"]] == ["http_error", "timeout", "timeout"]
     assert all(a["usage"] is None for a in logical_call["attempts"])
     assert "unit-test-credential" not in json.dumps(state)
+
+
+def test_curriculum_counts_final_work_once_and_ignores_obsolete_grades():
+    from proworksim.contracts import EVALUATOR_VERSION
+    from proworksim.curriculum import propose_quotas
+
+    row = {
+        "split": "dev",
+        "episode_id": "episode-a",
+        "work_item_id": "work-a",
+        "evaluator_version": EVALUATOR_VERSION,
+        "checks": [{"category": "dependency", "passed": False}],
+    }
+    old = {**row, "episode_id": "episode-b", "evaluator_version": "finance-v0.1.1"}
+    result = propose_quotas([row, row, row, old])
+    assert result["development_failure_counts"] == {"dependency": 1}
+    assert result["excluded"] == {"obsolete_evaluator": 1}
+    result = propose_quotas([row, {**row, "checks": [{"category": "dependency", "passed": True}]}])
+    assert result["development_failure_counts"] == {}
