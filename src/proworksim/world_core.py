@@ -893,9 +893,28 @@ class WorldCore(WorldRunner):
                     view["enabled_actions"] = []
                 work[wid] = {
                     **view,
-                    "project_id": item["project_id"],
-                    "goal": item["goal"],
-                    "owner_role": item["owner_role"],
+                    **{
+                        key: copy.deepcopy(item[key])
+                        for key in (
+                            "project_id",
+                            "local_work_id",
+                            "node_id",
+                            "requirement_version",
+                            "goal",
+                            "owner_role",
+                            "visible_requirements",
+                            "requirements",
+                            "inputs",
+                            "deliverables",
+                            "deliverable_contract",
+                            "approval_policy",
+                            "required_credentials",
+                            "requirement_dimension",
+                            "purpose",
+                            "period",
+                        )
+                        if key in item
+                    },
                 }
             objects = {}
             for aid, artifact in self.state["artifacts"].items():
@@ -919,6 +938,17 @@ class WorldCore(WorldRunner):
                 if any(p["status"] == "active" for p in self.state["projects"].values())
                 else "idle",
                 "projects": projects,
+                "workspaces": {
+                    pid: {
+                        alias: aid
+                        for alias, aid in self.state["workspaces"][pid].items()
+                        if any(
+                            self._can_read(actor, pid, self.state["artifacts"][aid], vid)
+                            for vid in self.state["artifacts"][aid]["versions"]
+                        )
+                    }
+                    for pid in projects
+                },
                 "work_items": work,
                 "objects": objects,
                 "adoptions": {

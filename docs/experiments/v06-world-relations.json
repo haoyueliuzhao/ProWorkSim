@@ -1,0 +1,1856 @@
+{
+  "archive": "world-core-v0.6 M3/M5 relations and two bounded recovery cuts",
+  "formal_report": {
+    "path": "runs/world-core-relations-v06/report.json",
+    "sha256": "5ee657e20073d21aaabf809249edbd50ff5c89e130d71ae6d12c6d16f5e3a139",
+    "bytes": 11422
+  },
+  "code_before": {
+    "code_commit": "470d412561815d58e3007650088506ef9eeb4a9b",
+    "code_dirty": false,
+    "source_tree_sha256": "7bdd4a87539bf3b608443d6a1d5aecdbde3ab20006b56e6e35b1257e13d1add8"
+  },
+  "code_after": {
+    "code_commit": "470d412561815d58e3007650088506ef9eeb4a9b",
+    "code_dirty": false,
+    "source_tree_sha256": "7bdd4a87539bf3b608443d6a1d5aecdbde3ab20006b56e6e35b1257e13d1add8"
+  },
+  "script_sha256": "4ee33aec14934c383b540347b11b293dc74f01e236d234deb97e59f8a2e1926e",
+  "helper_script_sha256": "cbdcd3dc80c6975b36973b12dcd005f1abf1fc630e19b62c36e0e2692ab67675",
+  "protocol": {
+    "groups": [
+      "M3",
+      "M5"
+    ],
+    "M3_assertions": [
+      "both_adoptions_initially_current_v1",
+      "publication_changes_only_shared_object_bytes",
+      "A_update_required_B_fixed_current",
+      "publication_notifies_A_not_B",
+      "follow_updates_grants_v2_to_A_only",
+      "B_reads_fixed_v1_and_cannot_read_unshared_v2",
+      "local_A_basis_revision_preserves_B_and_all_files",
+      "local_A_audience_revision_preserves_B_and_all_files",
+      "unshared_edit_has_no_B_fact_or_notification_effect",
+      "explicit_worker_edit_alone_creates_A_delivery_version"
+    ],
+    "M5_assertions": [
+      "A_waits_while_B_has_separate_pending_condition",
+      "B_delivery_only_completed_without_manager_review",
+      "A_revision_preserves_B_formal_history_and_bytes",
+      "old_A_response_is_delivered_but_old_condition_superseded",
+      "old_A_reply_does_not_resolve_new_A_or_B",
+      "old_A_reply_preserves_B_submission_and_bytes",
+      "end_A_episode_preserves_B_and_both_pending_replies",
+      "same_actor_switches_to_B_with_bound_scope"
+    ],
+    "recovery_cuts": [
+      "after_apply",
+      "after_command_commit"
+    ],
+    "recovery_assertions_per_cut": [
+      "copied_checkpoint_bytes_identical",
+      "actual_process_cut_reached",
+      "committed_prefix_matches_expected_cut",
+      "full_state_matches_uninterrupted_control",
+      "all_immutable_and_mirror_bytes_match_control",
+      "public_result_matches_control",
+      "world_relations_and_observed_history_preserved",
+      "second_retry_has_no_effect"
+    ],
+    "process_exit_code": 73,
+    "normalization": [
+      "wall_seconds",
+      "state_digests"
+    ],
+    "coverage": "finite explicit project relations, two real process cuts on shared world publication; no distributed, power-loss or arbitrary-operation guarantee",
+    "source_boundary": "new WorldCore runtime sharing the extracted commit/recovery runner with the existing single-project adapters; no old evidence is rewritten",
+    "initial_materials": "synthetic; world release is informational input, not a fabricated approval",
+    "workers": 2,
+    "model_calls": 0,
+    "gpu_used": false
+  },
+  "counting": "M3 10 checks; M5 8 trace checks; two process cuts with eight checks each are a separate denominator. No aggregate benchmark score.",
+  "groups": [
+    {
+      "group": "M3",
+      "expected_checks": 10,
+      "executed": 10,
+      "passed": 10,
+      "not_executed": 0,
+      "checks": [
+        {
+          "name": "both_adoptions_initially_current_v1",
+          "passed": true,
+          "expected": {
+            "adopted": {
+              "A": "v1",
+              "B": "v1"
+            },
+            "status": {
+              "A": "current",
+              "B": "current"
+            }
+          },
+          "observed": {
+            "adopted": {
+              "A": "v1",
+              "B": "v1"
+            },
+            "status": {
+              "A": "current",
+              "B": "current"
+            }
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-publication.json",
+              "sha256": "1cf73822355a2b6a6b0d32719007b383e4cd805ce8555fa8ef4157f1990f618b",
+              "bytes": 316669
+            }
+          ]
+        },
+        {
+          "name": "publication_changes_only_shared_object_bytes",
+          "passed": true,
+          "expected": {
+            "changed_mirrors": [
+              "obj-935ddc538ff2e957b071202f"
+            ],
+            "all_existing_immutable_hashes_preserved": true,
+            "shared_current_version": "v2"
+          },
+          "observed": {
+            "changed_mirrors": [
+              "obj-935ddc538ff2e957b071202f"
+            ],
+            "all_existing_immutable_hashes_preserved": true,
+            "shared_current_version": "v2"
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-publication.json",
+              "sha256": "1cf73822355a2b6a6b0d32719007b383e4cd805ce8555fa8ef4157f1990f618b",
+              "bytes": 316669
+            },
+            {
+              "path": "runs/world-core-relations-v06/M3/after-publication.json",
+              "sha256": "d6d219b7c6de066cc3718eb78d82ae9d38f1a72a821d5f38fb304d2de57c7db0",
+              "bytes": 336245
+            }
+          ]
+        },
+        {
+          "name": "A_update_required_B_fixed_current",
+          "passed": true,
+          "expected": {
+            "A::shared": {
+              "adopted_version": "v1",
+              "target_version": "v2",
+              "status": "update_required",
+              "policy": "current_applicable"
+            },
+            "B::shared": {
+              "adopted_version": "v1",
+              "target_version": "v1",
+              "status": "current",
+              "policy": "fixed"
+            }
+          },
+          "observed": {
+            "A::shared": {
+              "adopted_version": "v1",
+              "target_version": "v2",
+              "status": "update_required",
+              "policy": "current_applicable"
+            },
+            "B::shared": {
+              "adopted_version": "v1",
+              "target_version": "v1",
+              "status": "current",
+              "policy": "fixed"
+            }
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/after-publication.json",
+              "sha256": "d6d219b7c6de066cc3718eb78d82ae9d38f1a72a821d5f38fb304d2de57c7db0",
+              "bytes": 336245
+            }
+          ]
+        },
+        {
+          "name": "publication_notifies_A_not_B",
+          "passed": true,
+          "expected": {
+            "notice_count": 1,
+            "project_ids": [
+              "A"
+            ],
+            "effects": [
+              "review_required"
+            ]
+          },
+          "observed": {
+            "notice_count": 1,
+            "project_ids": [
+              "A"
+            ],
+            "effects": [
+              "review_required"
+            ]
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-publication.json",
+              "sha256": "1cf73822355a2b6a6b0d32719007b383e4cd805ce8555fa8ef4157f1990f618b",
+              "bytes": 316669
+            },
+            {
+              "path": "runs/world-core-relations-v06/M3/after-publication.json",
+              "sha256": "d6d219b7c6de066cc3718eb78d82ae9d38f1a72a821d5f38fb304d2de57c7db0",
+              "bytes": 336245
+            }
+          ]
+        },
+        {
+          "name": "follow_updates_grants_v2_to_A_only",
+          "passed": true,
+          "expected": {
+            "v2_share_projects": [
+              "A"
+            ]
+          },
+          "observed": {
+            "v2_share_projects": [
+              "A"
+            ]
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/after-publication.json",
+              "sha256": "d6d219b7c6de066cc3718eb78d82ae9d38f1a72a821d5f38fb304d2de57c7db0",
+              "bytes": 336245
+            }
+          ]
+        },
+        {
+          "name": "B_reads_fixed_v1_and_cannot_read_unshared_v2",
+          "passed": true,
+          "expected": {
+            "B_v1_release": 1,
+            "B_v2_ok": false
+          },
+          "observed": {
+            "B_v1_release": 1,
+            "B_v2_ok": false
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-local-revisions.json",
+              "sha256": "a13570b011313f87b1d1b4ca4471f8e59be9dc7e5d333124fa737b934387ec72",
+              "bytes": 347046
+            }
+          ]
+        },
+        {
+          "name": "local_A_basis_revision_preserves_B_and_all_files",
+          "passed": true,
+          "expected": {
+            "B_facts_equal": true,
+            "all_file_maps_equal": true,
+            "new_A_requirement_version": 2,
+            "declared_basis_version": "v2"
+          },
+          "observed": {
+            "B_facts_equal": true,
+            "all_file_maps_equal": true,
+            "new_A_requirement_version": 2,
+            "declared_basis_version": "v2"
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-local-revisions.json",
+              "sha256": "a13570b011313f87b1d1b4ca4471f8e59be9dc7e5d333124fa737b934387ec72",
+              "bytes": 347046
+            },
+            {
+              "path": "runs/world-core-relations-v06/M3/after-basis-revision.json",
+              "sha256": "778f9627aa0b02cd890e831f937a30175fa16ed3a1b2f9b1137408654499ab9f",
+              "bytes": 387357
+            }
+          ]
+        },
+        {
+          "name": "local_A_audience_revision_preserves_B_and_all_files",
+          "passed": true,
+          "expected": {
+            "B_facts_equal": true,
+            "all_file_maps_equal": true,
+            "new_A_requirement_version": 3,
+            "audience": "external-reviewers"
+          },
+          "observed": {
+            "B_facts_equal": true,
+            "all_file_maps_equal": true,
+            "new_A_requirement_version": 3,
+            "audience": "external-reviewers"
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-local-revisions.json",
+              "sha256": "a13570b011313f87b1d1b4ca4471f8e59be9dc7e5d333124fa737b934387ec72",
+              "bytes": 347046
+            },
+            {
+              "path": "runs/world-core-relations-v06/M3/after-audience-revision.json",
+              "sha256": "b476a5912341bbccdb2fd5ed70a92b109c6079168ca47e86dc2db492001cd7c1",
+              "bytes": 428182
+            }
+          ]
+        },
+        {
+          "name": "unshared_edit_has_no_B_fact_or_notification_effect",
+          "passed": true,
+          "expected": {
+            "B_facts_equal": true,
+            "messages_equal": true,
+            "common_model_bytes_equal": true
+          },
+          "observed": {
+            "B_facts_equal": true,
+            "messages_equal": true,
+            "common_model_bytes_equal": true
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/before-unshared-edit.json",
+              "sha256": "6b2f9260f7003a27e2eb36100d54e1213e26d344124812e6439ff4339ceadb34",
+              "bytes": 458261
+            },
+            {
+              "path": "runs/world-core-relations-v06/M3/after-unshared-edit.json",
+              "sha256": "6d7a7127817ce6577d4706285cbdc792ceb93ff909ad70682ee3d59209b4dbb6",
+              "bytes": 476326
+            }
+          ]
+        },
+        {
+          "name": "explicit_worker_edit_alone_creates_A_delivery_version",
+          "passed": true,
+          "expected": {
+            "new_versions": [
+              "obj-e5381b99cc0d742cd208641a/v2"
+            ],
+            "B_report_bytes_equal": true,
+            "common_model_bytes_equal": true
+          },
+          "observed": {
+            "new_versions": [
+              "obj-e5381b99cc0d742cd208641a/v2"
+            ],
+            "B_report_bytes_equal": true,
+            "common_model_bytes_equal": true
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M3/after-unshared-edit.json",
+              "sha256": "6d7a7127817ce6577d4706285cbdc792ceb93ff909ad70682ee3d59209b4dbb6",
+              "bytes": 476326
+            },
+            {
+              "path": "runs/world-core-relations-v06/M3/after-worker-edit.json",
+              "sha256": "31b847d1c93e5dad692f17c403c2c71f1a2f26f14444f88f16cc6ce1a732adb0",
+              "bytes": 494988
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "M5",
+      "expected_checks": 8,
+      "executed": 8,
+      "passed": 8,
+      "not_executed": 0,
+      "checks": [
+        {
+          "name": "A_waits_while_B_has_separate_pending_condition",
+          "passed": true,
+          "expected": {
+            "old_A_condition": "open",
+            "B_condition": "open"
+          },
+          "observed": {
+            "old_A_condition": "open",
+            "B_condition": "open"
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/both-projects-waiting.json",
+              "sha256": "25f94912660109dcd336ea681df45ceaf54b2c44f6a1d90f0a418ed1a00ab682",
+              "bytes": 249095
+            }
+          ]
+        },
+        {
+          "name": "B_delivery_only_completed_without_manager_review",
+          "passed": true,
+          "expected": {
+            "status": "accepted",
+            "actor": "alice",
+            "decision_basis": "delivery_only",
+            "manager_review_events": 0
+          },
+          "observed": {
+            "status": "accepted",
+            "actor": "alice",
+            "decision_basis": "delivery_only",
+            "manager_review_events": 0
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/B-delivery-completed.json",
+              "sha256": "2e3a7e35bf864a1d55945985325e78a1b1b5d47e0ffd75c504c88952e5764fdc",
+              "bytes": 291435
+            }
+          ]
+        },
+        {
+          "name": "A_revision_preserves_B_formal_history_and_bytes",
+          "passed": true,
+          "expected": {
+            "B_facts_equal": true,
+            "all_files_equal": true
+          },
+          "observed": {
+            "B_facts_equal": true,
+            "all_files_equal": true
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/B-delivery-completed.json",
+              "sha256": "2e3a7e35bf864a1d55945985325e78a1b1b5d47e0ffd75c504c88952e5764fdc",
+              "bytes": 291435
+            },
+            {
+              "path": "runs/world-core-relations-v06/M5/A-revised-B-preserved.json",
+              "sha256": "d07eb39a2f85e8394d4b8cf63394130eb3a003701314136b3eee3e8347ca51c7",
+              "bytes": 331095
+            }
+          ]
+        },
+        {
+          "name": "old_A_response_is_delivered_but_old_condition_superseded",
+          "passed": true,
+          "expected": {
+            "old_request_status": "delivered",
+            "old_condition_status": "superseded",
+            "raw_old_response_count": 1
+          },
+          "observed": {
+            "old_request_status": "delivered",
+            "old_condition_status": "superseded",
+            "raw_old_response_count": 1
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/old-A-reply-arrived.json",
+              "sha256": "23adeaf0e05090be1cf58bb08e16062eee0b8d57a5d0b2fdc6082663c7b03888",
+              "bytes": 448703
+            }
+          ]
+        },
+        {
+          "name": "old_A_reply_does_not_resolve_new_A_or_B",
+          "passed": true,
+          "expected": {
+            "new_A_condition": "open",
+            "B_condition": "open"
+          },
+          "observed": {
+            "new_A_condition": "open",
+            "B_condition": "open"
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/old-A-reply-arrived.json",
+              "sha256": "23adeaf0e05090be1cf58bb08e16062eee0b8d57a5d0b2fdc6082663c7b03888",
+              "bytes": 448703
+            }
+          ]
+        },
+        {
+          "name": "old_A_reply_preserves_B_submission_and_bytes",
+          "passed": true,
+          "expected": {
+            "B_submissions_equal": true,
+            "B_report_bytes_equal": true
+          },
+          "observed": {
+            "B_submissions_equal": true,
+            "B_report_bytes_equal": true
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/B-delivery-completed.json",
+              "sha256": "2e3a7e35bf864a1d55945985325e78a1b1b5d47e0ffd75c504c88952e5764fdc",
+              "bytes": 291435
+            },
+            {
+              "path": "runs/world-core-relations-v06/M5/old-A-reply-arrived.json",
+              "sha256": "23adeaf0e05090be1cf58bb08e16062eee0b8d57a5d0b2fdc6082663c7b03888",
+              "bytes": 448703
+            }
+          ]
+        },
+        {
+          "name": "end_A_episode_preserves_B_and_both_pending_replies",
+          "passed": true,
+          "expected": {
+            "B_facts_equal": true,
+            "pending_events_equal": true,
+            "pending_event_count": 2,
+            "A_episode_ended": true
+          },
+          "observed": {
+            "B_facts_equal": true,
+            "pending_events_equal": true,
+            "pending_event_count": 2,
+            "A_episode_ended": true
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/old-A-reply-arrived.json",
+              "sha256": "23adeaf0e05090be1cf58bb08e16062eee0b8d57a5d0b2fdc6082663c7b03888",
+              "bytes": 448703
+            },
+            {
+              "path": "runs/world-core-relations-v06/M5/A-episode-ended.json",
+              "sha256": "57cbc2acf2060bceb7fcd862e4500853be3730508c0a03280f882cca1ca3bffa",
+              "bytes": 457152
+            }
+          ]
+        },
+        {
+          "name": "same_actor_switches_to_B_with_bound_scope",
+          "passed": true,
+          "expected": {
+            "A_object_in_B_denied": true,
+            "B_read_source": "B",
+            "persisted_read_project": "B",
+            "last_command_project": "B"
+          },
+          "observed": {
+            "A_object_in_B_denied": true,
+            "B_read_source": "B",
+            "persisted_read_project": "B",
+            "last_command_project": "B"
+          },
+          "readonly_archive_recheck": true,
+          "raw_evidence": [
+            {
+              "path": "runs/world-core-relations-v06/M5/after-scope-switch.json",
+              "sha256": "b0af0370b5e29b64ebbb132b0c3b30be9defa1c831ed17fec8faaa0fa7587e50",
+              "bytes": 468501
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "recovery": {
+    "expected_cases": 2,
+    "passed_cases": 2,
+    "expected_checks": 16,
+    "passed_checks": 16,
+    "not_executed": 0,
+    "normalization": [
+      "wall_seconds",
+      "state_digests"
+    ],
+    "checkpoint": {
+      "path": "runs/world-core-relations-v06/M5/recovery/checkpoint-evidence.json",
+      "sha256": "f458ac451657756a488561421ac6a7b8ed28f20bb1243c1ee09403affced78b1",
+      "bytes": 316666
+    },
+    "control": {
+      "path": "runs/world-core-relations-v06/M5/recovery/control-evidence.json",
+      "sha256": "ddf38c1fd0758d2b4f15568ca239c4afb0a52d53b73407a3c7f25a047c419eab",
+      "bytes": 336583
+    },
+    "cases": [
+      {
+        "phase": "after_apply",
+        "expected_checks": 8,
+        "executed": 8,
+        "passed": 8,
+        "not_executed": 0,
+        "checks": [
+          {
+            "name": "copied_checkpoint_bytes_identical",
+            "passed": true,
+            "expected": true,
+            "observed": true,
+            "evidence_kind": "formal pre-execution comparison; original copy has since advanced"
+          },
+          {
+            "name": "actual_process_cut_reached",
+            "passed": true,
+            "expected": 73,
+            "observed": 73
+          },
+          {
+            "name": "committed_prefix_matches_expected_cut",
+            "passed": true,
+            "expected": 16,
+            "observed": 16
+          },
+          {
+            "name": "full_state_matches_uninterrupted_control",
+            "passed": true,
+            "expected": "c1116e9e149ff93815f4291c6878774867141adb5ef1ba5059c2e3adf96e70fb",
+            "observed": "c1116e9e149ff93815f4291c6878774867141adb5ef1ba5059c2e3adf96e70fb"
+          },
+          {
+            "name": "all_immutable_and_mirror_bytes_match_control",
+            "passed": true,
+            "expected": {
+              "versions": {
+                "obj-935ddc538ff2e957b071202f/v1": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+                "obj-935ddc538ff2e957b071202f/v2": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68/v1": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              },
+              "mirrors": {
+                "obj-935ddc538ff2e957b071202f": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              }
+            },
+            "observed": {
+              "versions": {
+                "obj-935ddc538ff2e957b071202f/v1": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+                "obj-935ddc538ff2e957b071202f/v2": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68/v1": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              },
+              "mirrors": {
+                "obj-935ddc538ff2e957b071202f": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              }
+            }
+          },
+          {
+            "name": "public_result_matches_control",
+            "passed": true,
+            "expected": {
+              "ok": true,
+              "result": {
+                "object_id": "obj-935ddc538ff2e957b071202f",
+                "version_id": "v2"
+              },
+              "action_id": "action-17",
+              "logical_time": 17,
+              "command_id": "command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e",
+              "command_committed": true,
+              "committed_revision": 17
+            },
+            "observed": {
+              "ok": true,
+              "result": {
+                "object_id": "obj-935ddc538ff2e957b071202f",
+                "version_id": "v2"
+              },
+              "action_id": "action-17",
+              "logical_time": 17,
+              "command_id": "command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e",
+              "command_committed": true,
+              "committed_revision": 17
+            }
+          },
+          {
+            "name": "world_relations_and_observed_history_preserved",
+            "passed": true,
+            "expected": true,
+            "observed": true
+          },
+          {
+            "name": "second_retry_has_no_effect",
+            "passed": true,
+            "expected": true,
+            "observed": true,
+            "evidence_kind": "formal live retry check plus raw result; not rerun during archival"
+          }
+        ],
+        "revision_evidence": {
+          "checkpoint": 16,
+          "in_memory_at_cut": 16,
+          "persisted_at_cut": 16,
+          "before_resume": 16,
+          "after_resume": 17,
+          "control": 17
+        },
+        "cut_process": {
+          "returncode": 73,
+          "stdout": "",
+          "stderr": ""
+        },
+        "cut_context": {
+          "operation_id": "command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e",
+          "kind": "command",
+          "action": "world_action",
+          "actor": "manager"
+        },
+        "physical_versions_at_cut": {
+          "obj-7b0cb00c65e581894b6674da/v1/report.json": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+          "obj-935ddc538ff2e957b071202f/v1/reference.json": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+          "obj-935ddc538ff2e957b071202f/v2/reference.json": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+          "obj-9b10a52a93ed135c208fca68/v1/model.json": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+          "obj-e5381b99cc0d742cd208641a/v1/report.json": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+        },
+        "persisted_observation_coverage": {
+          "knowledge": {
+            "alice": {
+              "read_artifacts": [
+                {
+                  "artifact_id": "obj-935ddc538ff2e957b071202f",
+                  "version_id": "v1",
+                  "project_id": "A",
+                  "at": 8
+                },
+                {
+                  "artifact_id": "obj-935ddc538ff2e957b071202f",
+                  "version_id": "v1",
+                  "project_id": "B",
+                  "at": 15
+                }
+              ],
+              "read_messages": []
+            },
+            "bob": {
+              "read_artifacts": [],
+              "read_messages": []
+            },
+            "manager": {
+              "read_artifacts": [],
+              "read_messages": []
+            }
+          },
+          "observations": []
+        },
+        "raw_evidence": [
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/result.json",
+            "sha256": "4d7c03395b6f039c0d60063d0d1ae947c3b9b6ab0d9997fef756925d8b288d0f",
+            "bytes": 1025
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/fault-reached.json",
+            "sha256": "124e56026ab7b9fa20c58bcbfb929c84b39f7a890c8fddc925251e27305c840e",
+            "bytes": 634598
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/before-resume-state.json",
+            "sha256": "fa933ecd85dfacb68d247e6aa66dbe6c8202dd62e70a4c208d047c1e0111e05a",
+            "bytes": 290813
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/after-resume.json",
+            "sha256": "fef306a969bdb9dbfd7d2499e935a837b678ef1ec10d3b244aee1d62581e386e",
+            "bytes": 336242
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/state.json",
+            "sha256": "7d4e036d302af572fc3309bc7d07dcb0083ec632e4220f8a55e766df8cadb5e4",
+            "bytes": 308784
+          }
+        ],
+        "final_committed_object_files_readonly_verified": [
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/versions/obj-935ddc538ff2e957b071202f/v1/reference.json",
+            "sha256": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+            "bytes": 34
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/versions/obj-935ddc538ff2e957b071202f/v2/reference.json",
+            "sha256": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+            "bytes": 34
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/workspace/artifacts/obj-935ddc538ff2e957b071202f/reference.json",
+            "sha256": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+            "bytes": 34
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/versions/obj-9b10a52a93ed135c208fca68/v1/model.json",
+            "sha256": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+            "bytes": 45
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/workspace/artifacts/obj-9b10a52a93ed135c208fca68/model.json",
+            "sha256": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+            "bytes": 45
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/versions/obj-e5381b99cc0d742cd208641a/v1/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/workspace/artifacts/obj-e5381b99cc0d742cd208641a/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/versions/obj-7b0cb00c65e581894b6674da/v1/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_apply/workspace/artifacts/obj-7b0cb00c65e581894b6674da/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          }
+        ]
+      },
+      {
+        "phase": "after_command_commit",
+        "expected_checks": 8,
+        "executed": 8,
+        "passed": 8,
+        "not_executed": 0,
+        "checks": [
+          {
+            "name": "copied_checkpoint_bytes_identical",
+            "passed": true,
+            "expected": true,
+            "observed": true,
+            "evidence_kind": "formal pre-execution comparison; original copy has since advanced"
+          },
+          {
+            "name": "actual_process_cut_reached",
+            "passed": true,
+            "expected": 73,
+            "observed": 73
+          },
+          {
+            "name": "committed_prefix_matches_expected_cut",
+            "passed": true,
+            "expected": 17,
+            "observed": 17
+          },
+          {
+            "name": "full_state_matches_uninterrupted_control",
+            "passed": true,
+            "expected": "c1116e9e149ff93815f4291c6878774867141adb5ef1ba5059c2e3adf96e70fb",
+            "observed": "c1116e9e149ff93815f4291c6878774867141adb5ef1ba5059c2e3adf96e70fb"
+          },
+          {
+            "name": "all_immutable_and_mirror_bytes_match_control",
+            "passed": true,
+            "expected": {
+              "versions": {
+                "obj-935ddc538ff2e957b071202f/v1": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+                "obj-935ddc538ff2e957b071202f/v2": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68/v1": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              },
+              "mirrors": {
+                "obj-935ddc538ff2e957b071202f": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              }
+            },
+            "observed": {
+              "versions": {
+                "obj-935ddc538ff2e957b071202f/v1": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+                "obj-935ddc538ff2e957b071202f/v2": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68/v1": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da/v1": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              },
+              "mirrors": {
+                "obj-935ddc538ff2e957b071202f": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+                "obj-9b10a52a93ed135c208fca68": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+                "obj-e5381b99cc0d742cd208641a": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+                "obj-7b0cb00c65e581894b6674da": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+              }
+            }
+          },
+          {
+            "name": "public_result_matches_control",
+            "passed": true,
+            "expected": {
+              "ok": true,
+              "result": {
+                "object_id": "obj-935ddc538ff2e957b071202f",
+                "version_id": "v2"
+              },
+              "action_id": "action-17",
+              "logical_time": 17,
+              "command_id": "command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e",
+              "command_committed": true,
+              "committed_revision": 17
+            },
+            "observed": {
+              "ok": true,
+              "result": {
+                "object_id": "obj-935ddc538ff2e957b071202f",
+                "version_id": "v2"
+              },
+              "action_id": "action-17",
+              "logical_time": 17,
+              "command_id": "command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e",
+              "command_committed": true,
+              "committed_revision": 17
+            }
+          },
+          {
+            "name": "world_relations_and_observed_history_preserved",
+            "passed": true,
+            "expected": true,
+            "observed": true
+          },
+          {
+            "name": "second_retry_has_no_effect",
+            "passed": true,
+            "expected": true,
+            "observed": true,
+            "evidence_kind": "formal live retry check plus raw result; not rerun during archival"
+          }
+        ],
+        "revision_evidence": {
+          "checkpoint": 16,
+          "in_memory_at_cut": 17,
+          "persisted_at_cut": 17,
+          "before_resume": 17,
+          "after_resume": 17,
+          "control": 17
+        },
+        "cut_process": {
+          "returncode": 73,
+          "stdout": "",
+          "stderr": ""
+        },
+        "cut_context": {
+          "operation_id": "command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e",
+          "kind": "command",
+          "action": "world_action",
+          "actor": "manager"
+        },
+        "physical_versions_at_cut": {
+          "obj-7b0cb00c65e581894b6674da/v1/report.json": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+          "obj-935ddc538ff2e957b071202f/v1/reference.json": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+          "obj-935ddc538ff2e957b071202f/v2/reference.json": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+          "obj-9b10a52a93ed135c208fca68/v1/model.json": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+          "obj-e5381b99cc0d742cd208641a/v1/report.json": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426"
+        },
+        "persisted_observation_coverage": {
+          "knowledge": {
+            "alice": {
+              "read_artifacts": [
+                {
+                  "artifact_id": "obj-935ddc538ff2e957b071202f",
+                  "version_id": "v1",
+                  "project_id": "A",
+                  "at": 8
+                },
+                {
+                  "artifact_id": "obj-935ddc538ff2e957b071202f",
+                  "version_id": "v1",
+                  "project_id": "B",
+                  "at": 15
+                }
+              ],
+              "read_messages": []
+            },
+            "bob": {
+              "read_artifacts": [],
+              "read_messages": []
+            },
+            "manager": {
+              "read_artifacts": [],
+              "read_messages": []
+            }
+          },
+          "observations": []
+        },
+        "raw_evidence": [
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/result.json",
+            "sha256": "150f063fb1785e7d11afa662db69060191e1c4adf5993c16073f7e48b1e76a66",
+            "bytes": 1043
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/fault-reached.json",
+            "sha256": "c520fd730fdd7c8bf9ff3394a701fdf466cb2499ff2e18aa3a8a5c91e1daca1f",
+            "bytes": 672355
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/before-resume-state.json",
+            "sha256": "7aebdb17282a45bf2be72d6865c32c16df55c8c444a2bb4fea39d4a74b153f42",
+            "bytes": 308785
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/after-resume.json",
+            "sha256": "9fb87e15046b03fde86dde41762de26b8ab1f23c0f4f0abd7b0a6cdf5885c8f6",
+            "bytes": 336243
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/state.json",
+            "sha256": "7aebdb17282a45bf2be72d6865c32c16df55c8c444a2bb4fea39d4a74b153f42",
+            "bytes": 308785
+          }
+        ],
+        "final_committed_object_files_readonly_verified": [
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/versions/obj-935ddc538ff2e957b071202f/v1/reference.json",
+            "sha256": "943eb3e79437092acadddecb466885bf9e6d8af5c786c54b2601fd0947da1b9d",
+            "bytes": 34
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/versions/obj-935ddc538ff2e957b071202f/v2/reference.json",
+            "sha256": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+            "bytes": 34
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/workspace/artifacts/obj-935ddc538ff2e957b071202f/reference.json",
+            "sha256": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+            "bytes": 34
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/versions/obj-9b10a52a93ed135c208fca68/v1/model.json",
+            "sha256": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+            "bytes": 45
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/workspace/artifacts/obj-9b10a52a93ed135c208fca68/model.json",
+            "sha256": "29bc0072484dc770d34a0a29ca14d58596e102736b8fed62a43375e590503488",
+            "bytes": 45
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/versions/obj-e5381b99cc0d742cd208641a/v1/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/workspace/artifacts/obj-e5381b99cc0d742cd208641a/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/versions/obj-7b0cb00c65e581894b6674da/v1/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          },
+          {
+            "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/workspace/artifacts/obj-7b0cb00c65e581894b6674da/report.json",
+            "sha256": "b98d43dace639bc20f7692ee057cd91fb4d2ebc5f2b12868e3b204ca3abc8426",
+            "bytes": 33
+          }
+        ]
+      }
+    ]
+  },
+  "identity_examples": {
+    "world_material": "obj-935ddc538ff2e957b071202f",
+    "shared_common_model": "obj-9b10a52a93ed135c208fca68",
+    "A_report": "obj-e5381b99cc0d742cd208641a",
+    "B_report": "obj-7b0cb00c65e581894b6674da"
+  },
+  "raw_json_manifest": [
+    {
+      "path": "runs/world-core-relations-v06/M3/after-audience-revision.json",
+      "sha256": "b476a5912341bbccdb2fd5ed70a92b109c6079168ca47e86dc2db492001cd7c1",
+      "bytes": 428182
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/after-basis-revision.json",
+      "sha256": "778f9627aa0b02cd890e831f937a30175fa16ed3a1b2f9b1137408654499ab9f",
+      "bytes": 387357
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/after-publication.json",
+      "sha256": "d6d219b7c6de066cc3718eb78d82ae9d38f1a72a821d5f38fb304d2de57c7db0",
+      "bytes": 336245
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/after-unshared-edit.json",
+      "sha256": "6d7a7127817ce6577d4706285cbdc792ceb93ff909ad70682ee3d59209b4dbb6",
+      "bytes": 476326
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/after-worker-edit.json",
+      "sha256": "31b847d1c93e5dad692f17c403c2c71f1a2f26f14444f88f16cc6ce1a732adb0",
+      "bytes": 494988
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/before-local-revisions.json",
+      "sha256": "a13570b011313f87b1d1b4ca4471f8e59be9dc7e5d333124fa737b934387ec72",
+      "bytes": 347046
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/before-publication.json",
+      "sha256": "1cf73822355a2b6a6b0d32719007b383e4cd805ce8555fa8ef4157f1990f618b",
+      "bytes": 316669
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/before-unshared-edit.json",
+      "sha256": "6b2f9260f7003a27e2eb36100d54e1213e26d344124812e6439ff4339ceadb34",
+      "bytes": 458261
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/observed-A.json",
+      "sha256": "1d0820ae1267d54acfb7094b559df359e243b35cafe3314bf6b899eb59617a28",
+      "bytes": 1921
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/observed-B.json",
+      "sha256": "25316051999bded035c3ce2809016712ab0cc6f7640de7e7b8247e7459f524fc",
+      "bytes": 1909
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/report.json",
+      "sha256": "900c9ad1cfe72caf6b99b540a9f6a68b6c57227b98e60b1aa6b24516b5030c0f",
+      "bytes": 1695
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/world/control/state.json",
+      "sha256": "fa377468f9f3e7a93cf0e37731a2bb6d551e3c0cd7a2c3b0a8a9ec0f5075e3b8",
+      "bytes": 454673
+    },
+    {
+      "path": "runs/world-core-relations-v06/M3/world/control/world_spec.json",
+      "sha256": "3fd9f962b19f5fe59299611191484c417106ff371fe1da70c6ec60db1a6e4935",
+      "bytes": 571
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/A-episode-ended.json",
+      "sha256": "57cbc2acf2060bceb7fcd862e4500853be3730508c0a03280f882cca1ca3bffa",
+      "bytes": 457152
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/A-revised-B-preserved.json",
+      "sha256": "d07eb39a2f85e8394d4b8cf63394130eb3a003701314136b3eee3e8347ca51c7",
+      "bytes": 331095
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/B-delivery-completed.json",
+      "sha256": "2e3a7e35bf864a1d55945985325e78a1b1b5d47e0ffd75c504c88952e5764fdc",
+      "bytes": 291435
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/after-scope-switch.json",
+      "sha256": "b0af0370b5e29b64ebbb132b0c3b30be9defa1c831ed17fec8faaa0fa7587e50",
+      "bytes": 468501
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/both-projects-waiting.json",
+      "sha256": "25f94912660109dcd336ea681df45ceaf54b2c44f6a1d90f0a418ed1a00ab682",
+      "bytes": 249095
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/old-A-reply-arrived.json",
+      "sha256": "23adeaf0e05090be1cf58bb08e16062eee0b8d57a5d0b2fdc6082663c7b03888",
+      "bytes": 448703
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/after-resume.json",
+      "sha256": "fef306a969bdb9dbfd7d2499e935a837b678ef1ec10d3b244aee1d62581e386e",
+      "bytes": 336242
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/before-resume-state.json",
+      "sha256": "fa933ecd85dfacb68d247e6aa66dbe6c8202dd62e70a4c208d047c1e0111e05a",
+      "bytes": 290813
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/state.json",
+      "sha256": "7d4e036d302af572fc3309bc7d07dcb0083ec632e4220f8a55e766df8cadb5e4",
+      "bytes": 308784
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/uncommitted/obj-935ddc538ff2e957b071202f/v2/reference.json",
+      "sha256": "6f15cc21338a4e7d94af73b3cbe7e3bc19c81f3b309ad7a85335f1937309a1cd",
+      "bytes": 34
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/control/world_spec.json",
+      "sha256": "3fd9f962b19f5fe59299611191484c417106ff371fe1da70c6ec60db1a6e4935",
+      "bytes": 571
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/fault-reached.json",
+      "sha256": "124e56026ab7b9fa20c58bcbfb929c84b39f7a890c8fddc925251e27305c840e",
+      "bytes": 634598
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_apply/result.json",
+      "sha256": "4d7c03395b6f039c0d60063d0d1ae947c3b9b6ab0d9997fef756925d8b288d0f",
+      "bytes": 1025
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/after-resume.json",
+      "sha256": "9fb87e15046b03fde86dde41762de26b8ab1f23c0f4f0abd7b0a6cdf5885c8f6",
+      "bytes": 336243
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/before-resume-state.json",
+      "sha256": "7aebdb17282a45bf2be72d6865c32c16df55c8c444a2bb4fea39d4a74b153f42",
+      "bytes": 308785
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/state.json",
+      "sha256": "7aebdb17282a45bf2be72d6865c32c16df55c8c444a2bb4fea39d4a74b153f42",
+      "bytes": 308785
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/control/world_spec.json",
+      "sha256": "3fd9f962b19f5fe59299611191484c417106ff371fe1da70c6ec60db1a6e4935",
+      "bytes": 571
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/fault-reached.json",
+      "sha256": "c520fd730fdd7c8bf9ff3394a701fdf466cb2499ff2e18aa3a8a5c91e1daca1f",
+      "bytes": 672355
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/after_command_commit/result.json",
+      "sha256": "150f063fb1785e7d11afa662db69060191e1c4adf5993c16073f7e48b1e76a66",
+      "bytes": 1043
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/checkpoint/control/state.json",
+      "sha256": "fa933ecd85dfacb68d247e6aa66dbe6c8202dd62e70a4c208d047c1e0111e05a",
+      "bytes": 290813
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/checkpoint/control/world_spec.json",
+      "sha256": "3fd9f962b19f5fe59299611191484c417106ff371fe1da70c6ec60db1a6e4935",
+      "bytes": 571
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/checkpoint-evidence.json",
+      "sha256": "f458ac451657756a488561421ac6a7b8ed28f20bb1243c1ee09403affced78b1",
+      "bytes": 316666
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/control/control/state.json",
+      "sha256": "e7ae4496094f21eb352aaf6223be43c7bceb74ce6c2502cd22407fe202160b4d",
+      "bytes": 308783
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/control/control/world_spec.json",
+      "sha256": "3fd9f962b19f5fe59299611191484c417106ff371fe1da70c6ec60db1a6e4935",
+      "bytes": 571
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/control-evidence.json",
+      "sha256": "ddf38c1fd0758d2b4f15568ca239c4afb0a52d53b73407a3c7f25a047c419eab",
+      "bytes": 336583
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/observed-A.json",
+      "sha256": "1d0820ae1267d54acfb7094b559df359e243b35cafe3314bf6b899eb59617a28",
+      "bytes": 1921
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/recovery/observed-B.json",
+      "sha256": "25316051999bded035c3ce2809016712ab0cc6f7640de7e7b8247e7459f524fc",
+      "bytes": 1909
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/report.json",
+      "sha256": "d4d20f828345dfa7349efebea12e49e770869e18c7bbfc433884e18f3563b90b",
+      "bytes": 5723
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/world/control/state.json",
+      "sha256": "41a997e75ee4b3a299b7a822563fc86cb06d521feb9db0eb48949a44ac6e1b14",
+      "bytes": 431589
+    },
+    {
+      "path": "runs/world-core-relations-v06/M5/world/control/world_spec.json",
+      "sha256": "3fd9f962b19f5fe59299611191484c417106ff371fe1da70c6ec60db1a6e4935",
+      "bytes": 571
+    },
+    {
+      "path": "runs/world-core-relations-v06/protocol.json",
+      "sha256": "349486183687f7f312d62b9ea74009e7855c890d3e3dffb811d1ec9809f4c2df",
+      "bytes": 2059
+    },
+    {
+      "path": "runs/world-core-relations-v06/report.json",
+      "sha256": "5ee657e20073d21aaabf809249edbd50ff5c89e130d71ae6d12c6d16f5e3a139",
+      "bytes": 11422
+    }
+  ],
+  "development_history": [
+    {
+      "run": "dev",
+      "classification": "fixture construction errors; concurrently changing implementation, not frozen evidence",
+      "explanation": "M3 reached six checks, then helper granted revise instead of revise_requirement; M5 added B work-2 without a scoped provider grant. Required permissions were correctly refused. Recovery branch independently passed both cuts. Source digest changed during this development run.",
+      "report": {
+        "path": "runs/world-core-relations-v06-dev/report.json",
+        "sha256": "d9240080fc15293a6a06a097f464cff075ec82d98c41076343d1aa588f6b9c83",
+        "bytes": 8863
+      },
+      "code_before": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "809c96bd8278e52fd29705f36bedba402dbd8c4f23974215dd808a3c0f84ffb9"
+      },
+      "code_after": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "script_sha256": "b81ebe2fc0e6fca7f02d15d97dcd560bc4642aecc5c3010243692a19e835ee5a",
+      "helper_script_sha256": "42597f68b0634aa18007bc3efd546628bf09bb88c2599446b42f1fd9af0804d5",
+      "groups": [
+        {
+          "group": "M3",
+          "executed": 6,
+          "passed": 6,
+          "not_executed": [
+            "local_A_basis_revision_preserves_B_and_all_files",
+            "local_A_audience_revision_preserves_B_and_all_files",
+            "unshared_edit_has_no_B_fact_or_notification_effect",
+            "explicit_worker_edit_alone_creates_A_delivery_version"
+          ],
+          "failed_assertions": [],
+          "construction_error": "AssertionError: manager/A/revise: {'ok': False, 'error': {'type': 'ValueError', 'message': 'Actor lacks institutional power: revise_requirement (requirements)'}, 'action_id': 'action-16', 'logical_time': 16, 'command_id': 'command:b53be674c60ce2c8f4ff96916f8b7092da72b5b80b501c7f17b60435b58160b3', 'command_committed': True, 'committed_revision': 16}",
+          "recovery": null
+        },
+        {
+          "group": "M5",
+          "executed": 0,
+          "passed": 0,
+          "not_executed": [
+            "A_waits_while_B_has_separate_pending_condition",
+            "B_delivery_only_completed_without_fabricated_review",
+            "A_revision_preserves_B_formal_history_and_bytes",
+            "old_A_response_is_delivered_but_old_condition_superseded",
+            "old_A_reply_does_not_resolve_new_A_or_B",
+            "old_A_reply_preserves_B_submission_and_bytes",
+            "end_A_episode_preserves_B_and_both_pending_replies",
+            "same_actor_switches_to_B_with_bound_scope"
+          ],
+          "failed_assertions": [],
+          "construction_error": "AssertionError: alice/B/request: {'ok': False, 'error': {'type': 'ValueError', 'message': 'Actor lacks project power: provide'}, 'action_id': 'action-7', 'logical_time': 7, 'command_id': 'command:85ef4e3cc623fcfc2e102213c1ede121d11a6df00fc6ec32704d6f2f83d931a7', 'command_committed': True, 'committed_revision': 7}",
+          "recovery": {
+            "cases": [
+              {
+                "phase": "after_apply",
+                "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev/M5/recovery/after_apply",
+                "passed": true,
+                "checks": [
+                  {
+                    "name": "copied_checkpoint_bytes_identical",
+                    "passed": true
+                  },
+                  {
+                    "name": "actual_process_cut_reached",
+                    "passed": true
+                  },
+                  {
+                    "name": "committed_prefix_matches_expected_cut",
+                    "passed": true
+                  },
+                  {
+                    "name": "full_state_matches_uninterrupted_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "all_immutable_and_mirror_bytes_match_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "public_result_matches_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "world_relations_and_observed_history_preserved",
+                    "passed": true
+                  },
+                  {
+                    "name": "second_retry_has_no_effect",
+                    "passed": true
+                  }
+                ],
+                "not_executed": [],
+                "error": null,
+                "process": {
+                  "returncode": 73,
+                  "stdout": "",
+                  "stderr": ""
+                },
+                "committed_revision_before_resume": 12
+              },
+              {
+                "phase": "after_command_commit",
+                "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev/M5/recovery/after_command_commit",
+                "passed": true,
+                "checks": [
+                  {
+                    "name": "copied_checkpoint_bytes_identical",
+                    "passed": true
+                  },
+                  {
+                    "name": "actual_process_cut_reached",
+                    "passed": true
+                  },
+                  {
+                    "name": "committed_prefix_matches_expected_cut",
+                    "passed": true
+                  },
+                  {
+                    "name": "full_state_matches_uninterrupted_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "all_immutable_and_mirror_bytes_match_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "public_result_matches_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "world_relations_and_observed_history_preserved",
+                    "passed": true
+                  },
+                  {
+                    "name": "second_retry_has_no_effect",
+                    "passed": true
+                  }
+                ],
+                "not_executed": [],
+                "error": null,
+                "process": {
+                  "returncode": 73,
+                  "stdout": "",
+                  "stderr": ""
+                },
+                "committed_revision_before_resume": 13
+              }
+            ],
+            "checkpoint_revision": 12,
+            "checkpoint": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev/M5/recovery/checkpoint",
+            "control": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev/M5/recovery/control",
+            "expected_cases": 2,
+            "expected_checks_per_case": 8,
+            "passed": 2,
+            "checks_passed": 16,
+            "observation_coverage": "persisted object reads in knowledge and command interactions; observe responses archived externally; empty observations registry is not counted as populated history"
+          }
+        }
+      ]
+    },
+    {
+      "run": "dev2",
+      "classification": "fixture incompatible with ongoing identity representation update",
+      "explanation": "Runtime switched to opaque collision-safe object IDs; script still constructed world--/A-- strings. Publication was Unknown object; request failed its object-scoped permission check. Script now uses actual creation/registry identities. No business-state bug inferred from these expected rejections.",
+      "report": {
+        "path": "runs/world-core-relations-v06-dev2/report.json",
+        "sha256": "96f62022c48b3202a81e30c6e672210578a80d9f9e654f7bb8e92d87ca585122",
+        "bytes": 5348
+      },
+      "code_before": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "code_after": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "script_sha256": "ac6ab5f18de128b442e7befdcac164db89f073bfb182ca1e515759d90a9464ed",
+      "helper_script_sha256": "42597f68b0634aa18007bc3efd546628bf09bb88c2599446b42f1fd9af0804d5",
+      "groups": [
+        {
+          "group": "M3",
+          "executed": 1,
+          "passed": 1,
+          "not_executed": [
+            "publication_changes_only_shared_object_bytes",
+            "A_update_required_B_fixed_current",
+            "publication_notifies_A_not_B",
+            "follow_updates_grants_v2_to_A_only",
+            "B_reads_fixed_v1_and_cannot_read_unshared_v2",
+            "local_A_basis_revision_preserves_B_and_all_files",
+            "local_A_audience_revision_preserves_B_and_all_files",
+            "unshared_edit_has_no_B_fact_or_notification_effect",
+            "explicit_worker_edit_alone_creates_A_delivery_version"
+          ],
+          "failed_assertions": [],
+          "construction_error": "AssertionError: {'ok': False, 'error': {'type': 'ValueError', 'message': 'Unknown object'}, 'action_id': 'action-13', 'logical_time': 13, 'command_id': 'command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e', 'command_committed': True, 'committed_revision': 13}",
+          "recovery": null
+        },
+        {
+          "group": "M5",
+          "executed": 0,
+          "passed": 0,
+          "not_executed": [
+            "A_waits_while_B_has_separate_pending_condition",
+            "B_delivery_only_completed_without_fabricated_review",
+            "A_revision_preserves_B_formal_history_and_bytes",
+            "old_A_response_is_delivered_but_old_condition_superseded",
+            "old_A_reply_does_not_resolve_new_A_or_B",
+            "old_A_reply_preserves_B_submission_and_bytes",
+            "end_A_episode_preserves_B_and_both_pending_replies",
+            "same_actor_switches_to_B_with_bound_scope"
+          ],
+          "failed_assertions": [],
+          "construction_error": "AssertionError: alice/A/request: {'ok': False, 'error': {'type': 'ValueError', 'message': 'Actor lacks project power: provide'}, 'action_id': 'action-6', 'logical_time': 6, 'command_id': 'command:a54adb6811a103064610f8802ade0a199246babd9dc620dd2f94daa33dd854be', 'command_committed': True, 'committed_revision': 6}",
+          "recovery": {
+            "error": "AssertionError: {'ok': False, 'error': {'type': 'ValueError', 'message': 'Unknown object'}, 'action_id': 'action-13', 'logical_time': 13, 'command_id': 'command:54c9c163ba7a72c19e5903471dc1f28d026a225774734cb2e8e180ab82f8015e', 'command_committed': True, 'committed_revision': 13}",
+            "expected_cases": 2,
+            "cases": [],
+            "passed": 0,
+            "not_executed": [
+              "after_apply",
+              "after_command_commit"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "run": "dev3",
+      "classification": "incorrect harness expectation",
+      "explanation": "M3 passed. M5 required review=None for delivery_only, but runtime legitimately records accepted by the submitting actor with decision_basis=delivery_only, without any manager review event. Assertion changed to the explicitly declared delivery-only decision and absence of manager review, matching audit wording. Two cuts passed.",
+      "report": {
+        "path": "runs/world-core-relations-v06-dev3/report.json",
+        "sha256": "3e93773526de835315b07fb3153cf79378b53c9cb1900f6461e4bc20995a245f",
+        "bytes": 11425
+      },
+      "code_before": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "code_after": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "script_sha256": "7df889be9d865006ae55b629d010ff75bee8cfa9f02563ba70ac96777992531b",
+      "helper_script_sha256": "d36afa48204911328b8d1c40c6d30a7186eb17b0c3f8169509fb4ff94c106d21",
+      "groups": [
+        {
+          "group": "M3",
+          "executed": 10,
+          "passed": 10,
+          "not_executed": [],
+          "failed_assertions": [],
+          "construction_error": null,
+          "recovery": null
+        },
+        {
+          "group": "M5",
+          "executed": 8,
+          "passed": 7,
+          "not_executed": [],
+          "failed_assertions": [
+            "B_delivery_only_completed_without_fabricated_review"
+          ],
+          "construction_error": null,
+          "recovery": {
+            "cases": [
+              {
+                "phase": "after_apply",
+                "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev3/M5/recovery/after_apply",
+                "passed": true,
+                "checks": [
+                  {
+                    "name": "copied_checkpoint_bytes_identical",
+                    "passed": true
+                  },
+                  {
+                    "name": "actual_process_cut_reached",
+                    "passed": true
+                  },
+                  {
+                    "name": "committed_prefix_matches_expected_cut",
+                    "passed": true
+                  },
+                  {
+                    "name": "full_state_matches_uninterrupted_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "all_immutable_and_mirror_bytes_match_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "public_result_matches_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "world_relations_and_observed_history_preserved",
+                    "passed": true
+                  },
+                  {
+                    "name": "second_retry_has_no_effect",
+                    "passed": true
+                  }
+                ],
+                "not_executed": [],
+                "error": null,
+                "process": {
+                  "returncode": 73,
+                  "stdout": "",
+                  "stderr": ""
+                },
+                "committed_revision_before_resume": 12
+              },
+              {
+                "phase": "after_command_commit",
+                "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev3/M5/recovery/after_command_commit",
+                "passed": true,
+                "checks": [
+                  {
+                    "name": "copied_checkpoint_bytes_identical",
+                    "passed": true
+                  },
+                  {
+                    "name": "actual_process_cut_reached",
+                    "passed": true
+                  },
+                  {
+                    "name": "committed_prefix_matches_expected_cut",
+                    "passed": true
+                  },
+                  {
+                    "name": "full_state_matches_uninterrupted_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "all_immutable_and_mirror_bytes_match_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "public_result_matches_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "world_relations_and_observed_history_preserved",
+                    "passed": true
+                  },
+                  {
+                    "name": "second_retry_has_no_effect",
+                    "passed": true
+                  }
+                ],
+                "not_executed": [],
+                "error": null,
+                "process": {
+                  "returncode": 73,
+                  "stdout": "",
+                  "stderr": ""
+                },
+                "committed_revision_before_resume": 13
+              }
+            ],
+            "checkpoint_revision": 12,
+            "checkpoint": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev3/M5/recovery/checkpoint",
+            "control": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev3/M5/recovery/control",
+            "expected_cases": 2,
+            "expected_checks_per_case": 8,
+            "passed": 2,
+            "checks_passed": 16,
+            "observation_coverage": "persisted object reads in knowledge and command interactions; observe responses archived externally; empty observations registry is not counted as populated history"
+          }
+        }
+      ]
+    },
+    {
+      "run": "dev4",
+      "classification": "passing development run",
+      "explanation": "M3 10/10, M5 8/8, two cuts 16/16. Shared common model now explicitly shared and fixed-adopted by both A and B, strengthening the witness beyond an unused world object. This remains dirty development evidence, superseded by clean formal freeze for the reported result.",
+      "report": {
+        "path": "runs/world-core-relations-v06-dev4/report.json",
+        "sha256": "bb937a123f39b25a5c4e5381cec70de8324c8a0e0571fb5a0c1ef90446425c96",
+        "bytes": 11417
+      },
+      "code_before": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "code_after": {
+        "code_commit": "91eb38ef546a4d5909269179e5cea85e9b4efe2f",
+        "code_dirty": true,
+        "source_tree_sha256": "56c11c8ec5a6c62d8ac2c9a7bf7b078c3ce556da54cd7f68f18a715ad61b169d"
+      },
+      "script_sha256": "ffa275567423cadea57729dc1011b95865aee6e2fba5f77bccf2e61f77af3688",
+      "helper_script_sha256": "91e9b96ad08827822e7b186b7dc07cf560a81c92dacd38f6944b6d86b4e63a5b",
+      "groups": [
+        {
+          "group": "M3",
+          "executed": 10,
+          "passed": 10,
+          "not_executed": [],
+          "failed_assertions": [],
+          "construction_error": null,
+          "recovery": null
+        },
+        {
+          "group": "M5",
+          "executed": 8,
+          "passed": 8,
+          "not_executed": [],
+          "failed_assertions": [],
+          "construction_error": null,
+          "recovery": {
+            "cases": [
+              {
+                "phase": "after_apply",
+                "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev4/M5/recovery/after_apply",
+                "passed": true,
+                "checks": [
+                  {
+                    "name": "copied_checkpoint_bytes_identical",
+                    "passed": true
+                  },
+                  {
+                    "name": "actual_process_cut_reached",
+                    "passed": true
+                  },
+                  {
+                    "name": "committed_prefix_matches_expected_cut",
+                    "passed": true
+                  },
+                  {
+                    "name": "full_state_matches_uninterrupted_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "all_immutable_and_mirror_bytes_match_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "public_result_matches_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "world_relations_and_observed_history_preserved",
+                    "passed": true
+                  },
+                  {
+                    "name": "second_retry_has_no_effect",
+                    "passed": true
+                  }
+                ],
+                "not_executed": [],
+                "error": null,
+                "process": {
+                  "returncode": 73,
+                  "stdout": "",
+                  "stderr": ""
+                },
+                "committed_revision_before_resume": 16
+              },
+              {
+                "phase": "after_command_commit",
+                "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev4/M5/recovery/after_command_commit",
+                "passed": true,
+                "checks": [
+                  {
+                    "name": "copied_checkpoint_bytes_identical",
+                    "passed": true
+                  },
+                  {
+                    "name": "actual_process_cut_reached",
+                    "passed": true
+                  },
+                  {
+                    "name": "committed_prefix_matches_expected_cut",
+                    "passed": true
+                  },
+                  {
+                    "name": "full_state_matches_uninterrupted_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "all_immutable_and_mirror_bytes_match_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "public_result_matches_control",
+                    "passed": true
+                  },
+                  {
+                    "name": "world_relations_and_observed_history_preserved",
+                    "passed": true
+                  },
+                  {
+                    "name": "second_retry_has_no_effect",
+                    "passed": true
+                  }
+                ],
+                "not_executed": [],
+                "error": null,
+                "process": {
+                  "returncode": 73,
+                  "stdout": "",
+                  "stderr": ""
+                },
+                "committed_revision_before_resume": 17
+              }
+            ],
+            "checkpoint_revision": 16,
+            "checkpoint": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev4/M5/recovery/checkpoint",
+            "control": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-core-relations-v06-dev4/M5/recovery/control",
+            "expected_cases": 2,
+            "expected_checks_per_case": 8,
+            "passed": 2,
+            "checks_passed": 16,
+            "observation_coverage": "persisted object reads in knowledge and command interactions; observe responses archived externally; empty observations registry is not counted as populated history"
+          }
+        }
+      ]
+    }
+  ],
+  "scope_limits": [
+    "Two synthetic projects and finite JSON files; no professional validity, model ability or training gain claim.",
+    "current_applicable versus fixed are explicit adoption policies; update_required is a relation requiring review, not a content-error judgment.",
+    "A basis revision changes a declared requirement reference. It does not issue or validate a new formal credential; authority/reference confirmation has separate M2/G0 evidence.",
+    "The common model is explicitly shared and fixed-adopted by both projects. Environment publication never edits worker report bytes; the final report v2 is an explicit actor command.",
+    "M5 delivers one superseded A reply while new A and B work-2 replies remain scheduled; it does not enumerate arbitrary project interleavings.",
+    "delivery_only records a submitting-actor decision_basis=delivery_only in the review slot. It does not fabricate a manager review or assert substantive content correctness.",
+    "Recovery covers only shared-world publish after_apply and after_command_commit with one writer and an unchanged byte-copied checkpoint. Not power loss, distributed transactions, arbitrary plugins, or all operations.",
+    "All full-state fields are compared except recursive wall_seconds and diagnostic state_digests. Files compare every registered immutable version and current mirror hash; uncommitted quarantined bytes are not promoted to formal versions.",
+    "Persisted O evidence consists of knowledge read history and command interactions; observations container is empty, and observe return values are external evidence. This archive does not claim nonempty persisted observation snapshots.",
+    "Formal initial checkpoint-copy equality and second-retry equality are represented by recorded experiment checks. Archival verification did not rerun commands or overwrite historical raw evidence."
+  ],
+  "omitted_from_archive": "Repeated full state snapshots, nested receipt_context and transaction receipts are not duplicated here. They remain byte-hashed in raw_json_manifest; selected expected/observed facts, file inventories, identities and all check outcomes are retained.",
+  "archival_verification": "Read-only JSON comparisons, frozen script hashes, expected/observed fact equality, normalized recovery/control equality, and actual recovered immutable/mirror bytes. No experiments or tests rerun; no raw files changed."
+}

@@ -1,127 +1,99 @@
 # ProWorkSim
 
-**面向智能体学习的专业工作世界模拟与任务流合成。** 当前 v0.5 的主线是内核状态一致性与有界恢复：明确行动阶段差分，从基础事实重建条件与当前工作视图，并实现单世界、单写者下的命令／事件提交和重试。经营分析仍是主模板；一个极小文稿模板用于检验共同规则的复用边界。
+**面向智能体学习的专业工作世界模拟与任务流合成。** v0.6 实现了先于项目存在的 World Core：世界可以零项目启动，在同一身份、时间、对象注册表与历史中装载、运行和结束项目。工作人员能够创建新产物，项目之间通过明确的授权、共享和采用关系产生影响。
 
-支持三个交付粒度，以及可配置的工作结构与布局：
+本轮按 [G0–G3 执行计划](docs/world-core-v06-plan.md) 完成 E2 测量修正、多项目承载与有限实验。没有调用模型 API、GPU 或开展训练；当前材料均为合成机制夹具，不代表真实金融工作质量。
 
-| 模式 | 业务委托 | 最终交付 |
-| --- | --- | --- |
-| `short` | 组合已有模型股价与指定披露 EPS | 带来源的 P/E 数值回复 |
-| `file` | 更新假设、重算模型、构建 2×2 敏感性分析 | 实际修改后的 XLSX |
-| `continuous` | 更新模型与备忘录、接受审阅、处理后续披露和假设变化 | 多个绑定版本的交付物及连续工作记录 |
+## 安装与零项目世界
 
-所有业务材料均为独立合成数据。项目没有使用 APEX 评测题、参考答案或受限数据训练模型。
-
-## 安装和运行
-
-需要 Python 3.11+。推荐项目独立虚拟环境：
+需要 Python 3.11+：
 
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
 
-# 编译一个需要实时澄清的连续项目
-.venv/bin/proworksim build runs/demo --seed 17 --delivery continuous --information clarification
+# 世界先启动，再分别装载项目；两个项目共用人员，但权力分别配置
+.venv/bin/proworksim world-create runs/world-demo --spec examples/world-core/world.json
+.venv/bin/proworksim project-load runs/world-demo examples/world-core/project-a.json --actor operator
+.venv/bin/proworksim project-load runs/world-demo examples/world-core/project-b.json --actor operator
+.venv/bin/proworksim world-inspect runs/world-demo --actor alice --project A
 
-# 通过公开工具运行规则基线，故意漏改一次备忘录以验证真实审阅返工
-.venv/bin/proworksim run runs/demo --provider baseline --inject-stale-memo
-.venv/bin/proworksim evaluate runs/demo
-.venv/bin/proworksim export runs/demo runs/demo-export
+# 产物并未在项目包中预建；工作人员通过工具创建
+.venv/bin/proworksim world-act runs/world-demo create_object --actor alice --project A \
+  --arguments '{"alias":"report","filename":"report.json","data":{"revenue":10,"margin":0.2},"deliverable_role":"analysis"}'
+.venv/bin/proworksim world-act runs/world-demo submit --actor alice --project A \
+  --request-key submit-A-1 --arguments '{"work_id":"work-1","artifacts":["report"]}'
+.venv/bin/proworksim world-evaluate runs/world-demo --project A --work work-1 \
+  --submission A::work-1-submission-1
+
+.venv/bin/proworksim snapshot runs/world-demo runs/world-demo-snapshot
+.venv/bin/proworksim restore runs/world-demo-snapshot runs/world-demo-restored
 ```
 
-基线只用于验证任务可解，不是模型能力实验。存在历史失败提交时，`evaluate` 会完整展示失败记录；退出码按当前适用工作项的最后提交判定。`blocked_unavailable` 是合法停止且 `complete=false`，不计为业务完成。
+示例 A 使用 `delivery_only`：交付记录为责任者的完成决定。示例 B 则需要其项目审阅者批准。独立内容检查与制度结果分开；缺少字段的成果仍可留下正式提交和独立失败结果。当前内容检查仅验证 JSON 字段覆盖及冲突，不检查财务合理性。
 
-真实模型运行先在项目 `.env` 配置 `DEEPSEEK_API_KEY`（可参考 `.env.example`，已有 `.env` 不要覆盖）：
+## 世界与项目的共同规则
 
-```bash
-.venv/bin/proworksim build runs/deepseek --seed 101 --delivery continuous --information clarification
-.venv/bin/proworksim run runs/deepseek --provider deepseek --max-turns 80
-.venv/bin/proworksim evaluate runs/deepseek
-.venv/bin/proworksim export runs/deepseek runs/deepseek-export
-```
+- 主体身份跨项目保持。可信会话绑定 actor/project，工具参数不能改绑；同一人的 A 执行职责不会自动变成 A 审阅权。
+- 世界对象 ID、项目内别名和显示文件名分开。A/B 可同时使用 `work-1` 和 `report.json`，文件写到独立的受控位置。
+- 共享精确版本与分享后续发布分开；采用成果不会获得上游私有材料。已经合法取得的人员阅读历史不会因切换项目而清除。
+- 当前采用与固定快照可以对同一发布产生不同后果。环境更新关系和通知，工作人员显式编辑才产生新交付版本。
+- 世界、项目、工作与 episode 生命周期分开。项目结束保留正式历史；世界空闲后可再装载；episode 结束不清空另一个项目。
+- 同一 `WorldRunner` 执行阶段检查、命令／事件独立提交和有限恢复。World Core 身份覆盖 actor/project/request_key；同键异负载冲突，跨项目同文本键独立。
 
-默认模型为 `deepseek-flash`，可通过 `--model` 或 `DEEPSEEK_MODEL` 修改。支持 `--thinking`、`--env-file`。网络失败后可对同一路径重新运行；已记录的工具调用使用幂等键恢复。模型返回普通文字不会自动变成文件交付或批准。
+详细合同与 Python 用法见 [World Core 设计](docs/world-core-v06.md)、[核心语义](CORE_SEMANTICS.md)、[状态归属](STATE_OWNERSHIP.md)、[行动合同](ACTION_CONTRACTS.md)及[数据合同](docs/data-contracts.md)。
 
-## 快照、观察与实验
+## 本轮实验
 
-```bash
-.venv/bin/proworksim inspect runs/demo
-.venv/bin/proworksim act runs/demo list_files
-.venv/bin/proworksim snapshot runs/demo runs/demo-snapshot
-.venv/bin/proworksim restore runs/demo-snapshot runs/demo-branch
-.venv/bin/proworksim replay runs/demo --output runs/demo-recording.json
+正式实验冻结于 `470d412`；**291 项测试通过**，Ruff 通过。
 
-.venv/bin/proworksim experiment runs/matrix --seeds 11 29 --workers 4
-.venv/bin/python -m pytest -q
-.venv/bin/python -m ruff check src tests
-```
-
-快照和导出目录必须新建，且位于被操作世界之外。`replay` 导出实际已记录的输入、输出与工具结果；恢复状态使用 `restore`，默认分配新分支身份。
-
-课程模块只读取开发集的有效诊断，生成结构配额并可编译新的训练世界：
-
-```bash
-.venv/bin/proworksim curriculum runs/demo --total 12 --output runs/quotas.json \
-  --generate runs/next-training-worlds --seed-start 1000 --workers 4
-```
-
-若输入世界不属于开发集，其结果会被明确排除，配额使用均衡先验。当前“压力池”是对既有结构的重点采样标签，不自动注入矛盾或沟通噪声。
-
-## 工作世界语义内核
-
-先定义 [基本语义](CORE_SEMANTICS.md)、[状态归属](STATE_OWNERSHIP.md) 与 [行动合同](ACTION_CONTRACTS.md)，再将共用规则提取到 `core/`，将经营假设、阶段规则与组织配置分别放入领域和制度层。已有文件工具继续使用。当前运行器仅接受 schema 0.5；历史世界使用对应的冻结版本，本轮未提供旧历史的隐式迁移。
-
-- 正式确认由配置权力产生；角色名称本身没有批准权。
-- 可访问、已观察、声明采用和验证支持分别记录。
-- 适用性针对凭据版本和具体工作查询；同一产物对不同工作可能有不同结论。
-- 回复送达不等于条件满足；重复送达、旧回复、当前不可得和后续恢复具有明确后果。
-- 提交、撤回、批准及需求替代共用状态规则；有权角色可批准错误产物，独立评价仍可拒绝。
-- 行动分别记录 Apply、Derive 和净变化；基础区域／投影区域分类另列，失败阶段不伪报为空差分。
-- 条件和当前工作视图从事实重建；删除或破坏指定缓存后，不改变历史决定、原始回复和文件。
-- 命令与环境事件各自原子提交；同一身份重试返回已提交结果，负载变化明确冲突，恢复隔离未提交文件。
-- 历史文件、提交和批准保留，派生与恢复过程不替工作人员修正文档。
-
-文稿微模板使用相同的 `World.act`、版本存储、授权、确认、条件和生命周期函数，两套作者／编辑 ID 无需改变核心代码。它只检查字段、精确来源和指定短语，不是第二个行业基准。
-
-```bash
-# 指定缓存的删除、破坏和重复重建
-.venv/bin/python scripts/state_projection_experiment.py --output runs/state-projection --workers 4
-# 两个真实模板的共同语义轨迹
-.venv/bin/python scripts/adapter_conformance_experiment.py --output runs/adapter-conformance --workers 4
-# 独立参考模型下的有界状态探索
-.venv/bin/python scripts/bounded_state_experiment.py --output runs/bounded-state --depth 4
-# 真实进程中断及提交后异常恢复
-.venv/bin/python scripts/bounded_recovery_experiment.py --output runs/bounded-recovery --workers 4
-# 七个指定语义错误的负对照
-.venv/bin/python scripts/semantic_mutation_experiment.py --output runs/semantic-mutants --workers 4
-# 保留的十类经营世界回归
-.venv/bin/python scripts/world_mechanism_suite.py --output runs/world-regression --workers 4
-```
-
-本轮 **247 项代码回归通过**，正式实验使用冻结提交 `fe80b02`：
-
-| 实验 | 结果 |
+| 组别 | 正式结果 |
 | --- | --- |
-| E1 指定缓存重建 | 48/48 变体，288/288 检查 |
-| E2 两模板符合性 | 4/4 世界，11/11 跨模板比较点；含局部检查共 31/31 |
-| E3 有界参考状态机 | 长度 ≤4，446 个状态、5139 次转移尝试，未发现反例 |
-| E4 单写者恢复 | 10/10 真实进程中断切点，60/60 检查；另列普通异常探针 4/4 |
-| E5 语义负对照 | 7/7 正常对照通过，7/7 变异触发指定断言 |
-| 原机制回归 | 10/10 情境，56/56 检查；8 完成、1 规格拒绝、1 合理阻塞 |
+| G0 原 E2 检查点重投影 | 22/22；30 处合法确认由误报 false 修正为 true；原目录保持 |
+| G0 测量真值／负对照 | 9/9 真值夹具，3/3 指定测量错误检出 |
+| E2 四条真实适配器轨迹 | 4/4 世界；原 31 项关系＋22 项独立预期，53/53 |
+| M1 世界与项目生命周期 | 13/13 |
+| M2 名称、职责与访问隔离 | 14/14 |
+| M3 不同采用政策与定向影响 | 10/10 |
+| M4 动态产物与不同合法交付方式 | 14/14 |
+| M5 多项目交错 | 8/8 |
+| 新增恢复切点 | 两个真实 `os._exit(73)`，16/16 检查 |
 
-各组计数含义不同，不合成总分。报告保留构造失败、开发期反例及修复记录。当前证据支持声明范围内的一致性，不证明所有历史路径、断电持久性、任意并发或领域专业真实性。
+**v0.5 的 E2 原 31/31 只保留为当时脚本输出。** 两种引用表示曾被直接比较，使两模板共同误报正式确认；原相等性通过不能证明这一维度测量正确。本轮使用精确引用规范化、签发关联及独立预期修正，原结果文件没有覆盖。其余旧实验仍保留各自证据范围。
 
-本轮没有 API、GPU 或参数训练。原工作配置仍为四种配置、三种不同工作图；带指南布局与明示范围的选择性更新保持有限解释。
+[详细实验报告](docs/experiments/world-core-v06.md)记录审计逐项映射、开发期反例、夹具修订、原始材料与复现命令。各组计数不构成统计独立样本，也不合成为专业能力分数。
 
-- [v0.5 详细实验、开发期失败与复现](docs/experiments/state-consistency-v05.md)
-- [v0.5 状态一致性与有界恢复设计](docs/state-consistency-v05.md)
-- [数据合同与扩展接口](docs/data-contracts.md)
-- [本轮审计](docs/reference/state-consistency-audit.md)
-- [v0.4 内核迁移设计](docs/semantics-kernel-v04.md)与[历史实验](docs/experiments/semantics-kernel-v04.md)
-- [v0.3 生命周期设计](docs/world-semantics-v03.md)与[历史 API／补修实验](docs/experiments/world-semantics-v03.md)
-- [v0.2 实现](docs/post-audit-implementation.md)与[历史训练接口归档](docs/experiments/post-audit-v02.md)
+```bash
+.venv/bin/python scripts/conformance_measurement_experiment.py --output runs/g0-new
+.venv/bin/python scripts/adapter_conformance_experiment.py --output runs/e2-new --workers 4
+.venv/bin/python scripts/world_core_experiment.py --output runs/m124-new --groups M1 M2 M4 --workers 3
+.venv/bin/python scripts/world_core_relations_experiment.py --output runs/m35-new --groups M3 M5 --workers 2
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check src tests scripts
+```
+
+输出目录须新建。G0 重投影需要本机保留的 `runs/adapter-conformance-v05` 原检查点；新克隆只有精简证据时，应明确缺少这部分原始输入，不能声称已重投影原检查点。其他实验可从合成包直接建立新世界。
+
+## 范围与历史入口
+
+新 World Core schema 为 `world-core-v0.6`；已有经营与文稿适配器保留 schema `0.5`。它们共用运行机制，但完整经营 XLSX 模板尚未自动迁移为项目包。当前多项目工具支持受控 JSON 文件及 Python/CLI 会话；既有模型运行器和训练导出仍属于单项目入口。
+
+原经营模板保留 `short`、`file`、`continuous` 三种交付，以及十类有限机制情境：
+
+```bash
+.venv/bin/proworksim build runs/operating-demo --seed 17 --delivery continuous --information clarification
+.venv/bin/proworksim run runs/operating-demo --provider baseline --inject-stale-memo
+.venv/bin/proworksim evaluate runs/operating-demo
+.venv/bin/proworksim export runs/operating-demo runs/operating-demo-export
+```
+
+单项目 DeepSeek 运行使用项目 `.env` 中的 `DEEPSEEK_API_KEY`，将 provider 改为 `deepseek`。原始世界、失败轨迹、导出包和历史 LoRA 检查点保留在本地 `runs/`；Git 保存代码、说明和精简证据。项目未使用 APEX 评测题、参考答案或受限数据训练模型。
+
+本轮只支持单世界、单写者、明确共享关系及声明切点，不承诺任意并发、断电持久性或无限状态正确性。后续真实金融工作材料通过 provenance 区分直接支持、重建、合成与未知，用于领域校准；当前没有开展采集工程或编造未观察的工作过程。
+
+- [本轮审计](docs/reference/multiproject-audit.md)
+- [v0.5 一致性与恢复设计](docs/state-consistency-v05.md)及[含 E2 勘误的原报告](docs/experiments/state-consistency-v05.md)
+- [v0.4 内核迁移](docs/semantics-kernel-v04.md)及[历史实验](docs/experiments/semantics-kernel-v04.md)
+- [v0.3 生命周期](docs/world-semantics-v03.md)及[历史 API 实验](docs/experiments/world-semantics-v03.md)
+- [v0.2 修订](docs/post-audit-implementation.md)及[历史训练接口](docs/experiments/post-audit-v02.md)
 - [初版架构](docs/implementation-v0.1.md)、[初版实验](docs/experiments/v0.1.md)、[原始设计](docs/reference/design-v0.1.md)
-
-旧上下文对照、7 个 API 世界和本地 LoRA 冒烟保留为历史记录，本轮没有为补齐模型成功而重新采样。
-
-目标模型仅通过绑定身份的工具会话访问资料。当前计算器为显式定义的 XLSX 子集，不提供宿主机 Shell。真实原始轨迹、导出包和 LoRA 检查点保存在本地 `runs/`，Git 保存代码、报告及精简结果。

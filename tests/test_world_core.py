@@ -282,3 +282,61 @@ def test_pause_blocks_new_work_and_environment_but_keeps_reads_and_episode_end(t
     assert resumed["events"] == []
     assert resumed["requests"][request["request_id"]]["status"] == "delivered"
     assert resumed["condition_specs"][request["condition_id"]]["status"] == "resolved"
+
+
+def test_observation_supplies_public_contract_and_readable_aliases(tmp_path):
+    from proworksim.core.world import WorldSpec
+    from proworksim.world_core import WorldCore
+
+    world = WorldCore.create(
+        tmp_path / "public",
+        WorldSpec(
+            "public",
+            {"operator": {}, "worker": {}},
+            bootstrap_grants=[
+                {"actor_id": "operator", "power": "install_project", "scope": "world"}
+            ],
+        ),
+    )
+    package = {
+        "project_id": "P",
+        "goal": "Flexible delivery",
+        "participants": ["worker", "operator"],
+        "objects": [
+            {
+                "alias": "visible",
+                "filename": "visible.json",
+                "data": {},
+                "owner": "worker",
+                "readers": ["worker"],
+                "writers": ["worker"],
+            },
+            {
+                "alias": "private",
+                "filename": "private.json",
+                "data": {},
+                "owner": "operator",
+                "readers": ["operator"],
+                "writers": ["operator"],
+            },
+        ],
+        "works": [
+            {
+                "work_id": "work-1",
+                "owner": "worker",
+                "approval_policy": "delivery_only",
+                "deliverable_contract": {
+                    "required_fields": ["result"],
+                    "min_files": 1,
+                    "max_files": 2,
+                },
+            }
+        ],
+    }
+    assert world.session("operator").call("install_project", package=package)["ok"]
+    observed = world.session("worker", "P").observe()
+    item = observed["work_items"]["P::work-1"]
+    assert item["deliverable_contract"]["required_fields"] == ["result"]
+    assert item["approval_policy"] == "delivery_only" and item["requirement_version"] == 1
+    assert set(observed["workspaces"]["P"]) == {"visible"}
+    assert len(observed["objects"]) == 1
