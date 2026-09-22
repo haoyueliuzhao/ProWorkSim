@@ -1,0 +1,147 @@
+{
+  "archive_kind": "two_distinct_pre_fix_counterexamples",
+  "comparison_warning": "These are different source conditions, not a shared frozen before/after experiment. The first imports isolated d1d53e6 source from git archive; the second records a dirty v0.5 development boundary before the committed-flag correction. Neither is attributed to frozen fe80b02.",
+  "cases": [
+    {
+      "source_report": {
+        "path": "runs/state-consistency-v05-before/report.json",
+        "sha256": "09a599017a544e2ccdd2eca08dc062bf134c25ef2b462b0f1eeba55275066036",
+        "size_bytes": 1153
+      },
+      "source_condition": "isolated_baseline_commit",
+      "reference_commit": "d1d53e6c5aa8d3aaaa8a0498dceedec7abc89d45",
+      "archived_transition_module_sha256_matches_git": true,
+      "module_source_size_bytes": 6141,
+      "interpretation": "Demonstrates phase attribution failure (apply writes a derived field while derive is a no-op) and same command identity with a different payload returning the old cached result instead of an identity/payload conflict.",
+      "report": {
+        "reference_commit": "d1d53e6c5aa8d3aaaa8a0498dceedec7abc89d45",
+        "method": "Isolated git archive imports; component receipt characterization plus real World.act command entry, no API/GPU.",
+        "transition_module_sha256": "3cf46be09fdeed968c16bf52f2868621b3a4792d6779cb06bec2ab4554ca9879",
+        "phase_characterization": {
+          "apply_writes_view": true,
+          "derive_noop": true,
+          "state": {
+            "base": 0,
+            "view": 1
+          },
+          "original_receipt": {
+            "contract": "characterize",
+            "allowed_business_paths": [],
+            "direct_changes": [],
+            "derived_changes": [
+              [
+                "view"
+              ]
+            ],
+            "history_preserved": true,
+            "frame_respected": true
+          }
+        },
+        "different_payload_same_identity": {
+          "first": {
+            "ok": true,
+            "result": {
+              "value": 2.0
+            },
+            "action_id": "action-1",
+            "logical_time": 1
+          },
+          "second": {
+            "ok": true,
+            "result": {
+              "value": 2.0
+            },
+            "action_id": "action-1",
+            "logical_time": 1
+          },
+          "same_cached_result_returned": true,
+          "expected_v05": "explicit identity/payload conflict"
+        },
+        "api_calls": 0
+      }
+    },
+    {
+      "source_report": {
+        "path": "runs/event-commit-exception-v05-before/report.json",
+        "sha256": "2b10d4c0f5742f801807a2a9031121682b93e9466ffbeb84270048e5faf5038b",
+        "size_bytes": 1841
+      },
+      "source_condition": "dirty_v05_development_before_committed_flag_fix",
+      "reference_commit": null,
+      "source_identity_limit": "Only the then-current kernel module SHA256 is recorded; no clean complete source-tree commit is claimed.",
+      "interpretation": "A real tool command committed, and its due event persisted revision 2, but an ordinary exception after event commit was misclassified as uncommitted and rolled back new version files; persisted references to basis/v3 and scope/v2 then pointed to missing files. This exception edge is distinct from the os._exit matrix.",
+      "report": {
+        "kind": "real_tool_post_commit_exception_counterexample",
+        "kernel_sha256": "aa4594b9795fbea73ff4f60dea5e280e26981bc990f1f84bd72e7b5ab81a194a",
+        "source_condition": "dirty v0.5 development, before committed-flag fix",
+        "command_result": {
+          "ok": true,
+          "result": {
+            "artifact_id": "model",
+            "version_id": "v2",
+            "derived_from": [
+              {
+                "artifact_id": "financials",
+                "version_id": "v1"
+              },
+              {
+                "artifact_id": "basis",
+                "version_id": "v1"
+              }
+            ]
+          },
+          "action_id": "action-1",
+          "logical_time": 1,
+          "command_id": "command:analyst:post-commit-cut",
+          "command_committed": true,
+          "committed_revision": 1,
+          "pending_event_errors": [
+            {
+              "event_id": "cfa7ba7903a0bada2855fe24f32d020d",
+              "event_committed": false,
+              "error": {
+                "type": "ValueError",
+                "message": "Injected post-commit acknowledgement exception"
+              }
+            }
+          ]
+        },
+        "persisted_revision": 2,
+        "committed_event_ids": [
+          "event:cfa7ba7903a0bada2855fe24f32d020d"
+        ],
+        "committed_version_files_exist": {
+          "financials": {
+            "v1": true,
+            "v2": true
+          },
+          "basis": {
+            "v1": true,
+            "v2": true,
+            "v3": false
+          },
+          "model": {
+            "v1": true,
+            "v2": true
+          },
+          "memo": {
+            "v1": true
+          },
+          "scope": {
+            "v1": true,
+            "v2": false
+          },
+          "guide": {
+            "v1": true
+          }
+        },
+        "reopen_error": "FileNotFoundError: [Errno 2] No such file or directory: '/data1/zhuxinrui/projects/ProWorkSim/runs/event-commit-exception-v05-before/world/control/versions/basis/v3/approvals/analytical_basis.json'",
+        "interpretation": "Process-kill matrix passed; ordinary exception after event commit incorrectly rolled files back to the older prefix.",
+        "api_calls": 0
+      }
+    }
+  ],
+  "model_calls": 0,
+  "gpu_used": false,
+  "archive_method": "Read-only report preservation; no before-case rerun and no mutation of either before world."
+}

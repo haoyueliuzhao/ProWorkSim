@@ -1,0 +1,1566 @@
+{
+  "experiment": "bounded-single-writer-recovery",
+  "supplemental_exception_probe": {
+    "kind": "post_commit_delivery_exception",
+    "checks": [
+      {
+        "name": "command_commit_distinct_from_ack_failure",
+        "passed": true
+      },
+      {
+        "name": "event_reported_as_committed",
+        "passed": true
+      },
+      {
+        "name": "committed_versions_still_reopen",
+        "passed": true
+      },
+      {
+        "name": "retry_preserves_committed_formal_effects",
+        "passed": true
+      }
+    ],
+    "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/post-commit-exception",
+    "command_result": {
+      "ok": true,
+      "result": {
+        "artifact_id": "model",
+        "version_id": "v2",
+        "derived_from": [
+          {
+            "artifact_id": "financials",
+            "version_id": "v1"
+          },
+          {
+            "artifact_id": "basis",
+            "version_id": "v1"
+          }
+        ]
+      },
+      "action_id": "action-1",
+      "logical_time": 1,
+      "command_id": "command:analyst:committed-before-ack-error",
+      "command_committed": true,
+      "committed_revision": 1,
+      "event_delivery_errors": [
+        {
+          "event_id": "d3505b2084010fc233b85578bde1f145",
+          "event_committed": true,
+          "stage": "post_commit_delivery",
+          "error": {
+            "type": "ValueError",
+            "message": "Injected acknowledgement failure after event commit"
+          }
+        }
+      ]
+    },
+    "retry_result": {
+      "ok": true,
+      "result": {
+        "artifact_id": "model",
+        "version_id": "v2",
+        "derived_from": [
+          {
+            "artifact_id": "financials",
+            "version_id": "v1"
+          },
+          {
+            "artifact_id": "basis",
+            "version_id": "v1"
+          }
+        ]
+      },
+      "action_id": "action-1",
+      "logical_time": 1,
+      "command_id": "command:analyst:committed-before-ack-error",
+      "command_committed": true,
+      "committed_revision": 1
+    },
+    "files": {
+      "versions": {
+        "financials/v1": "255ac06ccb2aedf045977525196e9f5a3be5b22a57ba9a5b8d71ce57edd3ee40",
+        "financials/v2": "762ba8219d9252ef0adcb703ca566d995047c2b67226af22c80bcf710a3bb470",
+        "basis/v1": "ea9d97b6e8e29d77f5dd9cf9eca8e9d591aba005d020da76618c0c4407652f51",
+        "basis/v2": "034ac8e07dc2d438abf099fe4b0d9ab3aa7b912c24ba127e86c5941c449b08c5",
+        "basis/v3": "077c8c59b5c81b09bace601653b72cc5d14d3b48b1b8bfdd87438157583f6c4e",
+        "model/v1": "37ca37d5c23db58cc3478099340f4ec2cc5fea4045668f5b8cd7515af7330e9a",
+        "model/v2": "f96c1b4782827d854fdc006716315381133386824c5096633627406756afcc18",
+        "memo/v1": "4e2e1c0073fee2c821982bb99abd685b3f6b99834fb3c0fa437661e0505a1697",
+        "scope/v1": "8dfd421426e2a5375c0c26eff68e8c8e4f2bb62fffe52b28e00b4cea538f5f14",
+        "scope/v2": "f741c249c8be30ec5894da26432bb410186165de5c2d5fc200c884510f282071",
+        "guide/v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+      },
+      "mirrors": {
+        "financials": "762ba8219d9252ef0adcb703ca566d995047c2b67226af22c80bcf710a3bb470",
+        "basis": "077c8c59b5c81b09bace601653b72cc5d14d3b48b1b8bfdd87438157583f6c4e",
+        "model": "f96c1b4782827d854fdc006716315381133386824c5096633627406756afcc18",
+        "memo": "4e2e1c0073fee2c821982bb99abd685b3f6b99834fb3c0fa437661e0505a1697",
+        "scope": "f741c249c8be30ec5894da26432bb410186165de5c2d5fc200c884510f282071",
+        "guide": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+      }
+    },
+    "passed": true
+  },
+  "protocol": {
+    "seed": 823,
+    "matrix": {
+      "write": [
+        "version_staged",
+        "after_apply",
+        "after_command_commit"
+      ],
+      "submit": [
+        "after_apply",
+        "after_command_commit"
+      ],
+      "reply": [
+        "before_event_commit",
+        "after_event_commit"
+      ],
+      "revision": [
+        "version_staged",
+        "after_apply",
+        "after_command_commit"
+      ]
+    },
+    "fault_case_count": 10,
+    "control_count": 4,
+    "process_exit_code": 73,
+    "normalization": [
+      "wall_seconds",
+      "diagnostic state_digests"
+    ],
+    "preserved": "all other state fields including identities, primary facts, projections, journal/results, actual observations; every immutable version and current mirror byte hash",
+    "boundary": "one writer per isolated directory, real os._exit, existing JSON/immutable-version filesystem; not power loss, machine loss, distributed consensus or arbitrary plugin transactions",
+    "expected_checks_per_fault": 6,
+    "supplemental_exception_probe": {
+      "cases": 1,
+      "checks": 4,
+      "reason": "Separate post-commit acknowledgement exception regression; not one of the ten os._exit cuts"
+    },
+    "scope": "one common trusted checkpoint per action family, copied byte-for-byte to control and fault worlds; stable command identities for new actions"
+  },
+  "code_before": {
+    "code_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+    "code_dirty": false,
+    "source_tree_sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c"
+  },
+  "code_after": {
+    "code_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+    "code_dirty": false,
+    "source_tree_sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c"
+  },
+  "script_sha256": "886de1c13c3d0f608a1bff9bb356f285c2853cccc88c858fce0a9eaeafc73519",
+  "workers": 4,
+  "model_calls": 0,
+  "gpu_used": false,
+  "case_count": 10,
+  "passed": 10,
+  "check_count": 60,
+  "checks_passed": 60,
+  "controls": {
+    "write": {
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/write-control",
+      "state_digest": "7fff145d28df4bd4b5a58354293887c9a4e3d7310cb1b7564a9f8c20d138b70a",
+      "files": {
+        "versions": {
+          "financials/v1": "878f560db7815b0cb6b837b4683805df0f64482265743caee3dbf3332453720b",
+          "financials/v2": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis/v1": "cd84de9cbd3bde81a63e78307333007fb7e164ea3e744a9716c9568c4391fb13",
+          "basis/v2": "f78983290eeb47f1f1360e164e3e09ad1695345540670355d8fdb7586255ca4c",
+          "model/v1": "c9cb7ebca1a267bed1d0750ee959d23dbbe5a65f616579347b84300d17436256",
+          "model/v2": "813722ba44d01e16eee2f745a902e713c14664fa30541210ae5c90463e47cff5",
+          "memo/v1": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "memo/v2": "09119d46a3069bd34fde200630619558d680a4148beb316836a3c54022d91bba",
+          "scope/v1": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "guide/v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        },
+        "mirrors": {
+          "financials": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis": "f78983290eeb47f1f1360e164e3e09ad1695345540670355d8fdb7586255ca4c",
+          "model": "813722ba44d01e16eee2f745a902e713c14664fa30541210ae5c90463e47cff5",
+          "memo": "09119d46a3069bd34fde200630619558d680a4148beb316836a3c54022d91bba",
+          "scope": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "guide": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        }
+      },
+      "result": {
+        "ok": true,
+        "result": {
+          "artifact_id": "memo",
+          "version_id": "v2",
+          "derived_from": [
+            {
+              "artifact_id": "model",
+              "version_id": "v1"
+            },
+            {
+              "artifact_id": "financials",
+              "version_id": "v1"
+            }
+          ]
+        },
+        "action_id": "action-2",
+        "logical_time": 2,
+        "command_id": "command:analyst:write-once",
+        "command_committed": true,
+        "committed_revision": 2
+      }
+    },
+    "submit": {
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/submit-control",
+      "state_digest": "a65e634b59438c459a6513f87ff168579dbed36f1bfa1712055fa2310de6d92b",
+      "files": {
+        "versions": {
+          "financials/v1": "878f560db7815b0cb6b837b4683805df0f64482265743caee3dbf3332453720b",
+          "financials/v2": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis/v1": "cd84de9cbd3bde81a63e78307333007fb7e164ea3e744a9716c9568c4391fb13",
+          "basis/v2": "f78983290eeb47f1f1360e164e3e09ad1695345540670355d8fdb7586255ca4c",
+          "model/v1": "c9cb7ebca1a267bed1d0750ee959d23dbbe5a65f616579347b84300d17436256",
+          "model/v2": "e13dbc02764fc38e34f3a0818d1505b84431f44e51aeb4560ec9b19f8cf03265",
+          "memo/v1": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "scope/v1": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "guide/v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        },
+        "mirrors": {
+          "financials": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis": "f78983290eeb47f1f1360e164e3e09ad1695345540670355d8fdb7586255ca4c",
+          "model": "e13dbc02764fc38e34f3a0818d1505b84431f44e51aeb4560ec9b19f8cf03265",
+          "memo": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "scope": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "guide": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        }
+      },
+      "result": {
+        "ok": true,
+        "result": {
+          "submission_id": "work-1-submission-1",
+          "requirement_version": 1,
+          "actor_id": "analyst",
+          "artifact_versions": {
+            "model": "v2"
+          },
+          "answer": null,
+          "at": 9,
+          "context_versions": {
+            "financials": "v2",
+            "basis": "v2",
+            "model": "v2",
+            "memo": "v1",
+            "guide": "v1"
+          },
+          "required_credentials": [
+            {
+              "artifact_id": "basis",
+              "version_id": "v2"
+            }
+          ],
+          "requirement_snapshot": {
+            "deliverables": [
+              "model"
+            ],
+            "goal": "更新 model，保持公式可重算并完成增长率×利润率敏感性分析；本项仅提交模型。",
+            "inputs": [
+              "financials",
+              "model",
+              "guide"
+            ],
+            "visible_requirements": [
+              "资料均为合成材料。按指定来源、期间、单位和版本工作；请先阅读 guide。",
+              "从 financials 获取本期收入和经营利润率，从历史邮件或负责人澄清获取 scope。",
+              "更新 model 的 Inputs 并保留可重算公式；Sensitivity!B2:C3 为股价结果公式。",
+              "Sensitivity!B1:C1 为 growth_grid，A2:A3 为 margin_delta_grid；所有结果引用模型输入。",
+              "写入时用 dependencies 记录 financials 和适用的 basis 版本；有可用确认可直接采用，不必重复请求。"
+            ],
+            "required_credentials": [
+              {
+                "artifact_id": "basis",
+                "version_id": "v2"
+              }
+            ],
+            "owner_role": "analyst"
+          },
+          "current_applicability": "current",
+          "review": null,
+          "invalidated": false,
+          "required_basis": {
+            "artifact_id": "basis",
+            "version_id": "v2"
+          }
+        },
+        "action_id": "action-10",
+        "logical_time": 10,
+        "command_id": "command:analyst:submit-once",
+        "command_committed": true,
+        "committed_revision": 10
+      }
+    },
+    "reply": {
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/reply-control",
+      "state_digest": "1d4acab63cf7a405facf8aed9ba5f9892f1642061e37beac0b367e81038fce82",
+      "files": {
+        "versions": {
+          "financials/v1": "878f560db7815b0cb6b837b4683805df0f64482265743caee3dbf3332453720b",
+          "financials/v2": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis/v1": "80af3561ce557f8d9be6c2387b1b93a58ad24fc39785aa1ca94031bef2bb0987",
+          "basis/v2": "be1d598ed11c5f3aa426a208c36885a1e3b39fd1d82db4e6bced09282026db64",
+          "model/v1": "c9cb7ebca1a267bed1d0750ee959d23dbbe5a65f616579347b84300d17436256",
+          "memo/v1": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "scope/v1": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "guide/v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        },
+        "mirrors": {
+          "financials": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis": "be1d598ed11c5f3aa426a208c36885a1e3b39fd1d82db4e6bced09282026db64",
+          "model": "c9cb7ebca1a267bed1d0750ee959d23dbbe5a65f616579347b84300d17436256",
+          "memo": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "scope": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "guide": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        }
+      },
+      "result": {
+        "ok": true,
+        "result": {
+          "advanced_ticks": 1
+        },
+        "action_id": "action-3",
+        "logical_time": 3,
+        "command_id": "command:analyst:deliver-reply-once",
+        "command_committed": true,
+        "committed_revision": 3
+      }
+    },
+    "revision": {
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/revision-control",
+      "state_digest": "764d01e5dca090f9d9bcf32b3116f48fe98e0f9f5a80d1cbffd4ddf54273435b",
+      "files": {
+        "versions": {
+          "financials/v1": "878f560db7815b0cb6b837b4683805df0f64482265743caee3dbf3332453720b",
+          "financials/v2": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis/v1": "cd84de9cbd3bde81a63e78307333007fb7e164ea3e744a9716c9568c4391fb13",
+          "basis/v2": "f78983290eeb47f1f1360e164e3e09ad1695345540670355d8fdb7586255ca4c",
+          "basis/v3": "6dbfa742e55e3ddbe0fdd3ade8b6b77c1b2c73d513cf6eb0cb7e48337217e6de",
+          "model/v1": "c9cb7ebca1a267bed1d0750ee959d23dbbe5a65f616579347b84300d17436256",
+          "model/v2": "6c3fa9d9f42e7645ed85e9f8fcc9afb8fa8e2d5e65d6d4b95bd51197b6f9cac0",
+          "memo/v1": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "scope/v1": "e5a8ccc87eabfbd5e77d73dff6b7713e1edcfd47c4f0220691e7aabad3ee649b",
+          "scope/v2": "d2b4652fb0c4c175002dfe920707ae1dd27d6f6b9bf9ffff2e949d2333ebe547",
+          "guide/v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        },
+        "mirrors": {
+          "financials": "0a02de0faad11ccc35c296b7cd7b510bf209587b4c1add4f2c05c19bd741a153",
+          "basis": "6dbfa742e55e3ddbe0fdd3ade8b6b77c1b2c73d513cf6eb0cb7e48337217e6de",
+          "model": "6c3fa9d9f42e7645ed85e9f8fcc9afb8fa8e2d5e65d6d4b95bd51197b6f9cac0",
+          "memo": "85939fb343787ef33175d2984e6c50061e8f28332c01f839b65daf311608582b",
+          "scope": "d2b4652fb0c4c175002dfe920707ae1dd27d6f6b9bf9ffff2e949d2333ebe547",
+          "guide": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+        }
+      },
+      "result": {
+        "ok": true,
+        "result": {
+          "replacements": {
+            "work-1": "work-1@r2"
+          }
+        },
+        "action_id": "action-11",
+        "logical_time": 10,
+        "command_id": "command:manager:revise-once",
+        "command_committed": true,
+        "committed_revision": 10
+      }
+    }
+  },
+  "results": [
+    {
+      "kind": "write",
+      "phase": "version_staged",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/write-version_staged",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "version_staged",
+        "context": {
+          "operation_id": "command:analyst:write-once",
+          "kind": "command",
+          "action": "write_file",
+          "actor": "analyst",
+          "artifact_id": "memo",
+          "version_id": "v2"
+        },
+        "pid": 3358575
+      },
+      "committed_revision_before_resume": 1
+    },
+    {
+      "kind": "write",
+      "phase": "after_apply",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/write-after_apply",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_apply",
+        "context": {
+          "operation_id": "command:analyst:write-once",
+          "kind": "command",
+          "action": "write_file",
+          "actor": "analyst"
+        },
+        "pid": 3358576
+      },
+      "committed_revision_before_resume": 1
+    },
+    {
+      "kind": "write",
+      "phase": "after_command_commit",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/write-after_command_commit",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_command_commit",
+        "context": {
+          "operation_id": "command:analyst:write-once",
+          "kind": "command",
+          "action": "write_file",
+          "actor": "analyst"
+        },
+        "pid": 3358578
+      },
+      "committed_revision_before_resume": 2
+    },
+    {
+      "kind": "submit",
+      "phase": "after_apply",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/submit-after_apply",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_apply",
+        "context": {
+          "operation_id": "command:analyst:submit-once",
+          "kind": "command",
+          "action": "submit",
+          "actor": "analyst"
+        },
+        "pid": 3358577
+      },
+      "committed_revision_before_resume": 9
+    },
+    {
+      "kind": "submit",
+      "phase": "after_command_commit",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/submit-after_command_commit",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_command_commit",
+        "context": {
+          "operation_id": "command:analyst:submit-once",
+          "kind": "command",
+          "action": "submit",
+          "actor": "analyst"
+        },
+        "pid": 3358582
+      },
+      "committed_revision_before_resume": 10
+    },
+    {
+      "kind": "reply",
+      "phase": "before_event_commit",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/reply-before_event_commit",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "before_event_commit",
+        "context": {
+          "operation_id": "event:f84bf74c32d336d1f77bc1a8f0c71b3f",
+          "kind": "event",
+          "action": "staff_reply",
+          "actor": "manager"
+        },
+        "pid": 3358583
+      },
+      "committed_revision_before_resume": 3
+    },
+    {
+      "kind": "reply",
+      "phase": "after_event_commit",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/reply-after_event_commit",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_event_commit",
+        "context": {
+          "operation_id": "event:f84bf74c32d336d1f77bc1a8f0c71b3f",
+          "kind": "event",
+          "action": "staff_reply",
+          "actor": "manager"
+        },
+        "pid": 3358584
+      },
+      "committed_revision_before_resume": 4
+    },
+    {
+      "kind": "revision",
+      "phase": "version_staged",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/revision-version_staged",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "version_staged",
+        "context": {
+          "operation_id": "command:manager:revise-once",
+          "kind": "command",
+          "action": "revise_requirements",
+          "actor": "manager",
+          "artifact_id": "basis",
+          "version_id": "v3"
+        },
+        "pid": 3358585
+      },
+      "committed_revision_before_resume": 9
+    },
+    {
+      "kind": "revision",
+      "phase": "after_apply",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/revision-after_apply",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_apply",
+        "context": {
+          "operation_id": "command:manager:revise-once",
+          "kind": "command",
+          "action": "revise_requirements",
+          "actor": "manager"
+        },
+        "pid": 3358639
+      },
+      "committed_revision_before_resume": 9
+    },
+    {
+      "kind": "revision",
+      "phase": "after_command_commit",
+      "world": "/data1/zhuxinrui/projects/ProWorkSim/runs/bounded-recovery-v05/revision-after_command_commit",
+      "checks": [
+        {
+          "name": "actual_process_cut_reached",
+          "passed": true
+        },
+        {
+          "name": "committed_prefix_consistent",
+          "passed": true
+        },
+        {
+          "name": "state_matches_uninterrupted_control",
+          "passed": true
+        },
+        {
+          "name": "immutable_and_materialized_bytes_match_control",
+          "passed": true
+        },
+        {
+          "name": "public_command_result_matches_control",
+          "passed": true
+        },
+        {
+          "name": "second_retry_has_no_formal_effect",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "error": null,
+      "process_output": {
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 73
+      },
+      "reached_cut": {
+        "cut": "after_command_commit",
+        "context": {
+          "operation_id": "command:manager:revise-once",
+          "kind": "command",
+          "action": "revise_requirements",
+          "actor": "manager"
+        },
+        "pid": 3358640
+      },
+      "committed_revision_before_resume": 10
+    }
+  ],
+  "archive_provenance": {
+    "source_report": {
+      "path": "runs/bounded-recovery-v05/report.json",
+      "sha256": "0c05388542de5fd4547f6d70284809fca27f324bc49735d1d493d7e06075b414",
+      "size_bytes": 28818
+    },
+    "source_script": {
+      "path": "scripts/bounded_recovery_experiment.py",
+      "sha256": "886de1c13c3d0f608a1bff9bb356f285c2853cccc88c858fce0a9eaeafc73519",
+      "size_bytes": 15225
+    },
+    "recorded_code_identity_unchanged": true,
+    "recorded_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+    "source_tree_inspection": {
+      "sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c",
+      "file_count": 49,
+      "size_bytes": 360872,
+      "algorithm": "SHA256 over sorted src/**/*.py relative pathname bytes followed by file bytes; same algorithm as code_identity"
+    },
+    "current_source_tree_matches_frozen_report": true,
+    "current_script_matches_frozen_report": true,
+    "method": "Read-only JSON and byte-hash inspection; no World initialization, recovery, action execution, or experiment rerun.",
+    "comparison_scope": "Original 60 checks compare normalized full persisted state (only wall_seconds and state_digests removed), all registered immutable version bytes, all current mirror bytes, command result and second retry effects. Supplementary post-commit exception is separate: 4 checks, not an eleventh os._exit cut.",
+    "preserved_details": "Original protocol, all 60 checks, all 10 cut markers, all errors/process outputs, reported committed_revision_before_resume, all four control inventories/results, and all four supplementary exception checks are retained in full; no artifact maps omitted.",
+    "pre_resume_snapshot_limit": "committed_revision_before_resume was recorded during each original trial; the full pre-resume state snapshot is not separately persisted and is not claimed to have been revalidated from the final recovered state.",
+    "postrun_read_only_inspection": {
+      "checkpoints": {
+        "write": {
+          "world": "runs/bounded-recovery-v05/write-checkpoint",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/write-checkpoint/control/state.json",
+            "sha256": "ca70e831d20c530490355018def11d32f1453aca4f1e06d2cef83d2f58923eb2",
+            "size_bytes": 37525
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/write-checkpoint/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "589d30e4d491b18f3068bc4559cca99d4dd104c6a78a02f83c48140d87f3ec11",
+          "state_revision": 1,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 1,
+          "instance_id": "675cc4960c264514bb42e711afc9ff3a",
+          "branch_id": "57c558bbe76c4b03a9a054a452b821ce",
+          "immutable_version_count": 9,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "980039e0e8c549a04b957906e9347a5abe5777600c49ded25b378629b8897029",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": []
+        },
+        "submit": {
+          "world": "runs/bounded-recovery-v05/submit-checkpoint",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/submit-checkpoint/control/state.json",
+            "sha256": "278a1e523e986eb72ec0baff6cea2475302e2765681243bd6103794443229a4d",
+            "size_bytes": 121358
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/submit-checkpoint/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "1f50fe6420e62cb3e1d5e4d26a6250c88b1c14ce9ce90474c4fab3538c245a19",
+          "state_revision": 9,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 9,
+          "instance_id": "151214efd81b4934b94e26eb50c3e4e3",
+          "branch_id": "9feacc9a125b497185bead82616eab33",
+          "immutable_version_count": 9,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "2567be9542efc24a5d43066a6329e25639b89fcc034143f5be1dec0d03be7c76",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": []
+        },
+        "reply": {
+          "world": "runs/bounded-recovery-v05/reply-checkpoint",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/reply-checkpoint/control/state.json",
+            "sha256": "2a0c6e337161bc8d91f5626141d8725692ff828fe7edace04bce5edbeffaf99a",
+            "size_bytes": 84148
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/reply-checkpoint/control/spec.json",
+            "sha256": "424cf8284ec90f38a517a2d2e5ddf51845ac4091921f45f5e536dc1dce308c39",
+            "size_bytes": 3382
+          },
+          "normalized_state_sha256": "22deb31bb2a29d26efa680fc762db8ab3ced260b4ebd2af49ca86f14da7d4c69",
+          "state_revision": 2,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 2,
+          "instance_id": "701e30267b174b7280812d7db9f5da6e",
+          "branch_id": "801d65a393c644b896190f6440874680",
+          "immutable_version_count": 8,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "96f07cb79e325a5f206174c8e75ead9705bdadaa86caabfc84e2e0632442c253",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": []
+        },
+        "revision": {
+          "world": "runs/bounded-recovery-v05/revision-checkpoint",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/revision-checkpoint/control/state.json",
+            "sha256": "ba8e4a926518b6073517c553f060c4c135ab83229bca7aad5e6d44ab1b606c2b",
+            "size_bytes": 121359
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/revision-checkpoint/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "75f2446338978f5f42c558560b9cd37f115b6a43dee51395f06a604852508f9a",
+          "state_revision": 9,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 9,
+          "instance_id": "8d75bca48fe04edda90640b5504cc0d3",
+          "branch_id": "34c2e0dd48544b718c957bcd02c0d066",
+          "immutable_version_count": 9,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "ed92c8fbf6da5d875fb904a03cdba951970e8cc8ba5a7789d4f39410c0b1d904",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": []
+        }
+      },
+      "controls": {
+        "write": {
+          "world": "runs/bounded-recovery-v05/write-control",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/write-control/control/state.json",
+            "sha256": "a4efbdb3f9d3d3292388f5aa7c36e56b3d0a4a327119c7c866c67715f7cba193",
+            "size_bytes": 50673
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/write-control/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "7fff145d28df4bd4b5a58354293887c9a4e3d7310cb1b7564a9f8c20d138b70a",
+          "state_revision": 2,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 2,
+          "instance_id": "675cc4960c264514bb42e711afc9ff3a",
+          "branch_id": "57c558bbe76c4b03a9a054a452b821ce",
+          "immutable_version_count": 10,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "23191809d1750622e9806b8965ae6c9bdfe301314dcdbbb228fab543166229a3",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/write-control/comparison.json",
+            "sha256": "f1ada7a8c5a57a3c064312f9bccc62d2297e5557d1211671b0247c9505e22a8d",
+            "size_bytes": 55561
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "reported_state_digest_matches": true,
+          "same_checkpoint_identity": true
+        },
+        "submit": {
+          "world": "runs/bounded-recovery-v05/submit-control",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/submit-control/control/state.json",
+            "sha256": "72e2df11f1fd9a45c5b69944f8bcf54d8720c33f684fdeb64e0616b499fe703b",
+            "size_bytes": 145351
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/submit-control/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "a65e634b59438c459a6513f87ff168579dbed36f1bfa1712055fa2310de6d92b",
+          "state_revision": 12,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 12,
+          "instance_id": "151214efd81b4934b94e26eb50c3e4e3",
+          "branch_id": "9feacc9a125b497185bead82616eab33",
+          "immutable_version_count": 9,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "2567be9542efc24a5d43066a6329e25639b89fcc034143f5be1dec0d03be7c76",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/submit-control/comparison.json",
+            "sha256": "ee0dbb2bd80d3c9c7985a43fe2e6780625a467d0b2012ef53ea8db886685bf07",
+            "size_bytes": 149648
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "reported_state_digest_matches": true,
+          "same_checkpoint_identity": true
+        },
+        "reply": {
+          "world": "runs/bounded-recovery-v05/reply-control",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/reply-control/control/state.json",
+            "sha256": "8513091fb8483d00df2ac1ac94639658a2dbce6516e3a4feb16eaf243f505e12",
+            "size_bytes": 254634
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/reply-control/control/spec.json",
+            "sha256": "424cf8284ec90f38a517a2d2e5ddf51845ac4091921f45f5e536dc1dce308c39",
+            "size_bytes": 3382
+          },
+          "normalized_state_sha256": "1d4acab63cf7a405facf8aed9ba5f9892f1642061e37beac0b367e81038fce82",
+          "state_revision": 4,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 4,
+          "instance_id": "701e30267b174b7280812d7db9f5da6e",
+          "branch_id": "801d65a393c644b896190f6440874680",
+          "immutable_version_count": 8,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "96f07cb79e325a5f206174c8e75ead9705bdadaa86caabfc84e2e0632442c253",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/reply-control/comparison.json",
+            "sha256": "8994963f514e082081731c07e18bd9d364fafcb5926f41e3b951d1c769717799",
+            "size_bytes": 274612
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "reported_state_digest_matches": true,
+          "same_checkpoint_identity": true
+        },
+        "revision": {
+          "world": "runs/bounded-recovery-v05/revision-control",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/revision-control/control/state.json",
+            "sha256": "19fe1800b8d26d21017dc8b6d60774d93bdc25bc21887a2edaf6f3bbde838e16",
+            "size_bytes": 199391
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/revision-control/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "764d01e5dca090f9d9bcf32b3116f48fe98e0f9f5a80d1cbffd4ddf54273435b",
+          "state_revision": 10,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 10,
+          "instance_id": "8d75bca48fe04edda90640b5504cc0d3",
+          "branch_id": "34c2e0dd48544b718c957bcd02c0d066",
+          "immutable_version_count": 11,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "ba7fd3a46e77c09e6ea2b028d78164a6d8c9be8a8dc5bc99e48a113f0bdf2c22",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/revision-control/comparison.json",
+            "sha256": "9277e1aba7a818dc3556aeb51aa8e03b0f6a9bb24a7eb243399c636e2d9baae2",
+            "size_bytes": 209051
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "reported_state_digest_matches": true,
+          "same_checkpoint_identity": true
+        }
+      },
+      "cases": {
+        "write-version_staged": {
+          "world": "runs/bounded-recovery-v05/write-version_staged",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/write-version_staged/control/state.json",
+            "sha256": "cd1e83d594d46268839bf4620792b6c7b3f6855f2b21eb3d64ac040ed0fff225",
+            "size_bytes": 50673
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/write-version_staged/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "7fff145d28df4bd4b5a58354293887c9a4e3d7310cb1b7564a9f8c20d138b70a",
+          "state_revision": 2,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 2,
+          "instance_id": "675cc4960c264514bb42e711afc9ff3a",
+          "branch_id": "57c558bbe76c4b03a9a054a452b821ce",
+          "immutable_version_count": 10,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "23191809d1750622e9806b8965ae6c9bdfe301314dcdbbb228fab543166229a3",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/write-version_staged/comparison.json",
+            "sha256": "48847ea37f0abbed6c1bcba827c6972dd1e35b24cac7d39113b77c2149a9fbeb",
+            "size_bytes": 55470
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/write-version_staged/fault-reached.json",
+            "sha256": "36a54ea92955ecff8f7b078f2cf4221d440c675e173b67629ab6571020d35373",
+            "size_bytes": 243
+          },
+          "cut_marker_matches_report": true
+        },
+        "write-after_apply": {
+          "world": "runs/bounded-recovery-v05/write-after_apply",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/write-after_apply/control/state.json",
+            "sha256": "38db812da135ebd4eeff2b5472b2aa02a10d756f8c58dcc4242707dafc7040f4",
+            "size_bytes": 50672
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/write-after_apply/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "7fff145d28df4bd4b5a58354293887c9a4e3d7310cb1b7564a9f8c20d138b70a",
+          "state_revision": 2,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 2,
+          "instance_id": "675cc4960c264514bb42e711afc9ff3a",
+          "branch_id": "57c558bbe76c4b03a9a054a452b821ce",
+          "immutable_version_count": 10,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "23191809d1750622e9806b8965ae6c9bdfe301314dcdbbb228fab543166229a3",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/write-after_apply/comparison.json",
+            "sha256": "48847ea37f0abbed6c1bcba827c6972dd1e35b24cac7d39113b77c2149a9fbeb",
+            "size_bytes": 55470
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/write-after_apply/fault-reached.json",
+            "sha256": "a6f5bf7f92002ee819066f0e728024bf481a6355af6b1c7187001c0da6e7bf25",
+            "size_bytes": 189
+          },
+          "cut_marker_matches_report": true
+        },
+        "write-after_command_commit": {
+          "world": "runs/bounded-recovery-v05/write-after_command_commit",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/write-after_command_commit/control/state.json",
+            "sha256": "0b1157fa6376c0e45524d0e00a9a48b2f039d3d3ab0c2a101be47cca5b3f001e",
+            "size_bytes": 50673
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/write-after_command_commit/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "7fff145d28df4bd4b5a58354293887c9a4e3d7310cb1b7564a9f8c20d138b70a",
+          "state_revision": 2,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 2,
+          "instance_id": "675cc4960c264514bb42e711afc9ff3a",
+          "branch_id": "57c558bbe76c4b03a9a054a452b821ce",
+          "immutable_version_count": 10,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "23191809d1750622e9806b8965ae6c9bdfe301314dcdbbb228fab543166229a3",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/write-after_command_commit/comparison.json",
+            "sha256": "48847ea37f0abbed6c1bcba827c6972dd1e35b24cac7d39113b77c2149a9fbeb",
+            "size_bytes": 55470
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/write-after_command_commit/fault-reached.json",
+            "sha256": "b41f9db8b51d7b8214845b195509fa43cc5266ca4fda0d3df5ed21489ae6c348",
+            "size_bytes": 198
+          },
+          "cut_marker_matches_report": true
+        },
+        "submit-after_apply": {
+          "world": "runs/bounded-recovery-v05/submit-after_apply",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_apply/control/state.json",
+            "sha256": "d6d488070d2ed764ab9cd2908a6998f05b17850817a7de17b2b26431605c10fb",
+            "size_bytes": 145351
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_apply/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "a65e634b59438c459a6513f87ff168579dbed36f1bfa1712055fa2310de6d92b",
+          "state_revision": 12,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 12,
+          "instance_id": "151214efd81b4934b94e26eb50c3e4e3",
+          "branch_id": "9feacc9a125b497185bead82616eab33",
+          "immutable_version_count": 9,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "2567be9542efc24a5d43066a6329e25639b89fcc034143f5be1dec0d03be7c76",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_apply/comparison.json",
+            "sha256": "73556050927bdd13a9d337862a2c6954650d4332008929995bb8d3a07752f608",
+            "size_bytes": 149556
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_apply/fault-reached.json",
+            "sha256": "4db9ef823ef783214840eeb1e828aa39f3845cf24646d4dcc156e64e2853427a",
+            "size_bytes": 186
+          },
+          "cut_marker_matches_report": true
+        },
+        "submit-after_command_commit": {
+          "world": "runs/bounded-recovery-v05/submit-after_command_commit",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_command_commit/control/state.json",
+            "sha256": "34d379571e65547fb66c4194e4b8c9bfa5e2f6aeba51cf6a1bd3430ad552264b",
+            "size_bytes": 145351
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_command_commit/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "a65e634b59438c459a6513f87ff168579dbed36f1bfa1712055fa2310de6d92b",
+          "state_revision": 12,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 12,
+          "instance_id": "151214efd81b4934b94e26eb50c3e4e3",
+          "branch_id": "9feacc9a125b497185bead82616eab33",
+          "immutable_version_count": 9,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "2567be9542efc24a5d43066a6329e25639b89fcc034143f5be1dec0d03be7c76",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_command_commit/comparison.json",
+            "sha256": "c5c29de92e1db78be3f8f5786f30f7b48ae6ce98059aef826d7543b5e5f3da0b",
+            "size_bytes": 149556
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/submit-after_command_commit/fault-reached.json",
+            "sha256": "c4bc77388004c40b298b66722d43107e609968a0e9a8b9c9841e0a3e19a7e5bb",
+            "size_bytes": 195
+          },
+          "cut_marker_matches_report": true
+        },
+        "reply-before_event_commit": {
+          "world": "runs/bounded-recovery-v05/reply-before_event_commit",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/reply-before_event_commit/control/state.json",
+            "sha256": "f844bc83f5315dce28d3686276f9e664da90af1341ae0cde9c8845ac12accd74",
+            "size_bytes": 254634
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/reply-before_event_commit/control/spec.json",
+            "sha256": "424cf8284ec90f38a517a2d2e5ddf51845ac4091921f45f5e536dc1dce308c39",
+            "size_bytes": 3382
+          },
+          "normalized_state_sha256": "1d4acab63cf7a405facf8aed9ba5f9892f1642061e37beac0b367e81038fce82",
+          "state_revision": 4,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 4,
+          "instance_id": "701e30267b174b7280812d7db9f5da6e",
+          "branch_id": "801d65a393c644b896190f6440874680",
+          "immutable_version_count": 8,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "96f07cb79e325a5f206174c8e75ead9705bdadaa86caabfc84e2e0632442c253",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/reply-before_event_commit/comparison.json",
+            "sha256": "dfe882f30179840f319570aca39e4051de77a891bdf8d683d185eed0b9bfdb2c",
+            "size_bytes": 274521
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/reply-before_event_commit/fault-reached.json",
+            "sha256": "eec5f2d7441da868e9cae2d95ec20022c903318cd8e7312dbd457a9784807b33",
+            "size_bytes": 208
+          },
+          "cut_marker_matches_report": true
+        },
+        "reply-after_event_commit": {
+          "world": "runs/bounded-recovery-v05/reply-after_event_commit",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/reply-after_event_commit/control/state.json",
+            "sha256": "3cec8a12b31f5652a1ab154074cb8120de42320ecfd6d645003e00004211a002",
+            "size_bytes": 254634
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/reply-after_event_commit/control/spec.json",
+            "sha256": "424cf8284ec90f38a517a2d2e5ddf51845ac4091921f45f5e536dc1dce308c39",
+            "size_bytes": 3382
+          },
+          "normalized_state_sha256": "1d4acab63cf7a405facf8aed9ba5f9892f1642061e37beac0b367e81038fce82",
+          "state_revision": 4,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 4,
+          "instance_id": "701e30267b174b7280812d7db9f5da6e",
+          "branch_id": "801d65a393c644b896190f6440874680",
+          "immutable_version_count": 8,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "96f07cb79e325a5f206174c8e75ead9705bdadaa86caabfc84e2e0632442c253",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/reply-after_event_commit/comparison.json",
+            "sha256": "dfe882f30179840f319570aca39e4051de77a891bdf8d683d185eed0b9bfdb2c",
+            "size_bytes": 274521
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/reply-after_event_commit/fault-reached.json",
+            "sha256": "b76a8f8eeec692cb7efecbbcb5d844019ac56686a4249a96f5cba9716da0d81d",
+            "size_bytes": 207
+          },
+          "cut_marker_matches_report": true
+        },
+        "revision-version_staged": {
+          "world": "runs/bounded-recovery-v05/revision-version_staged",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/revision-version_staged/control/state.json",
+            "sha256": "5d6457d3efda4903cb8ef9ed62f5a13c841b212b040a212e8a1a22b0705a7e50",
+            "size_bytes": 199391
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/revision-version_staged/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "764d01e5dca090f9d9bcf32b3116f48fe98e0f9f5a80d1cbffd4ddf54273435b",
+          "state_revision": 10,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 10,
+          "instance_id": "8d75bca48fe04edda90640b5504cc0d3",
+          "branch_id": "34c2e0dd48544b718c957bcd02c0d066",
+          "immutable_version_count": 11,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "ba7fd3a46e77c09e6ea2b028d78164a6d8c9be8a8dc5bc99e48a113f0bdf2c22",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/revision-version_staged/comparison.json",
+            "sha256": "fb95565031b3c34ea2d9af44cdd4b77867b855a85b656d49c513eb3fb365cb52",
+            "size_bytes": 208957
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/revision-version_staged/fault-reached.json",
+            "sha256": "b3b4fb26ab2a7fc45946fcafdda8ec7263d61c70d75e96c5833f5a5f4f73ebd1",
+            "size_bytes": 254
+          },
+          "cut_marker_matches_report": true
+        },
+        "revision-after_apply": {
+          "world": "runs/bounded-recovery-v05/revision-after_apply",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_apply/control/state.json",
+            "sha256": "8e46277e9687fdf714bf5d9f673f448b1d978010cb4fc77ecbccdf7964da36d0",
+            "size_bytes": 199390
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_apply/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "764d01e5dca090f9d9bcf32b3116f48fe98e0f9f5a80d1cbffd4ddf54273435b",
+          "state_revision": 10,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 10,
+          "instance_id": "8d75bca48fe04edda90640b5504cc0d3",
+          "branch_id": "34c2e0dd48544b718c957bcd02c0d066",
+          "immutable_version_count": 11,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "ba7fd3a46e77c09e6ea2b028d78164a6d8c9be8a8dc5bc99e48a113f0bdf2c22",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_apply/comparison.json",
+            "sha256": "fb95565031b3c34ea2d9af44cdd4b77867b855a85b656d49c513eb3fb365cb52",
+            "size_bytes": 208957
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_apply/fault-reached.json",
+            "sha256": "4a7c3f5da36e60971ed845520a1342a9c6c6104e31584dcdb05000345653fdfd",
+            "size_bytes": 199
+          },
+          "cut_marker_matches_report": true
+        },
+        "revision-after_command_commit": {
+          "world": "runs/bounded-recovery-v05/revision-after_command_commit",
+          "state_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_command_commit/control/state.json",
+            "sha256": "a0db60092625bc803d27006047c6374f419b0609efcfedb5451fe0aab029ef58",
+            "size_bytes": 199392
+          },
+          "spec_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_command_commit/control/spec.json",
+            "sha256": "1af655726ed63f74de8cb34f5d0e633fa2504743aefe4af1ffe710d30d845a66",
+            "size_bytes": 3355
+          },
+          "normalized_state_sha256": "764d01e5dca090f9d9bcf32b3116f48fe98e0f9f5a80d1cbffd4ddf54273435b",
+          "state_revision": 10,
+          "checkpoint_revision": 0,
+          "operation_commit_count": 10,
+          "instance_id": "8d75bca48fe04edda90640b5504cc0d3",
+          "branch_id": "34c2e0dd48544b718c957bcd02c0d066",
+          "immutable_version_count": 11,
+          "current_mirror_count": 6,
+          "file_inventory_sha256": "ba7fd3a46e77c09e6ea2b028d78164a6d8c9be8a8dc5bc99e48a113f0bdf2c22",
+          "all_version_metadata_hashes_match": true,
+          "unreferenced_version_files": [],
+          "errors": [],
+          "comparison_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_command_commit/comparison.json",
+            "sha256": "fb95565031b3c34ea2d9af44cdd4b77867b855a85b656d49c513eb3fb365cb52",
+            "size_bytes": 208957
+          },
+          "comparison_state_matches_disk": true,
+          "comparison_files_match_disk": true,
+          "normalized_state_matches_control": true,
+          "same_checkpoint_identity": true,
+          "cut_marker_file": {
+            "path": "runs/bounded-recovery-v05/revision-after_command_commit/fault-reached.json",
+            "sha256": "c14f932208b6bd538b846f62200c55f24f87032169a63b50b6a26278ef3a1365",
+            "size_bytes": 208
+          },
+          "cut_marker_matches_report": true
+        }
+      },
+      "supplemental_exception_world": {
+        "world": "runs/bounded-recovery-v05/post-commit-exception",
+        "state_file": {
+          "path": "runs/bounded-recovery-v05/post-commit-exception/control/state.json",
+          "sha256": "beed593224ed591ca479f6d0cd66f6fb37366b82357794d448d6225e93ce58b7",
+          "size_bytes": 117568
+        },
+        "spec_file": {
+          "path": "runs/bounded-recovery-v05/post-commit-exception/control/spec.json",
+          "sha256": "d8aeb6711622ca917c74944ab468b8c4a2cfc4e13b89af8b8952aa41bc9128f1",
+          "size_bytes": 3692
+        },
+        "normalized_state_sha256": "d8d483a599ba3c2f04db02ca5c8fb1e28144870b81238fa3774be5e690c71741",
+        "state_revision": 2,
+        "checkpoint_revision": 0,
+        "operation_commit_count": 2,
+        "instance_id": "fa1404b7d33d4eec92ffe48bb5fb9b23",
+        "branch_id": "7202a62caec0413eb7a08e0395652d13",
+        "immutable_version_count": 11,
+        "current_mirror_count": 6,
+        "file_inventory_sha256": "f8f915e58651c8ec4d7b040b7a946841de65c1a42e4c68ded243819e58d1f90d",
+        "all_version_metadata_hashes_match": true,
+        "unreferenced_version_files": [],
+        "errors": []
+      }
+    },
+    "inspection_errors": []
+  }
+}

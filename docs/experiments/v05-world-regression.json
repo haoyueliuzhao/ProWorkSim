@@ -1,0 +1,3369 @@
+{
+  "code_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+  "code_dirty": false,
+  "source_tree_sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c",
+  "ending_code_identity": {
+    "code_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+    "code_dirty": false,
+    "source_tree_sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c"
+  },
+  "source_tree_unchanged_during_run": true,
+  "script_sha256": "e91f153f060f29127beb53cfc6f7bc04b76b3ccc4d92a1312dcd5f9c1415f2a7",
+  "schema_version": "0.5",
+  "contract_version": "operating-world-v0.5",
+  "evaluator_version": "operating-world-v0.5",
+  "spreadsheet_engine_version": "restricted-excel-v0.1.2",
+  "suite": "world-semantics-lifecycle-v0.3",
+  "seed": 701,
+  "seed_sampling": "One fixed synthetic lineage; cases are mechanism coverage, not independent samples.",
+  "provider": "rule_based",
+  "workers": 4,
+  "started_at": "2026-09-22T13:00:02.611956+00:00",
+  "ended_at": "2026-09-22T13:00:35.671532+00:00",
+  "case_count": 10,
+  "mechanism_pass_count": 10,
+  "business_complete_count": 8,
+  "logical_model_calls": 0,
+  "results": [
+    {
+      "case": "release_deadlock",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "A work/release self-deadlock is rejected at compile admission.",
+      "checks": [
+        {
+          "name": "release_work_deadlock_rejected",
+          "passed": true,
+          "observed": "Unreachable workflow from initial (Cyclic dependencies or release deadlock): work work-1: waiting for release 'self-release' from events ['self-gate']; event self-gate: waiting for accepted work ['work-1']"
+        },
+        {
+          "name": "no_executable_world_admitted",
+          "passed": true
+        }
+      ],
+      "checkpoints": {},
+      "world_path": null,
+      "business_complete": false,
+      "artifact_valid": null,
+      "admission_error": "Unreachable workflow from initial (Cyclic dependencies or release deadlock): work work-1: waiting for release 'self-release' from events ['self-gate']; event self-gate: waiting for accepted work ['work-1']",
+      "world_outcome": "specification_rejected",
+      "mechanism_pass": true
+    },
+    {
+      "case": "scoped_replies",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "Scope and audience replies resolve only their explicitly bound work blockers.",
+      "checks": [
+        {
+          "name": "scope_releases_only_memo",
+          "passed": true
+        },
+        {
+          "name": "unrelated_note_stays_blocked",
+          "passed": true
+        },
+        {
+          "name": "unrelated_blocker_history_unchanged",
+          "passed": true
+        },
+        {
+          "name": "client_reply_releases_note",
+          "passed": true
+        },
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 73
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/scoped_replies/checkpoint-initial.json",
+            "sha256": "1d08d23b5c96f7805c4a498da5ae9a95a8e004ed0e84b0bb91639da0c60a20c9",
+            "bytes": 3777
+          },
+          "clock": 0,
+          "recorded_state_sha256": "b3cadc45512e86ab329b781fd0407d71e6bf9a40a011a8ba9dcd193f2699aafb",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090",
+              "versions": {
+                "v1": "acde1c94287094f994c035ff953668e6a1d4d96612415f1845f69d8e8370eeea",
+                "v2": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "model-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v1",
+              "sha256": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v1",
+              "sha256": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "430b6a7987f081e489a8569f0309aa0d6528ad237a39cd864b8497933649a084"
+        },
+        "both_blocked": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/scoped_replies/checkpoint-both_blocked.json",
+            "sha256": "3f735c0053c1d0f1c9386569300cc33e1c3515124e4b89afe7f7affd4f59fe4a",
+            "bytes": 7952
+          },
+          "clock": 14,
+          "recorded_state_sha256": "94ffb8917fcff66bc292f4f07b69248cc65c3628ce8f373a5d6efc4c99a610d9",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090",
+              "versions": {
+                "v1": "acde1c94287094f994c035ff953668e6a1d4d96612415f1845f69d8e8370eeea",
+                "v2": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "7da02c843dc78103363860ef2a9cfe6dc694fe3ac7f1e35d64fd0fda40841e5e",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "7da02c843dc78103363860ef2a9cfe6dc694fe3ac7f1e35d64fd0fda40841e5e"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "model-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "memo-1": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v1",
+              "sha256": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v1",
+              "sha256": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "note-1": "stale"
+              }
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "383b87c4f1c954f748b33df48c72461ac517c47c480ac81a02d57c0075463717"
+        },
+        "scope_replied": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/scoped_replies/checkpoint-scope_replied.json",
+            "sha256": "2b53c51d9bd1b58bf2eb5cedb275920cd0b8f0ecf52cfbbbf211b22dfb2e3445",
+            "bytes": 9646
+          },
+          "clock": 17,
+          "recorded_state_sha256": "097a3597eb7c335e3756f950be5069c7754260227e721f7bee055c0227326cb7",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090",
+              "versions": {
+                "v1": "acde1c94287094f994c035ff953668e6a1d4d96612415f1845f69d8e8370eeea",
+                "v2": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "7da02c843dc78103363860ef2a9cfe6dc694fe3ac7f1e35d64fd0fda40841e5e",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "7da02c843dc78103363860ef2a9cfe6dc694fe3ac7f1e35d64fd0fda40841e5e"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "model-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "memo-1": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v1",
+              "sha256": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v1",
+              "sha256": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "note-1": "stale"
+              }
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "aa8b0117f5c9edbf67479eb8a18a62ba0c6d65c6b978e71471b5b219b1f6f9d8"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/scoped_replies/checkpoint-final.json",
+            "sha256": "e0851cb11c8d782fff790dc63adde8d1bfc5eea52668963ed62f716a93c81117",
+            "bytes": 22179
+          },
+          "clock": 73,
+          "recorded_state_sha256": "64df73d733ac704e4f056d3d8f516efa08d8a9af0b2bd08eb88f5377b108b722",
+          "artifacts": {
+            "financials": {
+              "current_version": "v3",
+              "sha256": "fd5da5a6d32fbe3d2acf5df58b684d2e30801f8630736d22a1106e45eca84549",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+                "v3": "fd5da5a6d32fbe3d2acf5df58b684d2e30801f8630736d22a1106e45eca84549"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "4386fe5974dfc92d84649c85f76cbfa510a46bf7c6e418d7350821722f0ac27d",
+              "versions": {
+                "v1": "acde1c94287094f994c035ff953668e6a1d4d96612415f1845f69d8e8370eeea",
+                "v2": "28c9cf604a368162b16bbb07bdd083329de5c7fdc7fd6fa5773657ce96c88090",
+                "v3": "4386fe5974dfc92d84649c85f76cbfa510a46bf7c6e418d7350821722f0ac27d"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v3",
+              "sha256": "f901aa9e8e0574aa284b67457dc91b8e827006b734e430cd2d41a22ebe03b7a7",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "7da02c843dc78103363860ef2a9cfe6dc694fe3ac7f1e35d64fd0fda40841e5e",
+                "v3": "f901aa9e8e0574aa284b67457dc91b8e827006b734e430cd2d41a22ebe03b7a7"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "model-1": "stale",
+                "model-2": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v3",
+              "sha256": "2f3edf27a0a5579273d9bbcf4bba4cf4988248494ac76014baebf48f749fab83",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+                "v3": "2f3edf27a0a5579273d9bbcf4bba4cf4988248494ac76014baebf48f749fab83"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "memo-1": "stale",
+                "memo-2": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "d78fab8e9d0621e7efa6f863764ea601135c502557c5aa0f5737c89760c54293",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "d78fab8e9d0621e7efa6f863764ea601135c502557c5aa0f5737c89760c54293"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v1",
+              "sha256": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v3",
+              "sha256": "52ae3d550e0eb9dc904abdc2062a18cc9fd5e9e37dae070fe5bb4de0743856e5",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+                "v2": "c1988620efde8e9ce64d3fe96456115d4ae4bba5fe883128a86113800d3647fa",
+                "v3": "52ae3d550e0eb9dc904abdc2062a18cc9fd5e9e37dae070fe5bb4de0743856e5"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "note-1": "stale",
+                "note-2": "current"
+              }
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "0f7b7b39ecca1ee0b5b550ab92b93f2b357921156507082263071095c940731d"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/scoped_replies/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 73
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 6,
+        "historical_failed_records": 0,
+        "current_records": 6,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 74,
+      "spec_sha256": "9e0a19be4eb3496e008939ba230330f8bb6511ed3180447c59dce424f5bd081e",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/scoped_replies/world/control/state.json",
+        "sha256": "64df73d733ac704e4f056d3d8f516efa08d8a9af0b2bd08eb88f5377b108b722",
+        "bytes": 1767948
+      }
+    },
+    {
+      "case": "basis_only",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "Two accepted stages share identical financial disclosure; basis changes propagate.",
+      "checks": [
+        {
+          "name": "financials_unchanged_at_basis_change",
+          "passed": true
+        },
+        {
+          "name": "approved_basis_version_changes",
+          "passed": true
+        },
+        {
+          "name": "adopted_model_and_memo_stale_for_new_work_but_applicable_to_old_work",
+          "passed": true,
+          "observed": {
+            "model": {
+              "work-1": "current",
+              "work-2": "stale"
+            },
+            "memo": {
+              "work-1": "current",
+              "work-2": "stale"
+            }
+          }
+        },
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 31
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        },
+        {
+          "name": "financials_bytes_and_version_unchanged_across_two_stages",
+          "passed": true
+        },
+        {
+          "name": "both_stages_accepted",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/basis_only/checkpoint-initial.json",
+            "sha256": "c221c3903c866b3f151a4ba3d2efe298156b28e4b78ed326056cf36318194aeb",
+            "bytes": 3006
+          },
+          "clock": 0,
+          "recorded_state_sha256": "1f72c4fa017e0bbd3b1e97e5968835cd974968dd69d9cfe321f87c532f5c7f5b",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "110cfc2abeee82fc93b90b27ab56d48323295b2ceb69cb02c043daf775b07901"
+        },
+        "basis_changed": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/basis_only/checkpoint-basis_changed.json",
+            "sha256": "7f1e9277e44f6a367e5ce222af71ef4c7f210da32ccc001e78b2ff6138bbd2d9",
+            "bytes": 6269
+          },
+          "clock": 17,
+          "recorded_state_sha256": "ea415ffdb85731aa1ec27dded7b1d7e56b78afb979a3ce5f8ef14bf08e8f74c5",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "3039ca6bae540324038e553fdf9139285b165ce35058d431a64f47baf75eef86",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+                "v3": "3039ca6bae540324038e553fdf9139285b165ce35058d431a64f47baf75eef86"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "current",
+                "work-2": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "current",
+                "work-2": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "8fbfecd88b0422a46eb455053cb662ac00a8db6f900c99d513fdf7d3f35f5069",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "8fbfecd88b0422a46eb455053cb662ac00a8db6f900c99d513fdf7d3f35f5069"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "ea2a704d5645746cce07285d5005d27a0b23099905251055e1b08d5713b1f513"
+        },
+        "after_second_stage": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/basis_only/checkpoint-after_second_stage.json",
+            "sha256": "f6cf967cf3e1b2bd98c44d8690db25f95c439826a230bee5109ae222c8e6668d",
+            "bytes": 9075
+          },
+          "clock": 31,
+          "recorded_state_sha256": "d09b967b0309a2989b992b0fc8dd2ef7c07a4562f3c39328b5cb59bf5430f978",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "3039ca6bae540324038e553fdf9139285b165ce35058d431a64f47baf75eef86",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+                "v3": "3039ca6bae540324038e553fdf9139285b165ce35058d431a64f47baf75eef86"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v3",
+              "sha256": "6a76ddc097dd3a69f50f3d5dc34a6025c4f8172469abccdd3a155f9666a0520b",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42",
+                "v3": "6a76ddc097dd3a69f50f3d5dc34a6025c4f8172469abccdd3a155f9666a0520b"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "stale",
+                "work-2": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v3",
+              "sha256": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+                "v3": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "stale",
+                "work-2": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "8fbfecd88b0422a46eb455053cb662ac00a8db6f900c99d513fdf7d3f35f5069",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "8fbfecd88b0422a46eb455053cb662ac00a8db6f900c99d513fdf7d3f35f5069"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "09fbedba64f32aed5116fdc98b24973df27828dcb8c3ff57334cafc4eb6bbb7c"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/basis_only/checkpoint-final.json",
+            "sha256": "f6cf967cf3e1b2bd98c44d8690db25f95c439826a230bee5109ae222c8e6668d",
+            "bytes": 9075
+          },
+          "clock": 31,
+          "recorded_state_sha256": "d09b967b0309a2989b992b0fc8dd2ef7c07a4562f3c39328b5cb59bf5430f978",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "3039ca6bae540324038e553fdf9139285b165ce35058d431a64f47baf75eef86",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+                "v3": "3039ca6bae540324038e553fdf9139285b165ce35058d431a64f47baf75eef86"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v3",
+              "sha256": "6a76ddc097dd3a69f50f3d5dc34a6025c4f8172469abccdd3a155f9666a0520b",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42",
+                "v3": "6a76ddc097dd3a69f50f3d5dc34a6025c4f8172469abccdd3a155f9666a0520b"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "stale",
+                "work-2": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v3",
+              "sha256": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+                "v3": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3"
+              },
+              "freshness": "unknown",
+              "data_freshness": "current",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "stale",
+                "work-2": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "8fbfecd88b0422a46eb455053cb662ac00a8db6f900c99d513fdf7d3f35f5069",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "8fbfecd88b0422a46eb455053cb662ac00a8db6f900c99d513fdf7d3f35f5069"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "09fbedba64f32aed5116fdc98b24973df27828dcb8c3ff57334cafc4eb6bbb7c"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/basis_only/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 31
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 2,
+        "historical_failed_records": 0,
+        "current_records": 2,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 31,
+      "spec_sha256": "148c873dd60460a876b983e9766dbb854cff29a66d2eb5826e238874b7b2c3c7",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/basis_only/world/control/state.json",
+        "sha256": "d09b967b0309a2989b992b0fc8dd2ef7c07a4562f3c39328b5cb59bf5430f978",
+        "bytes": 471072
+      }
+    },
+    {
+      "case": "selective_audience",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "Audience change adds one note version while model, memo and basis remain unchanged.",
+      "checks": [
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 45
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        },
+        {
+          "name": "model_unchanged_by_audience_revision",
+          "passed": true
+        },
+        {
+          "name": "memo_unchanged_by_audience_revision",
+          "passed": true
+        },
+        {
+          "name": "basis_unchanged_by_audience_revision",
+          "passed": true
+        },
+        {
+          "name": "only_one_additional_note_version",
+          "passed": true
+        },
+        {
+          "name": "external_audience_content_satisfies_public_fields",
+          "passed": true,
+          "observed": []
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/selective_audience/checkpoint-initial.json",
+            "sha256": "e02c24073ebb729c9188d9f3683b50cab3006f00729dfbaf3bfcac996ee3e132",
+            "bytes": 3777
+          },
+          "clock": 0,
+          "recorded_state_sha256": "cc817bdcc2578377de10ebf49a142dbc71f3e50fec23d64e2538ff0247321ab3",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108",
+              "versions": {
+                "v1": "81268f48b1ba35747889229eb7e25240206559103e9683edd783ecceb438f401",
+                "v2": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "model-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v1",
+              "sha256": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v1",
+              "sha256": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "5e564b11d233522679eeb564100da51bc99b84c2a48da6bdd2313c967d049043"
+        },
+        "audience_changed": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/selective_audience/checkpoint-audience_changed.json",
+            "sha256": "c5a1453ceee5d8d69775ecbd9581fa8b673a5f0dfbdb0eb2676219d5a93454be",
+            "bytes": 10944
+          },
+          "clock": 34,
+          "recorded_state_sha256": "42f5309c52ffa200731b1754d342b4776c8636753e32643fe37c9de94a652217",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108",
+              "versions": {
+                "v1": "81268f48b1ba35747889229eb7e25240206559103e9683edd783ecceb438f401",
+                "v2": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "model-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "memo-1": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v2",
+              "sha256": "8e8877af963658f023cc4c51fee0c9fe31fc960236d7625b15e977aa5fe0e341",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+                "v2": "8e8877af963658f023cc4c51fee0c9fe31fc960236d7625b15e977aa5fe0e341"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v2",
+              "sha256": "c1988620efde8e9ce64d3fe96456115d4ae4bba5fe883128a86113800d3647fa",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+                "v2": "c1988620efde8e9ce64d3fe96456115d4ae4bba5fe883128a86113800d3647fa"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "note-1": "current",
+                "note-2": "current"
+              }
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "f0da34cbe5aea8c67b7785f2bf211e3465fc48105e9a87bcefce6c6cc2a764af"
+        },
+        "after_note_revision": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/selective_audience/checkpoint-after_note_revision.json",
+            "sha256": "e7c9f2a151ba8e76150a559a440eae5e5720283692268dd5721d5b16342d32ae",
+            "bytes": 12992
+          },
+          "clock": 45,
+          "recorded_state_sha256": "25ef4a9b4d7b2a52f22af82bfaa23a471af52a916f09c358db60164dffe65b00",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108",
+              "versions": {
+                "v1": "81268f48b1ba35747889229eb7e25240206559103e9683edd783ecceb438f401",
+                "v2": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "model-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "memo-1": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v2",
+              "sha256": "8e8877af963658f023cc4c51fee0c9fe31fc960236d7625b15e977aa5fe0e341",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+                "v2": "8e8877af963658f023cc4c51fee0c9fe31fc960236d7625b15e977aa5fe0e341"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v3",
+              "sha256": "fd0fbb6ba5bed116246eb764890ecd6fa2f79053dd91fb26a2460037b7c9826e",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+                "v2": "c1988620efde8e9ce64d3fe96456115d4ae4bba5fe883128a86113800d3647fa",
+                "v3": "fd0fbb6ba5bed116246eb764890ecd6fa2f79053dd91fb26a2460037b7c9826e"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "note-1": "current",
+                "note-2": "current"
+              }
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "5f788752a4f320eef5e4063e835cdf8672e86b8c755570f6bf337e1890f17ba6"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/selective_audience/checkpoint-final.json",
+            "sha256": "e7c9f2a151ba8e76150a559a440eae5e5720283692268dd5721d5b16342d32ae",
+            "bytes": 12992
+          },
+          "clock": 45,
+          "recorded_state_sha256": "25ef4a9b4d7b2a52f22af82bfaa23a471af52a916f09c358db60164dffe65b00",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108",
+              "versions": {
+                "v1": "81268f48b1ba35747889229eb7e25240206559103e9683edd783ecceb438f401",
+                "v2": "4a2e843eb0f06a2d8c9ad10a588d54be82268bd21ba209df945af3edceb7c108"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "44fad025f277d65f11ee2388db6ac0c5bf1ad5285afa1d8759724e53d908ac42"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "model-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "memo-1": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "brief": {
+              "current_version": "v2",
+              "sha256": "8e8877af963658f023cc4c51fee0c9fe31fc960236d7625b15e977aa5fe0e341",
+              "versions": {
+                "v1": "09abc66f03e1ddcee740d4cdbe985e5bcce3bb5df71c52d7689cc825273eee1c",
+                "v2": "8e8877af963658f023cc4c51fee0c9fe31fc960236d7625b15e977aa5fe0e341"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "note": {
+              "current_version": "v3",
+              "sha256": "fd0fbb6ba5bed116246eb764890ecd6fa2f79053dd91fb26a2460037b7c9826e",
+              "versions": {
+                "v1": "f2f5eb84a623ef5288f2b9a2e4c6b3f1772b42c5a9fcd61aff5418a0c1a36295",
+                "v2": "c1988620efde8e9ce64d3fe96456115d4ae4bba5fe883128a86113800d3647fa",
+                "v3": "fd0fbb6ba5bed116246eb764890ecd6fa2f79053dd91fb26a2460037b7c9826e"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "note-1": "current",
+                "note-2": "current"
+              }
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a",
+              "versions": {
+                "v1": "b9188d5bc6ca909e9eef70afd684c62d515cea87f8bdb3a002852688bbab3d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "5f788752a4f320eef5e4063e835cdf8672e86b8c755570f6bf337e1890f17ba6"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/selective_audience/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 45
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 4,
+        "historical_failed_records": 0,
+        "current_records": 4,
+        "current_failed_checks": []
+      },
+      "audience_validation_scope": "Required fields, types and nonempty content only; not professional prose quality.",
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 45,
+      "spec_sha256": "c29139fb89d6437d5c60bd49ef4836fff85db5fca37094a349facdab0e5e4f7e",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/selective_audience/world/control/state.json",
+        "sha256": "25ef4a9b4d7b2a52f22af82bfaa23a471af52a916f09c358db60164dffe65b00",
+        "bytes": 704192
+      }
+    },
+    {
+      "case": "waiting_reply",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "A late old reply neither grants the new basis nor resolves the replacement blocker.",
+      "checks": [
+        {
+          "name": "old_reply_archived_as_outdated",
+          "passed": true
+        },
+        {
+          "name": "old_reply_does_not_resolve_new_blocker",
+          "passed": true
+        },
+        {
+          "name": "old_confirmation_remains_readable",
+          "passed": true
+        },
+        {
+          "name": "old_reply_does_not_grant_new_basis_access",
+          "passed": true,
+          "observed": {
+            "ok": false,
+            "error": {
+              "type": "WorldError",
+              "message": "Artifact unavailable to this role or version"
+            },
+            "action_id": "action-8",
+            "logical_time": 7,
+            "command_id": "command:analyst:2b6af226d4854e458f6a5876a00eff89",
+            "command_committed": true,
+            "committed_revision": 8
+          }
+        },
+        {
+          "name": "manager_private_scope_stays_private",
+          "passed": true
+        },
+        {
+          "name": "new_scoped_reply_resolves_new_blocker",
+          "passed": true
+        },
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 25
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/waiting_reply/checkpoint-initial.json",
+            "sha256": "52835fe853ae29ed653966feaedbd8028419a4de7a6157a2fa10ccb7f21039a8",
+            "bytes": 3006
+          },
+          "clock": 0,
+          "recorded_state_sha256": "b826fa80d532a56b89bb5083af033eaa1cd69c5a0fa9245b9575bf4e55c31f10",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "f7bbae8e4e33a754fad07d6a142833e9086a3e19e9315e5b648c80611a3fa0a3",
+              "versions": {
+                "v1": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4",
+                "v2": "f7bbae8e4e33a754fad07d6a142833e9086a3e19e9315e5b648c80611a3fa0a3"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "f818e148389b629f43806c2ca97b6ff3292374c3d437e3c5807374f89ea20a95"
+        },
+        "outdated_reply": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/waiting_reply/checkpoint-outdated_reply.json",
+            "sha256": "e0f758f94c52b0c2a881aed0e3da4f8e7e7a600c569de79ad569277f00b5c10f",
+            "bytes": 5912
+          },
+          "clock": 8,
+          "recorded_state_sha256": "6feabde215e036135c381be4f69c6a8422cc8dcb40eecba211326f4d8012add8",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "a78ff6588b2ebd4f4d50efb1c2424a4ba93f4f2513105733f1d0a0ecc12d25e2",
+              "versions": {
+                "v1": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4",
+                "v2": "f7bbae8e4e33a754fad07d6a142833e9086a3e19e9315e5b648c80611a3fa0a3",
+                "v3": "a78ff6588b2ebd4f4d50efb1c2424a4ba93f4f2513105733f1d0a0ecc12d25e2"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1@r2": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1@r2": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "6dde6252cf1721d1ed58c3b1add3fb99fedf29253fc5f9a592c2c0057116f0df"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/waiting_reply/checkpoint-final.json",
+            "sha256": "ed6842cbf7d591a5634b6202ad09f0ac0b735a27c48d92b9dba20875bc84755a",
+            "bytes": 10610
+          },
+          "clock": 25,
+          "recorded_state_sha256": "dc19c8ce68bba35622ef7dd9ad7264acbc080c6472123150bb13991e39444869",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "a78ff6588b2ebd4f4d50efb1c2424a4ba93f4f2513105733f1d0a0ecc12d25e2",
+              "versions": {
+                "v1": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4",
+                "v2": "f7bbae8e4e33a754fad07d6a142833e9086a3e19e9315e5b648c80611a3fa0a3",
+                "v3": "a78ff6588b2ebd4f4d50efb1c2424a4ba93f4f2513105733f1d0a0ecc12d25e2"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "74a34f4cbe3c12b5fe55b56326938adc0f1be786969f7fd58181c4657a6ac23a",
+              "versions": {
+                "v1": "d6799fe74543c377b829cbf8ec25263c79ef5e1597e872e5807fa93bd46e62a7",
+                "v2": "74a34f4cbe3c12b5fe55b56326938adc0f1be786969f7fd58181c4657a6ac23a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1@r2": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "d45501f72f2b39e36f74cff9f31208fd0fef5fa973220b15210a5194829f2e73",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "d45501f72f2b39e36f74cff9f31208fd0fef5fa973220b15210a5194829f2e73"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1@r2": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "be66d1760fbaef57c2bdc47f1ac2cfa27e2572e18fd263a8a9d808d4d71abf5e"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/waiting_reply/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 25
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 2,
+        "historical_failed_records": 1,
+        "current_records": 1,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 26,
+      "spec_sha256": "9b51efa8c7aee5fa1aa82a07b9ab21cd301e7f3c7a1118412a25c0738e2ae0bb",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/waiting_reply/world/control/state.json",
+        "sha256": "dc19c8ce68bba35622ef7dd9ad7264acbc080c6472123150bb13991e39444869",
+        "bytes": 758194
+      }
+    },
+    {
+      "case": "during_review",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "A pending old submission is archived and cannot approve current requirements.",
+      "checks": [
+        {
+          "name": "submitted_versions_preserved_in_archive",
+          "passed": true
+        },
+        {
+          "name": "old_submission_not_approved_after_requirement_change",
+          "passed": true
+        },
+        {
+          "name": "old_submission_cannot_approve_work-1",
+          "passed": true,
+          "observed": {
+            "ok": false,
+            "error": {
+              "type": "ValueError",
+              "message": "Work is not a current obligation"
+            },
+            "action_id": "action-15",
+            "logical_time": 15,
+            "command_id": "command:reviewer:7e5b09347ec6491bbbd2c032e768c73f",
+            "command_committed": true,
+            "committed_revision": 16
+          }
+        },
+        {
+          "name": "old_submission_cannot_approve_work-1@r2",
+          "passed": true,
+          "observed": {
+            "ok": false,
+            "error": {
+              "type": "ValueError",
+              "message": "Work is not awaiting review"
+            },
+            "action_id": "action-16",
+            "logical_time": 16,
+            "command_id": "command:reviewer:ab9fbf2b333446dd8c4a77b02fb29770",
+            "command_committed": true,
+            "committed_revision": 17
+          }
+        },
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 30
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/during_review/checkpoint-initial.json",
+            "sha256": "8b694e5d248ed6023cb246d2d3edbfb0b7eeb5ddc1faf41418ce62364949bc14",
+            "bytes": 3006
+          },
+          "clock": 0,
+          "recorded_state_sha256": "18a9f88ae1744ed061ee64e2a62d556f3e73009081980990f15698b1900bdf02",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "f78512eeb87b78300586c1b6d7503c707b4316051d5b7bd9f8a5323d3e55a7d4",
+              "versions": {
+                "v1": "f78512eeb87b78300586c1b6d7503c707b4316051d5b7bd9f8a5323d3e55a7d4"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "05ce4c4041bcfa8b1d08215b4202e4b93ef4f6982b613e962bc5f17030b78d9e"
+        },
+        "old_submission_archived": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/during_review/checkpoint-old_submission_archived.json",
+            "sha256": "eece9a5d1d581fa511202efc5f5d56fdeeef36af4aaf2b0eba1d0eda4e0e10bb",
+            "bytes": 6163
+          },
+          "clock": 16,
+          "recorded_state_sha256": "bee623b9a8006e3cc03a15250d4cf838a49d805f8ee1fbea97b6b80b0439ea21",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "886cc15bcc5b258411983c6b2ed67c685f58c386493f83a7a6acf32ec4a5a3fc",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+                "v3": "886cc15bcc5b258411983c6b2ed67c685f58c386493f83a7a6acf32ec4a5a3fc"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "c3ad29d2f1910946158c56b89d6c7113c2f51284154ad6cbd522e35eda8c2ee0",
+              "versions": {
+                "v1": "f78512eeb87b78300586c1b6d7503c707b4316051d5b7bd9f8a5323d3e55a7d4",
+                "v2": "c3ad29d2f1910946158c56b89d6c7113c2f51284154ad6cbd522e35eda8c2ee0"
+              },
+              "freshness": "stale",
+              "data_freshness": "current",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1@r2": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2"
+              },
+              "freshness": "stale",
+              "data_freshness": "current",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1@r2": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "a9cd3fd47207419039eba20afead49bb9e836df58975768dea135412921bfeff"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/during_review/checkpoint-final.json",
+            "sha256": "dab8d7ac189b97518540f1b86d3d6ce10aa4f3d2736e250b572b94597879c57e",
+            "bytes": 9149
+          },
+          "clock": 30,
+          "recorded_state_sha256": "e66b62b80ca6f5aa6637ee06f8ca61517da01a461d0945fe91af4694c5d6eb62",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "886cc15bcc5b258411983c6b2ed67c685f58c386493f83a7a6acf32ec4a5a3fc",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+                "v3": "886cc15bcc5b258411983c6b2ed67c685f58c386493f83a7a6acf32ec4a5a3fc"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v3",
+              "sha256": "7f1b91a4eed73ec9ffb1f1348e45470c54a95755ae72939f891ad1a5d8f0c64a",
+              "versions": {
+                "v1": "f78512eeb87b78300586c1b6d7503c707b4316051d5b7bd9f8a5323d3e55a7d4",
+                "v2": "c3ad29d2f1910946158c56b89d6c7113c2f51284154ad6cbd522e35eda8c2ee0",
+                "v3": "7f1b91a4eed73ec9ffb1f1348e45470c54a95755ae72939f891ad1a5d8f0c64a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1@r2": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v3",
+              "sha256": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7cd23091f43a652349401be733723ea5b457a22faac0bfc66984eb39ee9eaab2",
+                "v3": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1@r2": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "228615ab0a1324ce43fbc7d03f98698dbafb7afb8fabdede1b59c7f5c3312a7b"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/during_review/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 30
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 2,
+        "historical_failed_records": 0,
+        "current_records": 1,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 30,
+      "spec_sha256": "a558b466f4476a95337c9925130ecb53b832837524f257d2fea73fe1f76e87e0",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/during_review/world/control/state.json",
+        "sha256": "e66b62b80ca6f5aa6637ee06f8ca61517da01a461d0945fe91af4694c5d6eb62",
+        "bytes": 456106
+      }
+    },
+    {
+      "case": "unavailable",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "Unavailable information yields explicit blocking without writing or submitting artifacts.",
+      "checks": [
+        {
+          "name": "explicit_blocked_unavailable_outcome",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": false,
+            "reason": "blocked_unavailable"
+          }
+        },
+        {
+          "name": "no_worker_or_staff_artifact_writes",
+          "passed": true
+        },
+        {
+          "name": "no_submission_or_fabricated_completion",
+          "passed": true
+        },
+        {
+          "name": "unavailable_blocker_retained",
+          "passed": true
+        },
+        {
+          "name": "all_artifact_bytes_and_versions_unchanged",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/unavailable/checkpoint-initial.json",
+            "sha256": "981c8dbf4880b0ff34f82d8dba5812e5eb1e9a25e8223a95a1eaa1919400814f",
+            "bytes": 2868
+          },
+          "clock": 0,
+          "recorded_state_sha256": "eaea3200930e0062d19784009305615d72593ccb775caca28e791d147a4c6418",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v1",
+              "sha256": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4",
+              "versions": {
+                "v1": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "9d26d0d97d0b8857d72b60ae822dc5dc9eb61133ae7297aec2cdad026ec4e631",
+              "versions": {
+                "v1": "9d26d0d97d0b8857d72b60ae822dc5dc9eb61133ae7297aec2cdad026ec4e631"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "unknown"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "unknown"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "1915826826240492c11af74bb6edb21fe30c99b2cb46a1939bb4c1b2a58137bd"
+        },
+        "blocked": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/unavailable/checkpoint-blocked.json",
+            "sha256": "36b79adcea87ad2839b0ae7a992f40e14511c855a9d469c4ed0942abed267a91",
+            "bytes": 4549
+          },
+          "clock": 9,
+          "recorded_state_sha256": "8da5edff30642219c898c6591d472e47550fa9bde2abf32772a9deb830856675",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v1",
+              "sha256": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4",
+              "versions": {
+                "v1": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "9d26d0d97d0b8857d72b60ae822dc5dc9eb61133ae7297aec2cdad026ec4e631",
+              "versions": {
+                "v1": "9d26d0d97d0b8857d72b60ae822dc5dc9eb61133ae7297aec2cdad026ec4e631"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "unknown"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "unknown"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "e42435653d2c2c7ebcb9d49a4de5271b3583211bb27525c4936f3b432847377d"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/unavailable/checkpoint-final.json",
+            "sha256": "36b79adcea87ad2839b0ae7a992f40e14511c855a9d469c4ed0942abed267a91",
+            "bytes": 4549
+          },
+          "clock": 9,
+          "recorded_state_sha256": "8da5edff30642219c898c6591d472e47550fa9bde2abf32772a9deb830856675",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v1",
+              "sha256": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4",
+              "versions": {
+                "v1": "a526cf1a12327323687aecd1adb90596c3703979f4152c3f0530fb5396a5fca4"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "9d26d0d97d0b8857d72b60ae822dc5dc9eb61133ae7297aec2cdad026ec4e631",
+              "versions": {
+                "v1": "9d26d0d97d0b8857d72b60ae822dc5dc9eb61133ae7297aec2cdad026ec4e631"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "unknown"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "unknown",
+              "basis_applicability_by_work": {
+                "work-1": "unknown"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "e42435653d2c2c7ebcb9d49a4de5271b3583211bb27525c4936f3b432847377d"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/unavailable/world",
+      "business_complete": false,
+      "artifact_valid": null,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": false,
+          "reason": "blocked_unavailable"
+        }
+      ],
+      "world_outcome": "blocked_unavailable",
+      "logical_model_calls": 0,
+      "interaction_count": 9,
+      "spec_sha256": "5a473475222804c88f05cf5b3d55cab59b50d91156eb98cd269ad44d94d0236f",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/unavailable/world/control/state.json",
+        "sha256": "8da5edff30642219c898c6591d472e47550fa9bde2abf32772a9deb830856675",
+        "bytes": 213874
+      }
+    },
+    {
+      "case": "existing_basis",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "An applicable public confirmation permits direct valid delivery without scope requests.",
+      "checks": [
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 12
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        },
+        {
+          "name": "zero_redundant_scope_requests",
+          "passed": true
+        },
+        {
+          "name": "one_submission_without_forced_rework",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/existing_basis/checkpoint-initial.json",
+            "sha256": "ae0ce946170835744c8e8edcbcfe64bdb4f908679b6e67dbd8cf9c9302e0fafb",
+            "bytes": 2982
+          },
+          "clock": 0,
+          "recorded_state_sha256": "642db6981e342087764cd8f26be05357ced48e4e1a6cb5e98563964ff1f618fe",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c",
+              "versions": {
+                "v1": "790bd4cc4748df1bc69961d76fa4c030f316ade08a30717aadc2f786dea2ee31",
+                "v2": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "3da33e426316a20aac772f0525e9af1a3d1b1377d29e4e600a308131efc297d3",
+              "versions": {
+                "v1": "3da33e426316a20aac772f0525e9af1a3d1b1377d29e4e600a308131efc297d3"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "cd2765f3ea8d1edecb70afc4502d822af7f34cd9faea487f24a205112deabaf1"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/existing_basis/checkpoint-final.json",
+            "sha256": "a817d40ac0d499b9c8a250975e1ad4db34f7b663768510eee2adb03206e83ac3",
+            "bytes": 5294
+          },
+          "clock": 12,
+          "recorded_state_sha256": "a5bdcc610856e3116f484711d1bdc7049967aa4e0f834e2dfed675db3821fd5e",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c",
+              "versions": {
+                "v1": "790bd4cc4748df1bc69961d76fa4c030f316ade08a30717aadc2f786dea2ee31",
+                "v2": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "e99e095ac268fcbbb40865a46ba6cdd12a13e4851243914c38a9fe9c8c2e3c37",
+              "versions": {
+                "v1": "3da33e426316a20aac772f0525e9af1a3d1b1377d29e4e600a308131efc297d3",
+                "v2": "e99e095ac268fcbbb40865a46ba6cdd12a13e4851243914c38a9fe9c8c2e3c37"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "d6817e48d436e460a6068f38e0b9a275b0609e372322e53eae8b05c7eb1053dd"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/existing_basis/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 12
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 1,
+        "historical_failed_records": 0,
+        "current_records": 1,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 12,
+      "spec_sha256": "e2d3298551b3a1e1340f398751773f86421ca5ae52e0e817a8d7cfab065b90ee",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/existing_basis/world/control/state.json",
+        "sha256": "a5bdcc610856e3116f484711d1bdc7049967aa4e0f834e2dfed675db3821fd5e",
+        "bytes": 151648
+      }
+    },
+    {
+      "case": "during_update",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "Requirement change during editing replaces work and the replacement can complete.",
+      "checks": [
+        {
+          "name": "rule_witness_completes",
+          "passed": true,
+          "observed": {
+            "provider": "rule_based",
+            "complete": true,
+            "logical_time": 21
+          }
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        },
+        {
+          "name": "active_work_replaced_after_first_model_edit",
+          "passed": true
+        },
+        {
+          "name": "replaced_work_not_submitted",
+          "passed": true
+        },
+        {
+          "name": "replacement_work_accepted",
+          "passed": true
+        },
+        {
+          "name": "change_recorded_as_manager_action",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/during_update/checkpoint-initial.json",
+            "sha256": "2a7d9da246d4f970043d403178000325c700a60a5c0213788a82e59140bfebe3",
+            "bytes": 3006
+          },
+          "clock": 0,
+          "recorded_state_sha256": "9966be1b1310eb4e759b31ff1e0f98d40d7d89769e95700ea2af7148b4965177",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "c6c605968e0cd8a12eb92c37bab363870c39aee5c4cc58f6bc33a2837b8dece7",
+              "versions": {
+                "v1": "c6c605968e0cd8a12eb92c37bab363870c39aee5c4cc58f6bc33a2837b8dece7"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "505c0ba31d7d75ecd0dc9b1e3de238b3312c9be0a867baec3cca7b3a80870d86"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/during_update/checkpoint-final.json",
+            "sha256": "6e0d7616add2152b0c8be878043905d1428d97566c04b14bb742097800b0e11f",
+            "bytes": 6480
+          },
+          "clock": 21,
+          "recorded_state_sha256": "51d923f78ed8fc7c7833286a7043190e2ed0e9b0bcfc30661e186273f295fbfa",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v3",
+              "sha256": "aa9c799e6cadf1ceaae9b0ccc7b828acd6d00c76d874a2a14c7b3996cb0d6103",
+              "versions": {
+                "v1": "b00d2790b285f96154e63b41fad26f80ea651b0f5aa158725071ac0827397d15",
+                "v2": "fee4ad9c148d6804d7b07d4dec61b8094de46b25d3179fad83cbd32eeaaa5d1a",
+                "v3": "aa9c799e6cadf1ceaae9b0ccc7b828acd6d00c76d874a2a14c7b3996cb0d6103"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v3",
+              "sha256": "5531fa20b99a68ccd6d7777592456b7c7a5daf05f0e93738fe153dd1c3d188cd",
+              "versions": {
+                "v1": "c6c605968e0cd8a12eb92c37bab363870c39aee5c4cc58f6bc33a2837b8dece7",
+                "v2": "10e28ead6f5efe3116408abad82711fe6b2736455986e1ef60e1bb9ee4b434d2",
+                "v3": "5531fa20b99a68ccd6d7777592456b7c7a5daf05f0e93738fe153dd1c3d188cd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1@r2": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v2",
+              "sha256": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+                "v2": "7fe031405a27b947f796cf02e5c0eb145cf05662315e5b3e6b7fb5e60db12df3"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1@r2": "current"
+              }
+            },
+            "scope": {
+              "current_version": "v2",
+              "sha256": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+                "v2": "5c7f4c610dbc0a1be5c2ea1a958c9674c83ff3146520c72a8886f0b1c401f52b"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "86d183363735725a2b774d8df7d7412da38533146b32839e519a7edb8adc6d7a"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/during_update/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "baseline_runs": [
+        {
+          "provider": "rule_based",
+          "complete": true,
+          "logical_time": 21
+        }
+      ],
+      "evaluation_summary": {
+        "all_records": 2,
+        "historical_failed_records": 1,
+        "current_records": 1,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 22,
+      "spec_sha256": "a84dac11e8357cdce2bf0db05838929f16cd4c38f6d2964bf915d264d383ff12",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/during_update/world/control/state.json",
+        "sha256": "51d923f78ed8fc7c7833286a7043190e2ed0e9b0bcfc30661e186273f295fbfa",
+        "bytes": 363950
+      }
+    },
+    {
+      "case": "withdraw_resubmit",
+      "seed": 701,
+      "provider": "rule_based",
+      "expected": "Withdrawn approval cannot occur; unchanged valid artifacts can be resubmitted.",
+      "checks": [
+        {
+          "name": "withdrawn_submission_not_approved",
+          "passed": true
+        },
+        {
+          "name": "resubmission_pins_same_correct_artifact_version",
+          "passed": true
+        },
+        {
+          "name": "resubmission_accepted",
+          "passed": true
+        },
+        {
+          "name": "withdrawal_does_not_force_artifact_rewrite",
+          "passed": true
+        },
+        {
+          "name": "current_submissions_pass_independent_evaluation",
+          "passed": true
+        }
+      ],
+      "checkpoints": {
+        "initial": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/withdraw_resubmit/checkpoint-initial.json",
+            "sha256": "60dadc9a1f3ccf65b97570958f93a49976254b2801615c092feb5c2ce6dc4b58",
+            "bytes": 2982
+          },
+          "clock": 0,
+          "recorded_state_sha256": "7adfb613ed8eb27ea59b5d40506ebc2d21cd328804b695a3621926e9d1e9defe",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c",
+              "versions": {
+                "v1": "790bd4cc4748df1bc69961d76fa4c030f316ade08a30717aadc2f786dea2ee31",
+                "v2": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v1",
+              "sha256": "a63eef97428580afa478a487d30145f8a52cfb9b91b076b3164b8ff3629cde40",
+              "versions": {
+                "v1": "a63eef97428580afa478a487d30145f8a52cfb9b91b076b3164b8ff3629cde40"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "stale",
+              "basis_applicability_by_work": {
+                "work-1": "stale"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "03350a0727901a2090d867bbdc4898136ed453dd9fb8c381265d7a0408cffcc1"
+        },
+        "withdrawn": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/withdraw_resubmit/checkpoint-withdrawn.json",
+            "sha256": "43b3cee93e199f77002d6a6b7a474ece40a2cb7931d5231bb9a0251fe10da229",
+            "bytes": 5460
+          },
+          "clock": 11,
+          "recorded_state_sha256": "e36c0a88e5d860566cdde1a8b0ccf74a324e8cd11e9fb827097a5429327c4a62",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c",
+              "versions": {
+                "v1": "790bd4cc4748df1bc69961d76fa4c030f316ade08a30717aadc2f786dea2ee31",
+                "v2": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "40b3f8f87c5f7808f4782dc5f8fe80097c5438ecdd6a2abb0a1979558cfa1ce7",
+              "versions": {
+                "v1": "a63eef97428580afa478a487d30145f8a52cfb9b91b076b3164b8ff3629cde40",
+                "v2": "40b3f8f87c5f7808f4782dc5f8fe80097c5438ecdd6a2abb0a1979558cfa1ce7"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "36f197386d5d6fc620181eeadfb3dafa0b62f9a712ac53955db3c47395e6605e"
+        },
+        "resubmitted": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/withdraw_resubmit/checkpoint-resubmitted.json",
+            "sha256": "89e66e4eac8fdbba7f2734edf69a48d06ec2eeaf58c27b2e0a716e044d217c93",
+            "bytes": 7669
+          },
+          "clock": 14,
+          "recorded_state_sha256": "b1aa996f81cf98c3a1b1c5cfbc3f34eceae728cf22ec372dd22823889dc6a905",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c",
+              "versions": {
+                "v1": "790bd4cc4748df1bc69961d76fa4c030f316ade08a30717aadc2f786dea2ee31",
+                "v2": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "40b3f8f87c5f7808f4782dc5f8fe80097c5438ecdd6a2abb0a1979558cfa1ce7",
+              "versions": {
+                "v1": "a63eef97428580afa478a487d30145f8a52cfb9b91b076b3164b8ff3629cde40",
+                "v2": "40b3f8f87c5f7808f4782dc5f8fe80097c5438ecdd6a2abb0a1979558cfa1ce7"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "c7676eac47a1237db593e12fd2acc5471d5ed4b3decab4f8a379d0330d2ede32"
+        },
+        "final": {
+          "checkpoint_file": {
+            "path": "runs/world-regression-v05/withdraw_resubmit/checkpoint-final.json",
+            "sha256": "e5eba44cb267565aab9d2da53e3f85fb1a0d129fc6141dad463923dff58a2b77",
+            "bytes": 7669
+          },
+          "clock": 14,
+          "recorded_state_sha256": "c42c61b985ec8aeb8bb745e9f42557f6b3f78f3c3113f15f372880927ead095b",
+          "artifacts": {
+            "financials": {
+              "current_version": "v2",
+              "sha256": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd",
+              "versions": {
+                "v1": "bb7d8e5000c4935c508d315b155d2447cb0a838a5e5071d62b1dabb64e6b1ca1",
+                "v2": "91d102f2686c46eaeabebb69e1a4284ce0b7ef0552e028de7337a9b397cb70dd"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "basis": {
+              "current_version": "v2",
+              "sha256": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c",
+              "versions": {
+                "v1": "790bd4cc4748df1bc69961d76fa4c030f316ade08a30717aadc2f786dea2ee31",
+                "v2": "406fc965d24c9e9fec6bf3cfb12d6a9bec076a8cd604983d737633d9c6c9225c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "model": {
+              "current_version": "v2",
+              "sha256": "40b3f8f87c5f7808f4782dc5f8fe80097c5438ecdd6a2abb0a1979558cfa1ce7",
+              "versions": {
+                "v1": "a63eef97428580afa478a487d30145f8a52cfb9b91b076b3164b8ff3629cde40",
+                "v2": "40b3f8f87c5f7808f4782dc5f8fe80097c5438ecdd6a2abb0a1979558cfa1ce7"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "current",
+              "basis_applicability_by_work": {
+                "work-1": "current"
+              }
+            },
+            "memo": {
+              "current_version": "v1",
+              "sha256": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a",
+              "versions": {
+                "v1": "2700581cf57ce52b864a6ba6467082978bfda5e39b6d406ed18441c8dbd4c87a"
+              },
+              "freshness": "stale",
+              "data_freshness": "stale",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "scope": {
+              "current_version": "v1",
+              "sha256": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702",
+              "versions": {
+                "v1": "dfe7f76d187bae2a84cbafc772bc4077f4d9d05d5d62f4b270bf43399ae4c702"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            },
+            "guide": {
+              "current_version": "v1",
+              "sha256": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c",
+              "versions": {
+                "v1": "a00fbd7b04ee032c3db0eb9ebf84080ba62f607a232741d528b3c61af8acca4c"
+              },
+              "freshness": "current",
+              "data_freshness": "current",
+              "basis_applicability": "not_applicable",
+              "basis_applicability_by_work": {}
+            }
+          },
+          "omitted_summary_canonical_json_sha256": "ce6b8d71fcde8bae134c855c6cd53da43f5e4b4d1adab230c8b0ae3752760189"
+        }
+      },
+      "world_path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/withdraw_resubmit/world",
+      "business_complete": true,
+      "artifact_valid": true,
+      "evaluation_summary": {
+        "all_records": 2,
+        "historical_failed_records": 0,
+        "current_records": 1,
+        "current_failed_checks": []
+      },
+      "world_outcome": "accepted",
+      "logical_model_calls": 0,
+      "interaction_count": 14,
+      "spec_sha256": "e2d3298551b3a1e1340f398751773f86421ca5ae52e0e817a8d7cfab065b90ee",
+      "mechanism_pass": true,
+      "final_state_file": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/world-regression-v05/withdraw_resubmit/world/control/state.json",
+        "sha256": "c42c61b985ec8aeb8bb745e9f42557f6b3f78f3c3113f15f372880927ead095b",
+        "bytes": 178013
+      }
+    }
+  ],
+  "interpretation": "Programmatic world-mechanism witnesses only. Expected blocking/rejection is not model task success; no API calls, GPU training, learning-gain or professional-gold claims.",
+  "archive_metadata": {
+    "raw_source": {
+      "path": "runs/world-regression-v05/report.json",
+      "sha256": "4769ad3c31fcec2bf7c01c0705b9d7ad5b4d01387fa972e1bdd4020d4628108a",
+      "bytes": 271446
+    },
+    "omitted": [
+      "Repeated embedded checkpoint work/blocker/request summaries; the original checkpoint JSON files are indexed with hashes and byte sizes"
+    ],
+    "preserved": "All 56 checks and their observed evidence, all expected case descriptions, errors including expected admission rejection, identities, version inventories, checkpoint references and recorded state hashes, outcomes and evaluation summaries. Historical checkpoint state hashes refer to the states recorded by the original script, not the smaller checkpoint-summary JSON file bytes.",
+    "protocol_provenance": "The source report has no separate protocol object; suite identity, fixed seed, case expected descriptions and source-script hash are retained unchanged."
+  },
+  "check_count": 56,
+  "check_pass_count": 56,
+  "unexpected_error_count": 0,
+  "not_executed_case_count": 0,
+  "not_executed_count_basis": "All ten declared cases produced passing mechanism checks. The intended admission rejection is an executed specification test, not an unexecuted case."
+}

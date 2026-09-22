@@ -1,0 +1,507 @@
+{
+  "archive_kind": "compact experimental evidence, E3",
+  "raw_report": {
+    "path": "runs/bounded-state-v05/report.json",
+    "sha256": "1fe0ab7198f4dd5df8d82ac1aa000f8e3191d99824560644679e016237b2538f",
+    "size_bytes": 5543
+  },
+  "protocol": {
+    "path": "runs/bounded-state-v05/protocol.json",
+    "sha256": "b1e1e02f4fecfc5f01a0afbaa79fc9017d5822a8c423d3dcdeeebb534dbdd689",
+    "size_bytes": 1216
+  },
+  "script": {
+    "path": "scripts/bounded_state_experiment.py",
+    "sha256": "9660fc6da407b67d1668f4f76050ee8975c684ee8e55d0a24bc2b988ec257ebc",
+    "size_bytes": 18970
+  },
+  "experiment": "E3-bounded-reference-v05",
+  "boundary": {
+    "roles": [
+      "owner",
+      "reviewer"
+    ],
+    "work_nodes": [
+      "A",
+      "B"
+    ],
+    "dependency_edges": [
+      [
+        "A",
+        "B"
+      ]
+    ],
+    "artifacts": [
+      "doc-A",
+      "doc-B"
+    ],
+    "maximum_work_editions": 3,
+    "maximum_artifact_versions": 3,
+    "maximum_sequence_length": 4,
+    "initial_checkpoints": [
+      "clear",
+      "waiting_for_evidence"
+    ],
+    "actions": [
+      "submit",
+      "withdraw",
+      "approve",
+      "revise",
+      "reply",
+      "edit"
+    ],
+    "scope": "in-memory core.work/core.conditions; edit is explicit external metadata input",
+    "excluded": [
+      "filesystem",
+      "tool adapters",
+      "new request creation",
+      "arbitrary roles/graphs"
+    ],
+    "coverage": "unique reachable state representatives plus all generated outgoing attempts below depth 4; not all paths",
+    "run_depth": 4
+  },
+  "source_before": {
+    "code_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+    "code_dirty": false,
+    "source_tree_sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c"
+  },
+  "source_after": {
+    "code_commit": "fe80b02a69df7cfe8eabf4a62cce2031c4e3035c",
+    "code_dirty": false,
+    "source_tree_sha256": "24719e3b38b4bb6d4413db5cbf7f7270ed73b82f0f38752401d5e9d96668347c"
+  },
+  "script_sha256": "9660fc6da407b67d1668f4f76050ee8975c684ee8e55d0a24bc2b988ec257ebc",
+  "model_calls": 0,
+  "gpu_used": false,
+  "passed": true,
+  "shortest_counterexample": null,
+  "layers": {
+    "0": {
+      "visited_states": 2,
+      "expanded_states": 2,
+      "attempted_transitions": 58,
+      "permitted_transitions": 11
+    },
+    "1": {
+      "visited_states": 11,
+      "expanded_states": 11,
+      "attempted_transitions": 340,
+      "permitted_transitions": 63
+    },
+    "2": {
+      "visited_states": 39,
+      "expanded_states": 39,
+      "attempted_transitions": 1229,
+      "permitted_transitions": 221
+    },
+    "3": {
+      "visited_states": 110,
+      "expanded_states": 110,
+      "attempted_transitions": 3512,
+      "permitted_transitions": 619
+    },
+    "4": {
+      "visited_states": 284
+    }
+  },
+  "unique_states": 446,
+  "attempts": 5139,
+  "actions": {
+    "submit": 1201,
+    "withdraw": 1091,
+    "approve": 1091,
+    "revise": 596,
+    "edit": 300,
+    "reply": 860
+  },
+  "rejections": {
+    "authority": 1270,
+    "unknown_version": 95,
+    "not_pending": 914,
+    "dependencies": 564,
+    "not_enabled": 279,
+    "reply_not_satisfied": 738,
+    "old_work": 357,
+    "obsolete_artifact": 8
+  },
+  "rejection_examples": {
+    "authority": {
+      "sequence": [
+        [
+          "submit",
+          "A",
+          1,
+          "reviewer",
+          1,
+          "wrong_role"
+        ]
+      ],
+      "observed_error": "Only the work owner may perform this action"
+    },
+    "unknown_version": {
+      "sequence": [
+        [
+          "submit",
+          "A",
+          1,
+          "owner",
+          99,
+          "unknown_version"
+        ]
+      ],
+      "observed_error": "Submission contains an unknown artifact version"
+    },
+    "not_pending": {
+      "sequence": [
+        [
+          "withdraw",
+          "A",
+          1,
+          "owner",
+          1,
+          "valid"
+        ]
+      ],
+      "observed_error": "Work is not awaiting review"
+    },
+    "dependencies": {
+      "sequence": [
+        [
+          "submit",
+          "B",
+          1,
+          "owner",
+          1,
+          "valid"
+        ]
+      ],
+      "observed_error": "Work dependencies have not been accepted"
+    },
+    "not_enabled": {
+      "sequence": [
+        [
+          "submit",
+          "A",
+          1,
+          "owner",
+          1,
+          "valid"
+        ]
+      ],
+      "observed_error": "Work is not open for submission by this actor"
+    },
+    "old_work": {
+      "sequence": [
+        [
+          "revise",
+          "A",
+          1,
+          "reviewer",
+          0,
+          "valid"
+        ],
+        [
+          "submit",
+          "A",
+          1,
+          "owner",
+          1,
+          "old_work"
+        ]
+      ],
+      "observed_error": "Work is not a current obligation"
+    },
+    "obsolete_artifact": {
+      "sequence": [
+        [
+          "submit",
+          "A",
+          1,
+          "owner",
+          1,
+          "valid"
+        ],
+        [
+          "edit",
+          "A",
+          1,
+          "owner",
+          0,
+          "valid"
+        ],
+        [
+          "approve",
+          "A",
+          1,
+          "reviewer",
+          2,
+          "valid"
+        ]
+      ],
+      "observed_error": "Submission versions are no longer current"
+    }
+  },
+  "object_boundary_state_counts": {
+    "work_edition_limit_reached": 110,
+    "artifact_version_limit_reached": 93
+  },
+  "uut_rejection_messages": {
+    "Only the work owner may perform this action": 648,
+    "Submission contains an unknown artifact version": 95,
+    "Work is not awaiting review": 838,
+    "Actor lacks institutional power: approve (deliverable)": 324,
+    "Actor lacks institutional power: revise_requirement (requirements)": 298,
+    "Work dependencies have not been accepted": 355,
+    "Current work dependencies have not been accepted": 306,
+    "Work is not open for submission by this actor": 182,
+    "Submission is not current and pending": 76,
+    "Work is not a current obligation": 357,
+    "Submission versions are no longer current": 8
+  },
+  "depth_boundary_states_not_expanded": 284,
+  "transition_accounting": {
+    "expanded_states": 162,
+    "permitted_transitions_including_idempotent_replies": 914,
+    "reply_attempts_without_satisfaction": 738,
+    "rule_rejections": 3487,
+    "attempts": 5139
+  },
+  "reference_independence_evidence": {
+    "representation": "Numbered editions with (pinned_document_number, P/W/A/X decision, answer) tuples; independent document counters and O/R/S evidence-request ledger.",
+    "expected_results_entrypoint": "Ledger.apply; expected institutional projection: Ledger.projection",
+    "uut_entrypoints": [
+      "core.work.submit_work",
+      "core.work.withdraw_submission",
+      "core.work.approve_submission",
+      "core.work.revise_requirement",
+      "core.conditions.apply_response"
+    ],
+    "comparison": "Compare permitted/rejected or no-satisfaction outcomes and normalized institutional facts. Detailed UUT exception strings are retained but are not required to equal reference rejection-family labels.",
+    "reference_ast_loaded_names": [
+      "action",
+      "actor",
+      "answer",
+      "bool",
+      "dataclass",
+      "dict",
+      "edition",
+      "entries",
+      "field",
+      "key",
+      "kind",
+      "last",
+      "len",
+      "node",
+      "pin",
+      "previous",
+      "self",
+      "set",
+      "sorted",
+      "variant",
+      "version"
+    ],
+    "forbidden_uut_names_checked": [
+      "approve_submission",
+      "conditions",
+      "current_id",
+      "derive_condition_view",
+      "derive_current_work_view",
+      "match_response",
+      "work"
+    ],
+    "forbidden_names_observed": [],
+    "evidence_scope": "Static inspection of the frozen script and supporting test definitions; no claim that this establishes a complete formal proof of oracle independence.",
+    "supporting_tests": {
+      "path": "tests/test_bounded_reference_experiment.py",
+      "sha256": "89c7a7034622840ec26884b18c355434de2777574790c764530c54d06685940b",
+      "size_bytes": 2015,
+      "names": [
+        "test_reference_rejects_reapproval_without_calling_uut",
+        "test_bfs_returns_shortest_wrong_actor_counterexample",
+        "test_bounded_protocol_rejects_unfrozen_expansion"
+      ]
+    }
+  },
+  "interpretation_limits": [
+    "The two initial checkpoints and deduplication key are frozen. Counts describe reachable representative states and generated outgoing attempts, not all complete paths or independent samples.",
+    "At depth 4, 284 reached states were not expanded. The 3-version bounds also prune version-creating actions.",
+    "The edit action publishes an external in-memory artifact version; it is not the actual write_file adapter or record_artifact_edit hook. No filesystem claim is made.",
+    "New request creation, arbitrary organizations, larger graphs and sequences beyond depth 4 are outside this run."
+  ],
+  "development_history": [
+    {
+      "raw_report": {
+        "path": "runs/bounded-v05-dev/report.json",
+        "sha256": "e985c4f4b5cefa0340ed0c7c8b895539b3d57be0dde5408f6913b0c31771e1fb",
+        "size_bytes": 4545
+      },
+      "passed": false,
+      "unique_states": 7,
+      "attempts": 34,
+      "shortest_counterexample": {
+        "initial_checkpoint": "waiting_for_evidence",
+        "sequence": [
+          [
+            "revise",
+            "A",
+            1,
+            "reviewer",
+            0,
+            "valid"
+          ]
+        ],
+        "expected": "allowed",
+        "observed": "allowed",
+        "detail": null,
+        "reference_projection": {
+          "editions": {
+            "A": [
+              [],
+              []
+            ],
+            "B": [
+              []
+            ]
+          },
+          "documents": {
+            "A": 1,
+            "B": 1
+          },
+          "requests": {
+            "A": "S",
+            "B": "O"
+          },
+          "responses": []
+        },
+        "uut_projection": {
+          "editions": {
+            "A": [
+              [],
+              []
+            ],
+            "B": [
+              []
+            ]
+          },
+          "documents": {
+            "A": 1,
+            "B": 1
+          },
+          "requests": {
+            "A": "O",
+            "B": "O"
+          },
+          "responses": []
+        },
+        "rejected_transition_mutated_state": false
+      },
+      "interpretation": "First draft found a real core revision defect: an outstanding canonical condition without a compatibility blocker was not superseded. Production revision now iterates canonical conditions."
+    },
+    {
+      "raw_report": {
+        "path": "runs/bounded-v05-dev2/report.json",
+        "sha256": "2b6b9d77c11717edf719a9c274f8a022d848bbf1290db4b54f8db7477439750c",
+        "size_bytes": 5187
+      },
+      "passed": false,
+      "unique_states": 10,
+      "attempts": 38,
+      "shortest_counterexample": {
+        "initial_checkpoint": "waiting_for_evidence",
+        "sequence": [
+          [
+            "reply",
+            "A",
+            1,
+            "reviewer",
+            1,
+            "wrong_role"
+          ]
+        ],
+        "expected": "no_satisfaction",
+        "observed": "no_satisfaction",
+        "detail": {
+          "response_id": "reply:A:wrong_role",
+          "checks": {
+            "condition-A": {
+              "status": "FAIL",
+              "reasons": [
+                "unrequested_provider"
+              ],
+              "evidence": {}
+            }
+          },
+          "resolved_conditions": [],
+          "reopened_work_items": []
+        },
+        "reference_projection": {
+          "editions": {
+            "A": [
+              []
+            ],
+            "B": [
+              []
+            ]
+          },
+          "documents": {
+            "A": 1,
+            "B": 1
+          },
+          "requests": {
+            "A": "O",
+            "B": "O"
+          },
+          "responses": []
+        },
+        "uut_projection": {
+          "editions": {
+            "A": [
+              []
+            ],
+            "B": [
+              []
+            ]
+          },
+          "documents": {
+            "A": 1,
+            "B": 1
+          },
+          "requests": {
+            "A": "O",
+            "B": "O"
+          },
+          "responses": [
+            "reply:A:wrong_role"
+          ]
+        },
+        "rejected_transition_mutated_state": false
+      },
+      "interpretation": "Second draft was a harness projection error: newly retained raw failed-response receipts were included as if they were formal satisfaction effects. The projection was corrected to include only receipts that resolved a condition; the failed response remained rejected."
+    },
+    {
+      "raw_report": {
+        "path": "runs/bounded-v05-dev3/report.json",
+        "sha256": "0ef65ca0b4e8bde138900243b18416915e75ec707a3ad40ba3d4c27a9ccafa21",
+        "size_bytes": 5372
+      },
+      "passed": true,
+      "unique_states": 446,
+      "attempts": 5139,
+      "shortest_counterexample": null,
+      "interpretation": "Development run after the core and projection corrections; passed at 446 states / 5139 attempts on a dirty tree."
+    },
+    {
+      "raw_report": {
+        "path": "runs/bounded-v05-integrated-draft/report.json",
+        "sha256": "d29ede16e4ea2916c8ec8aaf19499b97b0195af32a7a6c536df3773db6c9ea88",
+        "size_bytes": 5541
+      },
+      "passed": true,
+      "unique_states": 446,
+      "attempts": 5139,
+      "shortest_counterexample": null,
+      "interpretation": "Integrated dirty-tree draft; passed at the same bounded counts. This is retained separately from the clean frozen run."
+    }
+  ],
+  "omissions": "No raw report fields are omitted. Full per-state snapshots are not generated by this bounded protocol; rejection witnesses and every summary counter are retained."
+}
