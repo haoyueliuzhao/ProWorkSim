@@ -16,6 +16,7 @@ from .transitions import execute_transition, ordered_due_events, ActionFrame, ch
 from .projections import projection_paths, WORK_CACHE_FIELDS, CONDITION_CACHE_FIELDS
 from .visibility import project_fields
 from ..schema import InteractionRecord, WorldSnapshot
+from ..tool_outcomes import ToolRejection, rejection_error
 from ..storage import Store, atomic_write, digest, json_bytes, read_json
 
 
@@ -129,7 +130,8 @@ class WorldRunner:
             self._reads, self._writes = [], []
             try:
                 if not isinstance(arguments, dict):
-                    raise WorldError("Tool arguments must be an object")
+                    raise ToolRejection("Tool arguments must be an object",
+                                        code="invalid_arguments", category="policy_error")
                 json_bytes(arguments)
                 handler = (
                     getattr(self, f"_tool_{action}", None) if isinstance(action, str) else None
@@ -164,11 +166,12 @@ class WorldRunner:
                         "projection_region_changes": [],
                     },
                 )
-                from ..tool_outcomes import rejection_error
-
+                context_arguments = arguments if isinstance(arguments, dict) else {}
                 output = {"ok": False, "error": rejection_error(exc, context={
-                    "actor_id": actor, "action": action, "project_id": arguments.get("project_id"),
-                    "tool": arguments.get("tool", action),
+                    "actor_id": actor, "action": action,
+                    "project_id": context_arguments.get("project_id"),
+                    "tool": context_arguments.get("tool", action),
+                    "arguments_type": type(arguments).__name__,
                 })}
             transition["preflight_projection_delta"] = preflight_delta
             self.state["clock"] += 1
