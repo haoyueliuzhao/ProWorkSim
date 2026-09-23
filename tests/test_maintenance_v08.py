@@ -220,3 +220,14 @@ def test_successor_rule_cannot_claim_an_unaccepted_predecessor():
     rule["when"] = ["output_ready"]
     with pytest.raises(ValueError, match="accepted predecessor"):
         normalize_rules(state, "B", [rule])
+
+
+def test_maintenance_metadata_updates_obey_the_installed_input_policy_contract():
+    state, _ = ledger()
+    rule = copy.deepcopy(state["projects"]["B"]["maintenance_rules"][0])
+    rule["source"].pop("alias")
+    rule["updates"] = {"requirements": {"input_policy": "invented-policy"}}
+    with pytest.raises(ValueError, match="Declared input policy"):
+        normalize_rules(state, "B", [rule])
+    rule["updates"] = {"requirements": {"input_policy": "current_published"}}
+    assert normalize_rules(state, "B", [rule])[0]["updates"] == rule["updates"]

@@ -115,6 +115,10 @@ def capability_tools(applications):
     selector = {
         "alias": {"type": "string", "description": "Alias in the bound workspace"},
         "object_id": {"type": "string", "description": "Exact object identity"},
+        "work_id": {
+            "type": "string",
+            "description": "Exact work edition for this read or edit; no automatic replacement",
+        },
     }
     result = []
     for name, description, extra, required in (

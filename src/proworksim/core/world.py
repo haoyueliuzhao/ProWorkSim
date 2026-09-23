@@ -17,6 +17,7 @@ from ..policies.organization import require_authority
 from .references import VersionRef, resolve_version
 from .adoption import make_binding, validate_policy_contract
 from .publication import PUBLICATION_POLICIES
+from .maintenance import normalize_rules
 from ..adapters.capabilities import capability_for, encode
 from ..domains.work_product import validate_content_contract
 
@@ -81,6 +82,7 @@ class ProjectPackage:
     close_policy: dict = field(default_factory=lambda: {"pending_obligations": "retain"})
     publication_policy: str | None = None
     information_routes: list | tuple = ()
+    maintenance_rules: list | tuple = ()
 
     def to_dict(self):
         return asdict(self)
@@ -210,6 +212,8 @@ def new_world_state(spec):
         "event_policy": event_policy,
         "publication_policy": publication_policy,
         "releases": [],
+        "maintenance_impacts": {},
+        "information_updates": [],
         "organization": {"positions": {}, "grants": grants},
         "world_status": "running",
         "projects": {},
@@ -336,6 +340,7 @@ def validate_package(state, package):
             "close_policy",
             "publication_policy",
             "information_routes",
+            "maintenance_rules",
         },
         "package",
     )
@@ -681,6 +686,7 @@ def validate_package(state, package):
                 "purpose": purpose,
                 "delay": delay,
                 "availability": availability,
+                "availability_revision": 0,
             }
         )
     return {
@@ -694,6 +700,8 @@ def validate_package(state, package):
             "close_policy": close_policy,
             "publication_policy": publication_policy,
             "information_routes": routes,
+            "maintenance_rules": _list(raw.get("maintenance_rules", []), "maintenance rules"),
+            "maintenance_heads": {},
             "provenance": package_provenance,
         },
         "objects": objects,
@@ -730,6 +738,9 @@ def install_package(state, package, actor):
             version_readers={},
             possibly_stale=False,
         )
+    installed["projects"][pid]["maintenance_rules"] = normalize_rules(
+        installed, pid, project["maintenance_rules"]
+    )
     installed["project_history"].append(
         {"project_id": pid, "actor_id": actor, "at": state["clock"], "event": "installed"}
     )

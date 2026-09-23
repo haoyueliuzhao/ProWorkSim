@@ -12,6 +12,7 @@ import uuid
 from pathlib import Path
 
 from .core import journal
+from .core.maintenance import impact_candidates, apply_impact, successor_identity
 from .core.adoption import (
     binding_key,
     binding_for,
@@ -115,7 +116,7 @@ class WorldCore(WorldRunner):
             frame.paths,
             frame.derived_paths + (("adoption_view",),),
             frame.immutable_submission_extensions + ("adoption_snapshot",),
-            frame.append_only_extensions + ("releases",),
+            frame.append_only_extensions + ("releases", "information_updates"),
         )
 
     def _operation_identity(self, actor, action, arguments, request_key):
@@ -256,6 +257,7 @@ class WorldCore(WorldRunner):
             ("requirement_events",),
             ("project_history",),
             ("releases",),
+            ("information_updates",),
         ]
         if project_id is None:
             if tool == "install_project":
@@ -344,6 +346,7 @@ class WorldCore(WorldRunner):
                 "revise",
                 "request",
                 "request_information",
+                "set_information_availability",
                 "read_messages",
                 "close_project",
             ]
@@ -375,7 +378,7 @@ class WorldCore(WorldRunner):
                     else "integer"
                     if key in {"ticks", "delay"}
                     else "boolean"
-                    if key == "follow_updates"
+                    if key in {"follow_updates", "available"}
                     else "string"
                 )
                 properties[key] = {"type": typ}
@@ -489,12 +492,20 @@ class WorldCore(WorldRunner):
         deliverable_role="draft",
         dependencies=None,
         kind="json",
+        work_id=None,
     ):
         if project_id is None:
             self._world_power(actor, "create_object")
             workspace = self.state.setdefault("world_workspace", {})
         else:
-            self._project_power(actor, project_id, "create_object", "artifact")
+            context = self._work(actor, project_id, work_id) if work_id is not None else None
+            self._project_power(
+                actor,
+                project_id,
+                "create_object",
+                "artifact",
+                work=context["node_id"] if context else None,
+            )
             workspace = self.state["workspaces"][project_id]
         aid = self._object_id(project_id, alias)
         if alias in workspace or aid in self.state["artifacts"]:
@@ -531,6 +542,7 @@ class WorldCore(WorldRunner):
         workspace[alias] = aid
         version = self.store.put(self.state, aid, encoded, actor, deps)
         self._writes.append({"artifact_id": aid, "before": None, "after": version["version_id"]})
+        self._record_work_edit(actor, project_id, work_id, aid, version["version_id"])
         return {"object_id": aid, "version_id": version["version_id"], "alias": alias}
 
     def _checked_dependencies(self, actor, project_id, references):
@@ -551,7 +563,24 @@ class WorldCore(WorldRunner):
             raise ValueError("File capability is not enabled in this world")
         return capability
 
-    def _save_content(self, actor, project_id, artifact, content, dependencies=None):
+    def _record_work_edit(self, actor, project_id, work_id, object_id, version_id):
+        if work_id is None:
+            return
+        item = self._work(actor, project_id, work_id)
+        if item["owner_role"] != actor:
+            raise ValueError("Only the work owner can declare its edit context")
+        item.setdefault("artifact_edits", []).append(
+            {
+                "actor_id": actor,
+                "artifact_id": object_id,
+                "version_id": version_id,
+                "at": self.state["clock"],
+                "work_item_id": item["work_item_id"],
+                "requirement_version": item["requirement_version"],
+            }
+        )
+
+    def _save_content(self, actor, project_id, artifact, content, dependencies=None, work_id=None):
         if project_id is None and effective_policy(self.state, artifact) == "implicit_write":
             self._world_power(actor, "publish")
         old = artifact["current_version"]
@@ -564,6 +593,9 @@ class WorldCore(WorldRunner):
             raise ValueError("Self dependency")
         version = self.store.put(self.state, artifact["artifact_id"], content, actor, refs)
         record_artifact_edit(self.state, actor, artifact["artifact_id"], version["version_id"])
+        self._record_work_edit(
+            actor, project_id, work_id, artifact["artifact_id"], version["version_id"]
+        )
         self._writes.append(
             {"artifact_id": artifact["artifact_id"], "before": old, "after": version["version_id"]}
         )
@@ -588,57 +620,83 @@ class WorldCore(WorldRunner):
         return {"object_id": artifact["artifact_id"], "version_id": version["version_id"]}
 
     def _action_write_object(
-        self, actor, project_id, data, alias=None, object_id=None, dependencies=None
+        self, actor, project_id, data, alias=None, object_id=None, dependencies=None, work_id=None
     ):
         artifact, _ = self._object(actor, project_id, alias, object_id, write=True)
         self._capability(artifact["kind"])
         if artifact["kind"] != "json":
             raise ValueError("Use sheet_update for workbook content")
-        return self._save_content(actor, project_id, artifact, encode("json", data), dependencies)
+        return self._save_content(
+            actor, project_id, artifact, encode("json", data), dependencies, work_id
+        )
 
-    def _record_read(self, actor, project_id, artifact, vid):
+    def _record_read(self, actor, project_id, artifact, vid, work_id=None):
         ref = {"artifact_id": artifact["artifact_id"], "version_id": vid}
         self._reads.append(ref)
+        context = {}
+        if work_id is not None:
+            item = self._work(actor, project_id, work_id, current=False)
+            context = {
+                "work_item_id": item["work_item_id"],
+                "requirement_version": item["requirement_version"],
+            }
         self.state["knowledge"][actor]["read_artifacts"].append(
-            {**ref, "project_id": project_id, "at": self.state["clock"]}
+            {**ref, "project_id": project_id, "at": self.state["clock"], **context}
         )
         return ref
 
-    def _action_read_object(self, actor, project_id, alias=None, object_id=None, version_id=None):
+    def _action_read_object(
+        self, actor, project_id, alias=None, object_id=None, version_id=None, work_id=None
+    ):
         artifact, vid = self._object(actor, project_id, alias, object_id, version_id)
         self._capability(artifact["kind"])
         if artifact["kind"] != "json":
             raise ValueError("Use sheet_read for workbook content")
         data = read("json", self.store.version_path(artifact, vid).read_bytes())
-        return {"reference": self._record_read(actor, project_id, artifact, vid), "data": data}
+        return {
+            "reference": self._record_read(actor, project_id, artifact, vid, work_id),
+            "data": data,
+        }
 
     def _action_sheet_read(
-        self, actor, project_id, alias=None, object_id=None, version_id=None, sheet=None
+        self,
+        actor,
+        project_id,
+        alias=None,
+        object_id=None,
+        version_id=None,
+        sheet=None,
+        work_id=None,
     ):
         artifact, vid = self._object(actor, project_id, alias, object_id, version_id)
         self._capability("xlsx")
         if artifact["kind"] != "xlsx":
             raise ValueError("Object is not a workbook")
         data = read("xlsx", self.store.version_path(artifact, vid).read_bytes(), sheet=sheet)
-        return {"reference": self._record_read(actor, project_id, artifact, vid), "sheets": data}
+        return {
+            "reference": self._record_read(actor, project_id, artifact, vid, work_id),
+            "sheets": data,
+        }
 
     def _action_sheet_update(
-        self, actor, project_id, cells, alias=None, object_id=None, dependencies=None
+        self, actor, project_id, cells, alias=None, object_id=None, dependencies=None, work_id=None
     ):
         artifact, vid = self._object(actor, project_id, alias, object_id, write=True)
         self._capability("xlsx")
         if artifact["kind"] != "xlsx":
             raise ValueError("Object is not a workbook")
         content = update_xlsx(self.store.version_path(artifact, vid).read_bytes(), cells)
-        return self._save_content(actor, project_id, artifact, content, dependencies)
+        return self._save_content(actor, project_id, artifact, content, dependencies, work_id)
 
-    def _action_sheet_recalculate(self, actor, project_id, alias=None, object_id=None):
+    def _action_sheet_recalculate(
+        self, actor, project_id, alias=None, object_id=None, work_id=None
+    ):
         artifact, vid = self._object(actor, project_id, alias, object_id, write=True)
         self._capability("xlsx")
         if artifact["kind"] != "xlsx":
             raise ValueError("Object is not a workbook")
         content = recalculate_xlsx(self.store.version_path(artifact, vid).read_bytes())
-        return self._save_content(actor, project_id, artifact, content)
+        return self._save_content(actor, project_id, artifact, content, work_id=work_id)
 
     def _action_share(
         self,
@@ -760,6 +818,16 @@ class WorldCore(WorldRunner):
                             "work_ids": adoption["work_ids"],
                         },
                     )
+
+        if release_id is not None:
+            release = next(r for r in self.state["releases"] if r["release_id"] == release_id)
+            for payload in impact_candidates(self.state, release):
+                if not any(
+                    e["kind"] == "maintenance_impact"
+                    and e["payload"]["impact_id"] == payload["impact_id"]
+                    for e in self.state["events"]
+                ):
+                    self._event("maintenance_impact", payload, delay=1)
 
     def _action_adopt(self, actor, project_id, alias, object_id, version_id, policy, work_ids):
         self._project(actor, project_id, active=True)
@@ -1009,6 +1077,60 @@ class WorldCore(WorldRunner):
         )
         return {"request_id": rid, "condition_id": cid}
 
+    def _action_set_information_availability(self, actor, project_id, route_id, available, reason):
+        self._project(actor, project_id, active=True)
+        if type(available) is not bool or not isinstance(reason, str) or not reason.strip():
+            raise ValueError("Availability needs a boolean and a concrete reason")
+        route = next(
+            (
+                r
+                for r in self.state["projects"][project_id]["information_routes"]
+                if r["route_id"] == route_id
+            ),
+            None,
+        )
+        if route is None or actor != route["provider"]:
+            raise ValueError("Only the declared provider may update this information route")
+        self._project_power(
+            actor,
+            project_id,
+            "provide",
+            route["purpose"],
+            work=route["work_node"],
+            object_id=route["object_id"],
+        )
+        value = "available" if available else "unavailable"
+        if route["availability"] == value:
+            return {
+                "route_id": route_id,
+                "availability": value,
+                "availability_revision": route["availability_revision"],
+                "changed": False,
+            }
+        route["availability"] = value
+        route["availability_revision"] += 1
+        update = {
+            "project_id": project_id,
+            "route_id": route_id,
+            "actor_id": actor,
+            "at": self.state["clock"],
+            "availability": value,
+            "availability_revision": route["availability_revision"],
+            "reason": reason,
+        }
+        self.state.setdefault("information_updates", []).append(update)
+        recipients = sorted(
+            {
+                item["owner_role"]
+                for item in self.state["work_items"].values()
+                if item["project_id"] == project_id and item["node_id"] == route["work_node"]
+            }
+        )
+        self._message(
+            actor, recipients, project_id, "Information route availability changed", update
+        )
+        return {**update, "changed": True}
+
     def _action_request_information(self, actor, project_id, route_id, work_id):
         item = self._work(actor, project_id, work_id)
         routes = self.state["projects"][project_id].get("information_routes", [])
@@ -1037,7 +1159,27 @@ class WorldCore(WorldRunner):
             purpose=route["purpose"],
             delay=route["delay"],
         )
-        self.state["requests"][result["request_id"]]["route_id"] = route_id
+        request = self.state["requests"][result["request_id"]]
+        request.update(route_id=route_id, route_revision=route["availability_revision"])
+        if route["availability"] == "available":
+            for old in self.state["requests"].values():
+                if (
+                    old["request_id"] != request["request_id"]
+                    and old.get("route_id") == route_id
+                    and old["work_item_id"] == item["work_item_id"]
+                    and old["status"] in {"pending", "unavailable"}
+                    and old.get("route_revision", 0) < route["availability_revision"]
+                ):
+                    for cid, condition in self.state["condition_specs"].items():
+                        if condition.get("request_id") == old["request_id"] and condition[
+                            "status"
+                        ] in {"open", "unavailable"}:
+                            supersede_condition(
+                                self.state,
+                                cid,
+                                "Provider availability restored; new exact request",
+                                {"request_id": request["request_id"]},
+                            )
         for event in self.state["events"]:
             if event["payload"].get("request_id") == result["request_id"]:
                 event["payload"].update(grant_on_reply=True, availability=route["availability"])
@@ -1047,6 +1189,29 @@ class WorldCore(WorldRunner):
         return event["payload"]["actor"]
 
     def _event_frame(self, event):
+        if event["kind"] == "maintenance_impact":
+            payload = event["payload"]
+            item = self.state["work_items"][payload["target_work_id"]]
+            new_id = (
+                successor_identity(payload)
+                if payload["effect"] == "successor"
+                else item["node_id"] + "@r" + str(item["requirement_version"] + 1)
+            )
+            paths = (
+                ("messages",),
+                ("maintenance_impacts", payload["impact_id"]),
+                ("projects", payload["project_id"]),
+                ("work_items", item["work_item_id"]),
+                ("work_items", new_id),
+                ("work_replacements", item["work_item_id"]),
+                ("requirement_events",),
+            )
+            paths += tuple(
+                ("condition_specs", cid)
+                for cid, c in self.state["condition_specs"].items()
+                if c["work_item_id"] == item["work_item_id"]
+            )
+            return ActionFrame("PublicationImpact", paths)
         if event["kind"] != "project_reply":
             raise ValueError("Unknown world event")
         payload = event["payload"]
@@ -1063,6 +1228,18 @@ class WorldCore(WorldRunner):
 
     def _apply_event(self, event):
         payload = event["payload"]
+        if event["kind"] == "maintenance_impact":
+            result = apply_impact(self.state, payload)
+            if result["created"] and result["outcome"] == "applied":
+                item = self.state["work_items"][payload["target_work_id"]]
+                self._message(
+                    payload["actor"],
+                    [item["owner_role"]],
+                    payload["project_id"],
+                    "Declared publication consequence",
+                    result,
+                )
+            return {"outcome": result["outcome"], "result": result}
         request = self.state["requests"][payload["request_id"]]
         project = self.state["projects"][payload["project_id"]]
         if (
@@ -1344,6 +1521,8 @@ class WorldCore(WorldRunner):
                                 "object_alias",
                                 "purpose",
                                 "work_node",
+                                "availability",
+                                "availability_revision",
                             )
                         },
                         "work_id": wid,

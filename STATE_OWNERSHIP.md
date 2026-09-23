@@ -1,4 +1,4 @@
-# 状态归属与重算（v0.7）
+# 状态归属与重算（v0.8）
 
 | 字段或对象 | 归属 | 权威与修改规则 |
 | --- | --- | --- |
@@ -31,7 +31,7 @@
 | workspaces / world_workspace | B | 别名指向世界对象；对象 ID 与文件名分离，别名不能越权 |
 | organization.grants | B | 项目包的明确 project/work/object 作用域；无上下文不能借项目权力执行世界动作 |
 | shares | B | 精确版本和接收主体的显式授权；后续发布授权须有 follow_updates |
-| adoptions / adoption.history | B | 明确的 current_applicable/current_published/fixed 政策及实际采用版本；显式 adopt_version 保存前后引用 |
+| adoptions[work_id::alias] / adoption.history | B | 精确工作/需求/项目/别名绑定，及声明政策和实际采用版本；显式 adopt_version 保存前后引用，修订后新项独立采用 |
 | adoption_view | P | 当前目标和已采用版的关系；不会更新交付文件或自动创建批准 |
 | episodes | Q/O | 本次观察范围的起止项目和修订号；结束不删除项目、事件或人员阅读历史 |
 | artifact.storage_path | B/物化位置 | 仅受控 artifacts 子目录；镜像恢复不将同名文件混为同一对象 |
@@ -59,3 +59,18 @@ E1 的缓存操作仅使用 `core.projections.projection_paths` 明确列出的�
 | content evaluation/read_set | 世界外证据 | 固定提交与输入版本/哈希、实际值/错误；不删除正式批准 |
 
 确定性 XLSX 序列化只规范 ZIP 和文档时间元数据，不删除公式、数值或错误。恢复比较使用真实提交字节，不通过评价重算来“修复”历史错误。
+
+
+## v0.8 持续工作
+
+| 字段或对象 | 归属 | 权威与修改规则 |
+| --- | --- | --- |
+| project.maintenance_rules | B/固定政策 | 项目包装载时校验来源、稳定工作节点、阶段、后果及范围授权 |
+| maintenance_impacts | B | 实际发布后独立事件提交的捕获上下文和后果，按 release/project/rule/node 去重 |
+| project.maintenance_heads | B | 指向当前维护谱系头；后继创建时推进，普通修订仍由 work_replacements 追踪 |
+| work.previous_obligation_id / maintenance_trigger | B | 后继工作与已接受前项及真实发布的关系；前项不被自动替代或撤销 |
+| knowledge.read_artifacts 的 work/requirement | O/B | 调用者显式传入且经过校验的精确工作读取；泛化读取不推断为某项工作进度 |
+| artifact_edits 的 work/requirement | B | 本人实际编辑并声明工作上下文；output_ready 仅表示这类编辑发生，不证明质量或完成意图 |
+| information_routes.availability_revision / information_updates | B | 合法提供者的公开可得性修改与追加历史；不凭修改直接满足条件 |
+| request.route_revision / work_item_id / requirement_version | B | 请求时冻结的路线与工作上下文；新请求可以撤除旧未满足条件，原始回应不删除 |
+| continuous worker checkpoint | 世界外 Q/O | 已完成步骤之间显式保存的公共进度、命令序号和原始轨迹，不是内核事实或任意崩溃恢复证明 |

@@ -1,4 +1,4 @@
-# 核心行动与提交合同（v0.7）
+# 核心行动与提交合同（v0.8）
 
 身份由可信会话绑定；能力来自组织配置。执行合法性、制度合规性、独立质量分别判断，允许可执行的业务错误留下真实后果。
 
@@ -22,7 +22,7 @@
 | InstallProject | 世界装载权；纯预检后同一提交安装项目、对象、工作与局部授权，文件写入失败也整体回滚 |
 | CreateObject | 项目创建权或世界创建权；运行中注册启用能力的 JSON/XLSX 对象与首版，路径受控，不覆盖已有身份 |
 | Share | 所有者空间和共享权；精确版、目标项目、已登记主体，follow_updates 必须显式选择。世界操作者可预先分享给未来项目，装载再核对参与关系 |
-| Adopt / AdoptVersion | 可读精确版本、项目采用权；current 政策允许显式更新并保存 history，fixed 政策通过新声明改变；不自动改输出 |
+| Adopt / AdoptVersion | 可读精确版本、逐工作范围采用权及已声明政策；current 政策允许显式更新并保存 history，fixed 同一工作不可改版；新工作可用同别名独立采用，不自动改输出 |
 | CloseProject | 完成需当前义务均 accepted；归档按 pending_obligations=retain/cancel 决定待办去向。retain 仍接收待到回复，cancel 记录取消后果，其他项目保持 |
 | Start/EndEpisode | 主体在所选项目中的边界记录；不改变工作、共享或世界生存状态 |
 | Pause/Resume | 世界明确权限；暂停准入和环境执行，恢复继续到期事件，不清空队列 |
@@ -59,3 +59,18 @@
 | ContentEvaluate | 固定提交字节、采用快照、明确标量或消费接口；来源贡献文件须有精确依赖；不读取未需要的私有上游 |
 
 显式政策下，草稿写入不要求额外发布权，也不产生正式发布。旧 implicit_write 保留其写后发布政策约束。发布、采用和内容成功分别报告，不能因合法批准或元数据 current 而跳过独立检查。
+
+
+## v0.8 工作上下文与维护事件
+
+| 行动 | 合同 |
+| --- | --- |
+| Adopt | 非空 work_ids，各项分别检查工作、需求政策和对象读取/采用权，建立 work_id::alias 绑定；同别名仍指同一对象 |
+| AdoptVersion | 显式 work_id 选择当前绑定；省略仅在恰好一个当前绑定时可用，不跨工作或替代关系重写历史 |
+| ReadObject / SheetRead | 可选 work_id 为本次读取保存精确工作/需求上下文；不传则不能推断为某工作进度 |
+| CreateObject / WriteObject / SheetUpdate / SheetRecalculate | 可选 work_id 经工作本人校验，记录真实编辑；创建授权包含实际工作节点，仍不证明成果正确 |
+| SetInformationAvailability | 只有路线声明的提供者及真实 provide 权才可修改，增加路线修订和真实通知；仍需 RequestInformation 和实际回应 |
+| RequestInformation | 可复用 route_id，每次请求冻结当前工作/需求/材料/路线修订；新可得性修订允许替代旧 pending/unavailable 条件，原始历史保留 |
+| MaintenanceImpact（环境事件） | 真实发布时捕获规则、阶段和精确工作；独立提交 notice/revise/successor/ignore，去重身份覆盖发布/项目/规则/节点；目标已被外部替代则记录 stale_target |
+
+后继工作只在 accepted 前项上由显式规则产生，继承节点范围与合同但具有新身份、需求、空提交和编辑记录；不改旧 accepted 前项、文件或采用。修订保持原有 superseded_requirements 等适用性标注，其固定提交和审阅不被追溯评分覆盖。规则不执行任意回调，不扩权，不给文件自动填答案。

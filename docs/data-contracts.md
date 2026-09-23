@@ -1,8 +1,53 @@
-# 数据合同与扩展接口（v0.7）
+# 数据合同与扩展接口（v0.8）
 
-当前软件包 `0.7.0`，新 WorldCore schema 为 `world-core-v0.7`、语义为 `work-world-v0.7`，共用回执仍为 `phase-deltas-v0.5`。旧 v0.6 世界使用其冻结运行器，不隐式迁移。完整实现与阶段协议见 [v0.7 说明](work-capabilities-v07.md)和[推进计划](work-capabilities-v07-plan.md)。
+当前软件包 `0.8.0`，WorldCore schema 为 `world-core-v0.8`、语义为 `work-world-v0.8`，共用回执为 `phase-deltas-v0.5`。阶段 A 内容评价为 `finite-products-v0.8`；阶段 B 多源扩展为 `finite-products-v0.8.1`。旧 schema 世界使用其冻结运行时，不隐式迁移采用表、历史观察或评价结果。两阶段设计见 [v0.8 合同](continuous-work-v08.md)与[推进计划](continuous-work-v08-plan.md)。
 
-## v0.7 新增合同
+## v0.8 工作上下文、持续义务和公开执行
+
+### 别名、采用与提交
+
+| 字段／接口 | 当前语义 |
+| --- | --- |
+| `workspaces[project_id][alias]` | 项目内发现入口，指向世界对象，不表示某项工作采用了最新版本 |
+| `adoptions[work_id + "::" + alias]` | 一项确切工作／需求版本的绑定；含 project_id、work_id、work_ids=[work_id]、requirement_version、alias、object_id、version_id、policy、actor_id、at、history |
+| `adoption_view[key]` | 可重建的 adopted_version、target_version、policy、status；没有正式目标时为 unassessed |
+| `submission.adoption_snapshot[key]` | 深拷贝该工作绑定以及提交时 target_version、allowed_policies；新发布不追溯改写旧提交要求 |
+| `adopt(..., work_ids=[...])` | 非空显式工作集合；逐项核对确切可读对象和工作范围。相同 alias 可为另一项工作创建不同绑定 |
+| `adopt_version(alias, version_id, work_id=...)` | 更新明确当前工作自己的 current 政策绑定并追加历史；不转绑旧工作、不改文件；省略 work_id 仅接受唯一无歧义当前绑定 |
+
+`requirements.input_policy` 为共同默认，`input_policies[alias]` 为逐输入覆盖；字符串声明唯一政策，非空无重复列表声明允许选择范围。支持 fixed、current_published、current_applicable。`input_version`／`input_versions[alias]` 可限定 fixed 的精确版本。项目安装、正式需求修订和维护规则更新检查同一合同；评价器使用固定 `requirement_snapshot` 复核，不在事后替工作人员选择政策。
+
+需求替代保留同一稳定 node，但创建新的 work ID／requirement_version；新工作必须显式采用。旧绑定不会转给替代工作。原 submission 的固定内容／答案、采用快照、凭据与已有 review 保持；current_applicability 等明确生命周期注记可以变化。
+
+### 发布影响与后继工作
+
+项目包新增 `maintenance_rules`。每条包含 rule_id、source（alias 或 object_id，可加 source_project）、本项目稳定 work_nodes、when 阶段集合、effect、actor 和 updates。只允许声明性 goal、visible_requirements、requirements 更新，不支持权限修改、任意文件操作或代码回调。revise／successor 须有目标节点的 revise_requirement 权，且更新后输入政策合法。
+
+`core.maintenance.work_stage` 按 accepted、pending、output_ready、after_read、before_read 优先判定。读取／编辑进展要求真实记录带确切 work ID 和 requirement_version；after_read 另要求当前责任者读过所选来源。output_ready 只表示发生过工作上下文编辑，不保证内容完成。创建／读写／表格工具可显式带 work_id；工作范围权限从可信工作解析传入，不能由字符串同名跨项目扩权。
+
+发布时捕获候选的真实版本、工作和阶段，并排入独立 `maintenance_impact` 事件。notice 发后果通知；ignore 登记忽略；revise 建立需求替代；successor 只在 accepted 阶段建立新维护义务，前一工作仍保持接受。未匹配规则不产生义务，也不存在通用“新发布使所有任务失效”的规则。
+
+影响 ID 由 release／项目／规则／稳定节点决定。`maintenance_impacts` 保存固定 payload 和 result；`projects[pid].maintenance_heads` 保存谱系的新头。后继工作保存 previous_obligation_id、maintenance_trigger，继承原稳定节点和未被覆盖的声明合同，取得递增需求版本，清空提交／编辑／条件缓存。采用需重新声明；内容需实际重做。重复影响不增第二义务，已被替代的目标记录 stale_target，非活动项目记录 project_inactive。
+
+### 路线可重用与资料恢复
+
+路线定义保存稳定 work_node，公开观察按当前义务展开 work_id。请求独立固定 work_item_id、requirement_version、route_id、route_revision 和证据版本。路线 version_policy=fixed 使用声明版；current_published 要求正式目标；work_requirement 依次查该 alias 的精确要求、允许的正式发布目标、路线声明版。这个后备版仍须满足实际采用政策，不能替代 current_published 的内容评价要求。
+
+`set_information_availability(route_id, available, reason)` 只允许声明 provider 在真实 provide 范围内调用。变化增加 availability_revision，追加 information_updates，并公开通知，不直接满足条件或改文件。责任者随后通过同一路线给同一当前工作发新请求；较旧可用性版本的未满足请求条件会被明确 supersede，新的实际回复再独立判断满足并按路线授予精确版本读取。旧回复与旧不可用记录保留；被需求替代工作的迟到回复不会替新工作授予资料。
+
+### 内容合同与公开策略
+
+递归 JSON 比较在对象与数组内同样区分布尔／数值；保留有限 int／float 等价，不新增浮点容差。多文件仍按完整顶层字段合并，冲突不选择覆盖赢家、不深层合并。
+
+`json_linear_sources` 在原单源检查之外接受 2 至 8 个不同 alias，各声明 JSON source_path 或 XLSX sheet/cell、正文 reference_path 和有限 coefficient，另有有限 constant。独立标量计算期待值，拒绝布尔／字符串数值化及溢出，不调用被测表格引擎。各来源都复用确切工作／需求／政策目标验证；每个对数值或某项来源引用有贡献的文件，必须声明对应精确 derived_from。与该检查无关的交付文件不强制增加来源依赖。单文件与两个顶层字段拆分文件可共同满足合同。示例与责任评价分离见 [详细合同](continuous-work-v08.md)。
+
+`ContinuousWorker` 使用多端口 tools／observe／call，按 port 与精确 work ID 保存进度并轮转。它支持一项单源或有限线性多源合同、一个组合 JSON 产物，发现替代／后继工作后重新绑定输入。完整真实观察与调用返回保存在 transcript；不读取 Store、隐藏规格或模型答案。
+
+结果单列 worker_waiting、world_blocked、budget_exhausted、environment_error、submitted、completed。存在世界条件与策略等待不是同一事实；最后两项也不是内容质量标签。worker checkpoint 只包含已返回步骤的公开进度／transcript，在同 label／顺序的 ports 上显式恢复；它不是世界快照、任意进程故障恢复或跨世界可移植性承诺。运行器 command/event 的持久恢复仍是独立协议。
+
+本阶段实验范围为一个世界、两个项目、单写者交错执行。以下旧阶段章节保留原模板、接口和历史语义，不据此扩大为完整经营模型迁移、通用工作人员或训练收益。
+
+## v0.7 新增合同（历史阶段）
 
 - WorldSpec.applications 限定 files/spreadsheets；create_object 支持 kind=json/xlsx，sheet_read/update/recalculate 处理真实受限工作簿。ProjectSession.tools 与执行使用同一能力选择。
 - publication_policy 在世界/项目级配置 explicit（默认）或 implicit_write。publish 精确绑定版本与目标项目；release 追加记录独立于草稿、分享和采用。
@@ -13,7 +58,7 @@
 - information_routes 只声明同包的真实初始 v1、对象 writer/provider、对应 provide 权以及延迟/availability。request_information 公开参数仅 route_id/work_id；unknown 路线拒绝，unavailable 等待出口保留。
 - 透明程序 worker 只支持一个当前责任任务与一项有限来源合同，通过工具发现、观察和真实读取推进；实际原始往返另存，不能作为通用模型能力结论。
 
-以下章节保留 v0.6/v0.5 的阶段合同；其中纯 JSON 能力限制、默认写入发布和旧 schema 是历史边界，当前行为以上述 v0.7 合同为准。
+以上记录 v0.7 阶段能力，其中单工作程序策略与初始路线边界已由 v0.8 新接口明确扩展。以下继续保留 v0.6/v0.5 阶段合同；纯 JSON 能力限制、默认写入发布和旧 schema 均为历史边界，当前 WorldCore 行为以上述 v0.8 合同为准。
 
 
 v0.6 阶段软件包为 `0.6.0`。新增世界运行时的 schema 为 `world-core-v0.6`、语义版本为 `work-world-v0.6`；经营与文稿单项目运行时继续使用 schema `0.5`。两者共用 `core.runner.WorldRunner` 和 `phase-deltas-v0.5` 回执格式。完整世界合同与 CLI 见 [v0.6 设计](world-core-v06.md)，推进与验收见 [执行计划](world-core-v06-plan.md)。

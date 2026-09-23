@@ -11,6 +11,7 @@ import hashlib
 import json
 
 from ..policies.organization import require_authority
+from .adoption import validate_policy_contract
 from .projections import derive_current_work_view, rebuild_projections
 from .work import current_id, revise_requirement
 
@@ -103,6 +104,8 @@ def normalize_rules(state, project_id, rules):
         ):
             raise ValueError("Visible requirements must be text entries")
         json.dumps(updates, allow_nan=False)
+        for node in nodes:
+            validate_policy_contract({**state["work_items"][node], **updates})
         if effect in {"revise", "successor"}:
             for node in nodes:
                 require_authority(

@@ -25,9 +25,10 @@ _KINDS = {
     "xlsx_no_formula_errors",
     "json_matches_source_cell",
     "json_matches_source_field",
+    "json_linear_sources",
 }
 _COMMON = {"kind", "role"}
-EVALUATOR_VERSION = "finite-products-v0.8"
+EVALUATOR_VERSION = "finite-products-v0.8.1"
 
 
 def _path(value, label):
@@ -55,6 +56,40 @@ def _cell(check):
     if not 1 <= row <= 2000 or not 1 <= column <= 100:
         raise ValueError("XLSX contract cell exceeds bounded capability")
     check["cell"] = cell.upper()
+
+
+def _finite_number(value):
+    return type(value) is int or (type(value) is float and math.isfinite(value))
+
+
+def _linear_sources(check):
+    sources = check.get("sources")
+    if not isinstance(sources, list) or not 2 <= len(sources) <= 8:
+        raise ValueError("Linear source contract requires two to eight declared inputs")
+    aliases = set()
+    for source in sources:
+        if not isinstance(source, dict) or source.get("kind") not in {"json_field", "xlsx_cell"}:
+            raise ValueError("Linear source must select a JSON field or XLSX cell")
+        fields = {"alias", "kind", "reference_path", "coefficient"}
+        alias = source.get("alias")
+        if not isinstance(alias, str) or not alias or alias in aliases:
+            raise ValueError("Linear source aliases must be distinct nonempty strings")
+        aliases.add(alias)
+        source["reference_path"] = _path(source.get("reference_path"), "reference_path")
+        source.setdefault("coefficient", 1)
+        if not _finite_number(source["coefficient"]):
+            raise ValueError("Linear source coefficient must be a finite number")
+        if source["kind"] == "json_field":
+            fields.add("source_path")
+            source["source_path"] = _path(source.get("source_path"), "source_path")
+        else:
+            fields |= {"sheet", "cell"}
+            _cell(source)
+        if set(source) - fields:
+            raise ValueError("Unknown linear source fields")
+    check.setdefault("constant", 0)
+    if not _finite_number(check["constant"]):
+        raise ValueError("Linear source constant must be a finite number")
 
 
 def validate_content_contract(contract):
@@ -93,6 +128,9 @@ def validate_content_contract(contract):
             if kind == "json_matches_source_field":
                 fields.add("source_path")
                 check["source_path"] = _path(check.get("source_path"), "source_path")
+        if kind == "json_linear_sources":
+            fields |= {"sources", "constant"}
+            _linear_sources(check)
         if "role" in check and (not isinstance(check["role"], str) or not check["role"]):
             raise ValueError("Content check role must be a nonempty string")
         if set(check) - fields:
@@ -206,6 +244,72 @@ def evaluate_submission(store, state, item, submission):
         entry["data"] for entry in submitted if entry["data"] is not None
     )
     missing = sorted(set(contract.get("required_fields", [])) - (set(combined) | conflicts))
+
+    def bound_source(selected, json_data, value_path, reference_path, alias):
+        reference = _at_path(json_data, reference_path)
+        if not isinstance(reference, dict):
+            raise ValueError("Source reference must be an exact object/version mapping")
+        ref = VersionRef.from_mapping(reference)
+        key = binding_key(item["work_item_id"], alias)
+        snapshots = submission.get("adoption_snapshot", {})
+        adoption = snapshots.get(key)
+        if adoption is None:
+            raise ValueError("UNASSESSED: submission has no adoption snapshot")
+        if (adoption["object_id"], adoption["version_id"]) != (
+            ref.object_id,
+            ref.version_id,
+        ):
+            raise ValueError("Content source does not match the adopted exact version")
+        if (
+            adoption.get("work_id") != item["work_item_id"]
+            or adoption.get("work_ids") != [item["work_item_id"]]
+            or adoption.get("project_id") != item["project_id"]
+            or adoption.get("alias") != alias
+            or adoption.get("requirement_version") != submission["requirement_version"]
+        ):
+            raise ValueError("Adoption does not cover the evaluated work edition")
+        require_version(
+            submission["requirement_snapshot"], alias,
+            adoption["version_id"], adoption["policy"],
+        )
+        if adoption["policy"] != "fixed":
+            target = adoption.get("target_version")
+            if target is None or ref.version_id != target:
+                raise ValueError(
+                    "Content source does not match the policy target at submission"
+                )
+        binding_files = []
+        for entry in selected:
+            if entry["data"] is None:
+                continue
+            contributes = False
+            for path in (value_path, reference_path):
+                try:
+                    _at_path(entry["data"], path)
+                    contributes = True
+                except ValueError:
+                    pass
+            if not contributes:
+                continue
+            metadata = entry["artifact"]["versions"][entry["version_id"]]
+            dependencies = [
+                VersionRef.from_mapping(value) for value in metadata.get("derived_from", [])
+            ]
+            if ref not in dependencies:
+                raise ValueError(
+                    "Contributing submitted file lacks the exact source dependency: "
+                    + entry["artifact"]["artifact_id"]
+                    + "@"
+                    + entry["version_id"]
+                )
+            binding_files.append(
+                {
+                    "object_id": entry["artifact"]["artifact_id"],
+                    "version_id": entry["version_id"],
+                }
+            )
+        return ref, binding_files
+
     checks = []
     for spec in contract["content_checks"]:
         outcome = {"kind": spec["kind"], "contract": copy.deepcopy(spec), "passed": False}
@@ -223,6 +327,8 @@ def evaluate_submission(store, state, item, submission):
                 required_roots = {spec["path"][0]}
                 if "reference_path" in spec:
                     required_roots.add(spec["reference_path"][0])
+                if kind == "json_linear_sources":
+                    required_roots.update(source["reference_path"][0] for source in spec["sources"])
                 relevant_conflicts = sorted(required_roots & selected_conflicts)
                 if relevant_conflicts:
                     raise ValueError("Conflicting JSON fields: " + ", ".join(relevant_conflicts))
@@ -264,69 +370,40 @@ def evaluate_submission(store, state, item, submission):
                                         }
                                     )
                 outcome.update(formula_errors=formula_errors, passed=not formula_errors)
-            else:
-                reference = _at_path(json_data, spec["reference_path"])
-                if not isinstance(reference, dict):
-                    raise ValueError("Source reference must be an exact object/version mapping")
-                ref = VersionRef.from_mapping(reference)
-                key = binding_key(item["work_item_id"], spec["adoption_alias"])
-                snapshots = submission.get("adoption_snapshot", {})
-                adoption = snapshots.get(key)
-                if adoption is None:
-                    raise ValueError("UNASSESSED: submission has no adoption snapshot")
-                if (adoption["object_id"], adoption["version_id"]) != (
-                    ref.object_id,
-                    ref.version_id,
-                ):
-                    raise ValueError("Content source does not match the adopted exact version")
-                if (
-                    adoption.get("work_id") != item["work_item_id"]
-                    or adoption.get("work_ids") != [item["work_item_id"]]
-                    or adoption.get("project_id") != item["project_id"]
-                    or adoption.get("alias") != spec["adoption_alias"]
-                    or adoption.get("requirement_version") != submission["requirement_version"]
-                ):
-                    raise ValueError("Adoption does not cover the evaluated work edition")
-                require_version(
-                    submission["requirement_snapshot"], spec["adoption_alias"],
-                    adoption["version_id"], adoption["policy"],
-                )
-                if adoption["policy"] != "fixed":
-                    target = adoption.get("target_version")
-                    if target is None or ref.version_id != target:
-                        raise ValueError(
-                            "Content source does not match the policy target at submission"
-                        )
-                binding_files = []
-                for entry in selected:
-                    if entry["data"] is None:
-                        continue
-                    contributes = False
-                    for path in (spec["path"], spec["reference_path"]):
-                        try:
-                            _at_path(entry["data"], path)
-                            contributes = True
-                        except ValueError:
-                            pass
-                    if not contributes:
-                        continue
-                    metadata = entry["artifact"]["versions"][entry["version_id"]]
-                    dependencies = [
-                        VersionRef.from_mapping(value) for value in metadata.get("derived_from", [])
-                    ]
-                    if ref not in dependencies:
-                        raise ValueError(
-                            "Contributing submitted file lacks the exact source dependency: "
-                            + entry["artifact"]["artifact_id"]
-                            + "@"
-                            + entry["version_id"]
-                        )
-                    binding_files.append(
-                        {
-                            "object_id": entry["artifact"]["artifact_id"],
-                            "version_id": entry["version_id"],
-                        }
+            elif kind == "json_linear_sources":
+                expected = spec["constant"]
+                terms = []
+                for source_spec in spec["sources"]:
+                    ref, binding_files = bound_source(
+                        selected, json_data, spec["path"], source_spec["reference_path"],
+                        source_spec["alias"],
                     )
+                    content = read_version(ref.object_id, ref.version_id)
+                    artifact = state["artifacts"][ref.object_id]
+                    if source_spec["kind"] == "json_field":
+                        if artifact["kind"] != "json":
+                            raise ValueError("Linear JSON source must be a JSON object")
+                        value = _at_path(json.loads(content), source_spec["source_path"])
+                    else:
+                        if artifact["kind"] != "xlsx":
+                            raise ValueError("Linear XLSX source must be a workbook")
+                        value = _cached_cell(content, source_spec["sheet"], source_spec["cell"])
+                    if not _finite_number(value):
+                        raise ValueError("Linear source value must be a finite number")
+                    contribution = source_spec["coefficient"] * value
+                    expected += contribution
+                    if not _finite_number(contribution) or not _finite_number(expected):
+                        raise ValueError("Linear source result must remain finite")
+                    terms.append({"alias": source_spec["alias"], "source": ref.to_dict(),
+                                  "value": value, "coefficient": source_spec["coefficient"],
+                                  "contribution": contribution, "binding_files": binding_files})
+                actual = _at_path(json_data, spec["path"])
+                outcome.update(actual=actual, expected=expected, sources=terms,
+                               passed=_finite_number(actual) and actual == expected)
+            else:
+                ref, binding_files = bound_source(
+                    selected, json_data, spec["path"], spec["reference_path"], spec["adoption_alias"]
+                )
                 outcome["binding_files"] = binding_files
                 source = read_version(ref.object_id, ref.version_id)
                 artifact = state["artifacts"][ref.object_id]
@@ -349,7 +426,7 @@ def evaluate_submission(store, state, item, submission):
                 outcome.setdefault(
                     "reason", "Submitted content does not satisfy the declared contract"
                 )
-        except (ValueError, KeyError, OSError, TypeError) as exc:
+        except (ValueError, KeyError, OSError, TypeError, OverflowError) as exc:
             outcome["reason"] = str(exc)
         checks.append(outcome)
     return {

@@ -33,6 +33,8 @@ CHECKS = (
 )
 PROTOCOL = {
     "suite": "publication-maintenance-P2-v0.8",
+    "measurement_version": "actual-observations-v2",
+    "observation_evidence": "observe() is read-only and does not append state.observations. Capture its actual pre-event return and exact stage tool returns in files immediately, require nonempty current-work context, then compare the retained file bytes and hashes after the event. Earlier draft/draft2 empty-state-prefix checks do not provide this coverage.",
     "stages": STAGES,
     "relations": RELATIONS,
     "checks": CHECKS,
@@ -207,6 +209,23 @@ def setup(path, stage, relation):
     }
     must(world.session("manager"), "install_project", package=b)
     alice, bob = world.session("alice", "A"), world.session("bob", "B")
+    stage_calls = []
+
+    def stage_call(session, tool, **arguments):
+        response = session.call(tool, **arguments)
+        stage_calls.append(
+            {
+                "actor_id": session.actor_id,
+                "project_id": session.project_id,
+                "tool": tool,
+                "arguments": copy.deepcopy(arguments),
+                "response": copy.deepcopy(response),
+            }
+        )
+        if not response.get("ok") or response.get("pending_event_errors"):
+            raise AssertionError(stage_calls[-1])
+        return response["result"]
+
     must(
         alice,
         "share",
@@ -226,10 +245,10 @@ def setup(path, stage, relation):
         work_ids=["analysis"],
     )
     if stage != "before_read":
-        must(bob, "read_object", alias="input", version_id="v1", work_id="analysis")
+        stage_call(bob, "read_object", alias="input", version_id="v1", work_id="analysis")
     if stage in {"output_ready", "pending", "accepted"}:
         ref = {"object_id": source, "version_id": "v1"}
-        must(
+        stage_call(
             bob,
             "write_object",
             alias="report",
@@ -238,15 +257,16 @@ def setup(path, stage, relation):
             work_id="analysis",
         )
     if stage in {"pending", "accepted"}:
-        sub = must(bob, "submit", work_id="analysis", artifacts=["report"])
+        sub = stage_call(bob, "submit", work_id="analysis", artifacts=["report"])
         if stage == "accepted":
-            must(
+            stage_call(
                 world.session("manager", "B"),
                 "approve",
                 work_id="analysis",
                 submission_id=sub["submission_id"],
             )
-    bob.observe()
+    write_json(path.parent / "initial-observation.json", bob.observe())
+    write_json(path.parent / "stage-calls.json", stage_calls)
     must(alice, "write_object", alias="source", data={"rate": 8})
     return world, source
 
@@ -282,14 +302,6 @@ def formal(state):
     }
 
 
-def protected(sub):
-    return {
-        key: value
-        for key, value in sub.items()
-        if key not in {"current_applicability", "invalidated", "invalidation_reason"}
-    }
-
-
 def run_case(output, stage, relation):
     path = output / f"{stage}-{relation}"
     path.mkdir(parents=True)
@@ -309,6 +321,21 @@ def run_case(output, stage, relation):
     try:
         world, source = setup(path / "world", stage, relation)
         before, before_files = world.store.load(), downstream_files(world)
+        observation_path = path / "initial-observation.json"
+        stage_calls_path = path / "stage-calls.json"
+        observation_bytes, call_bytes = observation_path.read_bytes(), stage_calls_path.read_bytes()
+        captured_observation = json.loads(observation_bytes)
+        captured_calls = json.loads(call_bytes)
+        evidence["actual_pre_event_observation"] = {
+            "path": str(observation_path),
+            "sha256": digest(observation_bytes),
+            "bytes": len(observation_bytes),
+        }
+        evidence["actual_stage_calls"] = {
+            "path": str(stage_calls_path),
+            "sha256": digest(call_bytes),
+            "bytes": len(call_bytes),
+        }
         evidence["before"] = write_json(path / "before.json", before)
         release_result = must(
             world.session("alice", "A"),
@@ -328,10 +355,32 @@ def run_case(output, stage, relation):
             [impact["payload"]["source"], impact["payload"]["stage"]],
             [{"object_id": source, "version_id": "v2"}, stage],
         )
+        notifications = [
+            message
+            for message in after["messages"][len(before["messages"]) :]
+            if isinstance(message.get("body"), dict)
+            and message["body"].get("impact_id") == impact["payload"]["impact_id"]
+        ]
         check(
             "effect_matches_predeclared_relation",
-            [impact["result"]["effect"], impact["result"]["outcome"]],
-            [effect, "ignored" if effect == "ignore" else "applied"],
+            [
+                impact["result"]["effect"],
+                impact["result"]["outcome"],
+                len(notifications),
+                all(
+                    message["sender"] == "manager"
+                    and message["recipients"] == ["bob"]
+                    and message["project_id"] == "B"
+                    and message["body"]["effect"] == effect
+                    for message in notifications
+                ),
+            ],
+            [
+                effect,
+                "ignored" if effect == "ignore" else "applied",
+                0 if effect == "ignore" else 1,
+                True,
+            ],
         )
         new = set(after["work_items"]) - set(before["work_items"])
         lineage = (
@@ -344,21 +393,70 @@ def run_case(output, stage, relation):
             "downstream_bytes_and_adoption_history_unchanged",
             downstream_files(world) == before_files and after["adoptions"] == before["adoptions"],
         )
-        old_subs = before["work_items"]["B::analysis"]["submissions"]
+        expected_subs = copy.deepcopy(before["work_items"]["B::analysis"]["submissions"])
+        if effect == "revise":
+            for submission in expected_subs:
+                submission["current_applicability"] = "superseded_requirements"
+                if submission.get("review") is None:
+                    submission["invalidated"] = True
+                    submission["invalidation_reason"] = impact["payload"]["impact_id"]
         check(
             "original_submission_and_approval_history_preserved",
-            [protected(s) for s in after["work_items"]["B::analysis"]["submissions"]],
-            [protected(s) for s in old_subs],
+            after["work_items"]["B::analysis"]["submissions"],
+            expected_subs,
         )
         check(
             "source_project_work_unaffected",
             after["work_items"]["A::unrelated"],
             before["work_items"]["A::unrelated"],
         )
+        captured_work = captured_observation.get("work_items", {}).get("B::analysis", {})
+        expected_status = {
+            "before_read": "open",
+            "after_read": "open",
+            "output_ready": "in_progress",
+            "pending": "in_review",
+            "accepted": "accepted",
+        }[stage]
+        expected_actions = {
+            "before_read": [],
+            "after_read": ["read_object"],
+            "output_ready": ["read_object", "write_object"],
+            "pending": ["read_object", "write_object", "submit"],
+            "accepted": ["read_object", "write_object", "submit", "approve"],
+        }[stage]
         check(
             "past_observations_preserved",
-            after["observations"][: len(before["observations"])],
-            before["observations"],
+            {
+                "nonempty_actual_work_observation": bool(captured_work),
+                "captured_work_context": [
+                    captured_work.get("work_item_id"),
+                    captured_work.get("requirement_version"),
+                    captured_work.get("status"),
+                ],
+                "captured_successful_stage_actions": [
+                    row["tool"] for row in captured_calls if row["response"].get("ok")
+                ],
+                "old_source_versions_in_captured_observation": captured_observation.get(
+                    "objects", {}
+                )
+                .get(source, {})
+                .get("versions"),
+                "captured_bytes_retained": observation_path.read_bytes() == observation_bytes
+                and stage_calls_path.read_bytes() == call_bytes,
+                "captured_hashes_retained": digest(observation_path.read_bytes())
+                == evidence["actual_pre_event_observation"]["sha256"]
+                and digest(stage_calls_path.read_bytes())
+                == evidence["actual_stage_calls"]["sha256"],
+            },
+            {
+                "nonempty_actual_work_observation": True,
+                "captured_work_context": ["B::analysis", 1, expected_status],
+                "captured_successful_stage_actions": expected_actions,
+                "old_source_versions_in_captured_observation": ["v1"],
+                "captured_bytes_retained": True,
+                "captured_hashes_retained": True,
+            },
         )
         old_formal = formal(after)
         again = must(

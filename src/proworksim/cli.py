@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+import tempfile
 from dataclasses import replace
 from pathlib import Path
 
@@ -112,6 +113,20 @@ def parser():
             cmd.add_argument(
                 "--output", required=True, help="保存真实工具定义、观察和往返的新文件，须位于世界外"
             )
+    continuous = commands.add_parser(
+        "world-continue", help="通过同一世界的多个公开会话持续执行有限工作"
+    )
+    continuous.add_argument("world")
+    continuous.add_argument(
+        "--ports", required=True, help='JSON 文件：label → {"actor": "主体", "project": "项目"}'
+    )
+    continuous.add_argument(
+        "--checkpoint", help="先前 world-continue 输出或公共策略快照；仅恢复已完成 step 的显式保存边界，不提供任意进程崩溃恢复"
+    )
+    continuous.add_argument("--max-actions", type=int, default=40, help="本次新增工具调用的正整数预算")
+    continuous.add_argument(
+        "--output", required=True, help="世界目录外的新 JSON 文件；父目录须已存在，保存 result 与 checkpoint"
+    )
     check = commands.add_parser("world-evaluate", help="独立检查固定提交的有限内容合同")
     check.add_argument("world")
     check.add_argument("--project", required=True)
@@ -122,7 +137,149 @@ def parser():
     return root
 
 
+def _continue_world(args):
+    """Validate configuration/checkpoint/output before opening the mutable runner."""
+    from .continuous_worker import ContinuousWorker
+    from .world_core import WorldCore
+
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("Duplicate JSON key: " + key)
+            result[key] = value
+        return result
+
+    def load(path):
+        return json.loads(Path(path).read_text(), object_pairs_hook=unique_pairs)
+
+    if type(args.max_actions) is not int or args.max_actions < 1:
+        raise ValueError("Continuous worker budget must be a positive integer")
+    world_path = Path(args.world).resolve()
+    requested_output = Path(args.output)
+    output = requested_output.resolve()
+    if (requested_output.is_symlink() or output.exists() or output == world_path
+            or world_path in output.parents):
+        raise ValueError("Continuous worker output needs a new path outside the world")
+    if not output.parent.is_dir():
+        raise ValueError("Continuous worker output parent must already exist")
+    bindings = load(args.ports)
+    if not isinstance(bindings, dict) or not bindings:
+        raise ValueError("Ports must be a nonempty label-to-actor/project mapping")
+    identities = set()
+    for label, binding in bindings.items():
+        if (not isinstance(label, str) or not label.strip() or not isinstance(binding, dict)
+                or set(binding) != {"actor", "project"}
+                or any(not isinstance(binding[field], str) or not binding[field].strip()
+                       for field in ("actor", "project"))):
+            raise ValueError("Every port needs a nonempty label, actor and project")
+        identity = (binding["actor"], binding["project"])
+        if identity in identities:
+            raise ValueError("Ports must not duplicate an actor/project binding")
+        identities.add(identity)
+
+    # Store.load is read-only: a failed configuration must not trigger runner
+    # recovery or rewrite mirrors before any bound session is accepted.
+    state = Store(world_path).load()
+    if state.get("schema_version") != WorldCore.runtime_schema:
+        raise ValueError("Continuous worker requires the current WorldCore schema")
+    actors = {role["role_id"] for role in state["roles"]}
+    for binding in bindings.values():
+        project = state["projects"].get(binding["project"])
+        if binding["actor"] not in actors or project is None or binding["actor"] not in project["participants"]:
+            raise ValueError("Port actor/project binding is not available in this world")
+    checkpoint = None
+    if args.checkpoint:
+        saved = load(args.checkpoint)
+        if not isinstance(saved, dict):
+            raise ValueError("Checkpoint must be a JSON object")
+        if "checkpoint" in saved:
+            if (saved.get("world") != str(world_path) or saved.get("world_id") != state["world_id"]
+                    or saved.get("ports") != bindings):
+                raise ValueError("CLI checkpoint belongs to different world or port bindings")
+            checkpoint = saved["checkpoint"]
+        else:
+            checkpoint = saved
+        required = {"checkpoint_version", "port_labels", "run_id", "actions", "port_cursor",
+                    "work_cursors", "tasks", "transcript", "port_counts", "steps"}
+        if (not isinstance(checkpoint, dict) or set(checkpoint) != required
+                or checkpoint["checkpoint_version"] != "public-continuous-worker-v0.8"
+                or checkpoint["port_labels"] != list(bindings)
+                or not isinstance(checkpoint["run_id"], str) or not checkpoint["run_id"]
+                or not isinstance(checkpoint["transcript"], list)):
+            raise ValueError("Unsupported or malformed public worker checkpoint")
+        for field in ("actions", "port_cursor", "steps"):
+            if type(checkpoint[field]) is not int or checkpoint[field] < 0:
+                raise ValueError("Checkpoint counters must be nonnegative integers")
+        for field in ("work_cursors", "port_counts"):
+            values = checkpoint[field]
+            if (not isinstance(values, dict) or set(values) - set(bindings)
+                    or any(type(v) is not int or v < 0 for v in values.values())):
+                raise ValueError("Checkpoint scheduler values are malformed")
+        if not isinstance(checkpoint["tasks"], dict):
+            raise ValueError("Checkpoint tasks must be a mapping")
+        for key, task in checkpoint["tasks"].items():
+            if (not isinstance(task, dict) or task.get("port") not in bindings
+                    or not isinstance(task.get("work_id"), str)
+                    or key != task["port"] + ":" + task["work_id"]
+                    or type(task.get("requirement_version")) is not int
+                    or not isinstance(task.get("status"), str)
+                    or not isinstance(task.get("sources"), dict)
+                    or not isinstance(task.get("requests"), dict)):
+                raise ValueError("Checkpoint task context is malformed")
+            item = state["work_items"].get(task["work_id"])
+            binding = bindings[task["port"]]
+            if (item is None or item["project_id"] != binding["project"]
+                    or item["owner_role"] != binding["actor"]
+                    or item["requirement_version"] != task["requirement_version"]):
+                raise ValueError("Checkpoint task belongs to another work context")
+            for source in task["sources"].values():
+                if (not isinstance(source, dict) or set(source) != {"reference", "value"}
+                        or not isinstance(source["reference"], dict)
+                        or set(source["reference"]) != {"object_id", "version_id"}):
+                    raise ValueError("Checkpoint source progress is malformed")
+            for request in task["requests"].values():
+                if not isinstance(request, dict) or not isinstance(request.get("route_token"), list):
+                    raise ValueError("Checkpoint request progress is malformed")
+            if "output" in task and (not isinstance(task["output"], dict)
+                    or not {"alias", "data", "reference"} <= set(task["output"])
+                    or not isinstance(task["output"]["alias"], str)
+                    or not isinstance(task["output"]["data"], dict)):
+                raise ValueError("Checkpoint output progress is malformed")
+            if "source_error" in task and not isinstance(task["source_error"], dict):
+                raise ValueError("Checkpoint source error progress is malformed")
+        for index, entry in enumerate(checkpoint["transcript"]):
+            if (not isinstance(entry, dict) or entry.get("port") not in bindings
+                    or entry.get("sequence") != index or "value" not in entry):
+                raise ValueError("Checkpoint transcript sequence or port is malformed")
+            if entry.get("kind") == "observation":
+                observation = entry["value"]
+                if (not isinstance(observation, dict) or observation.get("world_id") != state["world_id"]
+                        or observation.get("actor_id") != bindings[entry["port"]]["actor"]
+                        or bindings[entry["port"]]["project"] not in observation.get("projects", {})):
+                    raise ValueError("Checkpoint observation belongs to another public context")
+        json_bytes(checkpoint)  # Reject nonfinite/unserializable data before any action.
+        ContinuousWorker(dict.fromkeys(bindings), checkpoint=checkpoint)
+
+    # Probe output writeability before runner recovery/actions, without leaving
+    # a file or touching world persistence. This is not an arbitrary-crash claim.
+    with tempfile.NamedTemporaryFile(dir=output.parent, prefix=".continue-output-probe-"):
+        pass
+    world = WorldCore(world_path)
+    sessions = {label: world.session(binding["actor"], binding["project"])
+                for label, binding in bindings.items()}
+    worker = ContinuousWorker(sessions, checkpoint=checkpoint)
+    result = worker.run(max_actions=args.max_actions)
+    payload = {"world": str(world_path), "world_id": state["world_id"], "ports": bindings,
+               "result": result, "checkpoint": worker.snapshot()}
+    atomic_write(output, json_bytes(payload))
+    return {"status": result["status"], "actions": result["actions"], "run_id": result["run_id"],
+            "output": str(output), "task_statuses": {key: task["status"] for key, task in result["tasks"].items()}}
+
+
 def execute(args):
+    if args.command == "world-continue":
+        return _continue_world(args)
     if args.command in {
         "world-create",
         "project-load",
