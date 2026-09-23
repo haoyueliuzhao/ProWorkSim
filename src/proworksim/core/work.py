@@ -215,6 +215,12 @@ def submit_work(
             <= contract.get("max_files", 10)
         ):
             raise ValueError("Submission violates deliverable file count contract")
+        allowed_kinds = contract.get("allowed_kinds", [])
+        if allowed_kinds and any(
+            state.get("artifacts", {}).get(aid, {}).get("kind") not in allowed_kinds
+            for aid in pinned_versions
+        ):
+            raise ValueError("Submission contains an unsupported file capability")
         allowed_roles = contract.get("allowed_roles", [])
         if allowed_roles and any(
             state.get("artifacts", {}).get(aid, {}).get("deliverable_role") not in allowed_roles

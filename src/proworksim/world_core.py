@@ -6,12 +6,21 @@ in this runtime's state contract.
 """
 
 import copy
-import json
+import inspect
 import re
 import uuid
 from pathlib import Path
 
 from .core import journal
+from .adapters.capabilities import (
+    capability_for,
+    encode,
+    read,
+    update_xlsx,
+    recalculate_xlsx,
+    capability_tools,
+)
+from .domains.work_product import evaluate_submission as evaluate_work_product
 from .core.conditions import apply_response, supersede_condition
 from .core.projections import rebuild_projections, derive_current_work_view, record_artifact_edit
 from .core.references import VersionRef, ApplicabilityContext
@@ -32,7 +41,7 @@ from .storage import Store, atomic_write, json_bytes
 
 
 class WorldCore(WorldRunner):
-    runtime_schema = "world-core-v0.6"
+    runtime_schema = "world-core-v0.7"
 
     @classmethod
     def create(cls, root, spec: WorldSpec):
@@ -76,7 +85,13 @@ class WorldCore(WorldRunner):
 
     def _complete_frame(self, frame):
         frame = super()._complete_frame(frame)
-        return ActionFrame(frame.name, frame.paths, frame.derived_paths + (("adoption_view",),))
+        return ActionFrame(
+            frame.name,
+            frame.paths,
+            frame.derived_paths + (("adoption_view",),),
+            frame.immutable_submission_extensions + ("adoption_snapshot",),
+            frame.append_only_extensions,
+        )
 
     def _operation_identity(self, actor, action, arguments, request_key):
         project = arguments.get("project_id") if isinstance(arguments, dict) else None
@@ -141,9 +156,8 @@ class WorldCore(WorldRunner):
     def _can_read(self, actor, project_id, artifact, version_id):
         if version_id not in artifact["versions"]:
             return False
-        if artifact.get("project_id") == project_id:
-            return actor in artifact["readers"]
-        return any(
+        base_access = artifact.get("project_id") == project_id and actor in artifact["readers"]
+        return base_access or any(
             share["project_id"] == project_id
             and share["object_id"] == artifact["artifact_id"]
             and share["version_id"] == version_id
@@ -268,15 +282,19 @@ class WorldCore(WorldRunner):
 
     def _tool_project_action(self, actor, project_id, tool, arguments):
         self._project(
-            actor, project_id, active=tool not in {"read_object", "read_messages", "end_episode"}
+            actor,
+            project_id,
+            active=tool not in {"read_object", "sheet_read", "read_messages", "end_episode"},
         )
         return self._dispatch(actor, project_id, tool, arguments)
 
     def _tool_world_action(self, actor, tool, arguments):
-        if tool not in {
-            "pause",
-            "resume",
-            "install_project",
+        if tool not in {entry["name"] for entry in self._tool_definitions(None)}:
+            raise ValueError("Tool is not a world operation")
+        return self._dispatch(actor, None, tool, arguments)
+
+    def _tool_definitions(self, project_id):
+        common = [
             "create_object",
             "write_object",
             "read_object",
@@ -284,14 +302,86 @@ class WorldCore(WorldRunner):
             "start_episode",
             "end_episode",
             "wait",
-        }:
-            raise ValueError("Tool is not a world operation")
-        return self._dispatch(actor, None, tool, arguments)
+        ]
+        names = common + (
+            ["pause", "resume", "install_project"]
+            if project_id is None
+            else [
+                "adopt",
+                "adopt_version",
+                "submit",
+                "approve",
+                "withdraw",
+                "confirm",
+                "revise",
+                "request",
+                "read_messages",
+                "close_project",
+            ]
+        )
+        if "files" not in self.state["applications"]:
+            names = [name for name in names if name not in {"read_object", "write_object"}]
+        definitions = []
+        objects = {"data", "package", "updates", "reference"}
+        arrays = {"dependencies", "actor_ids", "work_ids", "artifacts", "project_ids"}
+        for name in names:
+            properties, required = {}, []
+            for key, param in inspect.signature(
+                getattr(self, "_action_" + name)
+            ).parameters.items():
+                if key in {"actor", "project_id"}:
+                    continue
+                typ = (
+                    "object"
+                    if key in objects
+                    else "array"
+                    if key in arrays
+                    else "integer"
+                    if key in {"ticks", "delay"}
+                    else "boolean"
+                    if key == "follow_updates"
+                    else "string"
+                )
+                properties[key] = {"type": typ}
+                if param.default is inspect.Parameter.empty:
+                    required.append(key)
+                elif param.default is not None:
+                    properties[key]["default"] = param.default
+            if name == "create_object":
+                properties["kind"]["enum"] = [
+                    kind
+                    for kind in ("json", "xlsx")
+                    if capability_for(kind).application in self.state["applications"]
+                ]
+            definitions.append(
+                {
+                    "name": name,
+                    "description": f"{name} within the trusted bound world/project; identity and permissions checked on execution.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required,
+                        "additionalProperties": False,
+                    },
+                }
+            )
+        return definitions + capability_tools(self.state["applications"])
+
+    def tools(self, actor, project_id=None):
+        with self.store.lock():
+            self.state = self.store.load()
+            self._role(actor)
+            if project_id is not None:
+                self._project(actor, project_id)
+            return self._tool_definitions(project_id)
 
     def _dispatch(self, actor, project_id, tool, arguments):
+        if tool not in {entry["name"] for entry in self._tool_definitions(project_id)}:
+            raise ValueError("Tool capability is not enabled for this session")
         if self.state.get("world_status") == "paused" and tool not in {
             "resume",
             "read_object",
+            "sheet_read",
             "read_messages",
             "end_episode",
         }:
@@ -326,7 +416,10 @@ class WorldCore(WorldRunner):
         payloads = install_package(self.state, package, actor)
         for payload in payloads:
             self.store.put(
-                self.state, payload["object_id"], json_bytes(payload["data"]), payload["owner"]
+                self.state,
+                payload["object_id"],
+                encode(payload["kind"], payload["data"]),
+                payload["owner"],
             )
         pid = package["project_id"]
         return {"project_id": pid, "objects": [p["object_id"] for p in payloads]}
@@ -336,7 +429,15 @@ class WorldCore(WorldRunner):
         return object_identity(project_id, alias)
 
     def _action_create_object(
-        self, actor, project_id, alias, filename, data, deliverable_role="draft", dependencies=None
+        self,
+        actor,
+        project_id,
+        alias,
+        filename,
+        data,
+        deliverable_role="draft",
+        dependencies=None,
+        kind="json",
     ):
         if project_id is None:
             self._world_power(actor, "create_object")
@@ -347,18 +448,21 @@ class WorldCore(WorldRunner):
         aid = self._object_id(project_id, alias)
         if alias in workspace or aid in self.state["artifacts"]:
             raise ValueError("Object alias or identity already exists")
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,99}\.json", filename):
-            raise ValueError("Only simple JSON filenames are supported")
+        capability = self._capability(kind)
+        if not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_.-]{0,99}" + re.escape(capability.suffix), filename
+        ):
+            raise ValueError("Filename must match enabled file capability")
         if not isinstance(data, dict) or not isinstance(deliverable_role, str):
             raise ValueError("JSON object data and an explicit artifact role are required")
-        encoded = json_bytes(data)
+        encoded = encode(kind, data)
         deps = self._checked_dependencies(actor, project_id, dependencies or [])
         artifact = {
             "artifact_id": aid,
             "project_id": project_id,
             "filename": filename,
             "storage_path": f"artifacts/{aid}/{filename}",
-            "kind": "json",
+            "kind": kind,
             "materialization": "workspace",
             "owner": actor,
             "readers": [actor],
@@ -390,14 +494,16 @@ class WorldCore(WorldRunner):
             result.append(ref.artifact_ref())
         return result
 
-    def _action_write_object(
-        self, actor, project_id, data, alias=None, object_id=None, dependencies=None
-    ):
-        artifact, old = self._object(actor, project_id, alias, object_id, write=True)
+    def _capability(self, kind):
+        capability = capability_for(kind)
+        if capability.application not in self.state["applications"]:
+            raise ValueError("File capability is not enabled in this world")
+        return capability
+
+    def _save_content(self, actor, project_id, artifact, content, dependencies=None):
         if project_id is None:
             self._world_power(actor, "publish")
-        if not isinstance(data, dict):
-            raise ValueError("Content must be a JSON object")
+        old = artifact["current_version"]
         refs = (
             artifact["versions"][old]["derived_from"]
             if dependencies is None
@@ -405,7 +511,7 @@ class WorldCore(WorldRunner):
         )
         if any(ref["artifact_id"] == artifact["artifact_id"] for ref in refs):
             raise ValueError("Self dependency")
-        version = self.store.put(self.state, artifact["artifact_id"], json_bytes(data), actor, refs)
+        version = self.store.put(self.state, artifact["artifact_id"], content, actor, refs)
         record_artifact_edit(self.state, actor, artifact["artifact_id"], version["version_id"])
         self._writes.append(
             {"artifact_id": artifact["artifact_id"], "before": old, "after": version["version_id"]}
@@ -413,13 +519,58 @@ class WorldCore(WorldRunner):
         self._publish_shared(actor, artifact, version["version_id"])
         return {"object_id": artifact["artifact_id"], "version_id": version["version_id"]}
 
-    def _action_read_object(self, actor, project_id, alias=None, object_id=None, version_id=None):
-        artifact, vid = self._object(actor, project_id, alias, object_id, version_id)
+    def _action_write_object(
+        self, actor, project_id, data, alias=None, object_id=None, dependencies=None
+    ):
+        artifact, _ = self._object(actor, project_id, alias, object_id, write=True)
+        self._capability(artifact["kind"])
+        if artifact["kind"] != "json":
+            raise ValueError("Use sheet_update for workbook content")
+        return self._save_content(actor, project_id, artifact, encode("json", data), dependencies)
+
+    def _record_read(self, actor, project_id, artifact, vid):
         ref = {"artifact_id": artifact["artifact_id"], "version_id": vid}
         self._reads.append(ref)
-        record = {**ref, "project_id": project_id, "at": self.state["clock"]}
-        self.state["knowledge"][actor]["read_artifacts"].append(record)
-        return {"reference": ref, "data": json.loads(self.store.content(artifact, vid))}
+        self.state["knowledge"][actor]["read_artifacts"].append(
+            {**ref, "project_id": project_id, "at": self.state["clock"]}
+        )
+        return ref
+
+    def _action_read_object(self, actor, project_id, alias=None, object_id=None, version_id=None):
+        artifact, vid = self._object(actor, project_id, alias, object_id, version_id)
+        self._capability(artifact["kind"])
+        if artifact["kind"] != "json":
+            raise ValueError("Use sheet_read for workbook content")
+        data = read("json", self.store.version_path(artifact, vid).read_bytes())
+        return {"reference": self._record_read(actor, project_id, artifact, vid), "data": data}
+
+    def _action_sheet_read(
+        self, actor, project_id, alias=None, object_id=None, version_id=None, sheet=None
+    ):
+        artifact, vid = self._object(actor, project_id, alias, object_id, version_id)
+        self._capability("xlsx")
+        if artifact["kind"] != "xlsx":
+            raise ValueError("Object is not a workbook")
+        data = read("xlsx", self.store.version_path(artifact, vid).read_bytes(), sheet=sheet)
+        return {"reference": self._record_read(actor, project_id, artifact, vid), "sheets": data}
+
+    def _action_sheet_update(
+        self, actor, project_id, cells, alias=None, object_id=None, dependencies=None
+    ):
+        artifact, vid = self._object(actor, project_id, alias, object_id, write=True)
+        self._capability("xlsx")
+        if artifact["kind"] != "xlsx":
+            raise ValueError("Object is not a workbook")
+        content = update_xlsx(self.store.version_path(artifact, vid).read_bytes(), cells)
+        return self._save_content(actor, project_id, artifact, content, dependencies)
+
+    def _action_sheet_recalculate(self, actor, project_id, alias=None, object_id=None):
+        artifact, vid = self._object(actor, project_id, alias, object_id, write=True)
+        self._capability("xlsx")
+        if artifact["kind"] != "xlsx":
+            raise ValueError("Object is not a workbook")
+        content = recalculate_xlsx(self.store.version_path(artifact, vid).read_bytes())
+        return self._save_content(actor, project_id, artifact, content)
 
     def _action_share(
         self,
@@ -498,17 +649,40 @@ class WorldCore(WorldRunner):
     def _action_adopt(self, actor, project_id, alias, object_id, version_id, policy, work_ids):
         if policy not in {"current_applicable", "fixed"}:
             raise ValueError("Unknown adoption policy")
-        self._project_power(actor, project_id, "adopt", "artifact")
-        self._object(actor, project_id, object_id=object_id, version_id=version_id)
-        ids = [self._work(actor, project_id, wid)["work_item_id"] for wid in work_ids]
+        self._project(actor, project_id, active=True)
+        self._object_id(project_id, alias)
+        artifact, version_id = self._object(
+            actor, project_id, object_id=object_id, version_id=version_id
+        )
+        object_id = artifact["artifact_id"]
+        if not isinstance(work_ids, list) or len(set(work_ids)) != len(work_ids):
+            raise ValueError("Adoption work IDs must be a list without duplicates")
+        items = [self._work(actor, project_id, wid) for wid in work_ids]
+        ids = [item["work_item_id"] for item in items]
         workspace = self.state["workspaces"][project_id]
         if alias in workspace and workspace[alias] != object_id:
             raise ValueError("Alias already points to another object")
-        self._object_id(project_id, alias)  # Validate local alias syntax only.
         key = project_id + "::" + alias
-        existing = self.state["adoptions"].get(key)
-        if existing:
+        if key in self.state["adoptions"]:
             raise ValueError("Use explicit new alias for a changed adoption declaration")
+        # A first cross-project adoption has no workspace alias yet. Validate
+        # the candidate binding against existing grants without mutating state,
+        # after resolving its exact readable object and all trusted work scopes.
+        candidate = {
+            **self.state,
+            "workspaces": {**self.state["workspaces"], project_id: {**workspace, alias: object_id}},
+        }
+        for item in items or [None]:
+            if not authority(
+                candidate,
+                actor,
+                "adopt",
+                "artifact",
+                item["node_id"] if item else None,
+                project_id=project_id,
+                object_id=object_id,
+            ):
+                raise ValueError("Actor lacks project power: adopt")
         workspace[alias] = object_id
         self.state["adoptions"][key] = {
             "project_id": project_id,
@@ -523,11 +697,27 @@ class WorldCore(WorldRunner):
         return copy.deepcopy(self.state["adoptions"][key])
 
     def _action_adopt_version(self, actor, project_id, alias, version_id):
-        self._project_power(actor, project_id, "adopt", "artifact")
-        adoption = self.state["adoptions"][project_id + "::" + alias]
+        self._project(actor, project_id, active=True)
+        self._object_id(project_id, alias)
+        adoption = self.state["adoptions"].get(project_id + "::" + alias)
+        if adoption is None or adoption["project_id"] != project_id:
+            raise ValueError("Unknown adoption in the bound project")
+        object_id = self._resolve(project_id, alias)
+        if object_id != adoption["object_id"]:
+            raise ValueError("Adoption object does not match its workspace alias")
+        items = [self._work(actor, project_id, wid) for wid in adoption["work_ids"]]
+        for item in items or [None]:
+            self._project_power(
+                actor,
+                project_id,
+                "adopt",
+                "artifact",
+                work=item["node_id"] if item else None,
+                object_id=object_id,
+            )
         if adoption["policy"] != "current_applicable":
             raise ValueError("Fixed adoption requires a new explicit declaration")
-        self._object(actor, project_id, object_id=adoption["object_id"], version_id=version_id)
+        self._object(actor, project_id, object_id=object_id, version_id=version_id)
         if version_id == adoption["version_id"]:
             return copy.deepcopy(adoption)
         adoption.setdefault("history", []).append(
@@ -574,7 +764,22 @@ class WorldCore(WorldRunner):
             if artifact.get("project_id") != project_id:
                 raise ValueError("Deliverables must be created in the bound project")
             versions[artifact["artifact_id"]] = vid
-        return submit_work(self.state, actor, item["work_item_id"], versions, answer=answer)
+        snapshots = {
+            key: {
+                **copy.deepcopy(adoption),
+                "target_version": self.state["adoption_view"][key]["target_version"],
+            }
+            for key, adoption in self.state["adoptions"].items()
+            if adoption["project_id"] == project_id and item["work_item_id"] in adoption["work_ids"]
+        }
+        return submit_work(
+            self.state,
+            actor,
+            item["work_item_id"],
+            versions,
+            answer=answer,
+            extensions={"adoption_snapshot": snapshots},
+        )
 
     def _action_approve(self, actor, project_id, work_id, submission_id):
         item = self._work(actor, project_id, work_id)
@@ -922,6 +1127,7 @@ class WorldCore(WorldRunner):
                 if any(self._can_read(actor, scope, artifact, vid) for vid in artifact["versions"]):
                     objects[aid] = {
                         "filename": artifact["filename"],
+                        "kind": artifact["kind"],
                         "versions": [
                             vid
                             for vid in artifact["versions"]
@@ -959,7 +1165,7 @@ class WorldCore(WorldRunner):
             }
 
     def evaluate_submission(self, project_id, work_id, submission_id):
-        """Trusted, independent finite JSON contract check; never mutates review."""
+        """Independent finite contract evaluation of immutable submitted bytes."""
         with self.store.lock():
             self.state = self.store.load()
             wid = work_id if "::" in work_id else project_id + "::" + work_id
@@ -967,23 +1173,7 @@ class WorldCore(WorldRunner):
             if item["project_id"] != project_id:
                 raise ValueError("Wrong evaluation scope")
             sub = next(s for s in item["submissions"] if s["submission_id"] == submission_id)
-            contract = sub["requirement_snapshot"].get("deliverable_contract", {})
-            combined, conflicts = {}, []
-            for aid, vid in sub["artifact_versions"].items():
-                data = json.loads(self.store.content(self.state["artifacts"][aid], vid))
-                for key, value in data.items():
-                    if key in combined and combined[key] != value:
-                        conflicts.append(key)
-                    combined[key] = value
-            missing = sorted(set(contract.get("required_fields", [])) - set(combined))
-            return {
-                "submission_id": submission_id,
-                "passed": not missing and not conflicts,
-                "missing_fields": missing,
-                "conflicting_fields": conflicts,
-                "scope": "finite_json_presence_contract",
-                "institutional_review": copy.deepcopy(sub["review"]),
-            }
+            return evaluate_work_product(self.store, self.state, item, sub)
 
     def applicability(self, project_id, work_id, reference, dimension, purpose, period=None):
         item = self.state["work_items"][work_id if "::" in work_id else project_id + "::" + work_id]
@@ -1022,3 +1212,6 @@ class ProjectSession:
 
     def observe(self):
         return self._world.observe(self.actor_id, self.project_id)
+
+    def tools(self):
+        return self._world.tools(self.actor_id, self.project_id)

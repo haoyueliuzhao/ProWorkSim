@@ -15,8 +15,10 @@ from pathlib import PurePosixPath
 
 from ..policies.organization import require_authority
 from .references import VersionRef, resolve_version
+from ..adapters.capabilities import capability_for, encode
+from ..domains.work_product import validate_content_contract
 
-WORLD_SCHEMA_VERSION = "world-core-v0.6"
+WORLD_SCHEMA_VERSION = "world-core-v0.7"
 PROVENANCE_KINDS = frozenset({"observed", "reconstructed", "synthetic", "unknown"})
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$")
 
@@ -169,13 +171,13 @@ def new_world_state(spec):
         _text(grant.get("power"), "bootstrap power")
         grant.setdefault("subject", "*")
     applications = _list(spec.get("applications", ["files"]), "applications")
-    if any(not isinstance(app, str) or not app for app in applications):
-        raise ValueError("Applications must be named")
+    if not applications or set(applications) - {"files", "spreadsheets"}:
+        raise ValueError("Applications must select files and/or spreadsheets")
     event_policy = _mapping(spec.get("event_policy", {}), "event policy")
     state = {
         "schema_version": WORLD_SCHEMA_VERSION,
         "runtime_kind": "world_core",
-        "semantics_version": "work-world-v0.6",
+        "semantics_version": "work-world-v0.7",
         "world_id": world_id,
         "instance_id": uuid.uuid4().hex,
         "branch_id": uuid.uuid4().hex,
@@ -239,12 +241,17 @@ def object_identity(project_id, alias):
     return "obj-" + hashlib.sha256(encoded).hexdigest()[:24]
 
 
-def _filename(value):
+def _filename(value, kind="json"):
     if not isinstance(value, str) or not value or "\\" in value:
         raise ValueError("Object filename must be a relative JSON name")
     path = PurePosixPath(value)
-    if path.is_absolute() or ".." in path.parts or path.name != value or path.suffix != ".json":
-        raise ValueError("Object filename must be a single JSON basename")
+    if (
+        path.is_absolute()
+        or ".." in path.parts
+        or path.name != value
+        or path.suffix != capability_for(kind).suffix
+    ):
+        raise ValueError("Object filename must match its supported file kind")
     return value
 
 
@@ -264,6 +271,8 @@ def validate_deliverable_contract(contract):
             "max_files",
             "allowed_roles",
             "required_fields",
+            "allowed_kinds",
+            "content_checks",
             "description",
         },
         "deliverable contract",
@@ -276,7 +285,10 @@ def validate_deliverable_contract(contract):
         values = _list(contract.setdefault(key, []), key)
         if any(not isinstance(value, str) or not value for value in values):
             raise ValueError(f"{key} must contain nonempty strings")
-    return contract
+    kinds = _list(contract.setdefault("allowed_kinds", []), "allowed_kinds")
+    for kind in kinds:
+        capability_for(kind)
+    return validate_content_contract(contract)
 
 
 def validate_package(state, package):
@@ -287,7 +299,7 @@ def validate_package(state, package):
     fabricated histories from files.
     """
     if state.get("schema_version") != WORLD_SCHEMA_VERSION or "projects" not in state:
-        raise ValueError("Project packages require a World Core v0.6 state")
+        raise ValueError("Project packages require a World Core v0.7 state")
     raw = _mapping(package, "ProjectPackage")
     _keys(
         raw,
@@ -338,8 +350,9 @@ def validate_package(state, package):
         oid = object_identity(pid, alias)
         if alias in aliases or oid in state["artifacts"]:
             raise ValueError("Object identity or alias is already registered")
-        if value.get("kind", "json") != "json":
-            raise ValueError("World Core currently supports JSON objects")
+        kind = value.get("kind", "json")
+        if capability_for(kind).application not in state["applications"]:
+            raise ValueError("Object capability is not enabled in this world")
         owner = _known_actor(state, value.get("owner"))
         if owner not in participants:
             raise ValueError("Project object owner must be a project participant")
@@ -351,7 +364,8 @@ def validate_package(state, package):
             raise ValueError("Package object permissions must name project participants")
         if not isinstance(value.get("data"), dict):
             raise ValueError("Initial object data must be a JSON object")
-        filename = _filename(value.get("filename"))
+        encode(kind, value["data"])  # Validate bytes before any project or grant registration.
+        filename = _filename(value.get("filename"), kind)
         aliases[alias] = oid
         objects.append(
             {
@@ -360,7 +374,7 @@ def validate_package(state, package):
                 "project_id": pid,
                 "alias": alias,
                 "filename": filename,
-                "kind": "json",
+                "kind": kind,
                 "deliverable_role": value.get("deliverable_role", "draft"),
                 "owner": owner,
                 "readers": readers,
