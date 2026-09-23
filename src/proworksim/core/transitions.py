@@ -82,6 +82,27 @@ def preserve_history(before, after, submission_extensions=(), append_extensions=
     for response_id, response in before.get("raw_condition_responses", {}).items():
         if after.get("raw_condition_responses", {}).get(response_id) != response:
             raise ValueError("Historical raw response changed")
+    for key, binding in before.get("adoptions", {}).items():
+        newer = after.get("adoptions", {}).get(key)
+        if newer is None:
+            raise ValueError("Historical adoption binding removed")
+        for field in (
+            "adoption_id",
+            "work_id",
+            "work_ids",
+            "requirement_version",
+            "project_id",
+            "alias",
+            "object_id",
+            "policy",
+            "actor_id",
+            "at",
+        ):
+            if newer.get(field) != binding.get(field):
+                raise ValueError("Historical adoption context changed")
+        previous = binding.get("history", [])
+        if newer.get("history", [])[: len(previous)] != previous:
+            raise ValueError("Adoption version history changed")
     for key, attestation in before.get("attestations", {}).items():
         if after.get("attestations", {}).get(key) != attestation:
             raise ValueError(f"Formal attestation changed: {key}")

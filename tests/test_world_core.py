@@ -8,6 +8,7 @@ import copy
 
 import pytest
 
+from proworksim.core.adoption import binding_key
 from proworksim.core.world import WorldSpec, object_identity
 from proworksim.world_core import WorldCore
 from scripts.world_core_experiment import (
@@ -132,8 +133,8 @@ def test_world_material_read_and_future_project_package_adoption(tmp_path):
     ]
     install(world, pkg)
     state = world.store.load()
-    assert state["adoptions"]["Future::input"]["object_id"] == created["object_id"]
-    assert state["adoptions"]["Future::input"]["work_ids"] == ["Future::work-1"]
+    assert state["adoptions"][binding_key("Future::work-1", "input")]["object_id"] == created["object_id"]
+    assert state["adoptions"][binding_key("Future::work-1", "input")]["work_ids"] == ["Future::work-1"]
     assert state["workspaces"]["Future"]["input"] == created["object_id"]
     assert (
         len(
@@ -212,8 +213,8 @@ def test_adoption_update_requires_visible_version_and_preserves_fixed_snapshot(t
         )
     mustcall(manager, "write_object", alias="material", data={"source": 2})
     alice = world.session("alice", "A")
-    assert not alice.call("adopt_version", alias="input", version_id="v2")["ok"]
-    assert world.store.load()["adoptions"]["A::input"]["version_id"] == "v1"
+    assert not alice.call("adopt_version", work_id="work-1", alias="input", version_id="v2")["ok"]
+    assert world.store.load()["adoptions"][binding_key("A::work-1", "input")]["version_id"] == "v1"
     mustcall(
         manager,
         "share",
@@ -222,16 +223,16 @@ def test_adoption_update_requires_visible_version_and_preserves_fixed_snapshot(t
         target_project="A",
         actor_ids=["alice"],
     )
-    updated = mustcall(alice, "adopt_version", alias="input", version_id="v2")
+    updated = mustcall(alice, "adopt_version", work_id="work-1", alias="input", version_id="v2")
     assert updated["version_id"] == "v2"
     assert len(updated["history"]) == 1
     assert updated["history"][0]["previous_version"] == "v1"
     assert updated["history"][0]["version_id"] == "v2"
-    assert alice.observe()["adoptions"]["A::input"]["status"] == "current"
-    before_fixed = copy.deepcopy(world.store.load()["adoptions"]["B::input"])
-    denied = world.session("alice", "B").call("adopt_version", alias="input", version_id="v2")
+    assert alice.observe()["adoptions"][binding_key("A::work-1", "input")]["status"] == "current"
+    before_fixed = copy.deepcopy(world.store.load()["adoptions"][binding_key("B::work-1", "input")])
+    denied = world.session("alice", "B").call("adopt_version", work_id="work-1", alias="input", version_id="v2")
     assert not denied["ok"] and "Fixed adoption" in denied["error"]["message"]
-    assert world.store.load()["adoptions"]["B::input"] == before_fixed
+    assert world.store.load()["adoptions"][binding_key("B::work-1", "input")] == before_fixed
 
 
 def test_pause_blocks_new_work_and_environment_but_keeps_reads_and_episode_end(tmp_path):

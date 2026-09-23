@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
+from proworksim.core.adoption import binding_key
 from proworksim.audit import code_identity
 from proworksim.core.world import WorldSpec
 from proworksim.storage import digest
@@ -387,8 +388,8 @@ def group_n2(ev):
         "initial_adoptions_current_and_fixed_v1",
         {
             pid: [
-                initial["adoption_view"][pid + "::input"]["target_version"],
-                initial["adoption_view"][pid + "::input"]["status"],
+                initial["adoption_view"][binding_key(pid + "::work-1", "input")]["target_version"],
+                initial["adoption_view"][binding_key(pid + "::work-1", "input")]["status"],
             ]
             for pid in ("A", "B")
         },
@@ -475,8 +476,8 @@ def group_n2(ev):
         "following_target_advances_while_fixed_target_stays",
         {
             pid: [
-                published["adoption_view"][pid + "::input"]["target_version"],
-                published["adoption_view"][pid + "::input"]["status"],
+                published["adoption_view"][binding_key(pid + "::work-1", "input")]["target_version"],
+                published["adoption_view"][binding_key(pid + "::work-1", "input")]["status"],
             ]
             for pid in ("A", "B")
         },
@@ -509,7 +510,7 @@ def group_n2(ev):
         starts[name] = digest((branch.store.control / "state.json").read_bytes())
         a = branch.session("alice", "A")
         files_before = all_file_hashes(branch)
-        ev.call(a, "adopt_version", alias="input", version_id=new["version_id"])
+        ev.call(a, "adopt_version", work_id="work-1", alias="input", version_id=new["version_id"])
         adopt_preserves_files = files_before == all_file_hashes(branch)
         number = INITIAL_VALUE if name == "relabel_only" else CURRENT_VALUE
         report = ev.call(
@@ -631,7 +632,7 @@ def group_n3(ev):
         )
         used = old if condition["use"] == "old" else current
         if condition["use"] != "old":
-            ev.call(b, "adopt_version", alias="input", version_id=used["version_id"])
+            ev.call(b, "adopt_version", work_id="work-1", alias="input", version_id=used["version_id"])
         asub = ev.call(a, "submit", work_id="work-1", artifacts=["result"])
         ev.call(
             branch.session("bob", "A"),
@@ -681,7 +682,7 @@ def group_n3(ev):
             combined.update(
                 json.loads(immutable_bytes(branch, {"object_id": aid, "version_id": vid}))
             )
-        adopted = bfixed["adoption_snapshot"]["B::input"]
+        adopted = bfixed["adoption_snapshot"][binding_key("B::work-1", "input")]
         results[name] = {
             "A_pass": ae["passed"],
             "B_pass": be["passed"],

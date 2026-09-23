@@ -15,6 +15,7 @@ import math
 from openpyxl import load_workbook
 from openpyxl.utils.cell import coordinate_to_tuple
 
+from ..core.adoption import binding_key, require_version
 from ..core.references import VersionRef
 
 
@@ -26,6 +27,7 @@ _KINDS = {
     "json_matches_source_field",
 }
 _COMMON = {"kind", "role"}
+EVALUATOR_VERSION = "finite-products-v0.8"
 
 
 def _path(value, label):
@@ -109,10 +111,36 @@ def _at_path(data, path):
 
 
 def _equal(actual, expected):
-    # JSON booleans do not satisfy numerical contracts, even though Python True == 1.
+    """JSON equality at every depth, preserving the finite numeric contract."""
     if type(actual) in (int, float) and type(expected) in (int, float):
         return math.isfinite(actual) and math.isfinite(expected) and actual == expected
-    return type(actual) is type(expected) and actual == expected
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(actual, dict):
+        return actual.keys() == expected.keys() and all(
+            _equal(value, expected[key]) for key, value in actual.items()
+        )
+    if isinstance(actual, list):
+        return len(actual) == len(expected) and all(
+            _equal(left, right) for left, right in zip(actual, expected)
+        )
+    return actual == expected
+
+
+def _merge_json(documents):
+    """Union whole top-level fields; conflicting values have no selected winner.
+
+    A conflict remains a conflict when a third document repeats either value.
+    This deliberately does not recursively merge overlapping nested objects.
+    """
+    values, conflicts = {}, set()
+    for document in documents:
+        for key, value in document.items():
+            if key in values and not _equal(values[key], value):
+                conflicts.add(key)
+            else:
+                values[key] = value
+    return {key: value for key, value in values.items() if key not in conflicts}, conflicts
 
 
 def _books(content):
@@ -160,7 +188,7 @@ def evaluate_submission(store, state, item, submission):
             reads.append({"object_id": aid, "version_id": vid, "sha256": sha})
         return content_cache[key]
 
-    submitted, combined, conflicts = [], {}, []
+    submitted = []
     for aid, vid in submission["artifact_versions"].items():
         artifact = state["artifacts"][aid]
         try:
@@ -169,16 +197,15 @@ def evaluate_submission(store, state, item, submission):
             if data is not None:
                 if not isinstance(data, dict):
                     raise ValueError("Submitted JSON must be an object")
-                for key, value in data.items():
-                    if key in combined and not _equal(combined[key], value):
-                        conflicts.append(key)
-                    combined[key] = value
             submitted.append(
                 {"artifact": artifact, "version_id": vid, "content": content, "data": data}
             )
         except (ValueError, OSError, KeyError) as exc:
             errors.append(str(exc))
-    missing = sorted(set(contract.get("required_fields", [])) - set(combined))
+    combined, conflicts = _merge_json(
+        entry["data"] for entry in submitted if entry["data"] is not None
+    )
+    missing = sorted(set(contract.get("required_fields", [])) - (set(combined) | conflicts))
     checks = []
     for spec in contract["content_checks"]:
         outcome = {"kind": spec["kind"], "contract": copy.deepcopy(spec), "passed": False}
@@ -188,11 +215,17 @@ def evaluate_submission(store, state, item, submission):
                 for entry in submitted
                 if ("role" not in spec or entry["artifact"].get("deliverable_role") == spec["role"])
             ]
-            json_data = {}
-            for entry in selected:
-                if entry["data"] is not None:
-                    json_data.update(entry["data"])
+            json_data, selected_conflicts = _merge_json(
+                entry["data"] for entry in selected if entry["data"] is not None
+            )
             kind = spec["kind"]
+            if kind.startswith("json_"):
+                required_roots = {spec["path"][0]}
+                if "reference_path" in spec:
+                    required_roots.add(spec["reference_path"][0])
+                relevant_conflicts = sorted(required_roots & selected_conflicts)
+                if relevant_conflicts:
+                    raise ValueError("Conflicting JSON fields: " + ", ".join(relevant_conflicts))
             if kind == "json_field_equals":
                 actual, expected = _at_path(json_data, spec["path"]), spec["expected"]
                 outcome.update(actual=actual, expected=expected, passed=_equal(actual, expected))
@@ -236,9 +269,9 @@ def evaluate_submission(store, state, item, submission):
                 if not isinstance(reference, dict):
                     raise ValueError("Source reference must be an exact object/version mapping")
                 ref = VersionRef.from_mapping(reference)
-                key = item["project_id"] + "::" + spec["adoption_alias"]
+                key = binding_key(item["work_item_id"], spec["adoption_alias"])
                 snapshots = submission.get("adoption_snapshot", {})
-                adoption = snapshots.get(key, snapshots.get(spec["adoption_alias"]))
+                adoption = snapshots.get(key)
                 if adoption is None:
                     raise ValueError("UNASSESSED: submission has no adoption snapshot")
                 if (adoption["object_id"], adoption["version_id"]) != (
@@ -246,8 +279,18 @@ def evaluate_submission(store, state, item, submission):
                     ref.version_id,
                 ):
                     raise ValueError("Content source does not match the adopted exact version")
-                if item["work_item_id"] not in adoption.get("work_ids", []):
-                    raise ValueError("Adoption does not cover the evaluated work")
+                if (
+                    adoption.get("work_id") != item["work_item_id"]
+                    or adoption.get("work_ids") != [item["work_item_id"]]
+                    or adoption.get("project_id") != item["project_id"]
+                    or adoption.get("alias") != spec["adoption_alias"]
+                    or adoption.get("requirement_version") != submission["requirement_version"]
+                ):
+                    raise ValueError("Adoption does not cover the evaluated work edition")
+                require_version(
+                    submission["requirement_snapshot"], spec["adoption_alias"],
+                    adoption["version_id"], adoption["policy"],
+                )
                 if adoption["policy"] != "fixed":
                     target = adoption.get("target_version")
                     if target is None or ref.version_id != target:
@@ -311,6 +354,7 @@ def evaluate_submission(store, state, item, submission):
         checks.append(outcome)
     return {
         "submission_id": submission["submission_id"],
+        "evaluator_version": EVALUATOR_VERSION,
         "passed": not missing and not conflicts and not errors and all(c["passed"] for c in checks),
         "missing_fields": missing,
         "conflicting_fields": sorted(set(conflicts)),

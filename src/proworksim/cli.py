@@ -20,7 +20,7 @@ from .validation import evaluate
 
 def parser():
     root = argparse.ArgumentParser(
-        prog="proworksim", description="ProWorkSim v0.7.0 工作世界模拟器"
+        prog="proworksim", description="ProWorkSim v0.8.0 工作世界模拟器"
     )
     commands = root.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="合成并编译一个独立世界")

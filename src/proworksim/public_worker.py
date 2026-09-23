@@ -152,7 +152,7 @@ class PublicWorker:
             return self.outcome(
                 "waiting", "Information wait reached the action budget", work_id=work_id
             )
-        adoption_key = project_id + "::" + alias
+        adoption_key = work_id + "::" + alias
         adoption = observation.get("adoptions", {}).get(adoption_key)
         visible = observation["objects"][object_id]["versions"]
         if adoption is not None:
@@ -201,7 +201,9 @@ class PublicWorker:
                 work_ids=[work_id],
             )
         elif adoption["adopted_version"] != version_id:
-            adopted = self.call("adopt_version", alias=alias, version_id=version_id)
+            adopted = self.call(
+                "adopt_version", alias=alias, version_id=version_id, work_id=work_id
+            )
         else:
             adopted = {"ok": True}
         if not adopted.get("ok"):

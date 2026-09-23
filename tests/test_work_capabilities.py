@@ -43,10 +43,11 @@ def ledger(tmp_path, values, contract, submitted=None, adoptions=None, dependenc
             path = store.version_path(artifact, vid)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
-    item = {"project_id": "B", "work_item_id": "B::work"}
+    item = {"project_id": "B", "work_item_id": "B::work", "requirement_version": 1}
     sub = {
         "submission_id": "sub-1",
-        "requirement_snapshot": {"deliverable_contract": contract},
+        "requirement_version": 1,
+        "requirement_snapshot": {"deliverable_contract": contract, "requirements": {}},
         "artifact_versions": submitted or {values[0][0]: "v1"},
         "review": {"decision": "accepted"},
     }
@@ -172,6 +173,7 @@ def test_source_interface_checks_snapshot_content_and_keeps_history_stable(tmp_p
         "target_version": "v1",
         "policy": "current_published",
         "work_ids": ["B::work"],
+        "work_id": "B::work", "requirement_version": 1, "project_id": "B", "alias": "input",
     }
     store, state, item, sub = ledger(
         tmp_path,
@@ -180,20 +182,20 @@ def test_source_interface_checks_snapshot_content_and_keeps_history_stable(tmp_p
             ("source", "xlsx", [a1, a2]),
         ],
         contract,
-        adoptions={"input": adoption},
+        adoptions={"B::work::input": adoption},
         dependencies={("report", "v1"): [source_ref], ("report", "v2"): [source2]},
     )
     assert evaluate_submission(store, state, item, sub)["passed"]
     # Later state changes do not rewrite evaluation of the original fixed submission.
-    state["adoptions"]["B::input"] = {**adoption, "version_id": "v2"}
-    state["adoption_view"]["B::input"] = {"target_version": "v2"}
+    state["adoptions"]["B::work::input"] = {**adoption, "version_id": "v2"}
+    state["adoption_view"]["B::work::input"] = {"target_version": "v2"}
     assert evaluate_submission(store, state, item, sub)["passed"]
     # A newly submitted stale source, or a new label attached to the old result, fails.
     adoption["target_version"] = "v2"
-    sub["adoption_snapshot"]["input"] = copy.deepcopy(adoption)
+    sub["adoption_snapshot"]["B::work::input"] = copy.deepcopy(adoption)
     assert not evaluate_submission(store, state, item, sub)["passed"]
     adoption["version_id"] = "v2"
-    sub["adoption_snapshot"]["input"] = copy.deepcopy(adoption)
+    sub["adoption_snapshot"]["B::work::input"] = copy.deepcopy(adoption)
     sub["artifact_versions"] = {"report": "v2"}
     result = evaluate_submission(store, state, item, sub)
     assert not result["passed"] and result["checks"][0]["expected"] == 8
@@ -232,6 +234,7 @@ def test_source_binding_requires_every_contributor_but_not_unrelated_file(tmp_pa
         "target_version": "v1",
         "policy": "fixed",
         "work_ids": ["B::work"],
+        "work_id": "B::work", "requirement_version": 1, "project_id": "B", "alias": "input",
     }
     store, state, item, sub = ledger(
         tmp_path,
@@ -243,7 +246,7 @@ def test_source_binding_requires_every_contributor_but_not_unrelated_file(tmp_pa
         ],
         contract,
         submitted={"amount": "v1", "reference": "v1", "note": "v1"},
-        adoptions={"input": adoption},
+        adoptions={"B::work::input": adoption},
         dependencies={("amount", "v1"): [source_ref], ("reference", "v1"): [source_ref]},
     )
     good = evaluate_submission(store, state, item, sub)
@@ -262,3 +265,39 @@ def test_source_binding_requires_every_contributor_but_not_unrelated_file(tmp_pa
         assert not result["passed"]
         assert "exact source dependency" in result["checks"][0]["reason"]
         metadata["derived_from"] = [source_ref]
+
+
+@pytest.mark.parametrize(
+    "requirements,binding_change,reason",
+    [
+        ({"input_policy": "current_published"}, {}, "input contract"),
+        ({"input_policy": "fixed", "input_version": "v2"}, {}, "declared input version"),
+        ({}, {"requirement_version": 2}, "evaluated work edition"),
+        ({}, {"work_id": "B::replacement"}, "evaluated work edition"),
+    ],
+)
+def test_source_evaluation_rechecks_fixed_work_contract(
+    tmp_path, requirements, binding_change, reason
+):
+    ref = {"object_id": "source", "version_id": "v1"}
+    contract = {"content_checks": [{
+        "kind": "json_matches_source_field", "path": ["margin"],
+        "reference_path": ["source_ref"], "source_path": ["rate"],
+        "adoption_alias": "input",
+    }]}
+    adoption = {
+        **ref, "policy": "fixed", "target_version": "v1", "project_id": "B",
+        "alias": "input", "work_id": "B::work", "work_ids": ["B::work"],
+        "requirement_version": 1, **binding_change,
+    }
+    store, state, item, sub = ledger(
+        tmp_path,
+        [("report", "json", [encode("json", {"margin": 6, "source_ref": ref})]),
+         ("source", "json", [encode("json", {"rate": 6})])],
+        contract, adoptions={"B::work::input": adoption},
+        dependencies={("report", "v1"): [ref]},
+    )
+    sub["requirement_snapshot"]["requirements"] = requirements
+    result = evaluate_submission(store, state, item, sub)
+    assert not result["passed"]
+    assert reason in result["checks"][0]["reason"]

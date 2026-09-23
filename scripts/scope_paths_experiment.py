@@ -2,7 +2,8 @@
 
 Setup uses only WorldSpec and legal install_project/object/share session calls.
 The measurement may inspect persisted facts after actions, never patch ACLs.
-The same protocol is run against frozen v0.6 and the repaired runtime.
+Historical v0.6/v0.7 runs retain their frozen scripts. The current regression uses
+v0.8 work-scoped bindings and explicitly updates each authorized work edition.
 """
 
 import argparse
@@ -13,6 +14,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from proworksim.core.adoption import binding_key
 from proworksim.audit import code_identity
 from proworksim.core.world import WorldSpec, object_identity
 from proworksim.storage import atomic_write, digest, json_bytes
@@ -401,11 +403,18 @@ def update_group(ev):
             )
     ev.check(
         "object_and_work_scoped_update",
-        ev.call("bob", "A", "adopt_version", alias="input", version_id="v2")["ok"],
+        ev.call("bob", "A", "adopt_version", alias="input", work_id="work-1", version_id="v2")["ok"],
     )
+    first = ev.call("carol", "A", "adopt_version", alias="multi", work_id="work-1", version_id="v2")
+    after_first = ev.world.store.load()["adoptions"]
+    isolated = (
+        after_first[binding_key("A::work-1", "multi")]["version_id"] == "v2"
+        and after_first[binding_key("A::work-2", "multi")]["version_id"] == "v1"
+    )
+    second = ev.call("carol", "A", "adopt_version", alias="multi", work_id="work-2", version_id="v2")
     ev.check(
         "separate_grants_cover_all_update_works",
-        ev.call("carol", "A", "adopt_version", alias="multi", version_id="v2")["ok"],
+        first["ok"] and second["ok"] and isolated,
     )
     ev.require("operator", None, "write_object", alias="source", data={"value": 3})
     before = ev.declarations()
@@ -418,10 +427,13 @@ def update_group(ev):
     ):
         ev.check(
             name,
-            not ev.call(actor, project, "adopt_version", alias=alias, version_id=version)["ok"],
+            not ev.call(
+                actor, project, "adopt_version", alias=alias, version_id=version,
+                work_id="work-2" if name == "partially_authorized_update_denied" else "work-1",
+            )["ok"],
         )
     ev.check("failed_updates_preserve_adoptions", ev.declarations(), before)
-    decl = ev.world.store.load()["adoptions"]["A::input"]
+    decl = ev.world.store.load()["adoptions"][binding_key("A::work-1", "input")]
     history = decl.get("history", [])
     ev.check(
         "successful_update_records_exact_history",
@@ -472,7 +484,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=False)
     source_before = code_identity()
     protocol = {
-        "experiment": "N0-exact-share-and-scoped-adoption-v07",
+        "experiment": "N0-exact-share-and-work-scoped-adoption-v08",
         "checks": CHECKS,
         "expected": "Legal exact grants execute; unrelated versions/actors/objects/projects/works deny",
         "construction": "WorldSpec plus legal package and public ProjectSession actions only",

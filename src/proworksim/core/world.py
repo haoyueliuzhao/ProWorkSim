@@ -15,11 +15,12 @@ from pathlib import PurePosixPath
 
 from ..policies.organization import require_authority
 from .references import VersionRef, resolve_version
+from .adoption import make_binding, validate_policy_contract
 from .publication import PUBLICATION_POLICIES
 from ..adapters.capabilities import capability_for, encode
 from ..domains.work_product import validate_content_contract
 
-WORLD_SCHEMA_VERSION = "world-core-v0.7"
+WORLD_SCHEMA_VERSION = "world-core-v0.8"
 PROVENANCE_KINDS = frozenset({"observed", "reconstructed", "synthetic", "unknown"})
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$")
 
@@ -195,7 +196,7 @@ def new_world_state(spec):
     state = {
         "schema_version": WORLD_SCHEMA_VERSION,
         "runtime_kind": "world_core",
-        "semantics_version": "work-world-v0.7",
+        "semantics_version": "work-world-v0.8",
         "world_id": world_id,
         "instance_id": uuid.uuid4().hex,
         "branch_id": uuid.uuid4().hex,
@@ -319,7 +320,7 @@ def validate_package(state, package):
     fabricated histories from files.
     """
     if state.get("schema_version") != WORLD_SCHEMA_VERSION or "projects" not in state:
-        raise ValueError("Project packages require a World Core v0.7 state")
+        raise ValueError("Project packages require a World Core v0.8 state")
     raw = _mapping(package, "ProjectPackage")
     _keys(
         raw,
@@ -539,7 +540,26 @@ def validate_package(state, package):
             raise ValueError(
                 "Work must declare fixed deliverables or a dynamic deliverable contract"
             )
+        validate_policy_contract(item)
         works.append(item)
+    expanded_adoptions = []
+    by_work = {item["work_item_id"]: item for item in works}
+    for declaration in adoptions:
+        if not declaration["work_ids"]:
+            raise ValueError("Adoption must bind at least one exact work")
+        for wid in declaration["work_ids"]:
+            binding = make_binding(
+                state,
+                by_work[wid],
+                declaration["alias"],
+                declaration["object_id"],
+                declaration["version_id"],
+                declaration["policy"],
+                by_work[wid]["owner_role"],
+            )
+            binding["provenance"] = declaration["provenance"]
+            expanded_adoptions.append(binding)
+    adoptions = expanded_adoptions
     graph = {item["work_item_id"]: item["dependencies"] for item in works}
     pending, done = set(graph), set()
     while pending:
@@ -608,6 +628,7 @@ def validate_package(state, package):
                 "delay",
                 "availability",
                 "version_id",
+                "version_policy",
             },
             "information route",
         )
@@ -628,6 +649,12 @@ def validate_package(state, package):
             or availability not in {"available", "unavailable"}
         ):
             raise ValueError("Unsupported information route delivery policy")
+        if route.get("version_policy", "fixed") not in {
+            "fixed",
+            "current_published",
+            "work_requirement",
+        }:
+            raise ValueError("Unsupported information route version policy")
         if route.get("version_id", "v1") != "v1":
             raise ValueError("Package routes must reference their real initial version")
         purpose = _text(route.get("purpose", "evidence"), "route purpose")
@@ -647,8 +674,10 @@ def validate_package(state, package):
                 "route_id": route_id,
                 "project_id": pid,
                 "work_id": wid,
+                "work_node": wid,
                 "object_id": oid,
                 "version_id": "v1",
+                "version_policy": route.get("version_policy", "fixed"),
                 "purpose": purpose,
                 "delay": delay,
                 "availability": availability,

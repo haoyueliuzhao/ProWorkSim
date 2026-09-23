@@ -8,6 +8,7 @@ from proworksim.core.projections import derive_current_work_view
 from proworksim.core.rules import confirm_credential, registered_applicability
 from proworksim.core.types import Credential
 from proworksim.core.work import approve_submission, submit_work
+from proworksim.core.adoption import binding_key
 from proworksim.core.world import (
     WorldSpec,
     install_package,
@@ -212,8 +213,8 @@ def test_adoption_requires_exact_shared_version_without_importing_upstream_files
     )
     install(state, target)
     assert state["workspaces"]["B"]["input"] == object_identity("A", "report")
-    assert state["adoptions"]["B::input"]["version_id"] == "v1"
-    assert state["adoptions"]["B::input"]["work_ids"] == ["B::work-1"]
+    assert state["adoptions"][binding_key("B::work-1", "input")]["version_id"] == "v1"
+    assert state["adoptions"][binding_key("B::work-1", "input")]["work_ids"] == ["B::work-1"]
 
 
 def test_confirmation_is_both_project_and_object_scoped():

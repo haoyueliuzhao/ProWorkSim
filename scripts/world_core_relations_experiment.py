@@ -14,6 +14,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from proworksim.core.adoption import binding_key
 from proworksim.audit import code_identity
 from proworksim.core.journal import validate_committed_prefix
 from proworksim.storage import atomic_write, digest, json_bytes
@@ -223,8 +224,8 @@ def m3(root, check):
     check(
         M3_CHECKS[0],
         all(
-            before["state"]["adoption_view"][f"{p}::shared"]["status"] == "current"
-            and before["state"]["adoptions"][f"{p}::shared"]["version_id"] == "v1"
+            before["state"]["adoption_view"][binding_key(f"{p}::work-1", "shared")]["status"] == "current"
+            and before["state"]["adoptions"][binding_key(f"{p}::work-1", "shared")]["version_id"] == "v1"
             for p in ("A", "B")
         ),
     )
@@ -247,14 +248,14 @@ def m3(root, check):
     av = after["state"]["adoption_view"]
     check(
         M3_CHECKS[2],
-        av["A::shared"]
+        av[binding_key("A::work-1", "shared")]
         == {
             "adopted_version": "v1",
             "target_version": "v2",
             "status": "update_required",
             "policy": "current_applicable",
         }
-        and av["B::shared"]
+        and av[binding_key("B::work-1", "shared")]
         == {
             "adopted_version": "v1",
             "target_version": "v1",

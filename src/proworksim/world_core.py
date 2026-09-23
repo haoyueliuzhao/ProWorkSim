@@ -12,6 +12,17 @@ import uuid
 from pathlib import Path
 
 from .core import journal
+from .core.adoption import (
+    binding_key,
+    binding_for,
+    make_binding,
+    snapshot_bindings,
+    validate_policy_contract,
+    require_version,
+    declared_version,
+    allowed_policies,
+)
+from .core.work import current_id
 from .core.publication import (
     effective_policy,
     latest_published_version,
@@ -47,7 +58,7 @@ from .storage import Store, atomic_write, json_bytes
 
 
 class WorldCore(WorldRunner):
-    runtime_schema = "world-core-v0.7"
+    runtime_schema = "world-core-v0.8"
 
     @classmethod
     def create(cls, root, spec: WorldSpec):
@@ -751,88 +762,81 @@ class WorldCore(WorldRunner):
                     )
 
     def _action_adopt(self, actor, project_id, alias, object_id, version_id, policy, work_ids):
-        if policy not in {"current_applicable", "current_published", "fixed"}:
-            raise ValueError("Unknown adoption policy")
         self._project(actor, project_id, active=True)
         self._object_id(project_id, alias)
         artifact, version_id = self._object(
             actor, project_id, object_id=object_id, version_id=version_id
         )
         object_id = artifact["artifact_id"]
-        if not isinstance(work_ids, list) or len(set(work_ids)) != len(work_ids):
-            raise ValueError("Adoption work IDs must be a list without duplicates")
+        if not isinstance(work_ids, list) or not work_ids or len(set(work_ids)) != len(work_ids):
+            raise ValueError("Adoption needs distinct exact work IDs")
         items = [self._work(actor, project_id, wid) for wid in work_ids]
-        ids = [item["work_item_id"] for item in items]
         workspace = self.state["workspaces"][project_id]
         if alias in workspace and workspace[alias] != object_id:
             raise ValueError("Alias already points to another object")
-        key = project_id + "::" + alias
-        if key in self.state["adoptions"]:
-            raise ValueError("Use explicit new alias for a changed adoption declaration")
-        # A first cross-project adoption has no workspace alias yet. Validate
-        # the candidate binding against existing grants without mutating state,
-        # after resolving its exact readable object and all trusted work scopes.
         candidate = {
             **self.state,
             "workspaces": {**self.state["workspaces"], project_id: {**workspace, alias: object_id}},
         }
-        for item in items or [None]:
+        bindings = []
+        for item in items:
+            key = binding_key(item["work_item_id"], alias)
+            if key in self.state["adoptions"]:
+                raise ValueError("This exact work already has an adoption; use its version update")
             if not authority(
                 candidate,
                 actor,
                 "adopt",
                 "artifact",
-                item["node_id"] if item else None,
+                item["node_id"],
                 project_id=project_id,
                 object_id=object_id,
             ):
                 raise ValueError("Actor lacks project power: adopt")
+            bindings.append(
+                make_binding(self.state, item, alias, object_id, version_id, policy, actor)
+            )
         workspace[alias] = object_id
-        self.state["adoptions"][key] = {
-            "project_id": project_id,
-            "alias": alias,
-            "object_id": object_id,
-            "version_id": version_id,
-            "policy": policy,
-            "work_ids": ids,
-            "actor_id": actor,
-            "at": self.state["clock"],
-        }
-        return copy.deepcopy(self.state["adoptions"][key])
+        self.state["adoptions"].update({binding["adoption_id"]: binding for binding in bindings})
+        return copy.deepcopy(bindings[0] if len(bindings) == 1 else {"bindings": bindings})
 
-    def _action_adopt_version(self, actor, project_id, alias, version_id):
+    def _action_adopt_version(self, actor, project_id, alias, version_id, work_id=None):
         self._project(actor, project_id, active=True)
-        self._object_id(project_id, alias)
-        adoption = self.state["adoptions"].get(project_id + "::" + alias)
-        if adoption is None or adoption["project_id"] != project_id:
-            raise ValueError("Unknown adoption in the bound project")
+        if work_id is None:
+            candidates = [
+                a
+                for a in self.state["adoptions"].values()
+                if a["project_id"] == project_id
+                and a["alias"] == alias
+                and current_id(self.state, a["work_id"]) == a["work_id"]
+            ]
+            if len(candidates) != 1:
+                raise ValueError("Specify exact work_id when adoption context is ambiguous")
+            work_id = candidates[0]["work_id"]
+        item = self._work(actor, project_id, work_id)
+        adoption = binding_for(self.state, item["work_item_id"], alias)
+        if adoption is None:
+            raise ValueError("No adoption for this exact work; explicitly adopt for the new work")
         object_id = self._resolve(project_id, alias)
         if object_id != adoption["object_id"]:
             raise ValueError("Adoption object does not match its workspace alias")
-        items = [self._work(actor, project_id, wid) for wid in adoption["work_ids"]]
-        for item in items or [None]:
-            self._project_power(
-                actor,
-                project_id,
-                "adopt",
-                "artifact",
-                work=item["node_id"] if item else None,
-                object_id=object_id,
-            )
-        if adoption["policy"] not in {"current_applicable", "current_published"}:
-            raise ValueError("Fixed adoption requires a new explicit declaration")
-        self._object(actor, project_id, object_id=object_id, version_id=version_id)
-        if version_id == adoption["version_id"]:
-            return copy.deepcopy(adoption)
-        adoption.setdefault("history", []).append(
-            {
-                "previous_version": adoption["version_id"],
-                "version_id": version_id,
-                "actor_id": actor,
-                "at": self.state["clock"],
-            }
+        self._project_power(
+            actor, project_id, "adopt", "artifact", work=item["node_id"], object_id=object_id
         )
-        adoption["version_id"] = version_id
+        if adoption["policy"] == "fixed":
+            raise ValueError("Fixed adoption requires a new work declaration")
+        self._object(actor, project_id, object_id=object_id, version_id=version_id)
+        require_version(item, alias, version_id, adoption["policy"])
+        if version_id != adoption["version_id"]:
+            adoption["history"].append(
+                {
+                    "previous_version": adoption["version_id"],
+                    "version_id": version_id,
+                    "actor_id": actor,
+                    "at": self.state["clock"],
+                }
+            )
+            adoption["version_id"] = version_id
         return copy.deepcopy(adoption)
 
     def _require_credentials(self, actor, item):
@@ -868,14 +872,7 @@ class WorldCore(WorldRunner):
             if artifact.get("project_id") != project_id:
                 raise ValueError("Deliverables must be created in the bound project")
             versions[artifact["artifact_id"]] = vid
-        snapshots = {
-            key: {
-                **copy.deepcopy(adoption),
-                "target_version": self.state["adoption_view"][key]["target_version"],
-            }
-            for key, adoption in self.state["adoptions"].items()
-            if adoption["project_id"] == project_id and item["work_item_id"] in adoption["work_ids"]
-        }
+        snapshots = snapshot_bindings(self.state, item)
         return submit_work(
             self.state,
             actor,
@@ -942,6 +939,7 @@ class WorldCore(WorldRunner):
             self._object(
                 actor, project_id, object_id=parsed.object_id, version_id=parsed.version_id
             )
+        validate_policy_contract({**item, **updates})
         replacements = revise_requirement(
             self.state, [item["work_item_id"]], updates, actor, reason
         )
@@ -1015,9 +1013,21 @@ class WorldCore(WorldRunner):
         item = self._work(actor, project_id, work_id)
         routes = self.state["projects"][project_id].get("information_routes", [])
         route = next((r for r in routes if r["route_id"] == route_id), None)
-        if route is None or item["work_item_id"] != route["work_id"]:
-            raise ValueError("No supported information route for this exact work")
-        reference = {"object_id": route["object_id"], "version_id": route["version_id"]}
+        if route is None or item["node_id"] != route["work_node"]:
+            raise ValueError("No supported information route for this exact work lineage")
+        version = route["version_id"]
+        if route["version_policy"] == "work_requirement":
+            version = declared_version(item, route["object_alias"])
+            if version is None and "current_published" in allowed_policies(
+                item, route["object_alias"]
+            ):
+                version = latest_published_version(self.state, route["object_id"], project_id)
+            version = version or route["version_id"]
+        elif route["version_policy"] == "current_published":
+            version = latest_published_version(self.state, route["object_id"], project_id)
+            if version is None:
+                raise ValueError("Information route has no published target")
+        reference = {"object_id": route["object_id"], "version_id": version}
         result = self._action_request(
             actor,
             project_id,
@@ -1080,7 +1090,11 @@ class WorldCore(WorldRunner):
         }
         # Only an explicitly installed information route delegates exact-version
         # delivery. Ordinary replies never infer an access grant.
-        if payload.get("grant_on_reply") and response["status"] == "delivered":
+        if (
+            payload.get("grant_on_reply")
+            and response["status"] == "delivered"
+            and current_id(self.state, request["work_item_id"]) == request["work_item_id"]
+        ):
             ref = VersionRef.from_mapping(payload["reference"])
             artifact, _ = self._object(
                 payload["actor"],
@@ -1321,18 +1335,26 @@ class WorldCore(WorldRunner):
                 "objects": objects,
                 "information_routes": [
                     {
-                        key: copy.deepcopy(route[key])
-                        for key in (
-                            "route_id",
-                            "project_id",
-                            "work_id",
-                            "provider",
-                            "object_alias",
-                            "purpose",
-                        )
+                        **{
+                            key: copy.deepcopy(route[key])
+                            for key in (
+                                "route_id",
+                                "project_id",
+                                "provider",
+                                "object_alias",
+                                "purpose",
+                                "work_node",
+                            )
+                        },
+                        "work_id": wid,
                     }
                     for pid in projects
                     for route in self.state["projects"][pid].get("information_routes", [])
+                    for wid, item in self.state["work_items"].items()
+                    if item["project_id"] == pid
+                    and item["node_id"] == route["work_node"]
+                    and views[wid]["is_current"]
+                    and views[wid]["status"] not in {"accepted", "cancelled"}
                 ],
                 "conditions": {
                     cid: copy.deepcopy(condition)
@@ -1359,7 +1381,13 @@ class WorldCore(WorldRunner):
                         **copy.deepcopy(value),
                         **{
                             field: copy.deepcopy(self.state["adoptions"][key][field])
-                            for field in ("alias", "object_id", "work_ids")
+                            for field in (
+                                "alias",
+                                "object_id",
+                                "work_id",
+                                "work_ids",
+                                "requirement_version",
+                            )
                         },
                     }
                     for key, value in self.state["adoption_view"].items()
