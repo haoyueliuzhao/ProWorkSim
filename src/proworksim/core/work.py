@@ -309,6 +309,12 @@ def approve_submission(state, actor, work_item_id, submission_id):
     view = derive_current_work_view(state)[work_item_id]
     if view["outstanding_condition_ids"]:
         raise ValueError("Work conditions have not been satisfied")
+    if view.get("outstanding_issue_ids"):
+        from ..tool_outcomes import ToolRejection
+
+        raise ToolRejection("Located review issues require a treatment decision",
+                            code="open_review_issues", category="business_constraint",
+                            context={"issue_ids": view["outstanding_issue_ids"]})
     if not submission_versions_current(state, item, submission):
         raise ValueError("Submission versions are no longer current")
     submission["review"] = {

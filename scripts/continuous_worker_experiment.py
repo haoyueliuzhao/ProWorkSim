@@ -32,7 +32,7 @@ CHECKS = {
         "no_fabricated_A_request_or_delivery", "B_can_finish_despite_A_missing_route"),
     "budget": COMMON + ("one_action_budget_is_explicit_truncation", "same_worker_continues_after_budget",
         "both_deliveries_pass"),
-    "environment_error": COMMON + ("real_pause_between_observe_and_action", "actual_rejection_is_environment_error",
+    "environment_error": COMMON + ("real_pause_between_observe_and_action", "actual_rejection_is_business_constraint",
         "no_delivery_claim_after_error"),
     "multiple_sources": COMMON + ("both_exact_sources_read", "two_work_bindings_and_dependencies",
         "independent_total15_and_content_pass"),
@@ -42,18 +42,20 @@ CHECKS = {
         "old_work_binding_files_and_observations_preserved", "controller_only_writes_and_publishes_after_acceptance"),
 }
 PROTOCOL = {
-    "suite": "public-continuous-work-P4-v0.8", "groups": GROUPS, "checks": CHECKS,
+    "suite": "public-continuous-work-P4-v0.9-rejection",
+    "previous_protocol": "public-continuous-work-P4-v0.8",
+    "attribution_change": "The historical group identifier environment_error is retained only for stable fixture selection. Its authorized pause now explicitly tests business_constraint/world_paused; this is not a rerun under the old v0.8 attribution protocol. Old archived v0.8 JSON is unchanged.", "groups": GROUPS, "checks": CHECKS,
     "scope": "Each group has one WorldCore and A/B projects, one writer, explicit interleaving; no model or trained policy",
     "worker_inputs": "Opaque ports expose only tools/observe/call; requirements, routes, exact work IDs, policy targets, expressions and bytes are discovered publicly",
     "actions": "Finite adopt/update, request/wait, exact read, JSON create/write and submit, with at most one action per scheduler step",
     "independent_literals": {"A_v1": 11, "B": 7, "A_v2": 19, "multiple_sources": 15},
     "alternative_paths": "Several currently owned works and several ports round-robin; worker builds one combined JSON, while P3 independently accepts two-file layout",
     "controller_events": "Availability changes after actual A blocked/B completed outcome; formal requirement revision after real initial completion; a deliberate authorized pause after observation before first adoption creates an actual rejected tool call",
-    "exits": ["completed", "submitted", "worker_waiting", "world_blocked", "budget_exhausted", "environment_error"],
+    "exits": ["completed", "submitted", "worker_waiting", "world_blocked", "budget_exhausted", "environment_error", "business_constraint", "policy_error", "capability_gap", "unattributed_tool_rejection"],
     "pre_freeze_supplement": "published_successor adds a separate release-to-obligation-to-public-worker closed loop after the original six-group 55-check development protocol; earlier development reports do not cover this supplement",
     "checkpoint_boundary": "Explicit completed step-result checkpoint, JSON roundtrip of public progress/transcript only; not arbitrary process crash or exactly-once policy recovery",
     "comparison": "Compare original captured definitions/observations/action args/returns to worker transcript; inspect exact work/submission/binding and immutable bytes separately after execution. Replacement updates the old submission's current_applicability projection to superseded_requirements; every other submission field, including approval/answer/versions/adoption snapshot, is compared unchanged. Unrelated works are compared in full.",
-    "limitations": ["Transparent finite program; no general planning claim", "P4 arithmetic is a declared scalar sum, not finance-quality evaluation", "Paused-tool rejection is a deliberate environment failure probe, not a spontaneous production failure", "No API/GPU/training or new crash cuts in P4"],
+    "limitations": ["Transparent finite program; no general planning claim", "P4 arithmetic is a declared scalar sum, not finance-quality evaluation", "Paused-tool rejection is a controlled business constraint probe; v0.8 classified all tool rejections as environment_error, which is not used as general failure attribution", "No API/GPU/training or new crash cuts in P4"],
 }
 
 
@@ -330,7 +332,7 @@ def environment_error(ev):
     outcome = ev.run()
     ev.check("real_pause_between_observe_and_action", fired == ["adopt"] and ev.world.store.load()["world_status"] == "paused")
     calls = [e for e in ev.captured if e["kind"] == "tool_call"]
-    ev.check("actual_rejection_is_environment_error", outcome["status"] == "environment_error" and len(calls) == 1 and not calls[0]["value"]["response"]["ok"])
+    ev.check("actual_rejection_is_business_constraint", outcome["status"] == "business_constraint" and outcome["steps"][-1]["rejection"]["code"] == "world_paused" and len(calls) == 1 and not calls[0]["value"]["response"]["ok"])
     ev.check("no_delivery_claim_after_error", not ev.evaluations())
     ev.common(ports)
 

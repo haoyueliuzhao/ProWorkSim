@@ -1,4 +1,4 @@
-# 核心行动与提交合同（v0.8）
+# 核心行动与提交合同（v0.9）
 
 身份由可信会话绑定；能力来自组织配置。执行合法性、制度合规性、独立质量分别判断，允许可执行的业务错误留下真实后果。
 
@@ -74,3 +74,18 @@
 | MaintenanceImpact（环境事件） | 真实发布时捕获规则、阶段和精确工作；独立提交 notice/revise/successor/ignore，去重身份覆盖发布/项目/规则/节点；目标已被外部替代则记录 stale_target |
 
 后继工作只在 accepted 前项上由显式规则产生，继承节点范围与合同但具有新身份、需求、空提交和编辑记录；不改旧 accepted 前项、文件或采用。修订保持原有 superseded_requirements 等适用性标注，其固定提交和审阅不被追溯评分覆盖。规则不执行任意回调，不扩权，不给文件自动填答案。
+
+
+## v0.9 位置信息、回应和处理确认
+
+| 行动 | 执行依据与效果 |
+| --- | --- |
+| InspectSubmission | 本项目真实工作提交；所有交付版本可读，返回固定提交/采用快照，不代替实际正文读取 |
+| RaiseIssue | review/deliverable范围权，目标版在固定提交内，JSON位置存在且主体已经真实读取；保存意见/证据及创建时的适用范围 |
+| RespondIssue | 同工作责任人，引用真实同需求提交与已读确切证据；保存回应，不自动关闭问题 |
+| DecideIssue | 有范围review权，已实际读取回应提交及证据；accept_fix/accept_rebuttal/keep_open，当前决定须引用当前待审、版本仍当前的提交；一次只决定一个问题 |
+| Approve | 在已有前驱/资料/版本条件外，要求该工作没有有效的未处理blocking issue；不以制度批准代替内容评价 |
+
+同issue/response/decision业务身份重试返回原事实，不增加重复正式效果；同key不同负载拒绝。已完成command身份的重试仍沿原journal规则处理。晚到旧提交意见保持为historical，不把其他工作/版本自动重开。修复沿同一work/requirement的withdraw/write/submit，不以revise需求掩盖未满足原合同。
+
+新增世界接受`world-core-v0.9`；旧单模板仍使用原0.5运行格式。有限新恢复切点由实验报告约束，不把策略checkpoint、单命令恢复及任意系统故障恢复混为一谈。

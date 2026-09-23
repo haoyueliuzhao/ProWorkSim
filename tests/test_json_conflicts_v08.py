@@ -68,7 +68,7 @@ def test_p0_real_sessions_use_explicit_truth_and_preserve_fixed_bindings(monkeyp
     assert result["check_pass_count"] == result["check_count"]
     for branch in result["branches"]:
         evaluation = branch["evaluation"]
-        assert evaluation["evaluator_version"] == "finite-products-v0.8.1"
+        assert evaluation["evaluator_version"] == "finite-products-v0.9"
         if experiment.CASES[branch["case"]]["conflicts"]:
             assert evaluation["checks"][0]["reason"] == "Conflicting JSON fields: metrics"
             assert "actual" not in evaluation["checks"][0]

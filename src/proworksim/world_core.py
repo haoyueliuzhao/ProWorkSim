@@ -13,6 +13,9 @@ from pathlib import Path
 
 from .core import journal
 from .core.maintenance import impact_candidates, apply_impact, successor_identity
+from .tool_outcomes import ToolRejection
+from .core.issues import (raise_issue, respond_issue, decide_issue, derive_issue_view, submission_for)
+from .adapters.locations import read_location
 from .core.adoption import (
     binding_key,
     binding_for,
@@ -55,11 +58,11 @@ from .core.world import (
     validate_deliverable_contract,
 )
 from .policies.organization import authority
-from .storage import Store, atomic_write, json_bytes
+from .storage import Store, atomic_write, json_bytes, digest
 
 
 class WorldCore(WorldRunner):
-    runtime_schema = "world-core-v0.8"
+    runtime_schema = "world-core-v0.9"
 
     @classmethod
     def create(cls, root, spec: WorldSpec):
@@ -149,14 +152,14 @@ class WorldCore(WorldRunner):
             and grant.get("power") in (power, "*")
             for grant in self.state["organization"]["grants"]
         ):
-            raise ValueError("Actor lacks world power: " + power)
+            raise ToolRejection("Actor lacks world power: " + power, code="world_power_denied", category="policy_error", context={"power": power})
 
     def _project_power(self, actor, project_id, power, subject="*", work=None, object_id=None):
         self._project(actor, project_id)
         if not authority(
             self.state, actor, power, subject, work, project_id=project_id, object_id=object_id
         ):
-            raise ValueError("Actor lacks project power: " + power)
+            raise ToolRejection("Actor lacks project power: " + power, code="project_power_denied", category="policy_error", context={"power": power})
 
     def _work(self, actor, project_id, work_id, current=True):
         self._project(actor, project_id, active=current)
@@ -165,7 +168,7 @@ class WorldCore(WorldRunner):
         if item is None or item["project_id"] != project_id:
             raise ValueError("Work reference escapes bound project")
         if current and key in self.state.get("work_replacements", {}):
-            raise ValueError("Work reference is superseded")
+            raise ToolRejection("Work reference is superseded", code="superseded_work", category="business_constraint", context={"work_id": key})
         return item
 
     def _resolve(self, project_id, alias):
@@ -303,6 +306,8 @@ class WorldCore(WorldRunner):
             for cid, condition in self.state.get("condition_specs", {}).items():
                 if self.state["work_items"][condition["work_item_id"]]["project_id"] == project_id:
                     paths.append(("condition_specs", cid))
+            if tool in {"raise_issue", "respond_issue", "decide_issue"}:
+                paths += [("issues",), ("issue_responses",), ("issue_decisions",)]
             if tool in {"request", "request_information"}:
                 paths.append(("condition_specs",))
         if tool == "wait":
@@ -313,7 +318,7 @@ class WorldCore(WorldRunner):
         self._project(
             actor,
             project_id,
-            active=tool not in {"read_object", "sheet_read", "read_messages", "end_episode"},
+            active=tool not in {"read_object", "sheet_read", "read_messages", "end_episode", "inspect_submission"},
         )
         return self._dispatch(actor, project_id, tool, arguments)
 
@@ -341,6 +346,10 @@ class WorldCore(WorldRunner):
                 "adopt_version",
                 "submit",
                 "approve",
+                "inspect_submission",
+                "raise_issue",
+                "respond_issue",
+                "decide_issue",
                 "withdraw",
                 "confirm",
                 "revise",
@@ -362,6 +371,8 @@ class WorldCore(WorldRunner):
             "artifacts",
             "project_ids",
             "target_projects",
+            "locator",
+            "evidence",
         }
         for name in names:
             properties, required = {}, []
@@ -378,7 +389,7 @@ class WorldCore(WorldRunner):
                     else "integer"
                     if key in {"ticks", "delay"}
                     else "boolean"
-                    if key in {"follow_updates", "available"}
+                    if key in {"follow_updates", "available", "blocking"}
                     else "string"
                 )
                 properties[key] = {"type": typ}
@@ -402,7 +413,9 @@ class WorldCore(WorldRunner):
                 properties["kind"].pop("default", None)
                 required.append("kind")
             for key in arrays & properties.keys():
-                properties[key]["items"] = {"type": "object" if key == "dependencies" else "string"}
+                properties[key]["items"] = {"type": "object" if key in {"dependencies", "evidence"} else "string"}
+            if "locator" in properties:
+                properties["locator"]["items"] = {"type": ["string", "integer"]}
             if "answer" in properties:
                 properties["answer"] = {
                     "description": "Optional answer value, if required by the public work contract"
@@ -431,21 +444,30 @@ class WorldCore(WorldRunner):
 
     def _dispatch(self, actor, project_id, tool, arguments):
         if tool not in {entry["name"] for entry in self._tool_definitions(project_id)}:
-            raise ValueError("Tool capability is not enabled for this session")
+            raise ToolRejection("Tool capability is not enabled for this session", code="tool_not_enabled", category="capability_gap", context={"tool": tool})
         if self.state.get("world_status") == "paused" and tool not in {
             "resume",
             "read_object",
             "sheet_read",
             "read_messages",
             "end_episode",
+            "inspect_submission",
         }:
-            raise ValueError("World is paused; resume before new work")
+            raise ToolRejection("World is paused; resume before new work", code="world_paused", category="business_constraint")
         if not isinstance(arguments, dict) or set(arguments) & {"actor", "actor_id", "project_id"}:
-            raise ValueError("Tool arguments cannot override trusted session context")
+            raise ToolRejection("Tool arguments cannot override trusted session context", code="trusted_context_override", category="policy_error")
         handler = getattr(self, "_action_" + tool, None) if isinstance(tool, str) else None
         if handler is None:
             raise ValueError("Unknown world-core tool")
-        return handler(actor, project_id, **arguments)
+        try:
+            inspect.signature(handler).bind(actor, project_id, **arguments)
+        except TypeError as exc:
+            raise ToolRejection(str(exc), code="invalid_arguments", category="policy_error") from exc
+        try:
+            return handler(actor, project_id, **arguments)
+        except (KeyError, AttributeError, ArithmeticError) as exc:
+            raise ToolRejection(str(exc), code="implementation_exception", category="environment_error",
+                                context={"exception_type": type(exc).__name__, "tool": tool}) from exc
 
     def _action_pause(self, actor, project_id):
         if project_id is not None:
@@ -958,6 +980,80 @@ class WorldCore(WorldRunner):
     def _action_withdraw(self, actor, project_id, work_id, submission_id, reason):
         item = self._work(actor, project_id, work_id)
         return withdraw_submission(self.state, actor, item["work_item_id"], submission_id, reason)
+
+    def _action_inspect_submission(self, actor, project_id, work_id, submission_id):
+        item = self._work(actor, project_id, work_id, current=False)
+        _, submission = submission_for(self.state, item["work_item_id"], submission_id)
+        for aid, vid in submission["artifact_versions"].items():
+            self._object(actor, project_id, object_id=aid, version_id=vid)
+        return copy.deepcopy(submission)
+
+    def _review_read(self, actor, project_id, object_id, version_id, locator=None):
+        artifact, vid = self._object(actor, project_id, object_id=object_id, version_id=version_id)
+        if not any(read.get("artifact_id") == object_id and read.get("version_id") == vid
+                   and read.get("project_id") == project_id
+                   for read in self.state["knowledge"][actor]["read_artifacts"]):
+            raise ToolRejection("Located review requires a prior actual read of its exact evidence",
+                                code="review_evidence_not_read", category="business_constraint")
+        if locator is not None:
+            content = self.store.version_path(artifact, vid).read_bytes()
+            if digest(content) != artifact["versions"][vid]["sha256"]:
+                raise ValueError("Located evidence bytes differ from the committed version")
+            read_location(artifact["kind"], content, locator)
+        return {"object_id": object_id, "version_id": vid}
+
+    def _review_evidence(self, actor, project_id, evidence, required=False):
+        if not isinstance(evidence, list) or len(evidence) > 30 or (required and not evidence):
+            raise ValueError("Review evidence must be a bounded list of exact read references")
+        result = []
+        for entry in evidence:
+            if not isinstance(entry, dict) or set(entry) - {"object_id", "artifact_id", "version_id", "locator"}:
+                raise ValueError("Unsupported review evidence fields")
+            ref = VersionRef.from_mapping(entry)
+            result.append({**self._review_read(actor, project_id, ref.object_id, ref.version_id,
+                                              entry.get("locator")),
+                           **({"locator": copy.deepcopy(entry["locator"])} if "locator" in entry else {})})
+        return result
+
+    def _review_issue(self, actor, project_id, issue_id):
+        self._project(actor, project_id)
+        issue = self.state.get("issues", {}).get(issue_id)
+        if issue is None or issue["project_id"] != project_id:
+            raise ToolRejection("Issue is outside the bound project", code="issue_scope_mismatch",
+                                category="policy_error")
+        return issue
+
+    def _action_raise_issue(self, actor, project_id, work_id, submission_id, issue_key,
+                            object_id, version_id, locator, description, evidence, blocking=True):
+        if not isinstance(locator, list) or not locator:
+            raise ToolRejection("Located issue requires a nonempty location path",
+                                code="invalid_issue_location", category="policy_error")
+        item = self._work(actor, project_id, work_id, current=False)
+        self._project_power(actor, project_id, "review", "deliverable", item["node_id"], object_id)
+        target = self._review_read(actor, project_id, object_id, version_id, locator)
+        references = self._review_evidence(actor, project_id, evidence)
+        return raise_issue(self.state, actor, item["work_item_id"], submission_id, issue_key,
+                           target, locator, description, references, blocking)
+
+    def _action_respond_issue(self, actor, project_id, issue_id, response_key, submission_id,
+                              body, evidence):
+        self._review_issue(actor, project_id, issue_id)
+        references = self._review_evidence(actor, project_id, evidence, required=True)
+        return respond_issue(self.state, actor, issue_id, response_key, submission_id, body, references)
+
+    def _action_decide_issue(self, actor, project_id, issue_id, response_id, decision_key,
+                             decision, reason):
+        issue = self._review_issue(actor, project_id, issue_id)
+        response = self.state.get("issue_responses", {}).get(response_id)
+        if response is None or response["issue_id"] != issue_id:
+            raise ToolRejection("Response targets another issue", code="issue_response_mismatch",
+                                category="policy_error")
+        item, submission = submission_for(self.state, issue["work_id"], response["submission_id"])
+        self._project_power(actor, project_id, "review", "deliverable", item["node_id"], issue["target"]["object_id"])
+        for aid, vid in submission["artifact_versions"].items():
+            self._review_read(actor, project_id, aid, vid)
+        self._review_evidence(actor, project_id, response["evidence"])
+        return decide_issue(self.state, actor, issue_id, response_id, decision_key, decision, reason)
 
     def _action_confirm(self, actor, project_id, work_id, alias, dimension, purpose, period=None):
         item = self._work(actor, project_id, work_id)
@@ -1535,6 +1631,14 @@ class WorldCore(WorldRunner):
                     and views[wid]["is_current"]
                     and views[wid]["status"] not in {"accepted", "cancelled"}
                 ],
+                "issues": {iid: copy.deepcopy(issue) for iid, issue in self.state.get("issues", {}).items()
+                           if issue["project_id"] in projects},
+                "issue_views": {iid: copy.deepcopy(view) for iid, view in derive_issue_view(self.state).items()
+                                if self.state["issues"][iid]["project_id"] in projects},
+                "issue_responses": {rid: copy.deepcopy(record) for rid, record in self.state.get("issue_responses", {}).items()
+                                    if record["project_id"] in projects},
+                "issue_decisions": {did: copy.deepcopy(record) for did, record in self.state.get("issue_decisions", {}).items()
+                                    if record["project_id"] in projects},
                 "conditions": {
                     cid: copy.deepcopy(condition)
                     for cid, condition in self.state["condition_specs"].items()

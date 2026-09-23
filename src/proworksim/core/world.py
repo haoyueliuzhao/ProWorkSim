@@ -21,7 +21,7 @@ from .maintenance import normalize_rules
 from ..adapters.capabilities import capability_for, encode
 from ..domains.work_product import validate_content_contract
 
-WORLD_SCHEMA_VERSION = "world-core-v0.8"
+WORLD_SCHEMA_VERSION = "world-core-v0.9"
 PROVENANCE_KINDS = frozenset({"observed", "reconstructed", "synthetic", "unknown"})
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$")
 
@@ -198,7 +198,7 @@ def new_world_state(spec):
     state = {
         "schema_version": WORLD_SCHEMA_VERSION,
         "runtime_kind": "world_core",
-        "semantics_version": "work-world-v0.8",
+        "semantics_version": "work-world-v0.9",
         "world_id": world_id,
         "instance_id": uuid.uuid4().hex,
         "branch_id": uuid.uuid4().hex,
@@ -213,6 +213,9 @@ def new_world_state(spec):
         "publication_policy": publication_policy,
         "releases": [],
         "maintenance_impacts": {},
+        "issues": {},
+        "issue_responses": {},
+        "issue_decisions": {},
         "information_updates": [],
         "organization": {"positions": {}, "grants": grants},
         "world_status": "running",

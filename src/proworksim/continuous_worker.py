@@ -9,6 +9,8 @@ import copy
 import math
 import uuid
 
+from .tool_outcomes import classify_tool_result, port_exception
+
 
 class ContinuousWorker:
     def __init__(self, ports, checkpoint=None, run_id=None):
@@ -73,15 +75,17 @@ class ContinuousWorker:
         except Exception as exc:
             record["exception"] = {"type": type(exc).__name__, "message": str(exc)}
             self._record(label, "tool_call", record)
-            result = self._outcome(task, "environment_error", "Public tool raised an exception",
-                                   tool_error=record["exception"])
+            failure = classify_tool_result(port_exception(exc, operation="call", context={"action": action}))
+            status = failure.pop("status")
+            result = self._outcome(task, status, "Public tool raised an exception", **failure)
             result["action_performed"] = True
             return None, result
         record["response"] = copy.deepcopy(response)
         self._record(label, "tool_call", record)
         if not response.get("ok"):
-            result = self._outcome(task, "environment_error", "Public tool rejected the action",
-                                   tool_error=response)
+            failure = classify_tool_result(response)
+            status = failure.pop("status")
+            result = self._outcome(task, status, "Public tool rejected the action", **failure)
             result["action_performed"] = True
             return None, result
         result = self._outcome(task, "running", "Public action completed", action=action)
@@ -154,7 +158,7 @@ class ContinuousWorker:
     def _advance(self, label, wid, item, observation, definitions, task):
         if task.get("status") == "environment_error":
             return self._outcome(task, "environment_error", task["reason"],
-                                 tool_error=task.get("tool_error"))
+                                 tool_error=task.get("tool_error"), rejection=task.get("rejection"))
         if item.get("submission_state") == "pending":
             return self._outcome(task, "submitted", "Submitted work awaits institutional review")
         checks = item.get("deliverable_contract", {}).get("content_checks", [])
@@ -296,9 +300,9 @@ class ContinuousWorker:
         except Exception as exc:
             error = {"type": type(exc).__name__, "message": str(exc)}
             self._record(label, "port_error", error)
-            return {"status": "environment_error", "port": label,
-                    "reason": "Public observation interface failed", "tool_error": error,
-                    "action_performed": False}
+            failure = classify_tool_result(port_exception(exc, operation="observation"))
+            return {**failure, "port": label,
+                    "reason": "Public observation interface failed", "action_performed": False}
         candidates = []
         for wid, item in observation["work_items"].items():
             if item["owner_role"] != observation["actor_id"]:
@@ -332,8 +336,11 @@ class ContinuousWorker:
             result = self.step()
             results.append(result)
             idle = 0 if result["action_performed"] else idle + 1
-            if result["status"] == "environment_error":
-                return self.result("environment_error", results)
+            if result["status"] in {
+                "policy_error", "business_constraint", "capability_gap",
+                "environment_error", "unattributed_tool_rejection",
+            }:
+                return self.result(result["status"], results)
             threshold = len(self.ports) * max([1, *self.port_counts.values()])
             if idle >= threshold:
                 statuses = [task["status"] for task in self.tasks.values()

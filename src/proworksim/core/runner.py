@@ -164,7 +164,12 @@ class WorldRunner:
                         "projection_region_changes": [],
                     },
                 )
-                output = {"ok": False, "error": {"type": type(exc).__name__, "message": str(exc)}}
+                from ..tool_outcomes import rejection_error
+
+                output = {"ok": False, "error": rejection_error(exc, context={
+                    "actor_id": actor, "action": action, "project_id": arguments.get("project_id"),
+                    "tool": arguments.get("tool", action),
+                })}
             transition["preflight_projection_delta"] = preflight_delta
             self.state["clock"] += 1
             record = asdict(

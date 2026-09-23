@@ -82,6 +82,10 @@ def preserve_history(before, after, submission_extensions=(), append_extensions=
     for response_id, response in before.get("raw_condition_responses", {}).items():
         if after.get("raw_condition_responses", {}).get(response_id) != response:
             raise ValueError("Historical raw response changed")
+    for registry in ("issues", "issue_responses", "issue_decisions"):
+        for key, record in before.get(registry, {}).items():
+            if after.get(registry, {}).get(key) != record:
+                raise ValueError("Historical located review fact changed: " + registry)
     for key, binding in before.get("adoptions", {}).items():
         newer = after.get("adoptions", {}).get(key)
         if newer is None:

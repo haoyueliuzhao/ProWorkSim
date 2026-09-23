@@ -112,7 +112,10 @@ def submission_versions_current(state, item, submission):
 
 def derive_current_work_view(state):
     """Return work readiness including historical obligations; never mutate facts."""
+    from .issues import derive_issue_view
+
     conditions = derive_condition_view(state)
+    issues = derive_issue_view(state)
     result = {}
     for wid, item in state.get("work_items", {}).items():
         current = _current_id(state, wid) == wid
@@ -145,6 +148,8 @@ def derive_current_work_view(state):
                 submission_versions_current(state, item, submission) if submission else None
             ),
             "applicability": "current" if current else "superseded_requirements",
+            "outstanding_issue_ids": [iid for iid, issue in issues.items()
+                                      if issue["work_id"] == wid and issue["blocks_approval"]],
             "condition_ids": [view["condition_id"] for view in obligations],
             "outstanding_condition_ids": [view["condition_id"] for view in outstanding],
             "blocker_ids": [
@@ -171,6 +176,7 @@ def derive_current_work_view(state):
                 if (
                     ready
                     and not view["outstanding_condition_ids"]
+                    and not view["outstanding_issue_ids"]
                     and view["submission_versions_current"]
                 ):
                     enabled.append("approve")

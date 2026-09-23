@@ -1,4 +1,4 @@
-# 状态归属与重算（v0.8）
+# 状态归属与重算（v0.9）
 
 | 字段或对象 | 归属 | 权威与修改规则 |
 | --- | --- | --- |
@@ -74,3 +74,18 @@ E1 的缓存操作仅使用 `core.projections.projection_paths` 明确列出的�
 | information_routes.availability_revision / information_updates | B | 合法提供者的公开可得性修改与追加历史；不凭修改直接满足条件 |
 | request.route_revision / work_item_id / requirement_version | B | 请求时冻结的路线与工作上下文；新请求可以撤除旧未满足条件，原始回应不删除 |
 | continuous worker checkpoint | 世界外 Q/O | 已完成步骤之间显式保存的公共进度、命令序号和原始轨迹，不是内核事实或任意崩溃恢复证明 |
+
+
+## v0.9 版本定位的问题与处理
+
+| 字段或对象 | 归属 | 权威与修改规则 |
+| --- | --- | --- |
+| issues | B | 有范围review权且实际已读精确提交的主体提出；固定work/req/submission/ref/locator，创建时记录是否适用于当前待审工作 |
+| issue_responses | B/O | 责任人实际回应，一对一关联问题与真实提交；正文及证据不自动构成真值 |
+| issue_decisions | B | 有权review主体对确切回应的处理事实；accept_fix/accept_rebuttal/keep_open，记录对应submission与全局序号 |
+| issue_views | P/公开查询 | 从不可变问题与决定折叠status、applicability、blocks_approval；不写回第二套status权威 |
+| work.outstanding_issue_ids | P/公开查询 | 批准条件，区别于资料获取条件；阻止approve而不阻止修复重新提交 |
+| rejection事实及分类 | O | 运行时保留type/message和显式原因/类别/调用上下文；未知保持unknown，不按文本猜归因 |
+| 财务记录/报告章节/claim | B/版本化文件内容 | 属于领域对象的实际JSON字节，不升级成通用世界的固定字段；错误也可成为真实提交 |
+
+后续版本不覆盖旧问题定位或决定的证据。新版本如何满足专业内容由领域独立评价；一次review处理决定不证明未来所有版本正确。

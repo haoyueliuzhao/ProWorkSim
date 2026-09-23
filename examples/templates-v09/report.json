@@ -1,0 +1,177 @@
+{
+  "project_id": "REPORT",
+  "goal": "Review actual finite report assertions and repair only the affected sections",
+  "participants": [
+    "author",
+    "reviewer"
+  ],
+  "objects": [
+    {
+      "alias": "dataset",
+      "filename": "dataset.json",
+      "owner": "reviewer",
+      "readers": [
+        "author",
+        "reviewer"
+      ],
+      "kind": "json",
+      "data": {
+        "period": "2026H1",
+        "metrics": {
+          "revenue": {
+            "value": 120,
+            "previous": 100
+          },
+          "cost": {
+            "value": 70,
+            "previous": 80
+          }
+        }
+      }
+    },
+    {
+      "alias": "report",
+      "filename": "report.json",
+      "owner": "author",
+      "readers": [
+        "author",
+        "reviewer"
+      ],
+      "kind": "json",
+      "deliverable_role": "report",
+      "data": {
+        "report": {
+          "sections": [
+            {
+              "section_id": "context",
+              "body": "Context retained verbatim: this synthetic report is limited to two stated metrics.",
+              "claims": []
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "works": [
+    {
+      "work_id": "research",
+      "owner": "author",
+      "approval_policy": "review",
+      "goal": "Reconcile body and evidence before approval",
+      "requirements": {
+        "input_policy": "fixed",
+        "input_version": "v1"
+      },
+      "deliverable_contract": {
+        "min_files": 1,
+        "max_files": 2,
+        "allowed_kinds": [
+          "json"
+        ],
+        "allowed_roles": [
+          "report"
+        ],
+        "required_fields": [
+          "report",
+          "sources"
+        ],
+        "content_checks": [
+          {
+            "kind": "research_report",
+            "path": [
+              "report"
+            ],
+            "sources": [
+              {
+                "alias": "dataset",
+                "reference_path": [
+                  "sources",
+                  "dataset"
+                ]
+              }
+            ],
+            "claims": [
+              {
+                "claim_id": "revenue",
+                "section_id": "revenue",
+                "label": "Revenue",
+                "source_alias": "dataset",
+                "value_path": [
+                  "metrics",
+                  "revenue",
+                  "value"
+                ],
+                "previous_path": [
+                  "metrics",
+                  "revenue",
+                  "previous"
+                ],
+                "period_path": [
+                  "period"
+                ]
+              },
+              {
+                "claim_id": "cost",
+                "section_id": "cost",
+                "label": "Cost",
+                "source_alias": "dataset",
+                "value_path": [
+                  "metrics",
+                  "cost",
+                  "value"
+                ],
+                "previous_path": [
+                  "metrics",
+                  "cost",
+                  "previous"
+                ],
+                "period_path": [
+                  "period"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "grants": [
+    {
+      "actor_id": "author",
+      "power": "adopt",
+      "subject": "artifact",
+      "work_nodes": [
+        "research"
+      ]
+    },
+    {
+      "actor_id": "author",
+      "power": "create_object",
+      "subject": "artifact",
+      "work_nodes": [
+        "research"
+      ]
+    },
+    {
+      "actor_id": "reviewer",
+      "power": "review",
+      "subject": "deliverable",
+      "work_nodes": [
+        "research"
+      ]
+    },
+    {
+      "actor_id": "reviewer",
+      "power": "approve",
+      "subject": "deliverable",
+      "work_nodes": [
+        "research"
+      ]
+    }
+  ],
+  "provenance": {
+    "kind": "synthetic",
+    "source_evidence_refs": [],
+    "note": "Synthetic finite report and public metric material"
+  }
+}

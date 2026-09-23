@@ -10,6 +10,8 @@ This is a deterministic mechanism witness, not a general planning agent.
 import copy
 import uuid
 
+from .tool_outcomes import ToolRejection, classify_tool_result, rejection_error
+
 
 class PublicWorker:
     def __init__(self, session, max_actions=24, run_id=None):
@@ -31,7 +33,10 @@ class PublicWorker:
 
     def call(self, action, **arguments):
         if action not in self.tool_names:
-            return {"ok": False, "error": {"type": "CapabilityGap", "message": action}}
+            return {"ok": False, "error": rejection_error(ToolRejection(
+                "Required tool is not advertised", code="missing_tool", category="capability_gap",
+                context={"action": action},
+            ))}
         if self.actions >= self.max_actions:
             return {"ok": False, "error": {"type": "BudgetExhausted", "message": action}}
         self.actions += 1
@@ -42,6 +47,13 @@ class PublicWorker:
             {"action": action, "arguments": arguments, "request_key": key, "response": response},
         )
         return response
+
+    def rejected(self, response, reason, **details):
+        if response.get("error", {}).get("type") == "BudgetExhausted":
+            return self.outcome("budget_exhausted", reason, tool_error=response, **details)
+        failure = classify_tool_result(response)
+        status = failure.pop("status")
+        return self.outcome(status, reason, **failure, **details)
 
     def outcome(self, status, reason, **details):
         return {
@@ -120,12 +132,9 @@ class PublicWorker:
                     "request_information", route_id=route["route_id"], work_id=work_id
                 )
                 if not response.get("ok"):
-                    return self.outcome(
-                        "capability_gap",
-                        "Advertised request could not execute",
-                        tool_error=response,
-                        work_id=work_id,
-                    )
+                    return self.rejected(
+                    response, "Advertised request could not execute", work_id=work_id
+                )
                 requested.add(route["route_id"])
             else:
                 conditions = observation.get("conditions", {})
@@ -141,12 +150,9 @@ class PublicWorker:
                     )
                 response = self.call("wait", ticks=1)
                 if not response.get("ok"):
-                    return self.outcome(
-                        "waiting",
-                        "Cannot advance the pending public request",
-                        tool_error=response,
-                        work_id=work_id,
-                    )
+                    return self.rejected(
+                    response, "Cannot advance the pending public request", work_id=work_id
+                )
             observation = self.observe()
         else:
             return self.outcome(
@@ -207,24 +213,18 @@ class PublicWorker:
         else:
             adopted = {"ok": True}
         if not adopted.get("ok"):
-            return self.outcome(
-                "capability_gap",
-                "Discovered adoption could not execute",
-                tool_error=adopted,
-                work_id=work_id,
-            )
+            return self.rejected(
+                    adopted, "Discovered adoption could not execute", work_id=work_id
+                )
         read_tool = "sheet_read" if check["kind"] == "json_matches_source_cell" else "read_object"
         read_args = {"object_id": object_id, "version_id": version_id}
         if read_tool == "sheet_read":
             read_args["sheet"] = check["sheet"]
         read = self.call(read_tool, **read_args)
         if not read.get("ok"):
-            return self.outcome(
-                "waiting",
-                "Selected exact input could not be read",
-                tool_error=read,
-                work_id=work_id,
-            )
+            return self.rejected(
+                    read, "Selected exact input could not be read", work_id=work_id
+                )
         try:
             if read_tool == "sheet_read":
                 cell = read["result"]["sheets"][check["sheet"]][check["cell"]]
@@ -261,12 +261,9 @@ class PublicWorker:
             dependencies=[reference],
         )
         if not created.get("ok"):
-            return self.outcome(
-                "capability_gap",
-                "Delivery creation could not execute",
-                tool_error=created,
-                work_id=work_id,
-            )
+            return self.rejected(
+                    created, "Delivery creation could not execute", work_id=work_id
+                )
         observation = self.observe()
         if "submit" not in observation["work_items"][work_id]["enabled_actions"]:
             return self.outcome(
@@ -274,12 +271,9 @@ class PublicWorker:
             )
         submitted = self.call("submit", work_id=work_id, artifacts=[output_alias])
         if not submitted.get("ok"):
-            return self.outcome(
-                "capability_gap",
-                "Publicly enabled submission could not execute",
-                tool_error=submitted,
-                work_id=work_id,
-            )
+            return self.rejected(
+                    submitted, "Publicly enabled submission could not execute", work_id=work_id
+                )
         self.observe()
         return self.outcome(
             "submitted",

@@ -17,6 +17,9 @@ from openpyxl.utils.cell import coordinate_to_tuple
 
 from ..core.adoption import binding_key, require_version
 from ..core.references import VersionRef
+from . import reconciliation, research_review
+
+DOMAIN_CHECKS = {module.CHECK_KIND: module for module in (reconciliation, research_review)}
 
 
 _KINDS = {
@@ -28,7 +31,7 @@ _KINDS = {
     "json_linear_sources",
 }
 _COMMON = {"kind", "role"}
-EVALUATOR_VERSION = "finite-products-v0.8.1"
+EVALUATOR_VERSION = "finite-products-v0.9"
 
 
 def _path(value, label):
@@ -100,7 +103,10 @@ def validate_content_contract(contract):
     checks = result.setdefault("content_checks", [])
     if not isinstance(checks, list) or len(checks) > 100:
         raise ValueError("content_checks must contain at most 100 finite checks")
-    for check in checks:
+    for index, check in enumerate(checks):
+        if isinstance(check, dict) and check.get("kind") in DOMAIN_CHECKS:
+            checks[index] = DOMAIN_CHECKS[check["kind"]].validate_check(check)
+            continue
         if not isinstance(check, dict) or check.get("kind") not in _KINDS:
             raise ValueError("Unknown work product content check")
         kind = check["kind"]
@@ -323,16 +329,28 @@ def evaluate_submission(store, state, item, submission):
                 entry["data"] for entry in selected if entry["data"] is not None
             )
             kind = spec["kind"]
-            if kind.startswith("json_"):
+            if kind.startswith("json_") or kind in DOMAIN_CHECKS:
                 required_roots = {spec["path"][0]}
                 if "reference_path" in spec:
                     required_roots.add(spec["reference_path"][0])
-                if kind == "json_linear_sources":
+                if kind == "json_linear_sources" or kind in DOMAIN_CHECKS:
                     required_roots.update(source["reference_path"][0] for source in spec["sources"])
                 relevant_conflicts = sorted(required_roots & selected_conflicts)
                 if relevant_conflicts:
                     raise ValueError("Conflicting JSON fields: " + ", ".join(relevant_conflicts))
-            if kind == "json_field_equals":
+            if kind in DOMAIN_CHECKS:
+                source_data, exact_sources = {}, []
+                for source_spec in spec["sources"]:
+                    ref, files = bound_source(selected, json_data, spec["path"],
+                                              source_spec["reference_path"], source_spec["alias"])
+                    if state["artifacts"][ref.object_id]["kind"] != "json":
+                        raise ValueError("This finite domain contract requires JSON inputs")
+                    source_data[source_spec["alias"]] = json.loads(read_version(ref.object_id, ref.version_id))
+                    exact_sources.append({"alias": source_spec["alias"], "reference": ref.to_dict(),
+                                          "binding_files": files})
+                outcome.update(DOMAIN_CHECKS[kind].evaluate_check(spec, json_data, source_data.__getitem__))
+                outcome["sources"] = exact_sources
+            elif kind == "json_field_equals":
                 actual, expected = _at_path(json_data, spec["path"]), spec["expected"]
                 outcome.update(actual=actual, expected=expected, passed=_equal(actual, expected))
             elif kind == "xlsx_cell_equals":

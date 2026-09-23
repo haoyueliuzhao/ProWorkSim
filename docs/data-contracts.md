@@ -326,3 +326,10 @@ E4 在冻结 `fe80b02` 上覆盖同一可信检查点分出的 4 个动作族和
 既有导出仍包含 manifest、episode、calls、interactions、evaluations、candidates、sft、rl 和完整 world 快照。调用保留真实 messages/tools、原始返回、服务端 usage 与 attempts，不纳入 API 密钥；未知 usage 不用字符估算填充。快照分支、谱系划分、历史候选与 message loss mask 的归档接口保留，后续被替代的旧提交不自动变成新要求的监督。
 
 SFT 候选仍是 `outcome_conditioned_candidate`，不是逐步专业金标；RL 中未提供的 token ID 和行为概率保持缺失，不能视为已完成在线训练协议。本阶段验证的是有限工作世界语义、纯投影、跨模板条件复用及有界提交恢复，没有新增参数训练、扩大上下文效果或证明训练收益。内核自洽也不证明合成经营假设与真实专业实践一致。
+
+
+## v0.9 当前扩展
+
+当前多项目新世界格式为world-core-v0.9、内容评价finite-products-v0.9；上面的v0.8/v0.7段落保留历史层次。新增reconciliation_table与research_report领域检查，以公开sources/精确采用/版本哈希/贡献依赖为共用输入边界，集合与正文规则留在各自领域模块。
+
+共享issues/issue_responses/issue_decisions为不可变登记，issue_views为查询派生。具体字段、公开工具及有限模板格式见[两模板说明](template-expansion-v09.md)。错误返回继续保留type/message，新增rejection.version/code/category/context；未明确分类时unknown而非推测环境故障。
