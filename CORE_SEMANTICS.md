@@ -1,6 +1,6 @@
 # 工作世界语义内核（v0.9，两模板与共同审阅关系）
 
-依据：[持续工作审计](docs/reference/continuous-work-audit.md)。保留多项目 WorldCore 与共用 WorldRunner；本轮修复嵌套 JSON 冲突评价，将采用与资料请求绑定到具体工作版本，并以项目规则连接发布、后继义务和公开工作人员。详细合同见[设计说明](docs/continuous-work-v08.md)。
+依据：[两模板审计](docs/reference/template-expansion-audit.md)。保留多项目WorldCore、工作采用、发布和持续义务；本轮用财务集合核对与报告定向审阅验证共同规则，新增定位问题、回应和处理决定，并明确工具拒绝归因。领域差异留在各自合同与程序策略中，见[设计说明](docs/template-expansion-v09.md)。
 
 ## 世界先于项目
 

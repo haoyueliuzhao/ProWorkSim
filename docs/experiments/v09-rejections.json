@@ -1,0 +1,966 @@
+{
+  "archive_version": "selected-raw-evidence-v0.9",
+  "protocol": {
+    "suite": "tool-rejection-attribution-v0.9",
+    "cases": {
+      "invalid_arguments": "policy_error",
+      "permission_denied": "policy_error",
+      "unknown_tool": "capability_gap",
+      "superseded_work": "business_constraint",
+      "world_paused": "business_constraint",
+      "implementation_exception": "environment_error"
+    },
+    "checks_per_case": [
+      "actual_tool_rejection",
+      "explicit_rejection_facts",
+      "attribution",
+      "business_state_preserved"
+    ],
+    "measurement": "Call real bound WorldCore sessions, preserve exact response, then classify only structured rejection facts. No text heuristics.",
+    "implementation_exception": "One deliberate KeyError injection into the real advertised wait action. An implementation boundary must explicitly classify this; it is not a spontaneous production failure.",
+    "historical_context": "v0.8 pause probe raw outcome remains valid. Current general attribution separates policy mistakes, legitimate constraints, capability gaps and implementation exceptions.",
+    "source_note": "Current run identity brackets this driver; frozen v0.8 before evidence is kept separately."
+  },
+  "final": {
+    "protocol": "tool-rejection-attribution-v0.9",
+    "source_before": {
+      "code_commit": "07bd9fd9e8a9e40681149a3bc41f133937205eea",
+      "code_dirty": false,
+      "source_tree_sha256": "b91758998c6b6ebed8e10daea4429640344d235f0c1d7ccff2d0bdbba3733673"
+    },
+    "source_after": {
+      "code_commit": "07bd9fd9e8a9e40681149a3bc41f133937205eea",
+      "code_dirty": false,
+      "source_tree_sha256": "b91758998c6b6ebed8e10daea4429640344d235f0c1d7ccff2d0bdbba3733673"
+    },
+    "cases": [
+      {
+        "case": "invalid_arguments",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "unexpected": true
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "got an unexpected keyword argument 'unexpected'",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "invalid_arguments",
+              "category": "policy_error",
+              "context": {
+                "actor_id": "alice",
+                "action": "project_action",
+                "project_id": "A",
+                "tool": "wait",
+                "arguments_type": "dict"
+              }
+            }
+          },
+          "action_id": "action-2",
+          "logical_time": 2,
+          "command_id": "command:00824efb7bd75058e2c187a77e49161cd46f00ebe20bd8d63fcafc580644d21d",
+          "command_committed": true,
+          "committed_revision": 2
+        },
+        "outcome": {
+          "status": "policy_error",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "got an unexpected keyword argument 'unexpected'",
+            "version": "tool-rejection-v0.9",
+            "code": "invalid_arguments",
+            "category": "policy_error",
+            "context": {
+              "actor_id": "alice",
+              "action": "project_action",
+              "project_id": "A",
+              "tool": "wait",
+              "arguments_type": "dict"
+            }
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "got an unexpected keyword argument 'unexpected'",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "invalid_arguments",
+                "category": "policy_error",
+                "context": {
+                  "actor_id": "alice",
+                  "action": "project_action",
+                  "project_id": "A",
+                  "tool": "wait",
+                  "arguments_type": "dict"
+                }
+              }
+            },
+            "action_id": "action-2",
+            "logical_time": 2,
+            "command_id": "command:00824efb7bd75058e2c187a77e49161cd46f00ebe20bd8d63fcafc580644d21d",
+            "command_committed": true,
+            "committed_revision": 2
+          }
+        },
+        "expected_category": "policy_error",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": true,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      },
+      {
+        "case": "permission_denied",
+        "actor": "alice",
+        "project": null,
+        "action": "pause",
+        "arguments": {},
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "Actor lacks world power: pause_world",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "world_power_denied",
+              "category": "policy_error",
+              "context": {
+                "actor_id": "alice",
+                "action": "world_action",
+                "project_id": null,
+                "tool": "pause",
+                "arguments_type": "dict",
+                "power": "pause_world"
+              }
+            }
+          },
+          "action_id": "action-3",
+          "logical_time": 3,
+          "command_id": "command:5f648939f7fd17d0a6774c077bd8cad119ef616e5775eaee666cf3160a0a31da",
+          "command_committed": true,
+          "committed_revision": 3
+        },
+        "outcome": {
+          "status": "policy_error",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "Actor lacks world power: pause_world",
+            "version": "tool-rejection-v0.9",
+            "code": "world_power_denied",
+            "category": "policy_error",
+            "context": {
+              "actor_id": "alice",
+              "action": "world_action",
+              "project_id": null,
+              "tool": "pause",
+              "arguments_type": "dict",
+              "power": "pause_world"
+            }
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "Actor lacks world power: pause_world",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "world_power_denied",
+                "category": "policy_error",
+                "context": {
+                  "actor_id": "alice",
+                  "action": "world_action",
+                  "project_id": null,
+                  "tool": "pause",
+                  "arguments_type": "dict",
+                  "power": "pause_world"
+                }
+              }
+            },
+            "action_id": "action-3",
+            "logical_time": 3,
+            "command_id": "command:5f648939f7fd17d0a6774c077bd8cad119ef616e5775eaee666cf3160a0a31da",
+            "command_committed": true,
+            "committed_revision": 3
+          }
+        },
+        "expected_category": "policy_error",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": true,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      },
+      {
+        "case": "unknown_tool",
+        "actor": "alice",
+        "project": "A",
+        "action": "never_registered",
+        "arguments": {},
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "Tool capability is not enabled for this session",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "tool_not_enabled",
+              "category": "capability_gap",
+              "context": {
+                "actor_id": "alice",
+                "action": "project_action",
+                "project_id": "A",
+                "tool": "never_registered",
+                "arguments_type": "dict"
+              }
+            }
+          },
+          "action_id": "action-4",
+          "logical_time": 4,
+          "command_id": "command:e9375ff64e311152625fbd61ca9cd450dbcd3694f1da09f19b096970d54d20a2",
+          "command_committed": true,
+          "committed_revision": 4
+        },
+        "outcome": {
+          "status": "capability_gap",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "Tool capability is not enabled for this session",
+            "version": "tool-rejection-v0.9",
+            "code": "tool_not_enabled",
+            "category": "capability_gap",
+            "context": {
+              "actor_id": "alice",
+              "action": "project_action",
+              "project_id": "A",
+              "tool": "never_registered",
+              "arguments_type": "dict"
+            }
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "Tool capability is not enabled for this session",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "tool_not_enabled",
+                "category": "capability_gap",
+                "context": {
+                  "actor_id": "alice",
+                  "action": "project_action",
+                  "project_id": "A",
+                  "tool": "never_registered",
+                  "arguments_type": "dict"
+                }
+              }
+            },
+            "action_id": "action-4",
+            "logical_time": 4,
+            "command_id": "command:e9375ff64e311152625fbd61ca9cd450dbcd3694f1da09f19b096970d54d20a2",
+            "command_committed": true,
+            "committed_revision": 4
+          }
+        },
+        "expected_category": "capability_gap",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": true,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      },
+      {
+        "case": "superseded_work",
+        "actor": "alice",
+        "project": "A",
+        "action": "submit",
+        "arguments": {
+          "work_id": "work-1",
+          "artifacts": []
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "Work reference is superseded",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "superseded_work",
+              "category": "business_constraint",
+              "context": {
+                "actor_id": "alice",
+                "action": "project_action",
+                "project_id": "A",
+                "tool": "submit",
+                "arguments_type": "dict",
+                "work_id": "A::work-1"
+              }
+            }
+          },
+          "action_id": "action-6",
+          "logical_time": 6,
+          "command_id": "command:5b74c77642e3b917ca4971197e87f6f8c22928201bc2b52318292b104374bb41",
+          "command_committed": true,
+          "committed_revision": 6
+        },
+        "outcome": {
+          "status": "business_constraint",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "Work reference is superseded",
+            "version": "tool-rejection-v0.9",
+            "code": "superseded_work",
+            "category": "business_constraint",
+            "context": {
+              "actor_id": "alice",
+              "action": "project_action",
+              "project_id": "A",
+              "tool": "submit",
+              "arguments_type": "dict",
+              "work_id": "A::work-1"
+            }
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "Work reference is superseded",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "superseded_work",
+                "category": "business_constraint",
+                "context": {
+                  "actor_id": "alice",
+                  "action": "project_action",
+                  "project_id": "A",
+                  "tool": "submit",
+                  "arguments_type": "dict",
+                  "work_id": "A::work-1"
+                }
+              }
+            },
+            "action_id": "action-6",
+            "logical_time": 6,
+            "command_id": "command:5b74c77642e3b917ca4971197e87f6f8c22928201bc2b52318292b104374bb41",
+            "command_committed": true,
+            "committed_revision": 6
+          }
+        },
+        "expected_category": "business_constraint",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": true,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      },
+      {
+        "case": "world_paused",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "ticks": 1
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "World is paused; resume before new work",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "world_paused",
+              "category": "business_constraint",
+              "context": {
+                "actor_id": "alice",
+                "action": "project_action",
+                "project_id": "A",
+                "tool": "wait",
+                "arguments_type": "dict"
+              }
+            }
+          },
+          "action_id": "action-8",
+          "logical_time": 8,
+          "command_id": "command:d1e9c52ce61e754821d6e365018a21ea57dee8c61017f536342e1b786d8234c6",
+          "command_committed": true,
+          "committed_revision": 8
+        },
+        "outcome": {
+          "status": "business_constraint",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "World is paused; resume before new work",
+            "version": "tool-rejection-v0.9",
+            "code": "world_paused",
+            "category": "business_constraint",
+            "context": {
+              "actor_id": "alice",
+              "action": "project_action",
+              "project_id": "A",
+              "tool": "wait",
+              "arguments_type": "dict"
+            }
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "World is paused; resume before new work",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "world_paused",
+                "category": "business_constraint",
+                "context": {
+                  "actor_id": "alice",
+                  "action": "project_action",
+                  "project_id": "A",
+                  "tool": "wait",
+                  "arguments_type": "dict"
+                }
+              }
+            },
+            "action_id": "action-8",
+            "logical_time": 8,
+            "command_id": "command:d1e9c52ce61e754821d6e365018a21ea57dee8c61017f536342e1b786d8234c6",
+            "command_committed": true,
+            "committed_revision": 8
+          }
+        },
+        "expected_category": "business_constraint",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": true,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      },
+      {
+        "case": "implementation_exception",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "ticks": 1
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "'injected internal implementation key'",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "implementation_exception",
+              "category": "environment_error",
+              "context": {
+                "actor_id": "alice",
+                "action": "project_action",
+                "project_id": "A",
+                "tool": "wait",
+                "arguments_type": "dict",
+                "exception_type": "KeyError"
+              }
+            }
+          },
+          "action_id": "action-10",
+          "logical_time": 10,
+          "command_id": "command:da9a884a650a8a59e3a8391d54104baabaab97f6807aee6988e04a24ca7b5fa1",
+          "command_committed": true,
+          "committed_revision": 10
+        },
+        "outcome": {
+          "status": "environment_error",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "'injected internal implementation key'",
+            "version": "tool-rejection-v0.9",
+            "code": "implementation_exception",
+            "category": "environment_error",
+            "context": {
+              "actor_id": "alice",
+              "action": "project_action",
+              "project_id": "A",
+              "tool": "wait",
+              "arguments_type": "dict",
+              "exception_type": "KeyError"
+            }
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "'injected internal implementation key'",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "implementation_exception",
+                "category": "environment_error",
+                "context": {
+                  "actor_id": "alice",
+                  "action": "project_action",
+                  "project_id": "A",
+                  "tool": "wait",
+                  "arguments_type": "dict",
+                  "exception_type": "KeyError"
+                }
+              }
+            },
+            "action_id": "action-10",
+            "logical_time": 10,
+            "command_id": "command:da9a884a650a8a59e3a8391d54104baabaab97f6807aee6988e04a24ca7b5fa1",
+            "command_committed": true,
+            "committed_revision": 10
+          }
+        },
+        "expected_category": "environment_error",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": true,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      }
+    ],
+    "passed": true,
+    "checks_passed": 24,
+    "checks_total": 24,
+    "raw_report": {
+      "path": "runs/tool-rejection-v09-final/report.json",
+      "sha256": "c091ad74103a27a5b59c40cee62f38e1fc5e3fd75d159459479ff1231e894116",
+      "bytes": 16230
+    }
+  },
+  "frozen_v08_before": {
+    "source_commit": "5e2de883fd128716cd402f0c12a18f0f68d8a59d",
+    "source_mode": "git archive HEAD of v0.8; no current dirty source imported",
+    "cases": [
+      {
+        "case": "invalid_arguments",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "unexpected": true
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "TypeError",
+            "message": "WorldCore._action_wait() got an unexpected keyword argument 'unexpected'"
+          },
+          "action_id": "action-2",
+          "logical_time": 2,
+          "command_id": "command:5fe6165e264923a00066986ae325e75c4094fee30df07337b71fb9a6f335cfbf",
+          "command_committed": true,
+          "committed_revision": 2
+        },
+        "old_worker_status": "environment_error"
+      },
+      {
+        "case": "permission_denied",
+        "actor": "alice",
+        "project": null,
+        "action": "pause",
+        "arguments": {},
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ValueError",
+            "message": "Actor lacks world power: pause_world"
+          },
+          "action_id": "action-3",
+          "logical_time": 3,
+          "command_id": "command:298f2cd21089ab3d73025b15b471a17073921327f479df8aa6787c4dda1c662d",
+          "command_committed": true,
+          "committed_revision": 3
+        },
+        "old_worker_status": "environment_error"
+      },
+      {
+        "case": "unknown_tool",
+        "actor": "alice",
+        "project": "A",
+        "action": "never_registered",
+        "arguments": {},
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ValueError",
+            "message": "Tool capability is not enabled for this session"
+          },
+          "action_id": "action-4",
+          "logical_time": 4,
+          "command_id": "command:9cbf2f7d5bee464000b43a53d160788e7c67122708826006e01f7f05704df99c",
+          "command_committed": true,
+          "committed_revision": 4
+        },
+        "old_worker_status": "environment_error"
+      },
+      {
+        "case": "superseded_work",
+        "actor": "alice",
+        "project": "A",
+        "action": "submit",
+        "arguments": {
+          "work_id": "work-1",
+          "artifacts": []
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ValueError",
+            "message": "Work reference is superseded"
+          },
+          "action_id": "action-6",
+          "logical_time": 6,
+          "command_id": "command:8644fce87f165bf95b0c0fd874fbb8ebc6edf6a39e397b0d209602ae2c1d06ee",
+          "command_committed": true,
+          "committed_revision": 6
+        },
+        "old_worker_status": "environment_error"
+      },
+      {
+        "case": "world_paused",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "ticks": 1
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ValueError",
+            "message": "World is paused; resume before new work"
+          },
+          "action_id": "action-8",
+          "logical_time": 8,
+          "command_id": "command:ee0cedb5a8291cb622601d4eae10f1acc800ba469dc1ff9c2eaad649a667096f",
+          "command_committed": true,
+          "committed_revision": 8
+        },
+        "old_worker_status": "environment_error"
+      },
+      {
+        "case": "implementation_exception",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "ticks": 1
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "KeyError",
+            "message": "'injected internal implementation key'"
+          },
+          "action_id": "action-10",
+          "logical_time": 10,
+          "command_id": "command:22f784ab5d97246b26555aedd015078af946eb449ab764d95f7d8a17d7c35590",
+          "command_committed": true,
+          "committed_revision": 10
+        },
+        "old_worker_status": "environment_error"
+      }
+    ],
+    "fault_injection": "implementation_exception deliberately replaces an advertised action implementation with a KeyError; other five rejections are unmodified runtime actions",
+    "interpretation": "All six real rejected actions are labelled environment_error by old worker. This is a broader attribution limitation, not a disproof of the old controlled pause raw result.",
+    "archive_source_tree_sha256": "6398c901f9adeaba1092cec92f042226cb6dbf50b799ed348827ce26409008e9",
+    "probe_sha256": "9fb982807ecef72d896a624b9f8b67f610ae69d36c33e856a55d107962cc392d",
+    "raw_report": {
+      "path": "runs/tool-rejection-v09-before/report.json",
+      "sha256": "b437fdefd417908a84accd1d10dcc5df9e92bbc672e379a40f910fd4d8534956",
+      "bytes": 4431
+    },
+    "probe": {
+      "path": "runs/tool-rejection-v09-before/probe.py",
+      "sha256": "9fb982807ecef72d896a624b9f8b67f610ae69d36c33e856a55d107962cc392d",
+      "bytes": 2607
+    }
+  },
+  "interpretation": "Six actual tool refusals collected from an isolated v0.8 archive were replayed only through the old worker classifier; all were labelled environment_error. The historical authorized-pause refusal remains a valid observed fact. The change corrects general attribution. The implementation KeyError is an intentional fault injection, not a spontaneous production failure.",
+  "development_context_gap": {
+    "source_before": {
+      "code_commit": "5e2de883fd128716cd402f0c12a18f0f68d8a59d",
+      "code_dirty": true,
+      "source_tree_sha256": "e3bf4b2f66539d2d555939552575d3b91bba0f39df8f2260b8d8b9c90047643c"
+    },
+    "source_after": {
+      "code_commit": "5e2de883fd128716cd402f0c12a18f0f68d8a59d",
+      "code_dirty": true,
+      "source_tree_sha256": "e3bf4b2f66539d2d555939552575d3b91bba0f39df8f2260b8d8b9c90047643c"
+    },
+    "checks_passed": 22,
+    "checks_total": 24,
+    "raw_report": {
+      "path": "runs/tool-rejection-v09-dev/report.json",
+      "sha256": "ea10dde43170e2bde08c50dc9a16200b90c198606ee382d6d7b128cad4b8d52a",
+      "bytes": 13093
+    },
+    "failed_cases": [
+      {
+        "case": "invalid_arguments",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "unexpected": true
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "got an unexpected keyword argument 'unexpected'",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "invalid_arguments",
+              "category": "policy_error",
+              "context": {}
+            }
+          },
+          "action_id": "action-2",
+          "logical_time": 2,
+          "command_id": "command:01a36f4f577212d60fe9d2a440a47f54b4cdb611bd25ebc0b3182759fec78f13",
+          "command_committed": true,
+          "committed_revision": 2
+        },
+        "outcome": {
+          "status": "policy_error",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "got an unexpected keyword argument 'unexpected'",
+            "version": "tool-rejection-v0.9",
+            "code": "invalid_arguments",
+            "category": "policy_error",
+            "context": {}
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "got an unexpected keyword argument 'unexpected'",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "invalid_arguments",
+                "category": "policy_error",
+                "context": {}
+              }
+            },
+            "action_id": "action-2",
+            "logical_time": 2,
+            "command_id": "command:01a36f4f577212d60fe9d2a440a47f54b4cdb611bd25ebc0b3182759fec78f13",
+            "command_committed": true,
+            "committed_revision": 2
+          }
+        },
+        "expected_category": "policy_error",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": false,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      },
+      {
+        "case": "world_paused",
+        "actor": "alice",
+        "project": "A",
+        "action": "wait",
+        "arguments": {
+          "ticks": 1
+        },
+        "response": {
+          "ok": false,
+          "error": {
+            "type": "ToolRejection",
+            "message": "World is paused; resume before new work",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "world_paused",
+              "category": "business_constraint",
+              "context": {}
+            }
+          },
+          "action_id": "action-8",
+          "logical_time": 8,
+          "command_id": "command:9ef5bcba8e06fb0c3d19c92892bc00b8befe81dd0f891636b8feeab1df0cf6af",
+          "command_committed": true,
+          "committed_revision": 8
+        },
+        "outcome": {
+          "status": "business_constraint",
+          "rejection": {
+            "type": "ToolRejection",
+            "message": "World is paused; resume before new work",
+            "version": "tool-rejection-v0.9",
+            "code": "world_paused",
+            "category": "business_constraint",
+            "context": {}
+          },
+          "tool_error": {
+            "ok": false,
+            "error": {
+              "type": "ToolRejection",
+              "message": "World is paused; resume before new work",
+              "rejection": {
+                "version": "tool-rejection-v0.9",
+                "code": "world_paused",
+                "category": "business_constraint",
+                "context": {}
+              }
+            },
+            "action_id": "action-8",
+            "logical_time": 8,
+            "command_id": "command:9ef5bcba8e06fb0c3d19c92892bc00b8befe81dd0f891636b8feeab1df0cf6af",
+            "command_committed": true,
+            "committed_revision": 8
+          }
+        },
+        "expected_category": "business_constraint",
+        "checks": {
+          "actual_tool_rejection": true,
+          "explicit_rejection_facts": false,
+          "attribution": true,
+          "business_state_preserved": true
+        }
+      }
+    ],
+    "interpretation": "All six categories were correct; two structured error contexts were empty. Context facts were added at the runner boundary, then the subsequent independent regression below was found and repaired."
+  },
+  "legacy_runner_context_regression": {
+    "before": {
+      "source_before": {
+        "code_commit": "37a84ff3aa8ddd072b4b1b40e1d4d9e78a3b6218",
+        "code_dirty": false,
+        "source_tree_sha256": "5e56b94d7f6894ef517bf863b2e7bef30555d02964c76c730ac688f65fc71787"
+      },
+      "source_after": {
+        "code_commit": "37a84ff3aa8ddd072b4b1b40e1d4d9e78a3b6218",
+        "code_dirty": false,
+        "source_tree_sha256": "5e56b94d7f6894ef517bf863b2e7bef30555d02964c76c730ac688f65fc71787"
+      },
+      "world_path": "/tmp/proworksim-rejection-context-v09-hcnbaaef/world",
+      "runtime": "Legacy World through shared WorldRunner",
+      "actual_call": {
+        "actor": "analyst",
+        "action": "wait",
+        "arguments": []
+      },
+      "result": null,
+      "escaped_exception": {
+        "type": "AttributeError",
+        "message": "'list' object has no attribute 'get'",
+        "traceback": "Traceback (most recent call last):\n  File \"/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/core/runner.py\", line 132, in act\n    raise WorldError(\"Tool arguments must be an object\")\nproworksim.core.runner.WorldError: Tool arguments must be an object\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/tmp/proworksim-rejection-context-probe-v09.py\", line 21, in <module>\n    result = world.act('analyst', 'wait', [])\n  File \"/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/core/runner.py\", line 170, in act\n    \"actor_id\": actor, \"action\": action, \"project_id\": arguments.get(\"project_id\"),\n                                                       ^^^^^^^^^^^^^\nAttributeError: 'list' object has no attribute 'get'\n"
+      },
+      "world_state_unchanged": true,
+      "expected": "Return ok=false for non-object finite JSON arguments; do not throw while formatting the refusal.",
+      "classification": "v0.9 introduced diagnostic-context construction defect; not a pre-existing legacy domain failure",
+      "probe_sha256": "fdf11e5d727d843d204b338ddffcf1d03e246995686561a5977da96fde81ba17",
+      "raw_report": {
+        "path": "runs/rejection-context-v09-before/report.json",
+        "sha256": "382df1e96a904dd8132fdbd80a7b6f89149f8825d42d2d5b50393bf89697f1db",
+        "bytes": 1953
+      },
+      "probe": {
+        "path": "runs/rejection-context-v09-before/probe.py",
+        "sha256": "fdf11e5d727d843d204b338ddffcf1d03e246995686561a5977da96fde81ba17",
+        "bytes": 1855
+      },
+      "state_before": {
+        "path": "runs/rejection-context-v09-before/state-before.json",
+        "sha256": "1a516a9bed2854572ffd3520ba85b7c179dce91ae4849197b51a09e831d6df22",
+        "bytes": 22676
+      },
+      "state_after": {
+        "path": "runs/rejection-context-v09-before/state-after.json",
+        "sha256": "1a516a9bed2854572ffd3520ba85b7c179dce91ae4849197b51a09e831d6df22",
+        "bytes": 22676
+      },
+      "changed_top_level_fields": [],
+      "business_state_preserved": true
+    },
+    "after": {
+      "source_before": {
+        "code_commit": "07bd9fd9e8a9e40681149a3bc41f133937205eea",
+        "code_dirty": false,
+        "source_tree_sha256": "b91758998c6b6ebed8e10daea4429640344d235f0c1d7ccff2d0bdbba3733673"
+      },
+      "source_after": {
+        "code_commit": "07bd9fd9e8a9e40681149a3bc41f133937205eea",
+        "code_dirty": false,
+        "source_tree_sha256": "b91758998c6b6ebed8e10daea4429640344d235f0c1d7ccff2d0bdbba3733673"
+      },
+      "world_path": "/tmp/proworksim-rejection-context-v09-_j5hyt0m/world",
+      "runtime": "Legacy World through shared WorldRunner",
+      "actual_call": {
+        "actor": "analyst",
+        "action": "wait",
+        "arguments": []
+      },
+      "result": {
+        "ok": false,
+        "error": {
+          "type": "ToolRejection",
+          "message": "Tool arguments must be an object",
+          "rejection": {
+            "version": "tool-rejection-v0.9",
+            "code": "invalid_arguments",
+            "category": "policy_error",
+            "context": {
+              "actor_id": "analyst",
+              "action": "wait",
+              "project_id": null,
+              "tool": "wait",
+              "arguments_type": "list"
+            }
+          }
+        },
+        "action_id": "action-1",
+        "logical_time": 1,
+        "command_id": "command:analyst:d541668e00894d5fb085bee84db8a702",
+        "command_committed": true,
+        "committed_revision": 1
+      },
+      "escaped_exception": null,
+      "world_state_unchanged": false,
+      "expected": "Return ok=false for non-object finite JSON arguments; do not throw while formatting the refusal.",
+      "classification": "v0.9 introduced diagnostic-context construction defect; not a pre-existing legacy domain failure",
+      "probe_sha256": "b63460e4169f39583e5d318c2d9527477d3a94cf31a0c30c07097600ae41f4f9",
+      "raw_report": {
+        "path": "runs/rejection-context-v09-after/report.json",
+        "sha256": "37511a1bda07560b89982f0a9ca456fab6b1d43cbb48029120d731e31b0d5ac6",
+        "bytes": 1667
+      },
+      "probe": {
+        "path": "runs/rejection-context-v09-after/probe.py",
+        "sha256": "b63460e4169f39583e5d318c2d9527477d3a94cf31a0c30c07097600ae41f4f9",
+        "bytes": 2069
+      },
+      "state_before": {
+        "path": "runs/rejection-context-v09-after/state-before.json",
+        "sha256": "7edd3cb9170fcaa47e2a13bc1dd7868f53a1fe8b4bf37f370d3e6ddbdb1145cd",
+        "bytes": 22676
+      },
+      "state_after": {
+        "path": "runs/rejection-context-v09-after/state-after.json",
+        "sha256": "ed1a9fd5fb4bc7765670f1f2812f6c493f4a0d04953de55cc7275d5c3670ffe6",
+        "bytes": 26187
+      },
+      "changed_top_level_fields": [
+        "clock",
+        "interactions",
+        "operation_commits",
+        "state_revision"
+      ],
+      "business_state_preserved": true
+    },
+    "interpretation": "The clean first v0.9 freeze 37a84ff introduced a failure while formatting a non-object argument rejection. The final freeze 07bd9fd returns policy_error/invalid_arguments. After repair the whole state intentionally changes only clock, state_revision, interactions and operation_commits to persist the rejected command; this is not a business-state mutation."
+  }
+}

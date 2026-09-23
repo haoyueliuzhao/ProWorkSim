@@ -1,6 +1,8 @@
-# 数据合同与扩展接口（v0.8）
+# 数据合同与扩展接口（v0.9）
 
-当前软件包 `0.8.0`，WorldCore schema 为 `world-core-v0.8`、语义为 `work-world-v0.8`，共用回执为 `phase-deltas-v0.5`。阶段 A 内容评价为 `finite-products-v0.8`；阶段 B 多源扩展为 `finite-products-v0.8.1`。旧 schema 世界使用其冻结运行时，不隐式迁移采用表、历史观察或评价结果。两阶段设计见 [v0.8 合同](continuous-work-v08.md)与[推进计划](continuous-work-v08-plan.md)。
+当前软件包`0.9.0`，WorldCore schema为`world-core-v0.9`、语义为`work-world-v0.9`、内容评价为`finite-products-v0.9`；共用回执继续为`phase-deltas-v0.5`。本版增加两个领域合同和共同定位问题关系，详见[两模板合同](template-expansion-v09.md)。旧schema世界使用对应冻结运行时，不隐式迁移历史。
+
+以下保留v0.8及更早版本的合同沿革。v0.8阶段A评价为finite-products-v0.8，阶段B为finite-products-v0.8.1；其工作绑定及持续义务被本版复用，不能把旧运行身份写为新版。v0.9新增字段和工具见文末及本版说明。
 
 ## v0.8 工作上下文、持续义务和公开执行
 

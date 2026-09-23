@@ -1,10 +1,10 @@
 # ProWorkSim
 
-**面向智能体学习的专业工作世界模拟与任务流合成。** v0.8 在同一个多项目世界中接通持续工作：真实发布按项目规则产生通知、需求修订或后继义务；工作人员通过公开接口取得资料、按具体工作采用来源并继续制作与交付。
+**面向智能体学习的专业工作世界模拟与任务流合成。** v0.9 在同一 WorldCore 上实现两种不同工作结构：财务资料的集合核对，以及针对实际报告的审阅与局部修复；两者可以沿真实发布和声明的维护规则继续协作。
 
-世界核心负责身份、作用域、版本、事件与提交恢复；适配器执行文件操作；领域合同和独立评价检查固定提交。**保存草稿、正式发布、采用声明、实际内容更新是不同动作。**
+世界核心负责身份、作用域、版本、义务、审阅关系及提交恢复。领域合同判断有限内容；工作人员实际读取和修改文件。**机构接受、内容正确、来源忠实性和总体目标分别记录。**
 
-## 安装与工作示例
+## 安装和两个模板示例
 
 需要 Python 3.11+：
 
@@ -12,129 +12,59 @@
 python -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
 
-.venv/bin/proworksim world-create runs/capability-demo --spec examples/work-capabilities/world.json
-.venv/bin/proworksim project-load runs/capability-demo examples/work-capabilities/project-a.json --actor operator
-.venv/bin/proworksim project-load runs/capability-demo examples/work-capabilities/project-b.json --actor operator
-.venv/bin/proworksim world-tools runs/capability-demo --actor analyst --project A
+.venv/bin/proworksim world-create runs/templates-v09-demo/world --spec examples/templates-v09/world.json
+.venv/bin/proworksim project-load runs/templates-v09-demo/world examples/templates-v09/reconciliation.json --actor operator
+.venv/bin/proworksim project-load runs/templates-v09-demo/world examples/templates-v09/report.json --actor operator
+.venv/bin/python examples/templates-v09/run_workers.py runs/templates-v09-demo/world \
+  --output runs/templates-v09-demo/public-transcript.json
 ```
 
-下面通过公开会话读取 A 的材料、创建工作簿、提交并发布，再让 B 的程序工作人员继续使用成果。该示例只计算一个有限合成差值，不是金融专业模型：
+目录须新建。[示例说明](examples/templates-v09/README.md)提供独立模板运行、公开端口配置和Python调用。策略实现位于`proworksim.workers`，只接收`tools/observe/call`；实际观察和返回随运行保存。该示例演示两个独立项目，跨模板发布联动另由下面X3实验配置。
 
-```python
-from proworksim.world_core import WorldCore
-from proworksim.public_worker import run_public_worker
+## 本版能力与边界
 
-world = WorldCore("runs/capability-demo")
-a = world.session("analyst", "A")
-b = world.session("writer", "B")
+- **财务资料核对**：覆盖两表记录并集，检查单位、期间、定义和币种适用性；明确保留冲突、不可比、缺失及歧义。公开路线支持资料不可得后的继续。
+- **报告审阅**：针对真实固定提交读取正文、提出有位置和证据的问题；责任者可局部修复或有据反驳。修错沿同一工作/需求重交，不必每次创建新需求。
+- **共同问题关系**：`inspect_submission / raise_issue / respond_issue / decide_issue`复用同一版本与提交体系；文件变化不会自动关闭问题，一项决定不能关闭其他问题，晚到旧意见保留历史。
+- **跨模板维护**：A更正一行并发布，A核对与B报告沿各自规则形成后继；B公开发现新义务、采用并继续审阅。固定历史工作及无关行/章节保持。
+- **失败归因**：工具拒绝的实际返回与策略错误、业务约束、能力缺口、实现异常分别记录；未明确分类的错误保持未知。
 
-def call(session, tool, **arguments):
-    result = session.call(tool, **arguments)
-    assert result["ok"], result
-    return result["result"]
+新领域合同使用JSON；既有受限XLSX能力保留。报告正文只评价公开声明的有限数字、期间、趋势及引用句式，开放论证和专业充分性未评。合成核对不等于真实财务审计；程序策略不代表通用模型规划能力。
 
-source = call(a, "read_object", alias="private-input")
-model = call(a, "create_object", alias="model", filename="report.xlsx", kind="xlsx",
-    deliverable_role="model", dependencies=[source["reference"]], data={
-        "Report!B1": source["data"]["revenue"],
-        "Report!B2": source["data"]["cost"],
-        "Report!B3": "=B1-B2",
-    })
-submission = call(a, "submit", work_id="work-1", artifacts=["model"])
-call(world.session("reviewer", "A"), "approve", work_id="work-1",
-     submission_id=submission["submission_id"])
-call(a, "publish", alias="model", version_id=model["version_id"], target_projects=["A", "B"])
-call(a, "share", object_id=model["object_id"], version_id=model["version_id"],
-     target_project="B", actor_ids=["writer"], follow_updates=True)
-call(b, "adopt", alias="released_model", object_id=model["object_id"],
-     version_id=model["version_id"], policy="current_published", work_ids=["work-1"])
-call(a, "close_project", mode="completed", reason="Published reusable calculation")
-result = run_public_worker(b)
-assert result["status"] == "submitted", result
-print(world.evaluate_submission("B", "work-1", result["submission_id"]))
-```
+[设计说明](docs/template-expansion-v09.md)、[实施计划](docs/template-expansion-v09-plan.md)、[核心语义](CORE_SEMANTICS.md)、[行动合同](ACTION_CONTRACTS.md)与[状态归属](STATE_OWNERSHIP.md)说明具体分层和边界。
 
-B 读取 A 的发布接口，不获得 A 的私有上游。程序工作人员只使用 `tools/observe/call`，记录当时实际返回的观察和工具往返；它是有限机制验证策略，不是模型能力实验。
+## 正式实验
 
-也可使用 CLI：
+最终冻结代码为`07bd9fd`，**498项测试通过，Ruff通过**。首个冻结`37a84ff`的494项及实验结果也保留；后来发现非dict参数错误报告回归，修复、补测试后重新冻结验证，没有覆盖原证据。
 
-```bash
-.venv/bin/proworksim world-inspect runs/capability-demo --actor writer --project B
-# 对尚未完成、符合有限来源合同的工作运行程序工作人员；轨迹文件须新建且在世界外
-.venv/bin/proworksim world-worker runs/capability-demo --actor writer --project B \
-  --max-actions 24 --output runs/worker-transcript.json
-.venv/bin/proworksim snapshot runs/capability-demo runs/capability-snapshot
-.venv/bin/proworksim restore runs/capability-snapshot runs/capability-restored
-```
-
-## 实际工作与评价
-
-- `create_object` 支持 JSON 和 XLSX；`sheet_read/update/recalculate` 复用现有受限公式引擎。公式错误可以真实落盘，不能由后台偷偷修正。
-- 同项目或跨项目的精确分享只开放指定版本。窄对象／工作采用权限逐项传入检查，其他范围与 fixed 政策的拒绝保持。
-- 新世界默认显式发布。草稿不会自动成为下游正式输入；发布事实绑定版本、主体、时间和范围，再沿明确订阅产生授权与通知。
-- `current_published` 跟随项目范围内的正式发布；`fixed` 保留快照。两者均不自动证明领域适用性。
-- 独立评价仅读取固定不可变版本，核对实际缓存值、来源正文、采用快照及贡献文件的声明依赖。所有标签都换成 v2，旧数值仍会失败。
-- 正式批准和内容正确性分开；A 的错误成果获批准后，B 忠实消费该接口不等于 A 的计算已正确。
-- 采用按工作和需求版本独立保存；新工作可以沿相同别名采用另一版本，旧提交快照保持，已声明政策不能自行绕过。
-- 嵌套 JSON 比较递归区分布尔值与数值；多文件冲突不随文件顺序改变结果，不挑选一份正确文件覆盖冲突。
-- 项目维护规则按真实读取、编辑、待审和接受阶段产生明确义务。后继工作保留已接受前项，后台不替工作人员改文件。
-- 多源合同支持有限线性计算，逐项核对精确引用、采用、贡献依赖和实际内容；上游正确性、下游忠实性、总体目标分别评价。
-- 资料路线可供后继或替代工作复用，每个请求独立绑定具体工作。缺路线时报告能力缺口；提供者恢复后可发新请求并继续。
-
-[实现说明](docs/continuous-work-v08.md)、[两阶段计划](docs/continuous-work-v08-plan.md)、[核心语义](CORE_SEMANTICS.md)、[状态归属](STATE_OWNERSHIP.md)、[行动合同](ACTION_CONTRACTS.md)和[数据合同](docs/data-contracts.md)给出完整边界。
-
-## 持续执行与本轮实验
-
-新 `ContinuousWorker` 支持多个公开会话和多项工作，每步最多一个工具调用，记录实际观察和返回。策略等待、世界条件阻塞、预算耗尽和环境错误分别报告。它是有限程序策略，不是通用模型能力结果。
-
-`ports.json` 指定同一世界中的会话，例如：
-
-```json
-{"A": {"actor": "analyst", "project": "A"}, "B": {"actor": "writer", "project": "B"}}
-```
-
-```bash
-.venv/bin/proworksim world-continue runs/capability-demo --ports ports.json \
-  --max-actions 40 --output runs/continue-1.json
-# 外部合法事件或新义务发生后，从已完成步骤的checkpoint继续；输出须是新文件
-.venv/bin/proworksim world-continue runs/capability-demo --ports ports.json \
-  --checkpoint runs/continue-1.json --max-actions 40 --output runs/continue-2.json
-```
-
-checkpoint 只承诺已完成步骤之间的显式保存与恢复；不等同任意进程崩溃下的策略恢复。前面的基础示例未配置维护规则；自动后继的完整配置、真实公开操作和轨迹由 P4 `published_successor` 情境提供。
-
-阶段 A 冻结 `28786f4`，阶段 B 冻结 `62f3a6a`。两阶段均在冻结后记录测试身份，最终完整回归 **421 项通过**，Ruff 通过。
-
-| 组别 | 正式结果 |
+| 组别 | 最终结果 |
 | --- | --- |
-| P0 JSON冲突与顺序 | 76/76；旧完整版本更正测量后62/76 |
-| P1 工作采用及资料路线 | 27/27 |
-| P2 事件形成义务 | 20个情境，180/180 |
-| P3 多源局部更新 | 64/64，另2/2合法布局对照 |
-| P4 公开等待、切换与继续 | 7组，67/67；含真实发布自动后继完整闭环 |
-| 新机制恢复 | 两个真实进程中断切点，20/20 |
-| 原N1/N3相关回归 | 22/22、11/11 |
+| X1/X2 财务核对 | 6场景，58/58；另1/1合法组织比较 |
+| X1/X2 报告审阅 | 8分支，70/70；另1/1合法替代比较 |
+| X3 同世界联动 | 3条件，72/72；区分上游质量、下游忠实性、正文表达和总体目标 |
+| X4 共同问题关系 | 两模板28/28；一个真实进程中断切点10/10 |
+| 拒绝归因 | 六类真实拒绝，24/24 |
+| 相关旧机制回归 | P2 180/180；明确更新拒绝口径后的P4 67/67；P0/P1/P3等纳入完整测试 |
 
-[详细实验报告](docs/experiments/continuous-work-v08.md)保留逐项审计对应、两阶段身份、开发缺陷与测量修订、独立期望及证据索引。各分母含义不同，不合成专业能力分数。
+通过表示符合预声明期望，也包括应拒绝、应保持未知或应内容失败的情境。各分母不合并为专业能力分数。[详细报告](docs/experiments/template-expansion-v09.md)保留完整审计对应、失败、测量修订、冻结身份和证据索引。
 
 ```bash
-.venv/bin/python scripts/json_conflict_experiment.py --output runs/p0-new --workers 4
-.venv/bin/python scripts/work_binding_experiment.py --output runs/p1-new --workers 4
-.venv/bin/python scripts/maintenance_experiment.py --output runs/p2-new --workers 4
-.venv/bin/python scripts/multisource_experiment.py --output runs/p3-new --workers 4
-.venv/bin/python scripts/continuous_worker_experiment.py --output runs/p4-new --workers 4
-.venv/bin/python scripts/work_obligation_recovery_experiment.py --output runs/recovery-new --workers 2
+.venv/bin/python scripts/reconciliation_experiment.py --output runs/reconcile-new --workers 3
+.venv/bin/python scripts/research_review_experiment.py --output runs/report-new --workers 3
+.venv/bin/python scripts/cross_template_experiment.py --output runs/cross-new --workers 3
+.venv/bin/python scripts/issue_relations_experiment.py --output runs/issues-new
+.venv/bin/python scripts/tool_rejection_experiment.py --output runs/rejections-new
 .venv/bin/python -m pytest -q
-.venv/bin/python -m ruff check src tests scripts
+.venv/bin/python -m ruff check src tests scripts examples/templates-v09
 ```
 
-实验目录必须新建。Git 保存代码、协议及精简证据；完整版本、轨迹、检查点和故障材料保留在服务器 `runs/`。
+Git保存协议与精简证据，完整世界、轨迹和检查点保留在服务器`runs/`。本轮没有模型API调用、GPU使用、参数训练或真实数据采集；后续真实材料用于校准，未观察历史不补造。
 
 ## 范围与历史
 
-新世界格式为 `world-core-v0.8`。旧 v0.6/v0.7 世界需使用对应冻结版本，不隐式迁移历史。旧“后续写入即发布”仍可作为新世界的 `implicit_write` 政策明确选择；不为历史补造发布记录。
+当前新世界格式为`world-core-v0.9`，不静默迁移旧v0.6–v0.8世界。单写者及指定提交切点的通过不意味着任意并发、断电或分布式一致性已验证。
 
-本轮保留受限 XLSX 能力，没有将完整经营估值模板、任意 Excel 功能、GUI 或宿主 Shell 迁入核心；多项目 DeepSeek 执行器和训练导出未在本轮新增。原单项目入口仍可运行：
+原经营单模板入口仍可运行，使用自身0.5格式：
 
 ```bash
 .venv/bin/proworksim build runs/operating-demo --seed 17 --delivery continuous --information clarification
@@ -142,12 +72,8 @@ checkpoint 只承诺已完成步骤之间的显式保存与恢复；不等同任
 .venv/bin/proworksim evaluate runs/operating-demo
 ```
 
-本轮没有模型 API 调用、GPU 使用或训练，也没有真实金融数据采集。后续已有合法工作材料用于校准工具、领域合同或通用关系；provenance 继续区分 observed/reconstructed/synthetic/unknown，不能从财报和最终文件编造审批历史。单写者与指定中断切点的通过不意味着任意并发、断电或专业真实性已验证。
-
-- [本轮审计](docs/reference/continuous-work-audit.md)
-- [v0.7工作能力](docs/work-capabilities-v07.md)及[含后续审计注记的原报告](docs/experiments/work-capabilities-v07.md)
-- [v0.6 世界与多项目设计](docs/world-core-v06.md)及[原实验报告](docs/experiments/world-core-v06.md)
-- [v0.5 状态一致性](docs/state-consistency-v05.md)及[含 E2 勘误的报告](docs/experiments/state-consistency-v05.md)
-- [v0.4 内核迁移](docs/semantics-kernel-v04.md)及[实验](docs/experiments/semantics-kernel-v04.md)
-- [v0.3 生命周期](docs/world-semantics-v03.md)、[历史 API 实验](docs/experiments/world-semantics-v03.md)、[历史训练接口](docs/experiments/post-audit-v02.md)
-- [原始设计](docs/reference/design-v0.1.md)
+- [本轮审计](docs/reference/template-expansion-audit.md)
+- [v0.8持续工作](docs/continuous-work-v08.md)及[实验报告](docs/experiments/continuous-work-v08.md)
+- [v0.7工作能力](docs/work-capabilities-v07.md)及[历史报告](docs/experiments/work-capabilities-v07.md)
+- [v0.6多项目世界](docs/world-core-v06.md)、[v0.5状态一致性](docs/state-consistency-v05.md)
+- [v0.4内核迁移](docs/semantics-kernel-v04.md)、[原始设计](docs/reference/design-v0.1.md)
