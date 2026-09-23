@@ -1,8 +1,24 @@
-# 数据合同与扩展接口（v0.6）
+# 数据合同与扩展接口（v0.7）
 
-当前软件包为 `0.6.0`。新增世界运行时的 schema 为 `world-core-v0.6`、语义版本为 `work-world-v0.6`；经营与文稿单项目运行时继续使用 schema `0.5`。两者共用 `core.runner.WorldRunner` 和 `phase-deltas-v0.5` 回执格式。完整世界合同与 CLI 见 [v0.6 设计](world-core-v06.md)，推进与验收见 [执行计划](world-core-v06-plan.md)。
+当前软件包 `0.7.0`，新 WorldCore schema 为 `world-core-v0.7`、语义为 `work-world-v0.7`，共用回执仍为 `phase-deltas-v0.5`。旧 v0.6 世界使用其冻结运行器，不隐式迁移。完整实现与阶段协议见 [v0.7 说明](work-capabilities-v07.md)和[推进计划](work-capabilities-v07-plan.md)。
 
-## v0.6 新世界接口
+## v0.7 新增合同
+
+- WorldSpec.applications 限定 files/spreadsheets；create_object 支持 kind=json/xlsx，sheet_read/update/recalculate 处理真实受限工作簿。ProjectSession.tools 与执行使用同一能力选择。
+- publication_policy 在世界/项目级配置 explicit（默认）或 implicit_write。publish 精确绑定版本与目标项目；release 追加记录独立于草稿、分享和采用。
+- 同项目精确 shares 与原 ACL 共同生效；adopt/adopt_version 对真实对象及逐工作传递范围，不通过通配授权修复合法路径。
+- current_published 与 fixed 分开；提交 adoption_snapshot 固定当时已采用版和政策目标。没有发布的目标是不可评，不从 current_version 猜正式输入。
+- content_checks 只接受声明的有限类型：JSON 标量、XLSX 单元格标量、公式缓存错误，以及 JSON 对精确输入 JSON/XLSX 接口的对应关系。期望数值不由被测引擎生成；实际内容来自 immutable version_path 且校验哈希。
+- 来源检查核对正文 reference、采用快照/目标、贡献文件 derived_from 与实际接口值；B 不必取得 A 的所有私有上游。
+- information_routes 只声明同包的真实初始 v1、对象 writer/provider、对应 provide 权以及延迟/availability。request_information 公开参数仅 route_id/work_id；unknown 路线拒绝，unavailable 等待出口保留。
+- 透明程序 worker 只支持一个当前责任任务与一项有限来源合同，通过工具发现、观察和真实读取推进；实际原始往返另存，不能作为通用模型能力结论。
+
+以下章节保留 v0.6/v0.5 的阶段合同；其中纯 JSON 能力限制、默认写入发布和旧 schema 是历史边界，当前行为以上述 v0.7 合同为准。
+
+
+v0.6 阶段软件包为 `0.6.0`。新增世界运行时的 schema 为 `world-core-v0.6`、语义版本为 `work-world-v0.6`；经营与文稿单项目运行时继续使用 schema `0.5`。两者共用 `core.runner.WorldRunner` 和 `phase-deltas-v0.5` 回执格式。完整世界合同与 CLI 见 [v0.6 设计](world-core-v06.md)，推进与验收见 [执行计划](world-core-v06-plan.md)。
+
+## v0.6 新世界接口（历史阶段）
 
 `proworksim.WorldSpec` / `core.world.WorldSpec` 允许零项目，无金融事实和假设字段。旧 `schema.WorldSpec` 已明确改名 `OperatingTemplateSpec`，由经营编译器使用；本轮没有隐式转换旧世界。
 

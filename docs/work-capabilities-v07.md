@@ -75,7 +75,7 @@ A 的独立标量检查与 B 的成果接口检查分别解释：A 的错误计�
 
 `request_information(route_id, work_id)` 从可信配置解析精确证据；工作人员不用猜后台对象 ID、金额或事件时间。真实延迟事件记录 delivered/unavailable，只有明确 available 路线才精确分享该版给工作责任者；ordinary request/reply 不会凭空授权。没有路线时可以合理等待并标出能力缺口，不补写隐藏请求参数。
 
-`public_worker.run_public_worker()` 是透明、有限程序策略：只支持一个当前责任工作，以及一项 json_matches_source_cell/field 合同。它发现工具和资料，必要时请求并按单步逻辑时间等待，再实际读取、声明采用、创建并提交 JSON。每次调用使用独立命令空间；完整保存当时返回的工具定义、观察、请求和响应。不保存模型推理，也不是通用规划 Agent 或自动续跑策略恢复器。
+`public_worker.run_public_worker()` 是透明、有限程序策略：只支持一个当前责任工作，以及一项 json_matches_source_cell/field 合同。它发现工具和资料，必要时请求并按单步逻辑时间等待，再实际读取、声明采用、创建并提交 JSON。每次工作人员运行使用独立 run_id，工具动作的 request_key 包含该 run_id 和动作序号；完整保存当时返回的工具定义、观察、请求和响应。不保存模型推理，也不是通用规划 Agent 或自动续跑策略恢复器。
 
 CLI `world-tools` 可查看工具，`world-worker --actor ... --project ... --output NEW_JSON` 运行此程序工作人员，要求轨迹文件位于世界外且不覆盖已有文件。缺资料、不可得、合同不支持和预算耗尽分别保留出口；合理等待不计完成。
 
