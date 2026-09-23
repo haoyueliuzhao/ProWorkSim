@@ -52,3 +52,37 @@ world = WorldCore.create("runs/capability-demo", WorldSpec(
 ```
 
 本阶段不接入 GUI、宿主 Shell、任意插件或全部 Excel 函数。金融期间、单位、允许假设及指标定义仍由领域合同描述，不能成为通用世界分支。真实材料来源的四种标记与不得捏造过程历史的要求继续保持。
+
+## 阶段 B：发布、采用与内容
+
+新世界的 publication_policy 默认为 explicit，项目包可以明确覆盖为 explicit 或 implicit_write。当前公开配置入口为世界／项目级；底层政策查询预留对象字段，不将其说成已经存在对象级配置工具。
+
+显式政策下，创建/保存/重算只生成真实草稿版本，不创建 release，不自动扩展订阅读取权或推送更新通知。`publish` 必须另有发布权，绑定精确版本与明确目标项目；可额外限定源工作范围。拥有写 ACL 不能因此发布，但仍可以保存自己的草稿。旧 implicit_write 政策按声明在写入后记录发布后果；它不为旧历史补造 release。原 v0.6 回归夹具在新格式中显式选择旧政策，历史报告不改。
+
+release 包含 release_id、object_id、version_id、actor_id、source_project、at、policy 和 scope（target_projects/work_ids）。其记录受追加保持保护。相同精确版本和范围重复发布无新增效果；发布本身不代表其他项目已经读取或采用。只有已明确选择 follow_updates 的分享路线，且目标项目在发布范围内，才获得该版分享及通知；上游私有对象不会递归授权。
+
+current_published 的政策目标取该消费项目范围内最后发布版本；没有发布时为 unassessed。fixed 保持明确版本。兼容的 current_applicable 仍表达旧“当前版本指针”政策，不能与 current_published 混用结论。采用工具改标签，不改文件；提交保存采用及目标快照，历史评价不随后续发布变化。
+
+来源内容检查还要求实际提供结果字段/来源字段的每份 JSON 固定版本，在 derived_from 中声明该精确输入。无关草稿不强制添加来源，B 不必读取 A 的上游材料。如果正文来源、采用和依赖都变为 v2，但内容仍是 v1 数字，独立数值检查仍拒绝。
+
+A 的独立标量检查与 B 的成果接口检查分别解释：A 的错误计算可能得到合法正式批准；B 忠实消费这个错误接口可以满足自己的接口合同，但不能据此将 A 的结果称为正确。
+
+## 公开会话、资料路线与程序工作人员
+
+`ProjectSession.tools/observe/call` 是工作人员的唯一环境入口。观察提供公开合同、需求版本、可读别名/版本、适用的 release、采用状态和本项目条件；私有文件内容不进入观察。
+
+项目包可声明 information_routes：route_id、work_id、provider、object_alias、purpose、delay、availability。当前有限路线只提供同包实际初始版本 v1，provider 必须是对象实际 writer，并拥有对应工作/对象的 provide 权。路线是客户端明确配置的取得机会，不是自动发现任意外部资料。
+
+`request_information(route_id, work_id)` 从可信配置解析精确证据；工作人员不用猜后台对象 ID、金额或事件时间。真实延迟事件记录 delivered/unavailable，只有明确 available 路线才精确分享该版给工作责任者；ordinary request/reply 不会凭空授权。没有路线时可以合理等待并标出能力缺口，不补写隐藏请求参数。
+
+`public_worker.run_public_worker()` 是透明、有限程序策略：只支持一个当前责任工作，以及一项 json_matches_source_cell/field 合同。它发现工具和资料，必要时请求并按单步逻辑时间等待，再实际读取、声明采用、创建并提交 JSON。每次调用使用独立命令空间；完整保存当时返回的工具定义、观察、请求和响应。不保存模型推理，也不是通用规划 Agent 或自动续跑策略恢复器。
+
+CLI `world-tools` 可查看工具，`world-worker --actor ... --project ... --output NEW_JSON` 运行此程序工作人员，要求轨迹文件位于世界外且不覆盖已有文件。缺资料、不可得、合同不支持和预算耗尽分别保留出口；合理等待不计完成。
+
+## 新能力恢复边界
+
+表格写入 after_apply 和显式发布 after_command_commit 是本轮新增的两个实际进程终止点。前者需隔离未提交 XLSX 并恢复正式版本，后者需保持 release/分享/通知且重试不重复。字节比较使用真实规范化序列化后的 XLSX，错误公式不在恢复时修复。状态比较仅排除执行时长与诊断摘要；实际版本、注册、分享、采用、发布、观察和正式结果均需一致。
+
+这不是断电、任意并发或任意插件事务验证。模型调用、GPU、训练与真实金融数据采集不属于本轮。
+
+旧 implicit_write 在后续保存/编辑工具中触发发布；创建/项目装载不会为初始材料自动补造发布历史。新政策需要使用者明确发布初始版本，发布记录不存在时不能用 current_version 伪造 current_published 的目标。

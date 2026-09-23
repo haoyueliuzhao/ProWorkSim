@@ -98,7 +98,7 @@ def parser():
     load.add_argument("world")
     load.add_argument("package")
     load.add_argument("--actor", required=True)
-    for name in ("world-act", "world-inspect"):
+    for name in ("world-act", "world-inspect", "world-tools", "world-worker"):
         cmd = commands.add_parser(name, help="在可信身份与项目范围内操作或观察 World Core")
         cmd.add_argument("world")
         cmd.add_argument("--actor", required=True)
@@ -107,6 +107,11 @@ def parser():
             cmd.add_argument("action")
             cmd.add_argument("--arguments", default="{}")
             cmd.add_argument("--request-key")
+        if name == "world-worker":
+            cmd.add_argument("--max-actions", type=int, default=24)
+            cmd.add_argument(
+                "--output", required=True, help="保存真实工具定义、观察和往返的新文件，须位于世界外"
+            )
     check = commands.add_parser("world-evaluate", help="独立检查固定提交的有限内容合同")
     check.add_argument("world")
     check.add_argument("--project", required=True)
@@ -125,6 +130,8 @@ def execute(args):
         "world-inspect",
         "world-evaluate",
         "world-recover",
+        "world-tools",
+        "world-worker",
     }:
         from .world_core import WorldCore
         from .core.world import WorldSpec
@@ -145,6 +152,21 @@ def execute(args):
             return world.session(args.actor, args.project).call(
                 args.action, request_key=args.request_key, **json.loads(args.arguments)
             )
+        if args.command == "world-tools":
+            return {"tools": world.session(args.actor, args.project).tools()}
+        if args.command == "world-worker":
+            from .public_worker import run_public_worker
+
+            output = Path(args.output).resolve()
+            if output.exists() or output == world.store.root or world.store.root in output.parents:
+                raise ValueError("Worker transcript needs a new path outside the world")
+            if args.max_actions < 1:
+                raise ValueError("Worker budget must be positive")
+            result = run_public_worker(world.session(args.actor, args.project), args.max_actions)
+            atomic_write(output, json_bytes(result))
+            return {key: value for key, value in result.items() if key != "transcript"} | {
+                "transcript": str(output)
+            }
         if args.command == "world-inspect":
             return world.session(args.actor, args.project).observe()
         if args.command == "world-recover":

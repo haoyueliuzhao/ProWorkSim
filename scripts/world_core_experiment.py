@@ -22,7 +22,7 @@ ACTORS = ("alice", "bob", "manager")
 
 def bootstrap(root):
     return WorldCore.create(root, WorldSpec(
-        world_id="world-core-witness", actors={actor: {} for actor in ACTORS},
+        world_id="world-core-witness", publication_policy="implicit_write", actors={actor: {} for actor in ACTORS},
         bootstrap_grants=[{"actor_id": "manager", "scope": "world", "power": power}
                           for power in ("install_project", "create_object", "publish", "share")],
     ))

@@ -12,6 +12,12 @@ import uuid
 from pathlib import Path
 
 from .core import journal
+from .core.publication import (
+    effective_policy,
+    latest_published_version,
+    publish_release,
+    record_implicit_release,
+)
 from .adapters.capabilities import (
     capability_for,
     encode,
@@ -76,10 +82,18 @@ class WorldCore(WorldRunner):
             target = adoption["version_id"]
             if adoption["policy"] == "current_applicable":
                 target = artifact["current_version"]
+            elif adoption["policy"] == "current_published":
+                target = latest_published_version(
+                    state, adoption["object_id"], adoption["project_id"]
+                )
             state["adoption_view"][key] = {
                 "adopted_version": adoption["version_id"],
                 "target_version": target,
-                "status": "current" if target == adoption["version_id"] else "update_required",
+                "status": "unassessed"
+                if target is None
+                else "current"
+                if target == adoption["version_id"]
+                else "update_required",
                 "policy": adoption["policy"],
             }
 
@@ -90,7 +104,7 @@ class WorldCore(WorldRunner):
             frame.paths,
             frame.derived_paths + (("adoption_view",),),
             frame.immutable_submission_extensions + ("adoption_snapshot",),
-            frame.append_only_extensions,
+            frame.append_only_extensions + ("releases",),
         )
 
     def _operation_identity(self, actor, action, arguments, request_key):
@@ -230,6 +244,7 @@ class WorldCore(WorldRunner):
             ("access_grants",),
             ("requirement_events",),
             ("project_history",),
+            ("releases",),
         ]
         if project_id is None:
             if tool == "install_project":
@@ -252,6 +267,7 @@ class WorldCore(WorldRunner):
                 ("adoptions",),
                 ("requests",),
                 ("raw_condition_responses",),
+                ("shares",),
                 ("attestations",),
                 ("work_replacements",),
             ]
@@ -274,7 +290,7 @@ class WorldCore(WorldRunner):
             for cid, condition in self.state.get("condition_specs", {}).items():
                 if self.state["work_items"][condition["work_item_id"]]["project_id"] == project_id:
                     paths.append(("condition_specs", cid))
-            if tool == "request":
+            if tool in {"request", "request_information"}:
                 paths.append(("condition_specs",))
         if tool == "wait":
             paths.append(("clock",))
@@ -299,6 +315,7 @@ class WorldCore(WorldRunner):
             "write_object",
             "read_object",
             "share",
+            "publish",
             "start_episode",
             "end_episode",
             "wait",
@@ -315,6 +332,7 @@ class WorldCore(WorldRunner):
                 "confirm",
                 "revise",
                 "request",
+                "request_information",
                 "read_messages",
                 "close_project",
             ]
@@ -323,7 +341,14 @@ class WorldCore(WorldRunner):
             names = [name for name in names if name not in {"read_object", "write_object"}]
         definitions = []
         objects = {"data", "package", "updates", "reference"}
-        arrays = {"dependencies", "actor_ids", "work_ids", "artifacts", "project_ids"}
+        arrays = {
+            "dependencies",
+            "actor_ids",
+            "work_ids",
+            "artifacts",
+            "project_ids",
+            "target_projects",
+        }
         for name in names:
             properties, required = {}, []
             for key, param in inspect.signature(
@@ -348,11 +373,26 @@ class WorldCore(WorldRunner):
                 elif param.default is not None:
                     properties[key]["default"] = param.default
             if name == "create_object":
+                properties["data"]["description"] = (
+                    "For json: a JSON object. For xlsx: {cells: {Sheet!A1: scalar_or_formula}} or a direct Sheet!A1 mapping; formulas start with =."
+                )
+                properties["filename"]["description"] = (
+                    "A simple .json or .xlsx filename matching kind; no host path."
+                )
                 properties["kind"]["enum"] = [
                     kind
                     for kind in ("json", "xlsx")
                     if capability_for(kind).application in self.state["applications"]
                 ]
+            if name == "create_object" and "files" not in self.state["applications"]:
+                properties["kind"].pop("default", None)
+                required.append("kind")
+            for key in arrays & properties.keys():
+                properties[key]["items"] = {"type": "object" if key == "dependencies" else "string"}
+            if "answer" in properties:
+                properties["answer"] = {
+                    "description": "Optional answer value, if required by the public work contract"
+                }
             definitions.append(
                 {
                     "name": name,
@@ -501,7 +541,7 @@ class WorldCore(WorldRunner):
         return capability
 
     def _save_content(self, actor, project_id, artifact, content, dependencies=None):
-        if project_id is None:
+        if project_id is None and effective_policy(self.state, artifact) == "implicit_write":
             self._world_power(actor, "publish")
         old = artifact["current_version"]
         refs = (
@@ -516,7 +556,24 @@ class WorldCore(WorldRunner):
         self._writes.append(
             {"artifact_id": artifact["artifact_id"], "before": old, "after": version["version_id"]}
         )
-        self._publish_shared(actor, artifact, version["version_id"])
+        if effective_policy(self.state, artifact) == "implicit_write":
+            targets = self._publication_targets(artifact)
+            release = record_implicit_release(
+                self.state,
+                actor,
+                artifact.get("project_id"),
+                artifact["artifact_id"],
+                version["version_id"],
+                targets,
+            )
+            if release["created"]:
+                self._publish_shared(
+                    actor,
+                    artifact,
+                    version["version_id"],
+                    targets,
+                    release["release"]["release_id"],
+                )
         return {"object_id": artifact["artifact_id"], "version_id": version["version_id"]}
 
     def _action_write_object(
@@ -612,12 +669,58 @@ class WorldCore(WorldRunner):
         self.state["shares"].append(share)
         return copy.deepcopy(share)
 
-    def _publish_shared(self, actor, artifact, version_id):
+    def _publication_targets(self, artifact):
+        targets = {
+            s["project_id"]
+            for s in self.state["shares"]
+            if s["object_id"] == artifact["artifact_id"]
+            and s.get("follow_updates")
+            and s["project_id"] in self.state["projects"]
+        }
+        if artifact.get("project_id") is not None:
+            targets.add(artifact["project_id"])
+        return sorted(targets)
+
+    def _action_publish(
+        self,
+        actor,
+        project_id,
+        version_id,
+        alias=None,
+        object_id=None,
+        target_projects=None,
+        work_ids=None,
+    ):
+        artifact, _ = self._object(actor, project_id, alias, object_id, version_id, write=True)
+        if version_id not in artifact["versions"]:
+            raise ValueError("Publish requires an existing exact version")
+        work_scope = [
+            self._work(actor, project_id, wid)["work_item_id"] for wid in (work_ids or [])
+        ]
+        targets = (
+            self._publication_targets(artifact) if target_projects is None else target_projects
+        )
+        result = publish_release(
+            self.state, actor, project_id, artifact["artifact_id"], version_id, targets, work_scope
+        )
+        if result["created"]:
+            self._publish_shared(
+                actor,
+                artifact,
+                version_id,
+                result["release"]["scope"]["target_projects"],
+                result["release"]["release_id"],
+            )
+        return result
+
+    def _publish_shared(self, actor, artifact, version_id, target_projects=None, release_id=None):
         subscriptions = {}
         for share in self.state["shares"]:
             if share["object_id"] == artifact["artifact_id"] and share.get("follow_updates"):
                 subscriptions[(share["project_id"], tuple(share["actor_ids"]))] = share
         for (pid, readers), source in subscriptions.items():
+            if target_projects is not None and pid not in target_projects:
+                continue
             self.state["shares"].append(
                 {
                     **copy.deepcopy(source),
@@ -625,13 +728,14 @@ class WorldCore(WorldRunner):
                     "version_id": version_id,
                     "at": self.state["clock"],
                     "publication_actor": actor,
+                    "release_id": release_id,
                 }
             )
             for adoption in self.state["adoptions"].values():
                 if (
                     adoption["object_id"] == artifact["artifact_id"]
                     and adoption["project_id"] == pid
-                    and adoption["policy"] == "current_applicable"
+                    and adoption["policy"] in {"current_applicable", "current_published"}
                 ):
                     self._message(
                         actor,
@@ -647,7 +751,7 @@ class WorldCore(WorldRunner):
                     )
 
     def _action_adopt(self, actor, project_id, alias, object_id, version_id, policy, work_ids):
-        if policy not in {"current_applicable", "fixed"}:
+        if policy not in {"current_applicable", "current_published", "fixed"}:
             raise ValueError("Unknown adoption policy")
         self._project(actor, project_id, active=True)
         self._object_id(project_id, alias)
@@ -715,7 +819,7 @@ class WorldCore(WorldRunner):
                 work=item["node_id"] if item else None,
                 object_id=object_id,
             )
-        if adoption["policy"] != "current_applicable":
+        if adoption["policy"] not in {"current_applicable", "current_published"}:
             raise ValueError("Fixed adoption requires a new explicit declaration")
         self._object(actor, project_id, object_id=object_id, version_id=version_id)
         if version_id == adoption["version_id"]:
@@ -907,6 +1011,28 @@ class WorldCore(WorldRunner):
         )
         return {"request_id": rid, "condition_id": cid}
 
+    def _action_request_information(self, actor, project_id, route_id, work_id):
+        item = self._work(actor, project_id, work_id)
+        routes = self.state["projects"][project_id].get("information_routes", [])
+        route = next((r for r in routes if r["route_id"] == route_id), None)
+        if route is None or item["work_item_id"] != route["work_id"]:
+            raise ValueError("No supported information route for this exact work")
+        reference = {"object_id": route["object_id"], "version_id": route["version_id"]}
+        result = self._action_request(
+            actor,
+            project_id,
+            work_id,
+            route["provider"],
+            reference,
+            purpose=route["purpose"],
+            delay=route["delay"],
+        )
+        self.state["requests"][result["request_id"]]["route_id"] = route_id
+        for event in self.state["events"]:
+            if event["payload"].get("request_id") == result["request_id"]:
+                event["payload"].update(grant_on_reply=True, availability=route["availability"])
+        return result
+
     def _event_actor(self, event):
         return event["payload"]["actor"]
 
@@ -919,6 +1045,7 @@ class WorldCore(WorldRunner):
             (
                 ("messages",),
                 ("raw_condition_responses",),
+                ("shares",),
                 ("condition_specs", payload["condition_id"]),
                 ("requests", payload["request_id"]),
             ),
@@ -946,10 +1073,40 @@ class WorldCore(WorldRunner):
             "responder": payload["actor"],
             "condition_version": request["requirement_version"],
             "purpose": payload["purpose"],
-            "status": "delivered",
+            "status": "unavailable"
+            if payload.get("availability") == "unavailable"
+            else "delivered",
             "reference": payload["reference"],
         }
-        # Reply delivery does not confer permission on the evidence object.
+        # Only an explicitly installed information route delegates exact-version
+        # delivery. Ordinary replies never infer an access grant.
+        if payload.get("grant_on_reply") and response["status"] == "delivered":
+            ref = VersionRef.from_mapping(payload["reference"])
+            artifact, _ = self._object(
+                payload["actor"],
+                payload["project_id"],
+                object_id=ref.object_id,
+                version_id=ref.version_id,
+            )
+            if (
+                artifact.get("project_id") != payload["project_id"]
+                or payload["actor"] not in artifact["writers"]
+            ):
+                raise ValueError("Information route cannot re-share another workspace's material")
+            owner = self.state["work_items"][request["work_item_id"]]["owner_role"]
+            self.state["shares"].append(
+                {
+                    "share_id": f"share-{len(self.state['shares']) + 1}",
+                    "object_id": ref.object_id,
+                    "version_id": ref.version_id,
+                    "project_id": payload["project_id"],
+                    "actor_ids": [owner],
+                    "actor_id": payload["actor"],
+                    "at": self.state["clock"],
+                    "follow_updates": False,
+                    "route_id": request["route_id"],
+                }
+            )
         result = apply_response(self.state, response)
         item = self.state["work_items"][request["work_item_id"]]
         self._message(
@@ -959,7 +1116,7 @@ class WorldCore(WorldRunner):
             "Requested reply",
             response,
         )
-        request["status"] = "delivered"
+        request["status"] = response["status"]
         return {"outcome": "applied", "result": result}
 
     def _action_read_messages(self, actor, project_id):
@@ -1059,7 +1216,11 @@ class WorldCore(WorldRunner):
             if project_id is not None:
                 self._project(actor, project_id)
             projects = {
-                pid: copy.deepcopy(p)
+                pid: {
+                    key: copy.deepcopy(value)
+                    for key, value in p.items()
+                    if key != "information_routes"
+                }
                 for pid, p in self.state["projects"].items()
                 if actor in p["participants"] and (project_id is None or pid == project_id)
             }
@@ -1128,6 +1289,7 @@ class WorldCore(WorldRunner):
                     objects[aid] = {
                         "filename": artifact["filename"],
                         "kind": artifact["kind"],
+                        "role": artifact.get("deliverable_role", "draft"),
                         "versions": [
                             vid
                             for vid in artifact["versions"]
@@ -1157,8 +1319,49 @@ class WorldCore(WorldRunner):
                 },
                 "work_items": work,
                 "objects": objects,
+                "information_routes": [
+                    {
+                        key: copy.deepcopy(route[key])
+                        for key in (
+                            "route_id",
+                            "project_id",
+                            "work_id",
+                            "provider",
+                            "object_alias",
+                            "purpose",
+                        )
+                    }
+                    for pid in projects
+                    for route in self.state["projects"][pid].get("information_routes", [])
+                ],
+                "conditions": {
+                    cid: copy.deepcopy(condition)
+                    for cid, condition in self.state["condition_specs"].items()
+                    if condition["work_item_id"] in work
+                },
+                "publications": [
+                    copy.deepcopy(release)
+                    for release in self.state.get("releases", [])
+                    if (
+                        project_id is None
+                        and release["source_project"] is None
+                        or project_id in release["scope"]["target_projects"]
+                    )
+                    and self._can_read(
+                        actor,
+                        project_id,
+                        self.state["artifacts"][release["object_id"]],
+                        release["version_id"],
+                    )
+                ],
                 "adoptions": {
-                    key: copy.deepcopy(value)
+                    key: {
+                        **copy.deepcopy(value),
+                        **{
+                            field: copy.deepcopy(self.state["adoptions"][key][field])
+                            for field in ("alias", "object_id", "work_ids")
+                        },
+                    }
                     for key, value in self.state["adoption_view"].items()
                     if self.state["adoptions"][key]["project_id"] in projects
                 },

@@ -173,7 +173,9 @@ def evaluate_submission(store, state, item, submission):
                     if key in combined and not _equal(combined[key], value):
                         conflicts.append(key)
                     combined[key] = value
-            submitted.append({"artifact": artifact, "content": content, "data": data})
+            submitted.append(
+                {"artifact": artifact, "version_id": vid, "content": content, "data": data}
+            )
         except (ValueError, OSError, KeyError) as exc:
             errors.append(str(exc))
     missing = sorted(set(contract.get("required_fields", [])) - set(combined))
@@ -252,6 +254,37 @@ def evaluate_submission(store, state, item, submission):
                         raise ValueError(
                             "Content source does not match the policy target at submission"
                         )
+                binding_files = []
+                for entry in selected:
+                    if entry["data"] is None:
+                        continue
+                    contributes = False
+                    for path in (spec["path"], spec["reference_path"]):
+                        try:
+                            _at_path(entry["data"], path)
+                            contributes = True
+                        except ValueError:
+                            pass
+                    if not contributes:
+                        continue
+                    metadata = entry["artifact"]["versions"][entry["version_id"]]
+                    dependencies = [
+                        VersionRef.from_mapping(value) for value in metadata.get("derived_from", [])
+                    ]
+                    if ref not in dependencies:
+                        raise ValueError(
+                            "Contributing submitted file lacks the exact source dependency: "
+                            + entry["artifact"]["artifact_id"]
+                            + "@"
+                            + entry["version_id"]
+                        )
+                    binding_files.append(
+                        {
+                            "object_id": entry["artifact"]["artifact_id"],
+                            "version_id": entry["version_id"],
+                        }
+                    )
+                outcome["binding_files"] = binding_files
                 source = read_version(ref.object_id, ref.version_id)
                 artifact = state["artifacts"][ref.object_id]
                 if kind == "json_matches_source_cell":

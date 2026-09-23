@@ -15,6 +15,7 @@ from pathlib import PurePosixPath
 
 from ..policies.organization import require_authority
 from .references import VersionRef, resolve_version
+from .publication import PUBLICATION_POLICIES
 from ..adapters.capabilities import capability_for, encode
 from ..domains.work_product import validate_content_contract
 
@@ -30,6 +31,7 @@ class WorldSpec:
     applications: tuple | list = ("files",)
     bootstrap_grants: tuple | list = ()
     event_policy: dict = field(default_factory=dict)
+    publication_policy: str = "explicit"
 
     def to_dict(self):
         return asdict(self)
@@ -76,6 +78,8 @@ class ProjectPackage:
         default_factory=lambda: {"kind": "unknown", "source_evidence_refs": []}
     )
     close_policy: dict = field(default_factory=lambda: {"pending_obligations": "retain"})
+    publication_policy: str | None = None
+    information_routes: list | tuple = ()
 
     def to_dict(self):
         return asdict(self)
@@ -138,7 +142,18 @@ def provenance(value):
 def new_world_state(spec):
     """Bootstrap trusted identities and explicit world powers, with zero projects."""
     spec = _mapping(spec, "WorldSpec")
-    _keys(spec, {"world_id", "actors", "applications", "bootstrap_grants", "event_policy"}, "world")
+    _keys(
+        spec,
+        {
+            "world_id",
+            "actors",
+            "applications",
+            "bootstrap_grants",
+            "event_policy",
+            "publication_policy",
+        },
+        "world",
+    )
     world_id = _identifier(spec.get("world_id"), "world identity")
     raw_actors = spec.get("actors")
     if isinstance(raw_actors, list):
@@ -174,6 +189,9 @@ def new_world_state(spec):
     if not applications or set(applications) - {"files", "spreadsheets"}:
         raise ValueError("Applications must select files and/or spreadsheets")
     event_policy = _mapping(spec.get("event_policy", {}), "event policy")
+    publication_policy = spec.get("publication_policy", "explicit")
+    if publication_policy not in PUBLICATION_POLICIES:
+        raise ValueError("Unknown world publication policy")
     state = {
         "schema_version": WORLD_SCHEMA_VERSION,
         "runtime_kind": "world_core",
@@ -189,6 +207,8 @@ def new_world_state(spec):
         "roles": [{**record, "role_id": aid} for aid, record in actors.items()],
         "applications": applications,
         "event_policy": event_policy,
+        "publication_policy": publication_policy,
+        "releases": [],
         "organization": {"positions": {}, "grants": grants},
         "world_status": "running",
         "projects": {},
@@ -313,6 +333,8 @@ def validate_package(state, package):
             "adoptions",
             "provenance",
             "close_policy",
+            "publication_policy",
+            "information_routes",
         },
         "package",
     )
@@ -328,6 +350,9 @@ def validate_package(state, package):
     _keys(close_policy, {"pending_obligations"}, "close policy")
     if close_policy.get("pending_obligations") not in {"retain", "cancel"}:
         raise ValueError("Closing must declare retain or cancel for pending obligations")
+    publication_policy = raw.get("publication_policy") or state["publication_policy"]
+    if publication_policy not in PUBLICATION_POLICIES:
+        raise ValueError("Unknown project publication policy")
     objects, aliases = [], {}
     for value in _list(raw.get("objects", []), "objects"):
         value = _mapping(value, "object")
@@ -405,8 +430,8 @@ def validate_package(state, package):
             raise ValueError("Adoption alias conflicts with workspace")
         reference = VersionRef.from_mapping(value)
         resolve_version(state, reference)
-        if value.get("policy") not in {"current_applicable", "fixed"}:
-            raise ValueError("Adoption requires current_applicable or fixed policy")
+        if value.get("policy") not in {"current_applicable", "current_published", "fixed"}:
+            raise ValueError("Adoption requires a supported current or fixed policy")
         visible = set()
         for share in state.get("shares", []):
             if (
@@ -567,6 +592,68 @@ def validate_package(state, package):
                 else [aliases[obj] for obj in object_ids],
             }
         )
+    routes = []
+    object_plan = {obj["object_id"]: obj for obj in objects}
+    seen_routes = set()
+    for route in _list(raw.get("information_routes", []), "information routes"):
+        route = _mapping(route, "information route")
+        _keys(
+            route,
+            {
+                "route_id",
+                "work_id",
+                "provider",
+                "object_alias",
+                "purpose",
+                "delay",
+                "availability",
+                "version_id",
+            },
+            "information route",
+        )
+        route_id = _identifier(route.get("route_id"), "route identity")
+        if route_id in seen_routes or route.get("work_id") not in work_locals:
+            raise ValueError("Route identity duplicate or work unknown")
+        seen_routes.add(route_id)
+        provider = route.get("provider")
+        oid = aliases.get(route.get("object_alias"))
+        obj = object_plan.get(oid)
+        if provider not in participants or obj is None or provider not in obj["writers"]:
+            raise ValueError("Information route requires the project's actual object provider")
+        delay = route.get("delay", 3)
+        availability = route.get("availability", "available")
+        if (
+            type(delay) is not int
+            or not 1 <= delay <= 100
+            or availability not in {"available", "unavailable"}
+        ):
+            raise ValueError("Unsupported information route delivery policy")
+        if route.get("version_id", "v1") != "v1":
+            raise ValueError("Package routes must reference their real initial version")
+        purpose = _text(route.get("purpose", "evidence"), "route purpose")
+        wid = _work_id(pid, route["work_id"])
+        if not any(
+            g["actor_id"] == provider
+            and g["power"] == "provide"
+            and g["subject"] in {purpose, "*"}
+            and (g["work_nodes"] == ["*"] or wid in g["work_nodes"])
+            and (g["object_ids"] == ["*"] or oid in g["object_ids"])
+            for g in grants
+        ):
+            raise ValueError("Information provider lacks the declared work/object power")
+        routes.append(
+            {
+                **route,
+                "route_id": route_id,
+                "project_id": pid,
+                "work_id": wid,
+                "object_id": oid,
+                "version_id": "v1",
+                "purpose": purpose,
+                "delay": delay,
+                "availability": availability,
+            }
+        )
     return {
         "project": {
             "project_id": pid,
@@ -576,6 +663,8 @@ def validate_package(state, package):
             "started_at": state["clock"],
             "work_ids": [item["work_item_id"] for item in works],
             "close_policy": close_policy,
+            "publication_policy": publication_policy,
+            "information_routes": routes,
             "provenance": package_provenance,
         },
         "objects": objects,

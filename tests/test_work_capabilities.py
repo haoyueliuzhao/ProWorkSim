@@ -21,7 +21,7 @@ from proworksim.domains.work_product import evaluate_submission, validate_conten
 from proworksim.storage import Store
 
 
-def ledger(tmp_path, values, contract, submitted=None, adoptions=None):
+def ledger(tmp_path, values, contract, submitted=None, adoptions=None, dependencies=None):
     store = Store(tmp_path)
     state = {"artifacts": {}, "adoptions": {}, "adoption_view": {}}
     for aid, kind, versions in values:
@@ -36,7 +36,10 @@ def ledger(tmp_path, values, contract, submitted=None, adoptions=None):
         state["artifacts"][aid] = artifact
         for number, content in enumerate(versions, 1):
             vid = "v" + str(number)
-            artifact["versions"][vid] = {"sha256": hashlib.sha256(content).hexdigest()}
+            artifact["versions"][vid] = {
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "derived_from": copy.deepcopy((dependencies or {}).get((aid, vid), [])),
+            }
             path = store.version_path(artifact, vid)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
@@ -161,6 +164,8 @@ def test_source_interface_checks_snapshot_content_and_keeps_history_stable(tmp_p
     a1, a2 = encode("xlsx", {"Report!A1": 6}), encode("xlsx", {"Report!A1": 8})
     source_ref = {"object_id": "source", "version_id": "v1"}
     report1 = encode("json", {"margin": 6, "source_ref": source_ref})
+    source2 = {**source_ref, "version_id": "v2"}
+    wrong = encode("json", {"margin": 6, "source_ref": source2})
     adoption = {
         "object_id": "source",
         "version_id": "v1",
@@ -171,11 +176,12 @@ def test_source_interface_checks_snapshot_content_and_keeps_history_stable(tmp_p
     store, state, item, sub = ledger(
         tmp_path,
         [
-            ("report", "json", [report1]),
+            ("report", "json", [report1, wrong]),
             ("source", "xlsx", [a1, a2]),
         ],
         contract,
         adoptions={"input": adoption},
+        dependencies={("report", "v1"): [source_ref], ("report", "v2"): [source2]},
     )
     assert evaluate_submission(store, state, item, sub)["passed"]
     # Later state changes do not rewrite evaluation of the original fixed submission.
@@ -188,10 +194,7 @@ def test_source_interface_checks_snapshot_content_and_keeps_history_stable(tmp_p
     assert not evaluate_submission(store, state, item, sub)["passed"]
     adoption["version_id"] = "v2"
     sub["adoption_snapshot"]["input"] = copy.deepcopy(adoption)
-    wrong = encode("json", {"margin": 6, "source_ref": {**source_ref, "version_id": "v2"}})
-    path = store.version_path(state["artifacts"]["report"], "v1")
-    path.write_bytes(wrong)
-    state["artifacts"]["report"]["versions"]["v1"]["sha256"] = hashlib.sha256(wrong).hexdigest()
+    sub["artifact_versions"] = {"report": "v2"}
     result = evaluate_submission(store, state, item, sub)
     assert not result["passed"] and result["checks"][0]["expected"] == 8
     del sub["adoption_snapshot"]
@@ -209,3 +212,53 @@ def test_evaluator_rejects_uncommitted_byte_change_and_unknown_check(tmp_path):
         validate_content_contract({"content_checks": [{"kind": "python_eval"}]})
     with pytest.raises(ValueError):
         validate_content_contract({"content_checks": [{"kind": "json_field_equals", "path": "x"}]})
+
+
+def test_source_binding_requires_every_contributor_but_not_unrelated_file(tmp_path):
+    source_ref = {"object_id": "source", "version_id": "v1"}
+    contract = {
+        "content_checks": [
+            {
+                "kind": "json_matches_source_field",
+                "path": ["margin"],
+                "reference_path": ["source_ref"],
+                "adoption_alias": "input",
+                "source_path": ["rate"],
+            }
+        ]
+    }
+    adoption = {
+        **source_ref,
+        "target_version": "v1",
+        "policy": "fixed",
+        "work_ids": ["B::work"],
+    }
+    store, state, item, sub = ledger(
+        tmp_path,
+        [
+            ("amount", "json", [encode("json", {"margin": 6})]),
+            ("reference", "json", [encode("json", {"source_ref": source_ref})]),
+            ("note", "json", [encode("json", {"note": "An unrelated delivery note."})]),
+            ("source", "json", [encode("json", {"rate": 6})]),
+        ],
+        contract,
+        submitted={"amount": "v1", "reference": "v1", "note": "v1"},
+        adoptions={"input": adoption},
+        dependencies={("amount", "v1"): [source_ref], ("reference", "v1"): [source_ref]},
+    )
+    good = evaluate_submission(store, state, item, sub)
+    assert good["passed"]
+    assert good["checks"][0]["binding_files"] == [
+        {"object_id": "amount", "version_id": "v1"},
+        {"object_id": "reference", "version_id": "v1"},
+    ]
+    assert state["artifacts"]["note"]["versions"]["v1"]["derived_from"] == []
+    # Body, scalar and adopted version remain correct: only the committed
+    # source-dependency fact is wrong in this isolated evaluator fixture.
+    for contributor in ("amount", "reference"):
+        metadata = state["artifacts"][contributor]["versions"]["v1"]
+        metadata["derived_from"] = [{**source_ref, "version_id": "v2"}]
+        result = evaluate_submission(store, state, item, sub)
+        assert not result["passed"]
+        assert "exact source dependency" in result["checks"][0]["reason"]
+        metadata["derived_from"] = [source_ref]
