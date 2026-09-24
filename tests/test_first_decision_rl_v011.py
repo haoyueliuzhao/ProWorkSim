@@ -347,3 +347,79 @@ def test_cached_replay_keeps_prefix_gradients_and_complete_output_targets():
     net.zero_grad(set_to_none=True)
     (0.5 * sum(value.sum() for value in prefix) / 2).backward()
     torch.testing.assert_close(cached_grad, net.embedding.weight.grad, rtol=1e-12, atol=1e-12)
+
+
+def test_resident_parameter_views_and_lossless_activation_storage_preserve_gradients():
+    from types import SimpleNamespace
+    from scripts.first_decision_rl_v011 import ParameterResidentSavedTensors
+
+    torch = pytest.importorskip("torch")
+    torch.manual_seed(21)
+
+    class StorageToy(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.weight = torch.nn.Parameter(torch.randn(4, 4, dtype=torch.float64))
+            self.frozen = torch.nn.Parameter(
+                torch.randn(4, 4, dtype=torch.float64), requires_grad=False
+            )
+            self.config = SimpleNamespace(num_attention_heads=4, num_key_value_heads=2)
+
+    network = StorageToy()
+    hook = ParameterResidentSavedTensors(network, torch=torch, max_rss_bytes=64 * 1024**3)
+    transposed = network.weight.t()
+    packed = hook.pack(transposed)
+    assert packed.cpu_bytes == 0
+    unpacked = hook.unpack(packed)
+    assert unpacked.untyped_storage().data_ptr() == network.weight.untyped_storage().data_ptr()
+    assert unpacked.stride() == transposed.stride()
+
+    source = torch.randn(1, 2, 3, 4, dtype=torch.float64, requires_grad=True)
+    independent = source.detach().clone().requires_grad_()
+
+    def objective(value):
+        repeated = value.repeat_interleave(2, dim=1)
+        output = repeated.square().sum()
+        # A frozen parameter transpose is saved for the input gradient; keeping
+        # its original storage avoids copying the full weights per cache step.
+        return (
+            output
+            + (value.reshape(-1, 4) @ network.frozen.t() @ network.weight.t()).t().square().sum()
+        )
+
+    with hook:
+        actual = objective(source)
+        actual.backward()
+    actual_parameter_grad = network.weight.grad.clone()
+    network.weight.grad = None
+    expected = objective(independent)
+    expected.backward()
+    torch.testing.assert_close(actual_parameter_grad, network.weight.grad, rtol=0, atol=0)
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+    torch.testing.assert_close(source.grad, independent.grad, rtol=0, atol=0)
+    assert hook.stats["retained_parameter_refs"] >= 2
+    assert hook.stats["exact_repeated_head_refs"] >= 1
+    assert hook.stats["offloaded_activation_bytes"] < hook.stats["raw_activation_bytes"]
+
+    expanded = torch.tensor([[-0.0, 2.0]], dtype=torch.float64).expand(3, 2)
+    returned = hook.unpack(hook.pack(expanded))
+    assert returned.stride() == expanded.stride()
+    assert torch.equal(
+        returned.contiguous().view(torch.uint8), expanded.contiguous().view(torch.uint8)
+    )
+    signed = torch.zeros(1, 4, 3, 4, dtype=torch.float64)
+    signed[:, 1] = -0.0
+    packet = hook.pack(signed)
+    assert packet.repeat_heads == 1  # Numeric equality is insufficient for a lossless byte claim.
+    assert torch.equal(hook.unpack(packet).view(torch.uint8), signed.view(torch.uint8))
+
+
+def test_saved_data_rss_limit_is_explicit_and_stops_before_copy():
+    from scripts.first_decision_rl_v011 import ParameterResidentSavedTensors, TrainingResourceLimit
+
+    torch = pytest.importorskip("torch")
+    hook = ParameterResidentSavedTensors(torch.nn.Linear(2, 2), torch=torch, max_rss_bytes=1)
+    with pytest.raises(TrainingResourceLimit) as failed:
+        hook.pack(torch.ones(2))
+    assert failed.value.details["observed_rss_bytes"] > 1
+    assert hook.stats["offloaded_activation_bytes"] == 0

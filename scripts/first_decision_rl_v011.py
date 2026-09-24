@@ -23,7 +23,7 @@ from proworksim.episode import assess_historical_episode
 from proworksim.rewards import episode_reward
 from proworksim.storage import atomic_write, json_bytes, read_json
 
-VERSION = "first-decision-reinforce-v0.11.1"
+VERSION = "first-decision-reinforce-v0.11.2"
 REVISION = "a09a35458c702b33eeacc393d103063234e8bc28"
 EPISODE_NAMES = ["finance-direct-qwen-1", "finance-direct-qwen-2", "finance-direct-qwen-3"]
 ROLE, NODE = "analyst", "FINANCE::reconcile"
@@ -538,6 +538,168 @@ def original_batch_groups(rows, service_root):
     return groups
 
 
+class TrainingResourceLimit(RuntimeError):
+    def __init__(self, details):
+        super().__init__("Predeclared process RSS limit prevents continuing activation storage")
+        self.details = details
+
+
+def process_rss_bytes():
+    fields = Path("/proc/self/statm").read_text().split()
+    return int(fields[1]) * os.sysconf("SC_PAGE_SIZE")
+
+
+class _SavedTensorPayload:
+    def __init__(self, owner, data, device, shape, stride, repeat_heads=1, cpu_bytes=0):
+        self.owner, self.data, self.device = owner, data, device
+        self.shape, self.stride, self.repeat_heads = shape, stride, repeat_heads
+        self.cpu_bytes = cpu_bytes
+
+    def __del__(self):
+        if self.cpu_bytes:
+            self.owner.stats["packed_cpu_live_bytes"] -= self.cpu_bytes
+
+
+class ParameterResidentSavedTensors:
+    """Keep parameter/view storages resident; copy only saved activation data.
+
+    Hook detachment stores autograd's saved *data*, not a detached computational
+    cache. Graph edges and all original past KV tensors remain untouched.
+    Exact repeated attention heads may be stored once, then restored byte-exactly.
+    """
+
+    def __init__(self, network, *, torch, max_rss_bytes, progress=None):
+        self.torch, self.max_rss_bytes, self.progress = torch, max_rss_bytes, progress
+        self.parameters = {}
+        for parameter in network.parameters():
+            key = self.storage_key(parameter)
+            self.parameters[key] = parameter.untyped_storage().nbytes()
+        config = getattr(network, "config", None)
+        self.heads = getattr(config, "num_attention_heads", None)
+        self.kv_heads = getattr(config, "num_key_value_heads", None)
+        self.last_progress = 0.0
+        self.stats = {
+            "version": "parameter-resident-saved-data-v0.11.2",
+            "parameter_storages": len(self.parameters),
+            "resident_parameter_storage_bytes": sum(self.parameters.values()),
+            "retained_parameter_refs": 0,
+            "retained_parameter_bytes_not_copied": 0,
+            "offloaded_activation_refs": 0,
+            "raw_activation_bytes": 0,
+            "offloaded_activation_bytes": 0,
+            "packed_cpu_live_bytes": 0,
+            "packed_cpu_peak_bytes": 0,
+            "exact_repeated_head_refs": 0,
+            "unpack_calls": 0,
+            "rss_peak_bytes": process_rss_bytes(),
+            "max_rss_bytes": max_rss_bytes,
+            "cpu_pin_memory": False,
+            "parameter_identity": "untyped_storage.data_ptr plus device, includes transposed views",
+            "cache_graph_detached": False,
+        }
+        self.context = None
+
+    @staticmethod
+    def storage_key(tensor):
+        return str(tensor.device), tensor.untyped_storage().data_ptr()
+
+    def sample(self, extra_bytes=0):
+        rss = process_rss_bytes()
+        self.stats["rss_current_bytes"] = rss
+        self.stats["rss_peak_bytes"] = max(rss, self.stats["rss_peak_bytes"])
+        if rss + extra_bytes > self.max_rss_bytes:
+            details = {**self.stats, "next_cpu_copy_bytes": extra_bytes, "observed_rss_bytes": rss}
+            if self.progress:
+                self.progress(details)
+            raise TrainingResourceLimit(details)
+        if self.progress and time.monotonic() - self.last_progress >= 2:
+            self.progress(copy.deepcopy(self.stats))
+            self.last_progress = time.monotonic()
+
+    def pack(self, tensor):
+        self.sample()
+        shape, stride, device = tuple(tensor.shape), tuple(tensor.stride()), tensor.device
+        size = tensor.numel() * tensor.element_size()
+        if self.storage_key(tensor) in self.parameters:
+            self.stats["retained_parameter_refs"] += 1
+            self.stats["retained_parameter_bytes_not_copied"] += size
+            return _SavedTensorPayload(self, tensor.detach(), device, shape, stride)
+        data = tensor.detach()
+        repeat = 1
+        if (
+            data.ndim == 4
+            and data.stride(-1) == 1
+            and type(self.heads) is int
+            and type(self.kv_heads) is int
+            and self.kv_heads > 0
+            and self.heads > self.kv_heads
+            and self.heads % self.kv_heads == 0
+            and data.shape[1] == self.heads
+        ):
+            count = self.heads // self.kv_heads
+            grouped = data.unflatten(1, (self.kv_heads, count))
+            first = grouped[:, :, 0]
+            if all(
+                self.torch.equal(
+                    first.view(self.torch.uint8), grouped[:, :, index].view(self.torch.uint8)
+                )
+                for index in range(1, count)
+            ):
+                data = first
+                repeat = count
+                self.stats["exact_repeated_head_refs"] += 1
+        cpu_bytes = data.numel() * data.element_size()
+        self.sample(cpu_bytes)
+        # A dense, non-pinned CPU copy avoids retaining an oversized view storage
+        # and avoids the pinned allocator retaining every old episode's blocks.
+        saved = data.contiguous().to("cpu", copy=True)
+        self.stats["offloaded_activation_refs"] += 1
+        self.stats["raw_activation_bytes"] += size
+        self.stats["offloaded_activation_bytes"] += cpu_bytes
+        self.stats["packed_cpu_live_bytes"] += cpu_bytes
+        self.stats["packed_cpu_peak_bytes"] = max(
+            self.stats["packed_cpu_peak_bytes"], self.stats["packed_cpu_live_bytes"]
+        )
+        packet = _SavedTensorPayload(self, saved, device, shape, stride, repeat, cpu_bytes)
+        self.sample()
+        return packet
+
+    def unpack(self, packet):
+        self.sample()
+        self.stats["unpack_calls"] += 1
+        if not packet.cpu_bytes:
+            return packet.data
+        value = packet.data.to(packet.device)
+        if packet.repeat_heads != 1:
+            value = value.repeat_interleave(packet.repeat_heads, dim=1)
+        if tuple(value.shape) != packet.shape:
+            raise ValueError("Saved activation shape changed during exact storage restoration")
+        if tuple(value.stride()) != packet.stride:
+            # Broadcast zero strides need one stored element along that dimension.
+            compact_shape = tuple(
+                1 if stride == 0 else size for size, stride in zip(packet.shape, packet.stride)
+            )
+            slices = tuple(slice(0, 1) if stride == 0 else slice(None) for stride in packet.stride)
+            restored = self.torch.empty_strided(
+                compact_shape, packet.stride, device=packet.device, dtype=value.dtype
+            )
+            restored.copy_(value[slices])
+            value = restored.as_strided(packet.shape, packet.stride)
+        return value
+
+    def __enter__(self):
+        self.context = self.torch.autograd.graph.saved_tensors_hooks(self.pack, self.unpack)
+        self.context.__enter__()
+        return self
+
+    def __exit__(self, *arguments):
+        return self.context.__exit__(*arguments)
+
+    def snapshot(self):
+        self.sample()
+        return copy.deepcopy(self.stats)
+
+
 def protocol(args):
     return {
         "version": VERSION,
@@ -572,7 +734,9 @@ def protocol(args):
             "mean_absolute_nats": args.logprob_mean_atol,
             "applied_before_any_update": True,
         },
-        "execution": "model.eval with gradients enabled; complete original batch/cache trajectory; past KV remains differentiable; saved autograd tensors offloaded with save_on_cpu(pin_memory=True); no new sampling",
+        "execution": "model.eval with gradients enabled; complete original batch/cache trajectory; past KV remains differentiable; parameter/view saved data stays GPU resident; nonparameter activation data copied nonpinned to CPU; byte-exact repeated KV heads losslessly stored once; no new sampling",
+        "max_rss_gib": args.max_rss_gib,
+        "resource_stop": "Observed current RSS plus next saved activation allocation checked before/after each pack; no change to reward or original operator stop",
         "replay_mode": args.replay_mode,
         "service_records": str(args.service_records),
         "teacher_forcing_control": "Explicit legacy mode retained; it failed the original likelihood gate on two recorded batched episodes; no tolerance or data change",
@@ -595,6 +759,7 @@ def main():
     parser.add_argument("--logprob-max-atol", type=float, default=0.2)
     parser.add_argument("--logprob-mean-atol", type=float, default=0.03)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--max-rss-gib", type=float, default=64)
     parser.add_argument(
         "--replay-mode", choices=("cached_replay", "teacher_forcing"), default="cached_replay"
     )
@@ -602,8 +767,13 @@ def main():
     args = parser.parse_args()
     if args.output.exists() or args.output.is_symlink():
         parser.error("Output requires a new independent destination")
-    if args.max_length < 1 or any(
-        not math.isfinite(x) or x < 0 for x in (args.logprob_max_atol, args.logprob_mean_atol)
+    if (
+        args.max_length < 1
+        or not math.isfinite(args.max_rss_gib)
+        or args.max_rss_gib <= 0
+        or any(
+            not math.isfinite(x) or x < 0 for x in (args.logprob_max_atol, args.logprob_mean_atol)
+        )
     ):
         parser.error("Invalid fixed length or probability tolerance")
     model_path, output = args.model.resolve(), args.output.resolve()
@@ -804,12 +974,27 @@ def main():
             weight_decay=0,
         )
         optimizer.zero_grad(set_to_none=True)
+        storage_phase = "gradient_forward"
+
+        def storage_progress(stats):
+            report["saved_tensor_storage"] = stats
+            save(storage_phase)
+
+        saved_storage = ParameterResidentSavedTensors(
+            model,
+            torch=torch,
+            max_rss_bytes=int(args.max_rss_gib * 1024**3),
+            progress=storage_progress,
+        )
         losses, gradient_probability_checks = [], []
         report["backward_groups_completed"] = 0
         with torch.enable_grad():
-            for group in groups:
+            for group_index, group in enumerate(groups):
                 group_rows = [admitted[index] for index in group["indices"]]
-                with torch.autograd.graph.save_on_cpu(pin_memory=True):
+                report["active_replay_group"] = group_index
+                storage_phase = "gradient_forward"
+                save(storage_phase)
+                with saved_storage:
                     logp = grouped_logprobs(model, group_rows)
                     terms = []
                     for index, row in enumerate(group_rows):
@@ -851,9 +1036,14 @@ def main():
                     loss = torch.stack(terms).sum()
                     if not torch.isfinite(loss):
                         raise ValueError("Nonfinite actual REINFORCE loss")
+                    storage_phase = "backward"
+                    save(storage_phase)
                     loss.backward()
                     report["backward_groups_completed"] += 1
                 del logp, loss, selected, term, terms
+                gc.collect()
+                report["saved_tensor_storage"] = saved_storage.snapshot()
+                save("group_backward_complete")
         atomic_write(
             output / "gradient-probability-check.json", json_bytes(gradient_probability_checks)
         )
@@ -937,6 +1127,10 @@ def main():
         report["status"] = "one_update_saved_and_reloaded"
         save("complete")
         return 0
+    except TrainingResourceLimit as error:
+        report.update(status="resource_limit", resource_stop=error.details)
+        save("resource_limit_no_further_compute")
+        return 1
     except Exception as error:
         report.update(
             status="experiment_error", error={"type": type(error).__name__, "message": str(error)}
