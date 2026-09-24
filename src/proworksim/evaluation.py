@@ -78,7 +78,7 @@ def evaluate_submission(store, state, item, submission):
         }
 
 
-EPISODE_ASSESSMENT_VERSION = "episode-assessment-v0.10"
+EPISODE_ASSESSMENT_VERSION = "episode-assessment-v0.11"
 
 
 def _fixed_submission(state, work_id, submission_id=None):
@@ -254,6 +254,107 @@ def _process_requirement(store, state, events, requirement):
             violation_sequences=violations,
             rejected_attempt_sequences=rejected,
         )
+    elif rule.get("kind") == "required_source_adoption":
+        from .core.adoption import binding_key
+        from .core.projections import derive_condition_view
+        from .core.work import current_id
+
+        allowed = {"requirement_id", "kind", "work_id", "work_node", "aliases"}
+        if set(rule) - allowed or ("work_id" in rule) == ("work_node" in rule):
+            raise ValueError("Adoption requirement selects exactly one work_id or work_node")
+        aliases = rule.get("aliases")
+        if (
+            not isinstance(aliases, list)
+            or not aliases
+            or any(not isinstance(alias, str) or not alias for alias in aliases)
+            or len(aliases) != len(set(aliases))
+        ):
+            raise ValueError("Adoption requirement needs distinct declared source aliases")
+        wid = rule.get("work_id")
+        if "work_node" in rule:
+            node = rule["work_node"]
+            editions = [item for item in state["work_items"].values() if item["node_id"] == node]
+            if not editions:
+                return {**result, "reason": "Declared work node is unavailable"}
+            project = state["projects"][editions[0]["project_id"]]
+            wid = current_id(
+                state,
+                project.get("maintenance_heads", {}).get(
+                    node, editions[0].get("root_work_id", node)
+                ),
+            )
+        item, submission = _fixed_submission(state, wid)
+        contract = (
+            submission["requirement_snapshot"].get("deliverable_contract", {})
+            if submission
+            else item.get("deliverable_contract", {})
+        )
+        declared = {
+            source["alias"]
+            for check in contract.get("content_checks", [])
+            for source in check.get("sources", [])
+        }
+        declared.update(
+            check["adoption_alias"]
+            for check in contract.get("content_checks", [])
+            if "adoption_alias" in check
+        )
+        if not set(aliases) <= declared:
+            return {
+                **result,
+                "reason": "Adoption aliases are not declared by the public content contract",
+            }
+        result.update(
+            work_id=wid,
+            aliases=aliases,
+            submission_id=submission["submission_id"] if submission else None,
+            public_contract_sources=sorted(declared),
+        )
+        project = state["projects"][item["project_id"]]
+        unavailable_routes = [
+            route["route_id"]
+            for route in project.get("information_routes", [])
+            if route.get("work_node") == item["node_id"]
+            and route.get("object_alias") in aliases
+            and route.get("availability") == "unavailable"
+        ]
+        source_ids = {state["workspaces"][item["project_id"]].get(alias) for alias in aliases}
+        conditions = derive_condition_view(state)
+        unavailable_conditions = [
+            cid
+            for cid, condition in state.get("condition_specs", {}).items()
+            if condition.get("work_item_id") == wid
+            and conditions[cid]["status"] == "unavailable"
+            and condition.get("evidence_spec", {}).get("reference", {}).get("object_id")
+            in source_ids
+        ]
+        if unavailable_routes or unavailable_conditions:
+            return {
+                **result,
+                "status": "source_unavailable",
+                "unavailable_routes": unavailable_routes,
+                "unavailable_conditions": unavailable_conditions,
+                "reason": "Declared required source is unavailable in the captured world",
+            }
+        snapshots = submission.get("adoption_snapshot", {}) if submission else {}
+        missing, invalid = [], []
+        for alias in aliases:
+            binding = snapshots.get(binding_key(wid, alias))
+            if binding is None:
+                missing.append(alias)
+            elif (
+                binding.get("work_id") != wid
+                or binding.get("requirement_version") != submission["requirement_version"]
+                or binding.get("project_id") != item["project_id"]
+                or binding.get("alias") != alias
+            ):
+                invalid.append(alias)
+        result.update(
+            status="violation" if missing or invalid else "pass",
+            missing_aliases=missing,
+            invalid_aliases=invalid,
+            diagnostic_scope="Exact pre-submission adoption relation only; content correctness remains separately assessed",
+        )
     elif rule.get("kind") == "preserve_version":
         if set(rule) != {"requirement_id", "kind", "object_id", "version_id", "sha256"}:
             raise ValueError("Preservation requires an exact version and initial byte digest")
@@ -292,7 +393,6 @@ def assess_episode(
     """
     from .core.projections import derive_current_work_view, derive_condition_view
     from .core.issues import derive_issue_view
-    from .experience import ExperienceRecorder
     from .storage import digest, json_bytes
     from .tool_outcomes import classify_tool_result
 
@@ -300,7 +400,18 @@ def assess_episode(
     try:
         if not isinstance(experience, dict) or not isinstance(experience.get("events"), list):
             raise ValueError("Assessment requires a retained experience snapshot")
-        events = ExperienceRecorder(experience["events"]).events
+        events = copy.deepcopy(experience["events"])
+        offset = experience.get("sequence_start", 0)
+        if (
+            type(offset) is not int
+            or offset < 0
+            or any(
+                not isinstance(event, dict) or event.get("sequence") != offset + index
+                for index, event in enumerate(events)
+            )
+        ):
+            raise ValueError("Assessment experience must retain its declared original sequence")
+        json_bytes(events)
         views = derive_current_work_view(state)
         selected = sorted(
             work_ids
@@ -315,6 +426,10 @@ def assess_episode(
             "state_sha256": digest(json_bytes(state)),
             "experience_sha256": digest(json_bytes(experience)),
             "content_selection": "latest_fixed_submission_of_each_selected_work",
+            "event_counts": {
+                kind: sum(event["kind"] == kind for event in events)
+                for kind in sorted({event["kind"] for event in events})
+            },
         }
         institutional, contents, incomplete, faults = [], [], [], []
         for wid in selected:
@@ -401,7 +516,7 @@ def assess_episode(
             "conditions": {
                 cid: view
                 for cid, view in derive_condition_view(state).items()
-                if state["condition_specs"][cid].get("work_id") in selected
+                if state["condition_specs"][cid].get("work_item_id") in selected
             },
         }
         result["content_quality"] = {"submissions": contents}
@@ -442,7 +557,7 @@ def assess_episode(
         boundaries = []
         for event in events:
             kind, payload = event["kind"], event["payload"]
-            if kind in {"interface_error", "policy_error", "binding_error"}:
+            if kind in {"interface_error", "policy_error", "binding_error", "model_boundary_error"}:
                 runtime.append(copy.deepcopy(event))
             elif kind == "tool_call":
                 if "exception" in payload:
@@ -473,6 +588,9 @@ def assess_episode(
                     "controller_rejected",
                     "unbuildable",
                     "capability_gap",
+                    "model_service_error",
+                    "model_format_error",
+                    "model_budget_exhausted",
                 }:
                     runtime.append(copy.deepcopy(event))
         result["incompleteness"] = {

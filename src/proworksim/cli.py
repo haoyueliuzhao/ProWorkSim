@@ -21,7 +21,7 @@ from .validation import evaluate
 
 def parser():
     root = argparse.ArgumentParser(
-        prog="proworksim", description="ProWorkSim v0.10.0 工作世界模拟器"
+        prog="proworksim", description="ProWorkSim v0.11.0 工作世界模拟器"
     )
     commands = root.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="合成并编译一个独立世界")
@@ -135,11 +135,18 @@ def parser():
     staff.add_argument("--output", required=True, help="世界目录外的新运行文件，包含已完成动作边界checkpoint")
     staff.add_argument("--checkpoint", help="上次staff-run输出；保持同世界、场景和策略身份")
     staff.add_argument("--max-opportunities", type=int, help="本次主episode软上限，不超过场景声明；真实前缀使用独立预算")
-    assessment = commands.add_parser("episode-assess", help="只读分项评价，不将评分提供给工作人员")
+    staff.add_argument("--env-file", default=".env", help="模型密钥来源；不进入策略上下文或检查点")
+    assessment = commands.add_parser("episode-assess", help="只读评价保存的episode结束快照")
     assessment.add_argument("world")
     assessment.add_argument("--experience", required=True, help="staff-run保存的完整运行文件")
     assessment.add_argument("--spec", help="可选JSON：work_ids、independent_targets、process_requirements")
     assessment.add_argument("--output", required=True, help="世界目录外的新评价文件")
+    assessment.add_argument("--reward-spec", help="可选显式RewardSpec；原分项评价仍完整保留")
+    current = commands.add_parser("world-assess", help="只读查询当前世界进度，与历史episode评价分开")
+    current.add_argument("world")
+    current.add_argument("--experience", required=True)
+    current.add_argument("--spec")
+    current.add_argument("--output", required=True)
     check = commands.add_parser("world-evaluate", help="独立检查固定提交的有限内容合同")
     check.add_argument("world")
     check.add_argument("--project", required=True)
@@ -310,8 +317,14 @@ def _episode_identity(world_root, state, manifest):
 def _staff_run(args):
     from .scenarios import load_deployment, bind_runtime, ScenarioController, run_scenario
 
+    from .episode import begin_episode, finish_episode
+
+    load_env(args.env_file)
     root = Path(args.world).resolve()
     output = _new_episode_output(root, args.output)
+    episode_root = output.with_suffix(output.suffix + ".episode")
+    if episode_root.exists() or episode_root.is_symlink():
+        raise ValueError("Episode boundary archive requires a new destination")
     manifest = read_json(root / "control" / "scenario.json")
     state = Store(root).load()
     identity = _episode_identity(root, state, manifest)
@@ -321,7 +334,7 @@ def _staff_run(args):
     marker_path = root / "control" / "last-staff-run.json"
     saved = read_json(Path(args.checkpoint)) if args.checkpoint else None
     if saved is not None:
-        if (saved.get("version") != "staff-run-v0.10"
+        if (saved.get("version") != "staff-run-v0.11"
                 or any(saved.get(key) != value for key, value in identity.items())):
             raise ValueError("Staff checkpoint belongs to a different world instance or scenario")
         if marker_path.exists() and read_json(marker_path)["checkpoint_sha256"] != digest(
@@ -332,7 +345,7 @@ def _staff_run(args):
         raise ValueError("This scenario has run before; pass its latest --checkpoint to continue")
     deployment = load_deployment(root)
     if deployment.status != "ready":
-        payload = {"version": "staff-run-v0.10", **identity, "status": "unbuildable",
+        payload = {"version": "staff-run-v0.11", **identity, "status": "unbuildable",
                    "diagnostics": deployment.diagnostics}
         atomic_write(output, json_bytes(payload))
         return {"status": "unbuildable", "output": str(output), "diagnostics": deployment.diagnostics}
@@ -344,12 +357,27 @@ def _staff_run(args):
     if saved is None:
         for record in deployment.deployment_log:
             runtime.recorder.record("deployment_action", record)
+    model_bindings = [(role["actor"], role["project"]) for role in deployment.spec["roles"]
+                      if role["policy"] == "model"]
+    selected = [wid for wid, item in deployment.world.state["work_items"].items()
+                if not model_bindings or (item["owner_role"], item["project_id"]) in model_bindings]
+    nodes = sorted({deployment.world.state["work_items"][wid]["node_id"] for wid in selected})
+    begin_episode(deployment.world, episode_root, experience=runtime.recorder.snapshot(),
+                  work_ids=[], work_nodes=nodes,
+                  scenario={"spec": deployment.spec, "sha256": manifest["scenario_sha256"]},
+                  policies=runtime.policy_identities,
+                  parent_episode_id=saved.get("episode_id") if saved else None)
     result = run_scenario(deployment, runtime, controller, max_opportunities=args.max_opportunities)
+    end = finish_episode(deployment.world, episode_root, experience=runtime.recorder.snapshot(),
+                         termination={key: value for key, value in result.items()
+                                      if key not in {"worker_checkpoint", "experience", "controller", "outcomes", "prefix"}})
     summary = {key: value for key, value in result.items()
                if key not in {"worker_checkpoint", "experience", "controller", "outcomes", "prefix"}}
     prefix = {key: value for key, value in deployment.prefix.items()
               if key not in {"worker_checkpoint", "opportunities"}}
-    payload = {"version": "staff-run-v0.10", **identity, "result": summary,
+    payload = {"version": "staff-run-v0.11", **identity, "result": summary,
+               "episode_id": end["episode_id"], "episode_manifest": end["manifest_path"],
+               "episode_manifest_sha256": digest(Path(end["manifest_path"]).read_bytes()),
                "prefix": prefix, "worker_checkpoint": runtime.snapshot(),
                "controller_checkpoint": controller.snapshot(),
                "scope": "Actual public experience is retained once in worker_checkpoint.experience; prefix full facts remain in scenario manifest. Completed-action continuation only."}
@@ -357,10 +385,11 @@ def _staff_run(args):
     atomic_write(marker_path, json_bytes({**identity, "output": str(output),
                                         "checkpoint_sha256": digest(json_bytes(payload["worker_checkpoint"]))}))
     return {**summary, "run_id": runtime.run_id, "output": str(output),
+            "episode_id": end["episode_id"], "episode_manifest": end["manifest_path"],
             "experience": runtime.recorder.summary(), "prefix": prefix}
 
 
-def _episode_assess(args):
+def _current_world_assess(args):
     from .evaluation import assess_episode
 
     root = Path(args.world).resolve()
@@ -370,7 +399,7 @@ def _episode_assess(args):
     state = store.load()
     manifest = read_json(root / "control" / "scenario.json")
     identity = _episode_identity(root, state, manifest)
-    if saved.get("version") != "staff-run-v0.10" or any(
+    if saved.get("version") != "staff-run-v0.11" or any(
         saved.get(key) != value for key, value in identity.items()
     ):
         raise ValueError("Assessment experience belongs to another world or scenario")
@@ -381,6 +410,41 @@ def _episode_assess(args):
     atomic_write(output, json_bytes({**identity, "assessment": result}))
     return {"status": result["assessment_execution"]["status"], "output": str(output),
             "note": "Institutional progress, content, independent targets, process and incompleteness are separate; no combined success score."}
+
+
+def _episode_assess(args):
+    from .episode import assess_historical_episode
+
+    root = Path(args.world).resolve()
+    output = _new_episode_output(root, args.output)
+    saved = read_json(Path(args.experience))
+    # The live world need not still exist. Its path is only the saved identity;
+    # all evaluation inputs come from the readable, closed boundary archive.
+    if saved.get("version") != "staff-run-v0.11" or saved.get("world") != str(root):
+        raise ValueError("Historical experience belongs to a different world path/version")
+    path = Path(saved["episode_manifest"])
+    if digest(path.read_bytes()) != saved["episode_manifest_sha256"]:
+        raise ValueError("Episode manifest differs from the completed run")
+    boundary = read_json(path)
+    if (boundary.get("episode_id") != saved["episode_id"]
+            or any(boundary["identity"].get(key) != saved.get(key)
+                   for key in ("world_id", "instance_id", "branch_id"))
+            or boundary["scenario"].get("sha256") != saved["scenario_sha256"]):
+        raise ValueError("Episode identity differs from its completed staff run")
+    spec = read_json(Path(args.spec)) if args.spec else {}
+    if not isinstance(spec, dict) or set(spec) - {"independent_targets", "process_requirements"}:
+        raise ValueError("Historical assessment cannot change its frozen responsibility")
+    result = assess_historical_episode(path, **spec)
+    payload = {"episode_id": saved["episode_id"], "episode_manifest": str(path), "assessment": result}
+    if args.reward_spec:
+        from .rewards import episode_reward
+
+        reward_spec = read_json(Path(args.reward_spec))
+        payload["reward_spec"] = reward_spec
+        payload["reward"] = episode_reward(result, reward_spec)
+    atomic_write(output, json_bytes(payload))
+    return {"status": result["assessment_execution"]["status"], "output": str(output),
+            "note": "Historical end snapshot only; current progress uses world-assess."}
 
 
 def execute(args):
@@ -399,6 +463,8 @@ def execute(args):
         return _staff_run(args)
     if args.command == "episode-assess":
         return _episode_assess(args)
+    if args.command == "world-assess":
+        return _current_world_assess(args)
     if args.command == "world-continue":
         return _continue_world(args)
     if args.command in {
@@ -559,8 +625,10 @@ def main(argv=None):
             and result.get("reason") != "blocked_unavailable"
         ):
             return_code = 1
-        if args.command in {"scenario-build", "staff-run", "episode-assess"} and result.get("status") in {
-            "unbuildable", "controller_rejected", "environment_error", "policy_error", "evaluator_error"
+        if args.command in {"scenario-build", "staff-run", "episode-assess", "world-assess"} and result.get("status") in {
+            "unbuildable", "controller_rejected", "environment_error", "policy_error", "evaluator_error",
+            "model_service_error", "model_format_error", "model_budget_exhausted", "model_usage_missing",
+            "source_unavailable"
         }:
             return_code = 1
         if args.command == "act" and not result.get("ok"):

@@ -2,6 +2,8 @@
 
 import copy
 
+from .public_formats import REPORT_FORMAT
+
 BACKGROUND = "Context retained verbatim: this synthetic report is limited to two stated metrics."
 
 
@@ -87,7 +89,8 @@ def package(
                 "owner": author,
                 "approval_policy": "review",
                 "goal": "Reconcile body and evidence before approval",
-                "requirements": {"input_policy": "fixed", "input_version": "v1"},
+                "requirements": {"input_policy": "fixed", "input_version": "v1",
+                                 "public_format": copy.deepcopy(REPORT_FORMAT)},
                 "deliverable_contract": contract(check_spec(source_alias)),
             }
         ],

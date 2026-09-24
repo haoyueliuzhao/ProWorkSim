@@ -1,0 +1,486 @@
+{
+  "version": "model-development-v0.11",
+  "scope": "36 independent new-world development episodes in six synthetic configurations; two backends, three stochastic repeats, one target worker; not held-out generalization or RL. Source/role policy unchanged during batch. No retry of valid business failures. Native-tool multi-call pilot is a separate retained failure; this batch freezes the explicitly revised single JSON decision protocol for both backends.",
+  "max_environment_opportunities": 500,
+  "backends": {
+    "deepseek": {
+      "backend_id": "deepseek-official",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "task": "Fulfill the publicly visible responsibilities of your bound role.",
+      "model_revision": {
+        "provider_alias": "DeepSeek-V4.1-Flash",
+        "immutable_weights_verified": false,
+        "verified_at": "2026-09-24",
+        "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+      },
+      "weight_identity": null,
+      "thinking": false,
+      "reasoning_effort": null,
+      "temperature": 0.3,
+      "max_output_tokens": 8192,
+      "timeout_seconds": 120,
+      "max_context_tokens": null,
+      "retry": {
+        "max_attempts": 2,
+        "retry_statuses": [
+          408,
+          429,
+          500,
+          502,
+          503,
+          504
+        ],
+        "backoff_seconds": [
+          1
+        ]
+      },
+      "budget": {
+        "max_decisions": 120,
+        "max_http_attempts": 150,
+        "max_total_tokens": 500000,
+        "max_cost_usd": 1.0,
+        "max_context_bytes": 320000
+      },
+      "pricing": {
+        "input_miss_per_million": 0.3,
+        "input_hit_per_million": 0.006,
+        "output_per_million": 1.2
+      },
+      "action_protocol": "single_decision_json"
+    },
+    "qwen": {
+      "backend_id": "local-qwen-http",
+      "model": "Qwen2.5-7B-Instruct",
+      "base_url": "http://127.0.0.1:18761/v1",
+      "api_key_env": null,
+      "task": "Fulfill the publicly visible responsibilities of your bound role.",
+      "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "weight_identity": {
+        "path": "/data1/zhuxinrui/models/Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28",
+        "manifest": "runs/model-api-v11-preflight/qwen-weights.json",
+        "manifest_sha256": "4feb7d71c4447906058958c928209c81cd37cce293249b420ba1488fbdf3aa83"
+      },
+      "thinking": null,
+      "reasoning_effort": null,
+      "temperature": 0.3,
+      "max_output_tokens": 8192,
+      "timeout_seconds": 600,
+      "max_context_tokens": 32768,
+      "retry": {
+        "max_attempts": 2,
+        "retry_statuses": [
+          408,
+          429,
+          500,
+          502,
+          503,
+          504
+        ],
+        "backoff_seconds": [
+          1
+        ]
+      },
+      "budget": {
+        "max_decisions": 120,
+        "max_http_attempts": 150,
+        "max_total_tokens": 500000,
+        "max_cost_usd": 1.0,
+        "max_context_bytes": 320000
+      },
+      "pricing": {
+        "input_miss_per_million": 0,
+        "input_hit_per_million": 0,
+        "output_per_million": 0
+      },
+      "action_protocol": "single_decision_json"
+    }
+  },
+  "tasks": {},
+  "default_task": "Fulfill the publicly visible responsibilities of your bound role. Discover the public contract and actual sources through the supplied tools; produce actual required files, submit and handle actual feedback or new obligations. Preserve reasonable unknowns. Do not assume that an approval implies content correctness. Only your own public observation and actual tool responses are available.",
+  "episodes": [
+    {
+      "episode_name": "finance-direct-deepseek-1",
+      "scenario": "finance-direct",
+      "scenario_file": "examples/scenarios-v10/finance-direct.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-direct-qwen-1",
+      "scenario": "finance-direct",
+      "scenario_file": "examples/scenarios-v10/finance-direct.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-direct-deepseek-2",
+      "scenario": "finance-direct",
+      "scenario_file": "examples/scenarios-v10/finance-direct.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-direct-qwen-2",
+      "scenario": "finance-direct",
+      "scenario_file": "examples/scenarios-v10/finance-direct.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-direct-deepseek-3",
+      "scenario": "finance-direct",
+      "scenario_file": "examples/scenarios-v10/finance-direct.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-direct-qwen-3",
+      "scenario": "finance-direct",
+      "scenario_file": "examples/scenarios-v10/finance-direct.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-route-deepseek-1",
+      "scenario": "finance-route",
+      "scenario_file": "examples/scenarios-v10/finance-route.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-route-qwen-1",
+      "scenario": "finance-route",
+      "scenario_file": "examples/scenarios-v10/finance-route.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-route-deepseek-2",
+      "scenario": "finance-route",
+      "scenario_file": "examples/scenarios-v10/finance-route.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-route-qwen-2",
+      "scenario": "finance-route",
+      "scenario_file": "examples/scenarios-v10/finance-route.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-route-deepseek-3",
+      "scenario": "finance-route",
+      "scenario_file": "examples/scenarios-v10/finance-route.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "finance-route-qwen-3",
+      "scenario": "finance-route",
+      "scenario_file": "examples/scenarios-v10/finance-route.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "target_roles": [
+        "analyst"
+      ]
+    },
+    {
+      "episode_name": "report-direct-deepseek-1",
+      "scenario": "report-direct",
+      "scenario_file": "examples/scenarios-v10/report-direct.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "report-direct-qwen-1",
+      "scenario": "report-direct",
+      "scenario_file": "examples/scenarios-v10/report-direct.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "report-direct-deepseek-2",
+      "scenario": "report-direct",
+      "scenario_file": "examples/scenarios-v10/report-direct.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "report-direct-qwen-2",
+      "scenario": "report-direct",
+      "scenario_file": "examples/scenarios-v10/report-direct.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "report-direct-deepseek-3",
+      "scenario": "report-direct",
+      "scenario_file": "examples/scenarios-v10/report-direct.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "report-direct-qwen-3",
+      "scenario": "report-direct",
+      "scenario_file": "examples/scenarios-v10/report-direct.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-before-submit-deepseek-1",
+      "scenario": "chain-before-submit",
+      "scenario_file": "examples/scenarios-v10/chain-before-submit.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-before-submit-qwen-1",
+      "scenario": "chain-before-submit",
+      "scenario_file": "examples/scenarios-v10/chain-before-submit.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-before-submit-deepseek-2",
+      "scenario": "chain-before-submit",
+      "scenario_file": "examples/scenarios-v10/chain-before-submit.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-before-submit-qwen-2",
+      "scenario": "chain-before-submit",
+      "scenario_file": "examples/scenarios-v10/chain-before-submit.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-before-submit-deepseek-3",
+      "scenario": "chain-before-submit",
+      "scenario_file": "examples/scenarios-v10/chain-before-submit.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-before-submit-qwen-3",
+      "scenario": "chain-before-submit",
+      "scenario_file": "examples/scenarios-v10/chain-before-submit.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-pending-deepseek-1",
+      "scenario": "chain-pending",
+      "scenario_file": "examples/scenarios-v10/chain-pending.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-pending-qwen-1",
+      "scenario": "chain-pending",
+      "scenario_file": "examples/scenarios-v10/chain-pending.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-pending-deepseek-2",
+      "scenario": "chain-pending",
+      "scenario_file": "examples/scenarios-v10/chain-pending.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-pending-qwen-2",
+      "scenario": "chain-pending",
+      "scenario_file": "examples/scenarios-v10/chain-pending.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-pending-deepseek-3",
+      "scenario": "chain-pending",
+      "scenario_file": "examples/scenarios-v10/chain-pending.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-pending-qwen-3",
+      "scenario": "chain-pending",
+      "scenario_file": "examples/scenarios-v10/chain-pending.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-accepted-deepseek-1",
+      "scenario": "chain-accepted",
+      "scenario_file": "examples/scenarios-v10/chain-accepted.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-accepted-qwen-1",
+      "scenario": "chain-accepted",
+      "scenario_file": "examples/scenarios-v10/chain-accepted.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-accepted-deepseek-2",
+      "scenario": "chain-accepted",
+      "scenario_file": "examples/scenarios-v10/chain-accepted.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-accepted-qwen-2",
+      "scenario": "chain-accepted",
+      "scenario_file": "examples/scenarios-v10/chain-accepted.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-accepted-deepseek-3",
+      "scenario": "chain-accepted",
+      "scenario_file": "examples/scenarios-v10/chain-accepted.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "target_roles": [
+        "author"
+      ]
+    },
+    {
+      "episode_name": "chain-accepted-qwen-3",
+      "scenario": "chain-accepted",
+      "scenario_file": "examples/scenarios-v10/chain-accepted.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "target_roles": [
+        "author"
+      ]
+    }
+  ],
+  "cost_contract": {
+    "currency": "USD",
+    "deepseek_peak_per_million": {
+      "input_miss": 0.3,
+      "input_hit": 0.006,
+      "output": 1.2
+    },
+    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "verification_date": "2026-09-24",
+    "cost_is_upper_estimate_not_invoice": true,
+    "development_paid_cap": 18,
+    "separate_pilot_paid_cap": 6,
+    "overall_cap": 24
+  },
+  "independence": "Same scenario family repeated; local shared generation RNG and batch order captured. No claim of independent corporate sources.",
+  "model_failure_handling": "Preserve service/format/budget/valid refusal separately; no substitution, budget extension or success-only filtering.",
+  "public_contract_revision": "v0.11 public_format and source adoption tool documentation; prior native/JSON pilots predate this public interface revision",
+  "reward_contract": {
+    "version": "reward-spec-v0.11",
+    "objective": "content on the predeclared target responsibility work_node",
+    "required_process": "required_source_adoption for each public content source on the fixed submission; historical only; service/unknown stay excluded explicitly"
+  }
+}

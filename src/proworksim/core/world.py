@@ -189,8 +189,8 @@ def new_world_state(spec):
         _text(grant.get("power"), "bootstrap power")
         grant.setdefault("subject", "*")
     applications = _list(spec.get("applications", ["files"]), "applications")
-    if not applications or set(applications) - {"files", "spreadsheets"}:
-        raise ValueError("Applications must select files and/or spreadsheets")
+    if not applications or set(applications) - {"files", "spreadsheets", "sql"}:
+        raise ValueError("Applications must select files, spreadsheets and/or sql")
     event_policy = _mapping(spec.get("event_policy", {}), "event policy")
     publication_policy = spec.get("publication_policy", "explicit")
     if publication_policy not in PUBLICATION_POLICIES:

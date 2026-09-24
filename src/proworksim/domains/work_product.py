@@ -18,9 +18,9 @@ from openpyxl.utils.cell import coordinate_to_tuple
 from ..core.adoption import binding_key, require_version
 from ..evaluation import EvaluationInputError, combined_status
 from ..core.references import VersionRef
-from . import reconciliation, research_review
+from . import reconciliation, research_review, executable_project
 
-DOMAIN_CHECKS = {module.CHECK_KIND: module for module in (reconciliation, research_review)}
+DOMAIN_CHECKS = {module.CHECK_KIND: module for module in (reconciliation, research_review, executable_project)}
 
 
 _KINDS = {
@@ -32,7 +32,7 @@ _KINDS = {
     "json_linear_sources",
 }
 _COMMON = {"kind", "role"}
-EVALUATOR_VERSION = "finite-products-v0.10"
+EVALUATOR_VERSION = "finite-products-v0.11"
 
 
 def _path(value, label):
@@ -363,6 +363,8 @@ def evaluate_submission(store, state, item, submission, *, _context=None):
                 if relevant_conflicts:
                     raise ValueError("Conflicting JSON fields: " + ", ".join(relevant_conflicts))
             if kind in DOMAIN_CHECKS:
+                if kind == executable_project.CHECK_KIND:
+                    executable_project.validate_execution_evidence(state, item, submission, selected, spec)
                 source_data, exact_sources = {}, []
                 for source_spec in spec["sources"]:
                     ref, files = bound_source(
@@ -524,6 +526,6 @@ def evaluate_submission(store, state, item, submission, *, _context=None):
         "checks": checks,
         "errors": errors,
         "read_set": reads,
-        "scope": "finite_json_xlsx_content_contract",
+        "scope": "finite_managed_content_contract",
         "institutional_review": copy.deepcopy(submission.get("review")),
     }

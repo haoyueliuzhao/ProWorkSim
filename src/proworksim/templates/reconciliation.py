@@ -6,6 +6,8 @@ is not computed by the worker or domain validator. Amounts are illustrative.
 
 import copy
 
+from .public_formats import RECONCILIATION_FORMAT
+
 ALIASES = ("ledger", "statement", "definitions")
 
 
@@ -159,6 +161,7 @@ def package(
                 "approval_policy": "review" if review else "delivery_only",
                 "deliverable_contract": content_contract(aliases, nested=variant),
                 "requirements": {
+                    "public_format": copy.deepcopy(RECONCILIATION_FORMAT),
                     "input_policies": {a: "fixed" for a in aliases},
                     "input_versions": {a: "v1" for a in aliases},
                 },

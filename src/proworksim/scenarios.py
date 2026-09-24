@@ -16,6 +16,7 @@ from .core.world import WorldSpec
 from .core.work import current_id
 from .templates.reconciliation import package as reconciliation_package
 from .templates.research_review import BACKGROUND, contract, package as report_package
+from .templates.public_formats import REPORT_FORMAT
 from .world_core import WorldCore
 from .storage import atomic_write, digest, json_bytes
 
@@ -136,7 +137,7 @@ def validate_scenario(spec):
         _keys(role, {"role_id", "actor", "project", "policy", "config"}, "role binding")
         for key in ("role_id", "actor", "project", "policy"):
             _text(role.get(key), key)
-        if role["policy"] not in {"reconciliation", "report_author", "reviewer"}:
+        if role["policy"] not in {"reconciliation", "report_author", "reviewer", "model", "executable_worker", "interface_coordinator"}:
             raise ValueError("Unsupported declared policy: " + role["policy"])
         if role["role_id"] in role_ids:
             raise ValueError("Duplicate role identity")
@@ -308,6 +309,7 @@ def project_package(declaration):
                 "goal": "Report the current published comparison",
                 "requirements": {
                     "input_policy": "current_published",
+                    "public_format": copy.deepcopy(REPORT_FORMAT),
                     "output_alias": "report",
                     "source_objects": {"comparison": reference},
                 },
@@ -718,12 +720,19 @@ def load_scenario(path):
 
 
 def _make_policy(role):
+    if role["policy"] == "model":
+        from .model_policy import ModelPolicy
+
+        return ModelPolicy(role["config"])
     from .workers.team_policies import ReconciliationPolicy, ReportAuthorPolicy, ReviewerPolicy
+    from .workers.executable_project import ExecutableWorkerPolicy, InterfaceCoordinatorPolicy
 
     factories = {
         "reconciliation": ReconciliationPolicy,
         "report_author": ReportAuthorPolicy,
         "reviewer": ReviewerPolicy,
+        "executable_worker": ExecutableWorkerPolicy,
+        "interface_coordinator": InterfaceCoordinatorPolicy,
     }
     if role["policy"] not in factories:
         raise ValueError("Unsupported declared policy: " + role["policy"])
@@ -877,6 +886,10 @@ def run_scenario(deployment, runtime=None, controller=None, max_opportunities=No
         result = runtime.step()
         controller.record_environment()
         outcomes.append(result)
+        if result["status"] in {"model_service_error", "model_format_error", "model_budget_exhausted",
+                                "model_usage_missing"}:
+            status = result["status"]
+            break
         reached = explicit_boundary()
         if reached:
             status = reached

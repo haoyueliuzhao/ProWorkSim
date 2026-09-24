@@ -360,6 +360,8 @@ class WorldCore(WorldRunner):
                 "close_project",
             ]
         )
+        if project_id is not None and "sql" in self.state["applications"]:
+            names += ["sql_build", "sql_query"]
         if "files" not in self.state["applications"]:
             names = [name for name in names if name not in {"read_object", "write_object"}]
         definitions = []
@@ -373,6 +375,7 @@ class WorldCore(WorldRunner):
             "target_projects",
             "locator",
             "evidence",
+            "input_aliases",
         }
         for name in names:
             properties, required = {}, []
@@ -397,6 +400,12 @@ class WorldCore(WorldRunner):
                     required.append(key)
                 elif param.default is not None:
                     properties[key]["default"] = param.default
+            if name in {"sql_build", "sql_query"}:
+                properties["output_alias"]["description"] = "Existing owned JSON artifact receiving a new immutable execution result; errors and tests are retained."
+                if name == "sql_build":
+                    properties["input_aliases"]["description"] = "Exact work-adopted JSON sources exposing typed tables. Code object: models[{name,sql}], tests[{name,sql}], config{exports,description}; SELECT/CTE only, tests return failing rows."
+                else:
+                    properties["sql"]["description"] = "One SELECT/CTE against the source artifact tables; external files/network/extensions and mutable SQL are disabled."
             if name == "create_object":
                 properties["data"]["description"] = (
                     "For json: a JSON object. For xlsx: {cells: {Sheet!A1: scalar_or_formula}} or a direct Sheet!A1 mapping; formulas start with =."
@@ -420,10 +429,21 @@ class WorldCore(WorldRunner):
                 properties["answer"] = {
                     "description": "Optional answer value, if required by the public work contract"
                 }
+            descriptions = {
+                "read_object": "Read an exact visible JSON version. Reading records knowledge only: it does not adopt that version for a work or establish a deliverable source binding.",
+                "write_object": "Write a new managed JSON version. Existing submitted versions and reviews stay immutable. Editing a pending submission's objects does not update that submission; withdraw it before resubmitting the repaired versions.",
+                "adopt": "Bind an exact source object/version to each listed current work edition under its declared input policy. Source-based content contracts require these per-work bindings before submission; reading a source or writing a sources field does not replace adoption.",
+                "adopt_version": "Explicitly update an existing non-fixed adoption for one exact work edition. Use adopt for a new work binding. A fixed binding cannot be advanced.",
+                "submit": "Submit the current versions of workspace artifact aliases, not object IDs. Artifacts is a list of alias strings in this bound project. Source-based contracts require exact adoptions for this work and matching source references/dependencies; reading alone is insufficient. A pending submission must be withdrawn before a replacement submission.",
+                "withdraw": "Withdraw the named pending submission before repairing/resubmitting the same work. Withdrawal preserves fixed versions and does not automatically resolve located review issues.",
+                "inspect_submission": "Inspect one exact submission identified by pending_submission_id or latest_submission_id in the public work observation, subject to actual artifact access checks.",
+            }
+            if name == "submit":
+                properties["artifacts"]["description"] = "Workspace aliases such as report or result, never object IDs; submitted sources must match this exact work's adoption bindings."
             definitions.append(
                 {
                     "name": name,
-                    "description": f"{name} within the trusted bound world/project; identity and permissions checked on execution.",
+                    "description": descriptions.get(name, f"{name} within the trusted bound world/project; identity and permissions checked on execution."),
                     "parameters": {
                         "type": "object",
                         "properties": properties,
@@ -719,6 +739,73 @@ class WorldCore(WorldRunner):
             raise ValueError("Object is not a workbook")
         content = recalculate_xlsx(self.store.version_path(artifact, vid).read_bytes())
         return self._save_content(actor, project_id, artifact, content, work_id=work_id)
+
+    def _sql_inputs(self, actor, project_id, item, aliases):
+        if not isinstance(aliases, list) or len(aliases) > 8 or len(aliases) != len(set(aliases)):
+            raise ValueError("SQL inputs must name at most eight distinct adopted aliases")
+        tables, references = {}, {}
+        for alias in aliases:
+            binding = binding_for(self.state, item["work_item_id"], alias)
+            if binding is None:
+                raise ValueError("SQL input requires this work's exact adoption: " + alias)
+            data = self._action_read_object(actor, project_id, object_id=binding["object_id"], version_id=binding["version_id"], work_id=item["work_item_id"])
+            source = data["data"]
+            if not isinstance(source.get("tables"), dict):
+                raise ValueError("SQL source must expose explicit typed tables")
+            references[alias] = {"object_id": binding["object_id"], "version_id": binding["version_id"]}
+            for name, table in source["tables"].items():
+                if name in tables:
+                    raise ValueError("SQL input table collision: " + name)
+                tables[name] = table
+        return tables, references
+
+    def _action_sql_build(self, actor, project_id, work_id, code_alias, output_alias, input_aliases):
+        from .domains.executable_project import execute, ENGINE_VERSION
+        item = self._work(actor, project_id, work_id)
+        if item["owner_role"] != actor:
+            raise ValueError("Only the exact work owner may execute its SQL build")
+        self._project_power(actor, project_id, "execute_sql", "artifact", item["node_id"])
+        sql_scope = item.get("requirements", {}).get("sql_project", {})
+        expected_output = sql_scope.get("result_alias")
+        if expected_output != output_alias or sql_scope.get("code_alias") != code_alias:
+            raise ValueError("SQL code/output alias is outside this work's declared execution scope")
+        output, _ = self._object(actor, project_id, alias=output_alias, write=True)
+        if output["kind"] != "json" or output.get("project_id") != project_id:
+            raise ValueError("SQL output must be this project's managed JSON object")
+        code = self._action_read_object(actor, project_id, alias=code_alias, work_id=item["work_item_id"])
+        tables, sources = self._sql_inputs(actor, project_id, item, input_aliases)
+        executed = execute(code["data"], tables)
+        code_ref = VersionRef.from_mapping(code["reference"]).to_dict()
+        evidence = {"kind": "sql_build", "engine": ENGINE_VERSION, "code_reference": code_ref, "source_references": sources, "work_id": item["work_item_id"], "requirement_version": item["requirement_version"], "status": executed["status"]}
+        data = {**executed, "execution": evidence, "sources": sources}
+        data["test_results"] = data.pop("tests")
+        ref = self._save_content(actor, project_id, output, encode("json", data), [code_ref, *sources.values()], item["work_item_id"])
+        output["versions"][ref["version_id"]]["execution_provenance"] = copy.deepcopy(evidence)
+        return {"reference": ref, "execution_status": executed["status"], "tables": executed["tables"], "tests": executed["tests"], "error": executed.get("error"), "limits": executed["limits"]}
+
+    def _action_sql_query(self, actor, project_id, work_id, source_alias, sql, output_alias):
+        from .domains.executable_project import execute, ENGINE_VERSION
+        item = self._work(actor, project_id, work_id)
+        if item["owner_role"] != actor:
+            raise ValueError("Only the exact work owner may execute its SQL query")
+        self._project_power(actor, project_id, "execute_sql", "artifact", item["node_id"])
+        sql_scope = item.get("requirements", {}).get("sql_project", {})
+        expected_output = sql_scope.get("query_alias")
+        if expected_output != output_alias:
+            raise ValueError("SQL code/output alias is outside this work's declared execution scope")
+        output, _ = self._object(actor, project_id, alias=output_alias, write=True)
+        if output["kind"] != "json" or output.get("project_id") != project_id:
+            raise ValueError("SQL query output must be this project's managed JSON object")
+        source = self._action_read_object(actor, project_id, alias=source_alias, work_id=item["work_item_id"])
+        if not isinstance(source["data"].get("tables"), dict):
+            raise ValueError("Query source needs managed typed tables")
+        executed = execute(tables=source["data"]["tables"], query=sql)
+        evidence = {"kind": "sql_query", "engine": ENGINE_VERSION, "source_reference": source["reference"], "work_id": item["work_item_id"], "requirement_version": item["requirement_version"], "status": executed["status"]}
+        data = {**executed, "execution": evidence}
+        data["test_results"] = data.pop("tests")
+        ref = self._save_content(actor, project_id, output, encode("json", data), [source["reference"]], item["work_item_id"])
+        output["versions"][ref["version_id"]]["execution_provenance"] = copy.deepcopy(evidence)
+        return {"reference": ref, "execution_status": executed["status"], "tables": executed["tables"], "error": executed.get("error"), "limits": executed["limits"]}
 
     def _action_share(
         self,
@@ -1546,6 +1633,7 @@ class WorldCore(WorldRunner):
                     view["enabled_actions"] = []
                 work[wid] = {
                     **view,
+                    "latest_submission_id": item["submissions"][-1]["submission_id"] if item.get("submissions") else None,
                     **{
                         key: copy.deepcopy(item[key])
                         for key in (
