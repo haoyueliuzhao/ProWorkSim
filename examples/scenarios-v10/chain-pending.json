@@ -1,0 +1,287 @@
+{
+  "version": "scenario-v0.10",
+  "scenario_id": "chain-pending",
+  "world": {
+    "world_id": "declared-work-chain",
+    "actors": {
+      "operator": {
+        "display_name": "operator"
+      },
+      "analyst": {
+        "display_name": "analyst"
+      },
+      "author": {
+        "display_name": "author"
+      },
+      "reviewer": {
+        "display_name": "reviewer"
+      }
+    },
+    "applications": [
+      "files"
+    ],
+    "publication_policy": "explicit",
+    "bootstrap_grants": [
+      {
+        "actor_id": "operator",
+        "scope": "world",
+        "power": "install_project"
+      }
+    ]
+  },
+  "installer": "operator",
+  "projects": [
+    {
+      "recipe": "reconciliation",
+      "parameters": {
+        "project_id": "FINANCE",
+        "review": true,
+        "continuous": true,
+        "public_delivery": {
+          "recipients": [
+            {
+              "project_id": "REPORT",
+              "actor_ids": [
+                "author",
+                "reviewer"
+              ]
+            }
+          ],
+          "publish": true
+        }
+      }
+    },
+    {
+      "recipe": "linked_report",
+      "parameters": {
+        "project_id": "REPORT",
+        "source_project": "FINANCE",
+        "source_alias": "comparison"
+      }
+    }
+  ],
+  "roles": [
+    {
+      "role_id": "analyst",
+      "actor": "analyst",
+      "project": "FINANCE",
+      "policy": "reconciliation",
+      "config": {}
+    },
+    {
+      "role_id": "finance_reviewer",
+      "actor": "reviewer",
+      "project": "FINANCE",
+      "policy": "reviewer",
+      "config": {}
+    },
+    {
+      "role_id": "author",
+      "actor": "author",
+      "project": "REPORT",
+      "policy": "report_author",
+      "config": {}
+    },
+    {
+      "role_id": "report_reviewer",
+      "actor": "reviewer",
+      "project": "REPORT",
+      "policy": "reviewer",
+      "config": {}
+    }
+  ],
+  "setup": [
+    {
+      "actor": "analyst",
+      "project": "FINANCE",
+      "tool": "share",
+      "arguments": {
+        "object_id": {
+          "$object": {
+            "project": "FINANCE",
+            "alias": "comparison"
+          }
+        },
+        "version_id": "v1",
+        "target_project": "REPORT",
+        "actor_ids": [
+          "author",
+          "reviewer"
+        ],
+        "follow_updates": true
+      }
+    },
+    {
+      "actor": "analyst",
+      "project": "FINANCE",
+      "tool": "publish",
+      "arguments": {
+        "alias": "statement",
+        "version_id": "v1",
+        "target_projects": [
+          "FINANCE"
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "event_id": "correct-statement",
+      "when": {
+        "work": {
+          "project": "FINANCE",
+          "node": "reconcile",
+          "phase": "pending"
+        }
+      },
+      "fire_once": true,
+      "effects": [
+        {
+          "actor": "analyst",
+          "project": "FINANCE",
+          "tool": "write_object",
+          "arguments": {
+            "alias": "statement",
+            "data": {
+              "records": [
+                {
+                  "record_id": "R1",
+                  "entity": "Acme",
+                  "metric": "cash",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 100,
+                  "location": "records/0"
+                },
+                {
+                  "record_id": "R2",
+                  "entity": "Acme",
+                  "metric": "sales",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 2000,
+                  "location": "records/1"
+                },
+                {
+                  "record_id": "R3",
+                  "entity": "Acme",
+                  "metric": "cost",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 80,
+                  "location": "records/2"
+                },
+                {
+                  "record_id": "R4",
+                  "entity": "Acme",
+                  "metric": "prior",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 5,
+                  "location": "records/3"
+                },
+                {
+                  "record_id": "R5",
+                  "entity": "Acme",
+                  "metric": "scope",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 9,
+                  "location": "records/4"
+                },
+                {
+                  "record_id": "R6",
+                  "entity": "Acme",
+                  "metric": "fx",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 6,
+                  "location": "records/5"
+                },
+                {
+                  "record_id": "R7",
+                  "entity": "Acme",
+                  "metric": "unknown",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 8,
+                  "location": "records/6"
+                },
+                {
+                  "record_id": "R9",
+                  "entity": "Acme",
+                  "metric": "duplicate",
+                  "period": "2026H1",
+                  "definition": "net",
+                  "currency": "CNY",
+                  "unit": "ones",
+                  "value": 7,
+                  "location": "records/7"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "actor": "analyst",
+          "project": "FINANCE",
+          "tool": "publish",
+          "arguments": {
+            "alias": "statement",
+            "version_id": "v2",
+            "target_projects": [
+              "FINANCE"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "start": {
+    "kind": "initial"
+  },
+  "boundary": {
+    "max_opportunities": 600,
+    "complete_when": {
+      "all": [
+        {
+          "event_fired": "correct-statement"
+        },
+        {
+          "work": {
+            "project": "FINANCE",
+            "node": "reconcile",
+            "phase": "accepted"
+          }
+        },
+        {
+          "work": {
+            "project": "REPORT",
+            "node": "research",
+            "phase": "accepted"
+          }
+        }
+      ]
+    }
+  },
+  "variation": {
+    "kind": "structure",
+    "dimension": "correction_phase",
+    "relative_to": "chain-accepted",
+    "change": "pending"
+  }
+}

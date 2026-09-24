@@ -201,7 +201,7 @@ def test_source_interface_checks_snapshot_content_and_keeps_history_stable(tmp_p
     assert not result["passed"] and result["checks"][0]["expected"] == 8
     del sub["adoption_snapshot"]
     result = evaluate_submission(store, state, item, sub)
-    assert not result["passed"] and "UNASSESSED" in result["checks"][0]["reason"]
+    assert not result["passed"] and result["checks"][0]["status"] == "unassessed"
 
 
 def test_evaluator_rejects_uncommitted_byte_change_and_unknown_check(tmp_path):

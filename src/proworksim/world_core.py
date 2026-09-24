@@ -41,7 +41,7 @@ from .adapters.capabilities import (
     recalculate_xlsx,
     capability_tools,
 )
-from .domains.work_product import evaluate_submission as evaluate_work_product
+from .evaluation import evaluate_submission as evaluate_work_product
 from .core.conditions import apply_response, supersede_condition
 from .core.projections import rebuild_projections, derive_current_work_view, record_artifact_edit
 from .core.references import VersionRef, ApplicabilityContext

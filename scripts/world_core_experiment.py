@@ -122,8 +122,8 @@ CHECKS = {
     ),
     "M4": (
         "package_does_not_precreate_outputs", "new_intermediate_draft_allowed",
-        "single_file_delivery_needs_no_external_review", "single_file_content_contract_passes",
-        "split_files_delivery_needs_no_external_review", "split_files_content_contract_passes",
+        "single_file_delivery_needs_no_external_review", "single_file_fields_complete_content_unassessed",
+        "split_files_delivery_needs_no_external_review", "split_files_fields_complete_content_unassessed",
         "different_layouts_have_same_required_fields", "incomplete_content_is_executable",
         "independent_evaluation_rejects_incomplete_content", "evaluation_preserves_formal_submission",
         "cross_project_write_rejected", "object_identity_spoof_rejected",
@@ -278,14 +278,14 @@ def group_m4(ev):
     one_state = world.store.load()["work_items"]["A::work-1"]
     ev.check("single_file_delivery_needs_no_external_review", [a.observe()["work_items"]["A::work-1"]["status"], one_state["submissions"][-1]["review"]["decision_basis"], one_state["submissions"][-1]["review"]["actor_id"]], ["accepted", "delivery_only", "alice"])
     evaluation_one = world.evaluate_submission("A", "work-1", one["submission_id"])
-    ev.check("single_file_content_contract_passes", evaluation_one["passed"], True)
+    ev.check("single_file_fields_complete_content_unassessed", [evaluation_one["passed"], evaluation_one["status"], evaluation_one["missing_fields"]], [False, "unassessed", []])
     create_report(b, alias="revenue-part", data={"revenue": 10})
     create_report(b, alias="cost-part", data={"cost": 4})
     two = mustcall(b, "submit", work_id="work-1", artifacts=["revenue-part", "cost-part"])
     two_state = world.store.load()["work_items"]["B::work-1"]
     ev.check("split_files_delivery_needs_no_external_review", [b.observe()["work_items"]["B::work-1"]["status"], two_state["submissions"][-1]["review"]["decision_basis"], two_state["submissions"][-1]["review"]["actor_id"]], ["accepted", "delivery_only", "bob"])
     evaluation_two = world.evaluate_submission("B", "work-1", two["submission_id"])
-    ev.check("split_files_content_contract_passes", evaluation_two["passed"], True)
+    ev.check("split_files_fields_complete_content_unassessed", [evaluation_two["passed"], evaluation_two["status"], evaluation_two["missing_fields"]], [False, "unassessed", []])
     ev.check("different_layouts_have_same_required_fields", [len(one["artifact_versions"]), len(two["artifact_versions"]), evaluation_one["missing_fields"], evaluation_two["missing_fields"]], [1, 2, [], []])
     create_report(a, alias="incomplete", data={"revenue": "unchecked value"})
     incomplete = mustcall(a, "submit", work_id="work-2", artifacts=["incomplete"])

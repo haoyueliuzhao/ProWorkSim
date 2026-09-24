@@ -16,6 +16,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import coordinate_to_tuple
 
 from ..core.adoption import binding_key, require_version
+from ..evaluation import EvaluationInputError, combined_status
 from ..core.references import VersionRef
 from . import reconciliation, research_review
 
@@ -31,7 +32,7 @@ _KINDS = {
     "json_linear_sources",
 }
 _COMMON = {"kind", "role"}
-EVALUATOR_VERSION = "finite-products-v0.9"
+EVALUATOR_VERSION = "finite-products-v0.10"
 
 
 def _path(value, label):
@@ -206,7 +207,7 @@ def _cached_cell(content, sheet, cell):
     return cached.value
 
 
-def evaluate_submission(store, state, item, submission):
+def evaluate_submission(store, state, item, submission, *, _context=None):
     """Evaluate fixed submitted versions; return all checks, exact reads and errors.
 
     Source-linked checks require the submission's adoption_snapshot, including
@@ -216,18 +217,25 @@ def evaluate_submission(store, state, item, submission):
     contract = validate_content_contract(
         submission["requirement_snapshot"].get("deliverable_contract", {})
     )
-    reads, content_cache, errors = [], {}, []
+    reads, content_cache, errors, input_statuses = [], {}, [], []
+    if _context is not None:
+        _context.update(read_set=reads, errors=errors)
 
     def read_version(aid, vid):
         key = (aid, vid)
         if key not in content_cache:
             artifact = state["artifacts"].get(aid)
             if artifact is None or vid not in artifact["versions"]:
-                raise ValueError("Unknown exact content version")
-            content = store.version_path(artifact, vid).read_bytes()
+                raise EvaluationInputError("source_unavailable", "Unknown exact content version")
+            try:
+                content = store.version_path(artifact, vid).read_bytes()
+            except OSError as exc:
+                raise EvaluationInputError("source_unavailable", str(exc)) from exc
             sha = hashlib.sha256(content).hexdigest()
             if sha != artifact["versions"][vid]["sha256"]:
-                raise ValueError("Immutable content does not match its committed digest")
+                raise EvaluationInputError(
+                    "source_unavailable", "Immutable content does not match its committed digest"
+                )
             content_cache[key] = content
             reads.append({"object_id": aid, "version_id": vid, "sha256": sha})
         return content_cache[key]
@@ -238,14 +246,14 @@ def evaluate_submission(store, state, item, submission):
         try:
             content = read_version(aid, vid)
             data = json.loads(content) if artifact["kind"] == "json" else None
-            if data is not None:
-                if not isinstance(data, dict):
-                    raise ValueError("Submitted JSON must be an object")
+            if artifact["kind"] == "json" and not isinstance(data, dict):
+                raise EvaluationInputError("structure_failure", "Submitted JSON must be an object")
             submitted.append(
                 {"artifact": artifact, "version_id": vid, "content": content, "data": data}
             )
-        except (ValueError, OSError, KeyError) as exc:
+        except ValueError as exc:
             errors.append(str(exc))
+            input_statuses.append(getattr(exc, "status", "structure_failure"))
     combined, conflicts = _merge_json(
         entry["data"] for entry in submitted if entry["data"] is not None
     )
@@ -260,12 +268,14 @@ def evaluate_submission(store, state, item, submission):
         snapshots = submission.get("adoption_snapshot", {})
         adoption = snapshots.get(key)
         if adoption is None:
-            raise ValueError("UNASSESSED: submission has no adoption snapshot")
+            raise EvaluationInputError("unassessed", "Submission has no adoption snapshot")
         if (adoption["object_id"], adoption["version_id"]) != (
             ref.object_id,
             ref.version_id,
         ):
-            raise ValueError("Content source does not match the adopted exact version")
+            raise EvaluationInputError(
+                "content_failure", "Content source does not match the adopted exact version"
+            )
         if (
             adoption.get("work_id") != item["work_item_id"]
             or adoption.get("work_ids") != [item["work_item_id"]]
@@ -273,16 +283,21 @@ def evaluate_submission(store, state, item, submission):
             or adoption.get("alias") != alias
             or adoption.get("requirement_version") != submission["requirement_version"]
         ):
-            raise ValueError("Adoption does not cover the evaluated work edition")
+            raise EvaluationInputError(
+                "content_failure", "Adoption does not cover the evaluated work edition"
+            )
         require_version(
-            submission["requirement_snapshot"], alias,
-            adoption["version_id"], adoption["policy"],
+            submission["requirement_snapshot"],
+            alias,
+            adoption["version_id"],
+            adoption["policy"],
         )
         if adoption["policy"] != "fixed":
             target = adoption.get("target_version")
             if target is None or ref.version_id != target:
-                raise ValueError(
-                    "Content source does not match the policy target at submission"
+                raise EvaluationInputError(
+                    "content_failure",
+                    "Content source does not match the policy target at submission",
                 )
         binding_files = []
         for entry in selected:
@@ -302,11 +317,12 @@ def evaluate_submission(store, state, item, submission):
                 VersionRef.from_mapping(value) for value in metadata.get("derived_from", [])
             ]
             if ref not in dependencies:
-                raise ValueError(
+                raise EvaluationInputError(
+                    "content_failure",
                     "Contributing submitted file lacks the exact source dependency: "
                     + entry["artifact"]["artifact_id"]
                     + "@"
-                    + entry["version_id"]
+                    + entry["version_id"],
                 )
             binding_files.append(
                 {
@@ -317,7 +333,11 @@ def evaluate_submission(store, state, item, submission):
         return ref, binding_files
 
     checks = []
+    if _context is not None:
+        _context["checks"] = checks
     for spec in contract["content_checks"]:
+        if _context is not None:
+            _context["active_check"] = copy.deepcopy(spec)
         outcome = {"kind": spec["kind"], "contract": copy.deepcopy(spec), "passed": False}
         try:
             selected = [
@@ -341,14 +361,31 @@ def evaluate_submission(store, state, item, submission):
             if kind in DOMAIN_CHECKS:
                 source_data, exact_sources = {}, []
                 for source_spec in spec["sources"]:
-                    ref, files = bound_source(selected, json_data, spec["path"],
-                                              source_spec["reference_path"], source_spec["alias"])
+                    ref, files = bound_source(
+                        selected,
+                        json_data,
+                        spec["path"],
+                        source_spec["reference_path"],
+                        source_spec["alias"],
+                    )
                     if state["artifacts"][ref.object_id]["kind"] != "json":
                         raise ValueError("This finite domain contract requires JSON inputs")
-                    source_data[source_spec["alias"]] = json.loads(read_version(ref.object_id, ref.version_id))
-                    exact_sources.append({"alias": source_spec["alias"], "reference": ref.to_dict(),
-                                          "binding_files": files})
-                outcome.update(DOMAIN_CHECKS[kind].evaluate_check(spec, json_data, source_data.__getitem__))
+                    try:
+                        source_data[source_spec["alias"]] = json.loads(
+                            read_version(ref.object_id, ref.version_id)
+                        )
+                    except ValueError as exc:
+                        raise EvaluationInputError("source_unavailable", str(exc)) from exc
+                    exact_sources.append(
+                        {
+                            "alias": source_spec["alias"],
+                            "reference": ref.to_dict(),
+                            "binding_files": files,
+                        }
+                    )
+                outcome.update(
+                    DOMAIN_CHECKS[kind].evaluate_check(spec, json_data, source_data.__getitem__)
+                )
                 outcome["sources"] = exact_sources
             elif kind == "json_field_equals":
                 actual, expected = _at_path(json_data, spec["path"]), spec["expected"]
@@ -393,7 +430,10 @@ def evaluate_submission(store, state, item, submission):
                 terms = []
                 for source_spec in spec["sources"]:
                     ref, binding_files = bound_source(
-                        selected, json_data, spec["path"], source_spec["reference_path"],
+                        selected,
+                        json_data,
+                        spec["path"],
+                        source_spec["reference_path"],
                         source_spec["alias"],
                     )
                     content = read_version(ref.object_id, ref.version_id)
@@ -412,15 +452,30 @@ def evaluate_submission(store, state, item, submission):
                     expected += contribution
                     if not _finite_number(contribution) or not _finite_number(expected):
                         raise ValueError("Linear source result must remain finite")
-                    terms.append({"alias": source_spec["alias"], "source": ref.to_dict(),
-                                  "value": value, "coefficient": source_spec["coefficient"],
-                                  "contribution": contribution, "binding_files": binding_files})
+                    terms.append(
+                        {
+                            "alias": source_spec["alias"],
+                            "source": ref.to_dict(),
+                            "value": value,
+                            "coefficient": source_spec["coefficient"],
+                            "contribution": contribution,
+                            "binding_files": binding_files,
+                        }
+                    )
                 actual = _at_path(json_data, spec["path"])
-                outcome.update(actual=actual, expected=expected, sources=terms,
-                               passed=_finite_number(actual) and actual == expected)
+                outcome.update(
+                    actual=actual,
+                    expected=expected,
+                    sources=terms,
+                    passed=_finite_number(actual) and actual == expected,
+                )
             else:
                 ref, binding_files = bound_source(
-                    selected, json_data, spec["path"], spec["reference_path"], spec["adoption_alias"]
+                    selected,
+                    json_data,
+                    spec["path"],
+                    spec["reference_path"],
+                    spec["adoption_alias"],
                 )
                 outcome["binding_files"] = binding_files
                 source = read_version(ref.object_id, ref.version_id)
@@ -444,13 +499,22 @@ def evaluate_submission(store, state, item, submission):
                 outcome.setdefault(
                     "reason", "Submitted content does not satisfy the declared contract"
                 )
-        except (ValueError, KeyError, OSError, TypeError, OverflowError) as exc:
+        except ValueError as exc:
             outcome["reason"] = str(exc)
+            outcome["status"] = getattr(exc, "status", "structure_failure")
+        outcome.setdefault("status", "pass" if outcome["passed"] else "content_failure")
         checks.append(outcome)
+    statuses = input_statuses + [check["status"] for check in checks]
+    if missing or conflicts:
+        statuses.append("structure_failure")
+    if not contract["content_checks"]:
+        statuses.append("unassessed")
+    status = combined_status(statuses)
     return {
         "submission_id": submission["submission_id"],
         "evaluator_version": EVALUATOR_VERSION,
-        "passed": not missing and not conflicts and not errors and all(c["passed"] for c in checks),
+        "passed": status == "pass",
+        "status": status,
         "missing_fields": missing,
         "conflicting_fields": sorted(set(conflicts)),
         "checks": checks,

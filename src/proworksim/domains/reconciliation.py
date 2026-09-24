@@ -8,6 +8,8 @@ infer professional completeness outside the declared fields and unit rules.
 import copy
 import math
 
+from ..evaluation import EvaluationInputError
+
 CHECK_KIND = "reconciliation_table"
 STATUSES = ("matched", "converted", "conflict", "incomparable", "missing", "ambiguous")
 RECORD_FIELDS = (
@@ -88,6 +90,92 @@ def _same(actual, expected):
     return actual == expected
 
 
+def _validate_output(data, path):
+    def require(condition, reason):
+        if not condition:
+            raise EvaluationInputError("structure_failure", reason)
+
+    def strings(value):
+        return isinstance(value, list) and all(isinstance(x, str) for x in value)
+
+    def key(value):
+        return strings(value) and len(value) == 2
+
+    output = data
+    for part in path:
+        require(isinstance(output, dict) and part in output, "Missing delivered target path")
+        output = output[part]
+    require(isinstance(output, dict), "Delivered reconciliation target must be an object")
+    require(
+        set(output) == {"rows", "summary", "unresolved", "period", "base_unit"},
+        "Delivered reconciliation fields do not match the declared shape",
+    )
+    require(isinstance(output["rows"], list), "Delivered reconciliation.rows must be a list")
+    fields = {
+        "key",
+        "period",
+        "status",
+        "left_ids",
+        "right_ids",
+        "left_value",
+        "right_value",
+        "delta",
+        "evidence",
+    }
+    for index, row in enumerate(output["rows"]):
+        where = "Delivered reconciliation.rows[" + str(index) + "]"
+        require(isinstance(row, dict), where + " must be an object")
+        require(set(row) == fields, where + " fields do not match the declared shape")
+        require(key(row["key"]), where + ".key must contain two strings")
+        require(
+            row["period"] is None or isinstance(row["period"], str),
+            where + ".period must be string or null",
+        )
+        require(isinstance(row["status"], str), where + ".status must be a string")
+        for field in ("left_ids", "right_ids"):
+            require(strings(row[field]), where + "." + field + " must contain strings")
+        for field in ("left_value", "right_value", "delta"):
+            require(
+                row[field] is None or _number(row[field]),
+                where + "." + field + " must be finite number or null",
+            )
+        require(isinstance(row["evidence"], list), where + ".evidence must be a list")
+        for evidence in row["evidence"]:
+            require(
+                isinstance(evidence, dict) and set(evidence) == {"alias", *EVIDENCE_FIELDS},
+                where + ".evidence entries must match the evidence shape",
+            )
+            require(
+                all(
+                    isinstance(evidence[field], str)
+                    for field in {"alias", *EVIDENCE_FIELDS} - {"value"}
+                ),
+                where + ".evidence identity fields must be strings",
+            )
+            require(
+                evidence["value"] is None or _number(evidence["value"]),
+                where + ".evidence.value must be finite number or null",
+            )
+    require(
+        isinstance(output["summary"], dict) and set(output["summary"]) == set(STATUSES),
+        "Delivered summary must declare every finite status",
+    )
+    require(
+        all(type(value) is int and value >= 0 for value in output["summary"].values()),
+        "Delivered summary counts must be nonnegative integers",
+    )
+    require(
+        isinstance(output["unresolved"], list)
+        and all(key(value) for value in output["unresolved"]),
+        "Delivered unresolved must contain two-string keys",
+    )
+    require(
+        isinstance(output["period"], str) and isinstance(output["base_unit"], str),
+        "Delivered period/base_unit must be strings",
+    )
+    return output
+
+
 def evaluate_check(spec, output_data, load_source):
     """Validate coverage and conclusions; return failures without mutating inputs."""
     spec = validate_check(spec)
@@ -98,9 +186,12 @@ def evaluate_check(spec, output_data, load_source):
         "quality_scope": "Finite record coverage, comparison applicability, exact unit conversion, conflict/unknown preservation and evidence; no open financial judgment",
     }
     try:
-        output = output_data
-        for part in spec["path"]:
-            output = output[part]
+        output = _validate_output(output_data, spec["path"])
+    except EvaluationInputError as exc:
+        result.update(status=exc.status)
+        diagnostics.append({"issue": "delivery_structure", "reason": str(exc)})
+        return result
+    try:
         selected_sources = {}
         for source in spec["sources"]:
             value = load_source(source["alias"])
@@ -108,7 +199,7 @@ def evaluate_check(spec, output_data, load_source):
                 value = value[part]
             selected_sources[source["alias"]] = value
         policy = selected_sources[spec["policy_alias"]]
-        if policy.get("key_fields") != ["entity", "metric"]:
+        if not isinstance(policy, dict) or policy.get("key_fields") != ["entity", "metric"]:
             raise ValueError("Only the declared entity/metric key is supported")
         factors = policy.get("unit_factors")
         if (
@@ -123,7 +214,10 @@ def evaluate_check(spec, output_data, load_source):
             raise ValueError("Public policy requires a base unit and reporting period")
         tables = {}
         for alias in (spec["left_alias"], spec["right_alias"]):
-            records = selected_sources[alias]["records"]
+            table = selected_sources[alias]
+            if not isinstance(table, dict):
+                raise ValueError("Source table must be an object")
+            records = table["records"]
             if not isinstance(records, list) or len(records) > 200:
                 raise ValueError("Source table must contain at most 200 rows")
             ids = set()
@@ -144,6 +238,13 @@ def evaluate_check(spec, output_data, load_source):
                     raise ValueError("Source row IDs must be unique and values finite or null")
                 ids.add(record["record_id"])
             tables[alias] = records
+    except (KeyError, TypeError, ValueError, OSError, OverflowError) as exc:
+        result.update(status="source_unavailable")
+        diagnostics.append({"issue": "source_unavailable", "reason": str(exc)})
+        return result
+    # All container/element shapes are established above. Unexpected failures in
+    # the actual checker propagate to the explicit evaluator-error boundary.
+    try:
         expected_keys = {(r["entity"], r["metric"]) for records in tables.values() for r in records}
         rows = output.get("rows")
         if not isinstance(rows, list):
@@ -199,7 +300,9 @@ def evaluate_check(spec, output_data, load_source):
                     lv = lrow["value"] * factors[lrow["unit"]]
                     rv = rrow["value"] * factors[rrow["unit"]]
                     if not _number(lv) or not _number(rv) or not _number(lv - rv):
-                        raise ValueError("Normalized amount must remain finite")
+                        raise EvaluationInputError(
+                            "source_unavailable", "Normalized amount must remain finite"
+                        )
                     values.update(left_value=lv, right_value=rv, delta=lv - rv)
                     status = (
                         "conflict"
@@ -258,6 +361,8 @@ def evaluate_check(spec, output_data, load_source):
         result["passed"] = not diagnostics
         result["record_count"] = sum(len(rows_) for rows_ in tables.values())
         result["group_count"] = len(expected_keys)
-    except (KeyError, TypeError, ValueError, OverflowError) as exc:
-        diagnostics.append({"issue": "malformed_or_unavailable", "reason": str(exc)})
+        result["status"] = "pass" if result["passed"] else "content_failure"
+    except EvaluationInputError as exc:
+        result["status"] = exc.status
+        diagnostics.append({"issue": exc.status, "reason": str(exc)})
     return result

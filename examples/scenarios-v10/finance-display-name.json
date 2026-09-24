@@ -1,0 +1,72 @@
+{
+  "version": "scenario-v0.10",
+  "scenario_id": "finance-display-name",
+  "world": {
+    "world_id": "declared-work-chain",
+    "actors": {
+      "operator": {
+        "display_name": "operator"
+      },
+      "analyst": {
+        "display_name": "财务工作员"
+      },
+      "author": {
+        "display_name": "author"
+      },
+      "reviewer": {
+        "display_name": "reviewer"
+      }
+    },
+    "applications": [
+      "files"
+    ],
+    "publication_policy": "explicit",
+    "bootstrap_grants": [
+      {
+        "actor_id": "operator",
+        "scope": "world",
+        "power": "install_project"
+      }
+    ]
+  },
+  "installer": "operator",
+  "projects": [
+    {
+      "recipe": "reconciliation",
+      "parameters": {
+        "project_id": "FINANCE",
+        "review": true
+      }
+    }
+  ],
+  "roles": [
+    {
+      "role_id": "analyst",
+      "actor": "analyst",
+      "project": "FINANCE",
+      "policy": "reconciliation",
+      "config": {}
+    },
+    {
+      "role_id": "finance_reviewer",
+      "actor": "reviewer",
+      "project": "FINANCE",
+      "policy": "reviewer",
+      "config": {}
+    }
+  ],
+  "setup": [],
+  "events": [],
+  "start": {
+    "kind": "initial"
+  },
+  "boundary": {
+    "max_opportunities": 600
+  },
+  "variation": {
+    "kind": "surface",
+    "dimension": "display_name",
+    "relative_to": "finance-direct",
+    "change": "analyst display name only"
+  }
+}

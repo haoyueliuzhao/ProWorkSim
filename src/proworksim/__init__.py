@@ -3,4 +3,4 @@
 from .core.world import WorldSpec, ProjectPackage, WorkContext, ScopedGrant
 
 __all__ = ["WorldSpec", "ProjectPackage", "WorkContext", "ScopedGrant"]
-__version__ = "0.9.0"
+__version__ = "0.10.0"

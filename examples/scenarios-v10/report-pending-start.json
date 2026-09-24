@@ -1,0 +1,73 @@
+{
+  "version": "scenario-v0.10",
+  "scenario_id": "report-pending-start",
+  "world": {
+    "world_id": "declared-work-chain",
+    "actors": {
+      "operator": {
+        "display_name": "operator"
+      },
+      "analyst": {
+        "display_name": "analyst"
+      },
+      "author": {
+        "display_name": "author"
+      },
+      "reviewer": {
+        "display_name": "reviewer"
+      }
+    },
+    "applications": [
+      "files"
+    ],
+    "publication_policy": "explicit",
+    "bootstrap_grants": [
+      {
+        "actor_id": "operator",
+        "scope": "world",
+        "power": "install_project"
+      }
+    ]
+  },
+  "installer": "operator",
+  "projects": [
+    {
+      "recipe": "research_review",
+      "parameters": {
+        "project_id": "REPORT"
+      }
+    }
+  ],
+  "roles": [
+    {
+      "role_id": "author",
+      "actor": "author",
+      "project": "REPORT",
+      "policy": "report_author",
+      "config": {}
+    },
+    {
+      "role_id": "report_reviewer",
+      "actor": "reviewer",
+      "project": "REPORT",
+      "policy": "reviewer",
+      "config": {}
+    }
+  ],
+  "setup": [],
+  "events": [],
+  "start": {
+    "kind": "executed_prefix",
+    "when": {
+      "work": {
+        "project": "REPORT",
+        "node": "research",
+        "phase": "pending"
+      }
+    },
+    "max_opportunities": 200
+  },
+  "boundary": {
+    "max_opportunities": 600
+  }
+}
