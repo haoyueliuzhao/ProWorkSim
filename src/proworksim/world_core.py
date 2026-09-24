@@ -431,13 +431,17 @@ class WorldCore(WorldRunner):
                 }
             descriptions = {
                 "read_object": "Read an exact visible JSON version. Reading records knowledge only: it does not adopt that version for a work or establish a deliverable source binding.",
-                "write_object": "Write a new managed JSON version. Existing submitted versions and reviews stay immutable. Editing a pending submission's objects does not update that submission; withdraw it before resubmitting the repaired versions.",
+                "write_object": "Write a new managed JSON version. When a source contributes to a deliverable, supply its exact object/version in dependencies. Adoption and JSON sources fields do not automatically record file dependencies; omitting dependencies retains the previous version dependency list. Existing submitted versions and reviews stay immutable. Editing a pending submission's objects does not update that submission; withdraw it before resubmitting the repaired versions.",
                 "adopt": "Bind an exact source object/version to each listed current work edition under its declared input policy. Source-based content contracts require these per-work bindings before submission; reading a source or writing a sources field does not replace adoption.",
                 "adopt_version": "Explicitly update an existing non-fixed adoption for one exact work edition. Use adopt for a new work binding. A fixed binding cannot be advanced.",
                 "submit": "Submit the current versions of workspace artifact aliases, not object IDs. Artifacts is a list of alias strings in this bound project. Source-based contracts require exact adoptions for this work and matching source references/dependencies; reading alone is insufficient. A pending submission must be withdrawn before a replacement submission.",
                 "withdraw": "Withdraw the named pending submission before repairing/resubmitting the same work. Withdrawal preserves fixed versions and does not automatically resolve located review issues.",
                 "inspect_submission": "Inspect one exact submission identified by pending_submission_id or latest_submission_id in the public work observation, subject to actual artifact access checks.",
             }
+            if "dependencies" in properties:
+                properties["dependencies"]["description"] = "Exact object_id/version_id references of sources contributing to this file version. Adoption and JSON source fields do not populate dependencies. A write with omitted dependencies retains previous dependencies; creation defaults to none."
+            if name == "sql_query":
+                properties["source_alias"]["description"] = "Use this exact work adoption when one exists; otherwise only a readable local project object is queryable. Shared sources never resolve to an unadopted latest or last-shared version."
             if name == "submit":
                 properties["artifacts"]["description"] = "Workspace aliases such as report or result, never object IDs; submitted sources must match this exact work's adoption bindings."
             definitions.append(
@@ -796,7 +800,28 @@ class WorldCore(WorldRunner):
         output, _ = self._object(actor, project_id, alias=output_alias, write=True)
         if output["kind"] != "json" or output.get("project_id") != project_id:
             raise ValueError("SQL query output must be this project's managed JSON object")
-        source = self._action_read_object(actor, project_id, alias=source_alias, work_id=item["work_item_id"])
+        binding = binding_for(self.state, item["work_item_id"], source_alias)
+        if binding is not None:
+            # A readonly workspace alias can outlive upstream drafts. Resolve
+            # the version through this exact work binding, never the object's
+            # latest version or a guessed last shared version.
+            source = self._action_read_object(
+                actor, project_id, object_id=binding["object_id"],
+                version_id=binding["version_id"], work_id=item["work_item_id"],
+            )
+        else:
+            source_id = self.state["workspaces"][project_id].get(source_alias)
+            artifact = self.state["artifacts"].get(source_id)
+            if artifact is None or artifact.get("project_id") != project_id:
+                raise ToolRejection(
+                    "A shared SQL query source requires an adoption for this exact work",
+                    code="sql_query_source_binding_required", category="policy_error",
+                    context={"work_id": item["work_item_id"], "source_alias": source_alias},
+                )
+            # An unadopted local result remains queryable under its existing ACL.
+            source = self._action_read_object(
+                actor, project_id, alias=source_alias, work_id=item["work_item_id"],
+            )
         if not isinstance(source["data"].get("tables"), dict):
             raise ValueError("Query source needs managed typed tables")
         executed = execute(tables=source["data"]["tables"], query=sql)

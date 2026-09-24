@@ -68,6 +68,13 @@ def run_case(row, protocol, destination):
         controller = ScenarioController(deployment, recorder=runtime.recorder)
         for entry in deployment.deployment_log:
             runtime.recorder.record('deployment_action', entry)
+        if spec['start']['kind'] == 'executed_prefix' and not deployment.prefix['prefix_executed']:
+            deployment.prepare_start(runtime, controller)
+            atomic_write(folder / 'prefix.json', json_bytes(deployment.prefix))
+            if deployment.status != 'ready':
+                record.update(status='unbuildable', diagnostics=deployment.diagnostics)
+                atomic_write(folder / 'interrupted-checkpoint.json', json_bytes(runtime.snapshot()))
+                return record
         binding = {(r['actor'], r['project']) for r in roles}
         nodes = sorted({w['node_id'] for w in deployment.world.state['work_items'].values()
                         if (w['owner_role'], w['project_id']) in binding})

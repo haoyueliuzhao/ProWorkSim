@@ -30,3 +30,15 @@ RewardSpec必须通过空交付、改标签、重复发布、篡改测试、始�
 ## 核验与记录
 
 各模块先必要局部测试；正式冻结后一次全套pytest/Ruff和对应新实验。原v0.10及更早JSON不变；每项旧反例、开发失败、未执行项、服务失败、资源竞争分开归档。实验报告给出调用与训练分母、输入输出/缓存/失败成本、终止原因和未评范围，完成后自动提交并推送。
+
+## 首冻结结果与第二冻结范围
+
+首冻结9b9a4d8于UTC13:27–13:29完成36真实episode、另1个双模型episode、2个公开项目pilot及643项完整回归。条件7/7、历史边界14/14、公开项目机制58/58、奖励21/21、Ruff均通过。模型结果未按规则对照的通过率表述：36个均奖励0；DeepSeek2个制度completed仍因缺确切文件依赖而content_failure，11预算、5格式；Qwen18格式。所有公开端口捕获对照一致，服务usage无缺失。
+
+真实API暴露sql_query未沿work adoption读共享确切版的问题：后续私有草稿使合法查询失败。局部补修并保留9b9原真实反例，不覆盖首批。另明确write_object现有依赖合同。
+
+第二冻结只增加有记录的context_policy=latest_observation（完整原history不改，仅HTTP移除旧已登记观察）、声明start.roles和published起点、首决策RL接口。公开项目另3个诊断episode：相同真实P0前缀下static full/latest各一次，dynamic latest一次。它们不是原失败的续命或替换，也不是统计因果对照；P0仅按公开端口实际构建/提交/共享/发布，未运行目标模型，前缀成本与经历单列，episode从前缀后固定。原初始条件和预算结果保留。
+
+各既有付费pilot已结束后未用预留释放；已记录峰值估计上界加这3个各1USD新上限仍小于原pilot6USD、整轮24USD上限。未知usage若存在须占用原预留，不能当0；实际首批无缺失。
+
+首决策训练预选finance-direct-qwen-1/2/3，完整历史RewardSpec结果全0也保留。只对首个真实输出宏动作求梯度，后续行为固定，constant baseline0.5、LoRA q/v r8 alpha16 dropout0、AdamW1e-6一次更新；输入输出真实token/mask及现场采样logprobs需通过身份/概率核验。GPU前先停止本项目推理服务。该验证不是完整多轮Agentic RL或学习增益研究；三组对照尚未执行。

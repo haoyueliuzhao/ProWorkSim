@@ -357,6 +357,14 @@ def _staff_run(args):
     if saved is None:
         for record in deployment.deployment_log:
             runtime.recorder.record("deployment_action", record)
+    if deployment.spec["start"]["kind"] == "executed_prefix" and not deployment.prefix["prefix_executed"]:
+        deployment.prepare_start(runtime, controller)
+        if deployment.status != "ready":
+            payload = {"version": "staff-run-v0.11", **identity, "status": "unbuildable",
+                       "diagnostics": deployment.diagnostics, "prefix": deployment.prefix,
+                       "worker_checkpoint": runtime.snapshot(), "controller_checkpoint": controller.snapshot()}
+            atomic_write(output, json_bytes(payload))
+            return {"status": "unbuildable", "output": str(output), "diagnostics": deployment.diagnostics}
     model_bindings = [(role["actor"], role["project"]) for role in deployment.spec["roles"]
                       if role["policy"] == "model"]
     selected = [wid for wid, item in deployment.world.state["work_items"].items()

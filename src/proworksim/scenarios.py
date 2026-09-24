@@ -73,6 +73,7 @@ def _predicate(predicate):
             "output_ready",
             "pending",
             "accepted",
+            "published",
             "blocked",
         }:
             raise ValueError("Unsupported work phase")
@@ -160,9 +161,15 @@ def validate_scenario(spec):
         for effect in event["effects"]:
             _action(effect)
     start = spec.setdefault("start", {"kind": "initial"})
-    _keys(start, {"kind", "when", "max_opportunities"}, "start")
+    _keys(start, {"kind", "when", "max_opportunities", "roles"}, "start")
     if start.get("kind") not in {"initial", "executed_prefix"}:
         raise ValueError("Start must be initial or executed_prefix")
+    if "roles" in start:
+        if (start["kind"] != "executed_prefix" or not isinstance(start["roles"], list)
+                or not start["roles"] or any(not isinstance(role, str) for role in start["roles"])
+                or len(set(start["roles"])) != len(start["roles"])
+                or not set(start["roles"]) <= role_ids):
+            raise ValueError("Prefix schedule requires distinct installed role labels")
     if start["kind"] == "executed_prefix":
         _predicate(start.get("when"))
         if type(start.get("max_opportunities")) is not int or start["max_opportunities"] < 1:
@@ -446,6 +453,11 @@ class ScenarioDeployment:
         controller = controller or ScenarioController(self, recorder=runtime.recorder)
         controller.recorder = runtime.recorder
         begin = len(runtime.recorder.events)
+        active_roles = start.get("roles", runtime.labels)
+        if not set(active_roles) <= set(runtime.labels):
+            raise ValueError("Runtime does not contain the declared prefix roles")
+        runtime.recorder.record("prefix_schedule", {"active_roles": active_roles,
+                               "max_opportunities": start["max_opportunities"]})
         results = []
         failure_reason = "Declared prefix target was not reached within its bound"
         for index in range(start["max_opportunities"] + 1):
@@ -465,6 +477,10 @@ class ScenarioDeployment:
                 save_deployment(self)
                 return self.prefix
             if index < start["max_opportunities"]:
+                # This is an explicitly declared schedule of opportunities, not
+                # an instruction to choose any business action or a policy swap.
+                while runtime.labels[runtime.cursor % len(runtime.labels)] not in active_roles:
+                    runtime.cursor += 1
                 results.append(runtime.step())
                 controller.record_environment()
         self.prefix = {
@@ -661,6 +677,8 @@ class ScenarioController:
         wid = current_id(state, project.get("maintenance_heads", {}).get(node, node))
         if wid not in state["work_items"]:
             return False
+        if value["phase"] == "published":
+            return work_stage(state, wid, None) == "accepted" and _publication_complete(self.world, [wid])
         if value["phase"] == "blocked":
             return derive_current_work_view(state)[wid]["status"] == "blocked"
         source = state["workspaces"].get(value["project"], {}).get(value.get("source_alias"))
@@ -780,7 +798,7 @@ def _accepted_predicate(predicate):
     kind, value = next(iter(predicate.items()))
     if kind == "all":
         return all(_accepted_predicate(child) for child in value)
-    return kind == "event_fired" or (kind == "work" and value["phase"] == "accepted")
+    return kind == "event_fired" or (kind == "work" and value["phase"] in {"accepted", "published"})
 
 
 def _predicate_work_ids(world, predicate):

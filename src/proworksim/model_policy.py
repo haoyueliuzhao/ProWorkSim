@@ -17,7 +17,7 @@ from .model_transport import HTTPModelTransport, TransportFailure
 from .staff_runtime import PolicyBoundaryError
 from .storage import atomic_write, digest, json_bytes
 
-ADAPTER_VERSION = "model-policy-v0.11.1"
+ADAPTER_VERSION = "model-policy-v0.11.2"
 CONTROL_TOOLS = (
     {
         "name": "staff_wait",
@@ -89,6 +89,7 @@ def normalize_config(config):
     defaults = {
         "backend_id": "deepseek",
         "action_protocol": "native_tools",
+        "context_policy": "full_history",
         "model": "deepseek-flash",
         "base_url": "https://api.deepseek.com",
         "api_key_env": "DEEPSEEK_API_KEY",
@@ -136,6 +137,8 @@ def normalize_config(config):
             raise ValueError(name + " is declared backend identity metadata")
     if result["action_protocol"] not in {"native_tools", "single_decision_json"}:
         raise ValueError("Unknown explicitly selected model action protocol")
+    if result["context_policy"] not in {"full_history", "latest_observation"}:
+        raise ValueError("Unknown explicitly selected model context policy")
     if result["thinking"] is not None and type(result["thinking"]) is not bool:
         raise ValueError("thinking must be boolean or None (parameter omitted)")
     if result["reasoning_effort"] not in {None, "low", "high", "max"}:
@@ -222,13 +225,79 @@ class ModelPolicy:
             details=details,
         )
 
+    def _select_messages(self, memory):
+        """Select HTTP inputs by append-time provenance, never by content guesses.
+
+        The complete immutable-prefix dialogue stays in memory. Old checkpoints
+        without registration retain their unknown-origin messages conservatively.
+        No summary, rewriting, role-history truncation or answer is introduced.
+        """
+        messages = memory["messages"]
+        observations = memory.get("observation_messages", [])
+        if not isinstance(observations, list):
+            raise ValueError("Observation message provenance must be a list")
+        indices = []
+        for entry in observations:
+            if (
+                not isinstance(entry, dict)
+                or set(entry) != {"index", "sha256"}
+                or type(entry["index"]) is not int
+                or not 0 <= entry["index"] < len(messages)
+            ):
+                raise ValueError("Invalid observation message provenance")
+            index = entry["index"]
+            if (
+                messages[index].get("role") != "user"
+                or digest(json_bytes(messages[index])) != entry["sha256"]
+            ):
+                raise ValueError("Registered observation differs from its original message")
+            indices.append(index)
+        if indices != sorted(set(indices)):
+            raise ValueError("Observation message indices must remain distinct and ordered")
+        current = indices[-1] if indices else None
+        removed = (
+            set(indices[:-1]) if self.config["context_policy"] == "latest_observation" else set()
+        )
+        selected_indices = [index for index in range(len(messages)) if index not in removed]
+        selected = [copy.deepcopy(messages[index]) for index in selected_indices]
+        audit = {
+            "version": "context-selection-v0.11.2",
+            "policy": self.config["context_policy"],
+            "original_message_count": len(messages),
+            "original_messages_sha256": digest(json_bytes(messages)),
+            "registered_observation_indices": indices,
+            "current_observation_index": current,
+            "selected_indices": selected_indices,
+            "removed_indices": sorted(removed),
+            "selected_messages_sha256": digest(json_bytes(selected)),
+            "messages": [
+                {
+                    "index": index,
+                    "role": message.get("role"),
+                    "sha256": digest(json_bytes(message)),
+                    "selected": index not in removed,
+                    "reason": "earlier_registered_public_observation"
+                    if index in removed
+                    else "full_history_policy"
+                    if self.config["context_policy"] == "full_history"
+                    else "current_registered_public_observation"
+                    if index == current
+                    else "unregistered_history_preserved",
+                }
+                for index, message in enumerate(messages)
+            ],
+            "scope": "Only earlier explicitly registered public observation messages may be omitted from this HTTP request; full actual dialogue remains in memory",
+        }
+        return selected, audit
+
     def _request(self, memory, context):
         definitions = copy.deepcopy(context["tools"])
         if any(tool["name"] in {"staff_wait", "staff_done"} for tool in definitions):
             raise ValueError("Public tool collides with model adapter control namespace")
+        selected_messages, selection = self._select_messages(memory)
         result = {
             "model": self.config["model"],
-            "messages": copy.deepcopy(memory["messages"]),
+            "messages": selected_messages,
             "tools": [
                 {"type": "function", "function": tool} for tool in [*definitions, *CONTROL_TOOLS]
             ],
@@ -245,7 +314,16 @@ class ModelPolicy:
             result["thinking"] = {"type": "enabled" if self.config["thinking"] else "disabled"}
         if self.config["reasoning_effort"] is not None:
             result["reasoning_effort"] = self.config["reasoning_effort"]
-        return result
+        selection["request_sha256"] = digest(json_bytes(result))
+        selection["unfiltered_request_sha256"] = digest(
+            json_bytes(
+                {
+                    **result,
+                    "messages": memory["messages"],
+                }
+            )
+        )
+        return result, selection
 
     def _reserve(self, request):
         # A deliberately conservative admission estimate, NOT observed token usage.
@@ -363,6 +441,7 @@ class ModelPolicy:
                         else SYSTEM,
                     }
                 ],
+                "observation_messages": [],
                 "meter": {
                     "decisions": 0,
                     "http_attempts": 0,
@@ -468,7 +547,13 @@ class ModelPolicy:
                 ),
             }
         )
-        request = self._request(memory, context)
+        memory.setdefault("observation_messages", []).append(
+            {
+                "index": len(memory["messages"]) - 1,
+                "sha256": digest(json_bytes(memory["messages"][-1])),
+            }
+        )
+        request, context_selection = self._request(memory, context)
         reservation = self._reserve(request)
         self._emit(
             "model_call",
@@ -476,6 +561,7 @@ class ModelPolicy:
                 **association,
                 "stage": "started",
                 "request_sha256": digest(json_bytes(request)),
+                "context_selection": context_selection,
                 "reservation": reservation,
                 "config": self.config,
             },
@@ -492,6 +578,7 @@ class ModelPolicy:
                 "started_at": datetime.now(timezone.utc).isoformat(),
                 "endpoint": self.config["base_url"].rstrip("/") + "/chat/completions",
                 "request": copy.deepcopy(request),
+                "context_selection": copy.deepcopy(context_selection),
                 "request_headers": {"Content-Type": "application/json", "credential": "omitted"},
                 "timeout_seconds": self.config["timeout_seconds"],
                 "reservation": reservation,

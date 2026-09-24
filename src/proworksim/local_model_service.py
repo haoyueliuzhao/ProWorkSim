@@ -98,12 +98,23 @@ class LocalInference:
         self.network = AutoModelForCausalLM.from_pretrained(
             args.model, local_files_only=True, dtype=torch.bfloat16, attn_implementation="sdpa"
         ).to("cuda").eval()
+        self.adapter_identity = None
+        if args.adapter:
+            import hashlib
+            from peft import PeftModel
+
+            adapter = Path(args.adapter)
+            self.adapter_identity = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                                     for p in adapter.iterdir() if p.is_file()}
+            self.network = PeftModel.from_pretrained(self.network, adapter, is_trainable=False).eval()
+        self.policy_version = args.revision if self.adapter_identity is None else args.revision + "+" + __import__("hashlib").sha256(json_bytes(self.adapter_identity)).hexdigest()
         self.pending = queue.Queue(maxsize=24)
         self.batch_index = 0
         self.manifest = {
             "service": "loopback-qwen-transformers-v0.11", "model": args.model_id,
             "pid": os.getpid(), "cuda_visible_devices": os.getenv("CUDA_VISIBLE_DEVICES"),
             "weights": str(Path(args.model).resolve()), "weight_revision": args.revision,
+            "adapter": args.adapter, "adapter_identity": self.adapter_identity, "policy_version": self.policy_version,
             "torch": torch.__version__, "transformers": transformers.__version__,
             "seed": args.seed, "sampling": "one shared RNG stream; batching/order recorded, not per-episode deterministic",
             "max_context_tokens": args.max_context, "max_batch": args.max_batch,
@@ -199,7 +210,7 @@ class LocalInference:
                 call_id = "local_" + uuid.uuid4().hex
                 response = {
                     "id": call_id, "object": "chat.completion", "created": int(time.time()),
-                    "model": self.args.model_id, "system_fingerprint": self.args.revision,
+                    "model": self.args.model_id, "system_fingerprint": self.policy_version,
                     "choices": [{"index": 0, "message": message,
                                  "finish_reason": "tool_calls" if finished and message.get("tool_calls")
                                  else "stop" if finished else "length", "logprobs": None}],
@@ -227,6 +238,7 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--model-id", default="Qwen2.5-7B-Instruct")
     parser.add_argument("--revision", required=True)
+    parser.add_argument("--adapter", help="Optional independently saved LoRA; base weights are never overwritten")
     parser.add_argument("--output", required=True)
     parser.add_argument("--port", type=int, default=18761)
     parser.add_argument("--max-context", type=int, default=32768)
