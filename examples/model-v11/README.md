@@ -21,3 +21,5 @@ CUDA_VISIBLE_DEVICES=7 PYTHONPATH=src .train-venv/bin/python -m proworksim.local
 ```
 
 协议中的模型路径/revision/manifest须与实际文件一致；服务器仅监听127.0.0.1，记录共享GPU信息与真实token轨迹。不得把其他项目的既有服务自动当成同权重版本。DeepSeek调用与本地参数训练分别记录。
+
+`post-update-protocol.json` 是一次独立adapter接回环境的冻结试跑：实际加载 `runs/first-decision-rl-v011-resident/adapter`，新服务端口18762，report-direct模型作者、固定规则审阅者。它依赖本机原训练产物；Git仅保存证据与摘要，不能在缺少adapter文件时照搬路径。实际结果为1次请求后的格式失败，见主实验报告；不是学习收益对照。

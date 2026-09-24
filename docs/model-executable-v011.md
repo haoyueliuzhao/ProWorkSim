@@ -8,7 +8,7 @@
 
 每次模型调用与run_id、role、opportunity_id、model_call_id关联；每个HTTP attempt保存实际请求、返回、HTTP状态、usage和耗时。模型提出动作后另有model_action_link关联实际世界tool_call及request_key。服务返回不等于工具已执行。角色实际对话由适配器追加，模型不重写memory；上下文不自动摘要或裁剪，达到边界明确停止。
 
-模型服务超时/限流、格式错误、真实工具拒绝、世界实现错误分别保留。仅按固定表对传输重试，同一request每个attempt留痕；有效但错误的动作不重采样。usage缺失保留缺失，并按请求预留占用预算、停止后续请求，不补造实际token。
+模型服务超时/限流、格式错误、真实工具拒绝、世界实现错误分别保留。仅按固定表对传输重试，同一request每个attempt留痕；有效但错误的动作不重采样。成功响应缺少usage时保留缺失，按请求预留占用预算并停止后续请求；失败attempt的未知usage也占用预留，仍可按固定规则重试，恢复后不自动排除整个episode。不补造实际token。
 
 | 协议 | 合同 |
 | --- | --- |

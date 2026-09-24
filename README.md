@@ -50,7 +50,7 @@ RewardSpec可通过`episode-assess --reward-spec 文件.json`显式启用。原�
 - 公开项目模型试跑已实际改SQL、运行构建和查询，并根据SQL错误再次修改；完整交付及后继工作仍有失败，不能称可靠完成。
 - 规则机制：条件范围7/7、历史边界14/14、四项目SQL58/58、奖励反例21/21。
 - 第一冻结完整测试643项通过；第二冻结675项通过，Ruff通过。后续窄补修与数值诊断分别记录，不倒填旧结果。
-- 首决策训练首次因行为概率复算超出固定容差而在更新前停止；训练是否实际发生及后续诊断详见报告，不将参数变化或loss当作学习收益。
+- 首决策训练保留两次未更新的失败尝试；修订后用原3条零奖励轨迹完成1次LoRA更新、保存与重载。独立adapter接入试跑仍格式失败，未测得学习收益。
 
 [详细实验报告](docs/experiments/model-executable-v011.md)区分规则结果、真实模型、接口修订及训练证据；[实施计划](docs/model-executable-v011-plan.md)、[模块设计](docs/model-executable-v011.md)、[模型协议](docs/model-policy-v011.md)和[首决策训练范围](docs/first-decision-rl-v011.md)给出具体合同。
 
