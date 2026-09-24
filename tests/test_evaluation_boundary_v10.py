@@ -39,6 +39,7 @@ def data():
         "evidence_identity_nested",
         "summary_null",
         "unresolved_nested",
+        "unrepresentable_integer",
     ],
 )
 def test_malformed_finite_delivery_has_structure_status(shape):
@@ -62,6 +63,8 @@ def test_malformed_finite_delivery_has_structure_status(shape):
         target["rows"][0]["evidence"][0]["record_id"] = {}
     elif shape == "summary_null":
         target["summary"] = None
+    elif shape == "unrepresentable_integer":
+        target["rows"][0]["left_value"] = 10**1000
     else:
         target["unresolved"] = [[{}, "x"]]
     before = copy.deepcopy((output, sources))
@@ -120,3 +123,12 @@ def test_summary_never_turns_unobserved_target_into_pass():
     assert combined_status([]) == "unassessed"
     assert combined_status(["pass", "unassessed"]) == "unassessed"
     assert combined_status(["pass", "evaluator_error"]) == "evaluator_error"
+
+
+def test_json_integer_comparison_does_not_raise_when_float_conversion_would_overflow():
+    from proworksim.domains.work_product import _equal
+
+    large = 10**1000
+    assert _equal(large, large)
+    assert not _equal(large, 1)
+    assert not _equal(large, float("inf"))

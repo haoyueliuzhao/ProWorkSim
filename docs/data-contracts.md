@@ -1,6 +1,6 @@
-# 数据合同与扩展接口（v0.9）
+# 数据合同与扩展接口（v0.10模块；核心状态v0.9）
 
-当前软件包`0.9.0`，WorldCore schema为`world-core-v0.9`、语义为`work-world-v0.9`、内容评价为`finite-products-v0.9`；共用回执继续为`phase-deltas-v0.5`。本版增加两个领域合同和共同定位问题关系，详见[两模板合同](template-expansion-v09.md)。旧schema世界使用对应冻结运行时，不隐式迁移历史。
+当前软件包`0.10.0`，WorldCore schema为`world-core-v0.9`、语义为`work-world-v0.9`、内容评价为`finite-products-v0.10`；共用回执继续为`phase-deltas-v0.5`。沿用两个领域合同和共同定位问题关系，本版增加统一运行、场景与分项评价模块，详见[模块合同](platform-modules-v010.md)与[既有两模板合同](template-expansion-v09.md)。旧schema世界使用对应冻结运行时，不隐式迁移历史。
 
 以下保留v0.8及更早版本的合同沿革。v0.8阶段A评价为finite-products-v0.8，阶段B为finite-products-v0.8.1；其工作绑定及持续义务被本版复用，不能把旧运行身份写为新版。v0.9新增字段和工具见文末及本版说明。
 
@@ -335,3 +335,10 @@ SFT 候选仍是 `outcome_conditioned_candidate`，不是逐步专业金标；RL
 当前多项目新世界格式为world-core-v0.9、内容评价finite-products-v0.9；上面的v0.8/v0.7段落保留历史层次。新增reconciliation_table与research_report领域检查，以公开sources/精确采用/版本哈希/贡献依赖为共用输入边界，集合与正文规则留在各自领域模块。
 
 共享issues/issue_responses/issue_decisions为不可变登记，issue_views为查询派生。具体字段、公开工具及有限模板格式见[两模板说明](template-expansion-v09.md)。错误返回继续保留type/message，新增rejection.version/code/category/context；未明确分类时unknown而非推测环境故障。
+
+
+## v0.10 新模块
+
+统一工作人员上下文、staff-runtime-v0.10.1 checkpoint、staff-experience-v0.10实际经历、有限Scenario规格和分项评价见[模块合同](platform-modules-v010.md)。公共观察携带instance_id/branch_id，直接API和CLI均验证实际世界；旧阶段A checkpoint不静默降格复用。
+
+领域评价返回明确status，passed只是有限合同谓词。无目标为unassessed；合理的源null可以被内容合同正确表达，不能当成数值错误。独立目标expected:null与未提供expected分别是已声明null目标和未观测目标。

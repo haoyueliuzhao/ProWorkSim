@@ -1585,6 +1585,8 @@ class WorldCore(WorldRunner):
                     }
             return {
                 "world_id": self.state["world_id"],
+                "instance_id": self.state["instance_id"],
+                "branch_id": self.state["branch_id"],
                 "actor_id": actor,
                 "logical_time": self.state["clock"],
                 "world_status": "paused"

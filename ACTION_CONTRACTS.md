@@ -89,3 +89,10 @@
 同issue/response/decision业务身份重试返回原事实，不增加重复正式效果；同key不同负载拒绝。已完成command身份的重试仍沿原journal规则处理。晚到旧提交意见保持为historical，不把其他工作/版本自动重开。修复沿同一work/requirement的withdraw/write/submit，不以revise需求掩盖未满足原合同。
 
 新增世界接受`world-core-v0.9`；旧单模板仍使用原0.5运行格式。有限新恢复切点由实验报告约束，不把策略checkpoint、单命令恢复及任意系统故障恢复混为一谈。
+
+
+## v0.10 模块职责
+
+工作人员运行器的step是一次调度机会，不是新业务动作；实际业务仍由可信绑定ProjectSession调用现有工具。策略decide只能选择自己的动作/等待；运行器不替它修复、批准或发布。参数形状错误/真实工具拒绝/环境异常的记录不混为一个失败原因。
+
+场景构建与事件控制器执行预声明的真实工具，记录触发与结果，不按独立评分改规则。只读evaluation不产生业务行动；structure_failure/content_failure/source_unavailable/unassessed/evaluator_error分别说明评价边界。旧无content_checks而仅有required_fields的合同只能验证字段结构，不能宣称内容已获独立通过。

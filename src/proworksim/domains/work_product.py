@@ -158,7 +158,11 @@ def _at_path(data, path):
 def _equal(actual, expected):
     """JSON equality at every depth, preserving the finite numeric contract."""
     if type(actual) in (int, float) and type(expected) in (int, float):
-        return math.isfinite(actual) and math.isfinite(expected) and actual == expected
+        return (
+            (type(actual) is int or math.isfinite(actual))
+            and (type(expected) is int or math.isfinite(expected))
+            and actual == expected
+        )
     if type(actual) is not type(expected):
         return False
     if isinstance(actual, dict):

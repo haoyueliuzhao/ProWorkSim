@@ -13,7 +13,9 @@ from proworksim.world_core import WorldCore
 from scripts.staff_runtime_experiment import run_case
 
 
-@pytest.mark.parametrize("case", ["correct", "two_partial", "rebuttal", "reconciliation"])
+@pytest.mark.parametrize(
+    "case", ["correct", "two_partial", "rebuttal", "reconciliation", "late_history"]
+)
 def test_real_roles_preserve_controlled_semantics_and_independent_truth(tmp_path, case):
     result = run_case(case, tmp_path / case)
     assert result["error"] is None, result["error"]

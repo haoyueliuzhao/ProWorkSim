@@ -89,3 +89,16 @@ E1 的缓存操作仅使用 `core.projections.projection_paths` 明确列出的�
 | 财务记录/报告章节/claim | B/版本化文件内容 | 属于领域对象的实际JSON字节，不升级成通用世界的固定字段；错误也可成为真实提交 |
 
 后续版本不覆盖旧问题定位或决定的证据。新版本如何满足专业内容由领域独立评价；一次review处理决定不证明未来所有版本正确。
+
+
+## v0.10 世界外运行与评价
+
+| 记录 | 归属与边界 |
+| --- | --- |
+| scenario规格/manifest/前缀记录 | 世界外可信部署元数据；部署/事件只走公开动作，前缀是实际执行，不冒充背景历史 |
+| worker memory/last_action/last_result/cursor | 世界外策略运行进度；每角色独立，完整动作返回后checkpoint；需验证世界/实例/分支/策略身份 |
+| experience事件 | 当时实际接口和控制器返回的外部记录；不从最终状态重建观察，不供另一角色充当私有上下文 |
+| episode assessment | 只读评价证据；制度、内容、独立目标、过程、不完备和运行问题分开，无总成功分数 |
+| 公共instance_id/branch_id | 既有世界身份的只读投影；不改变存储事实或授予权限 |
+
+Episode停止不删除world/project/work或其他项目。世界可以仍有未完成工作而本次声明的观察范围已到达boundary_reached。

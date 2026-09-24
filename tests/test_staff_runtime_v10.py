@@ -142,3 +142,18 @@ def test_policy_cannot_override_transport_identity_or_cause_a_false_environment_
     assert result["status"] == "policy_error"
     assert not result["action_performed"]
     assert not any(event["kind"] == "tool_call" for event in capture["A"])
+
+
+def test_same_named_different_world_instances_cannot_receive_saved_private_context(tmp_path):
+    first_world, first_ports, _ = make_ports(tmp_path / "first")
+    second_world, second_ports, _ = make_ports(tmp_path / "second")
+    assert first_world.state["world_id"] == second_world.state["world_id"]
+    assert first_world.state["instance_id"] != second_world.state["instance_id"]
+    first = StaffRuntime({"reader": first_ports["A"]}, {"reader": ReaderPolicy()})
+    assert first.step()["action_performed"]
+    receiving = ReaderPolicy()
+    second = StaffRuntime({"reader": second_ports["A"]}, {"reader": receiving}, checkpoint=first.snapshot())
+    assert second.step()["status"] == "binding_mismatch"
+    assert receiving.inputs == []
+    assert second.recorder.events[-1]["kind"] == "binding_error"
+    assert second.recorder.events[-1]["payload"]["policy_invoked"] is False

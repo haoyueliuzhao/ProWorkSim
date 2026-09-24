@@ -73,7 +73,12 @@ def validate_check(spec):
 
 
 def _number(value):
-    return type(value) in (int, float) and math.isfinite(value)
+    if type(value) not in (int, float):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 def _same(actual, expected):
@@ -361,6 +366,11 @@ def evaluate_check(spec, output_data, load_source):
         result["passed"] = not diagnostics
         result["record_count"] = sum(len(rows_) for rows_ in tables.values())
         result["group_count"] = len(expected_keys)
+        result["declared_unresolved"] = [
+            {"key": copy.deepcopy(row["key"]), "status": row["status"]}
+            for row in output["rows"]
+            if row["status"] not in {"matched", "converted"}
+        ]
         result["status"] = "pass" if result["passed"] else "content_failure"
     except EvaluationInputError as exc:
         result["status"] = exc.status

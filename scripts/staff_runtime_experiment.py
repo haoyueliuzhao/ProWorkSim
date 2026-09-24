@@ -35,6 +35,7 @@ CASES = (
     "unavailable_parallel",
     "illegal_action",
     "private_visibility",
+    "late_history",
 )
 GROUPS = {"R1": list(CASES[:4]), "R2": list(CASES)}
 COMMON = [
@@ -45,6 +46,8 @@ COMMON = [
     "public_capture_matches_runtime",
     "no_evaluation_answer_in_role_context",
     "literal_body_or_full_table",
+    "all_read_versions_preserve_original_public_content",
+    "all_created_version_bytes_remain_immutable",
 ]
 EXTRA = {
     "correct": ["one_submission_no_forced_repair", "controlled_semantics_equal"],
@@ -67,6 +70,11 @@ EXTRA = {
     ],
     "illegal_action": ["actual_rejection_retained", "runtime_does_not_replace_failed_action"],
     "private_visibility": ["unauthorized_role_never_sees_secret", "private_object_remains_private"],
+    "late_history": [
+        "duplicate_delayed_opinion_has_one_historical_effect",
+        "late_opinion_preserves_unrelated_current_obligation",
+        "accepted_result_and_bad_old_delivery_both_preserved",
+    ],
 }
 PROTOCOL = {
     "suite": "staff-runtime-R1-R2-v0.10",
@@ -84,8 +92,13 @@ PROTOCOL = {
         "two_partial": "Author explicitly configured with revenue body_number and cost body_period defects on first submission",
         "rebuttal": "Reviewer explicitly configured to raise one false opinion against correct actual body",
         "illegal_action": "Author explicitly configured to attempt approval without authority once",
+        "late_history": "Author creates one initial body error; reviewer later repeats its own actual earliest finding against the accepted work's withdrawn first submission. A distinct financial work remains legitimately blocked.",
     },
     "baseline": "Fresh v0.9 controlled driver using the same declared template and independent truths; compare semantic outcomes, source references, issue treatment, immutable history; action counts and log layout need not match.",
+    "privacy_scope": "The author never receives the private review-notes object in its public objects/workspace or raw content in its tool returns. This tests a concrete unauthorized role/object pair, not a proof of all information-flow noninterference.",
+    "unknown_scope": "This suite's main literal report sources are complete. A separate renamed-input policy test checks source None remains explicit unknown; R4 measures incompleteness separately from incorrectness. No missing value is repaired by injecting a number.",
+    "refusal_scope": "The declared unauthorized approval produces the actual institutional-power ValueError. Its current structured tool category is unknown/unclassified_exception, so the runtime retains unattributed_tool_rejection. The experiment knows the injected strategy choice; it does not rewrite the real tool taxonomy or call it an environment failure.",
+    "history_scope": "Phase B additionally captures each new immutable version's first observed byte hash after a completed actual action and compares all final bytes, plus every actual read's exact-version JSON content. These are measurement-only and never enter a policy context.",
     "limits": [
         "Finite program strategies and synthetic existing templates",
         "No model/API/GPU/training",
@@ -261,6 +274,8 @@ def run_case(name, output):
             if name == "two_partial"
             else {}
         )
+        if name == "late_history":
+            config["initial_defects"] = {"revenue": "body_number"}
         if name == "illegal_action":
             config["illegal_action_once"] = {
                 "action": "approve",
@@ -292,11 +307,14 @@ def run_case(name, output):
                 "reviewer": (
                     "reviewer",
                     "REPORT",
-                    ReviewerPolicy(wrong_opinion_once=name == "rebuttal"),
+                    ReviewerPolicy(
+                        wrong_opinion_once=name == "rebuttal",
+                        late_duplicate_once=name == "late_history",
+                    ),
                 ),
             }
             wid = "REPORT::research"
-        if name == "unavailable_parallel":
+        if name in {"unavailable_parallel", "late_history"}:
             installed = world.session("installer").call(
                 "install_project",
                 package=finance_package(
@@ -306,6 +324,7 @@ def run_case(name, output):
             assert installed["ok"], installed
             bindings = {"blocked_analyst": ("analyst", "A", ReconciliationPolicy()), **bindings}
         old = hashes(world)
+        created_hashes = dict(old)
         ports = {
             label: Port(world.session(actor, pid), captures, label)
             for label, (actor, pid, _) in bindings.items()
@@ -318,7 +337,15 @@ def run_case(name, output):
         idle = 0
         for _ in range(500):
             outcome = runtime.step()
-            transitions.append({"step": copy.deepcopy(outcome), "state": world.store.load()})
+            observed_state = world.store.load()
+            transitions.append({"step": copy.deepcopy(outcome), "state": observed_state})
+            for oid, artifact in observed_state["artifacts"].items():
+                for vid in artifact["versions"]:
+                    key = oid + "/" + vid
+                    if key not in created_hashes:
+                        created_hashes[key] = digest(
+                            world.store.version_path(artifact, vid).read_bytes()
+                        )
             idle = 0 if outcome.get("action_performed") else idle + 1
             if idle >= len(bindings) * 3:
                 break
@@ -354,7 +381,23 @@ def run_case(name, output):
         check(
             "immutable_old_bytes_retained", all(hashes(world).get(k) == v for k, v in old.items())
         )
+        check("all_created_version_bytes_remain_immutable", hashes(world), created_hashes)
         calls = [c for c in captures if c["kind"] == "call"]
+        history_matches = []
+        for call in calls:
+            if call["action"] != "read_object" or not call["result"]["ok"]:
+                continue
+            original = call["result"]["result"]
+            ref = original["reference"]
+            oid, vid = ref["artifact_id"], ref["version_id"]
+            actual = json.loads(world.store.version_path(state["artifacts"][oid], vid).read_text())
+            history_matches.append(
+                json.dumps(actual, sort_keys=True) == json.dumps(original["data"], sort_keys=True)
+            )
+        check(
+            "all_read_versions_preserve_original_public_content",
+            bool(history_matches) and all(history_matches),
+        )
         check(
             "actual_sources_read",
             all(
@@ -435,6 +478,58 @@ def run_case(name, output):
                 transitions[0]["step"].get("response"),
                 first_call["result"],
             )
+        elif name == "late_history":
+            late_calls = [
+                c
+                for c in calls
+                if c["action"] == "raise_issue"
+                and c["arguments"]["issue_key"].startswith("delayed-")
+            ]
+            views = derive_issue_view(state)
+            check(
+                "duplicate_delayed_opinion_has_one_historical_effect",
+                len(late_calls) == 2
+                and late_calls[0]["result"]["result"]["issue_id"]
+                == late_calls[1]["result"]["result"]["issue_id"]
+                and views[late_calls[0]["result"]["result"]["issue_id"]]["applicability"]
+                == "historical",
+            )
+            stable = []
+            for index, transition in enumerate(transitions):
+                decision = transition["step"].get("decision", {})
+                if decision.get("action") != "raise_issue" or not decision.get("arguments", {}).get(
+                    "issue_key", ""
+                ).startswith("delayed-"):
+                    continue
+                before, after = transitions[index - 1]["state"], transition["state"]
+                before_conditions = {
+                    k: c
+                    for k, c in before["condition_specs"].items()
+                    if c["work_item_id"] == "A::reconcile"
+                }
+                after_conditions = {
+                    k: c
+                    for k, c in after["condition_specs"].items()
+                    if c["work_item_id"] == "A::reconcile"
+                }
+                stable.append(
+                    before["work_items"]["A::reconcile"] == after["work_items"]["A::reconcile"]
+                    and before_conditions == after_conditions
+                    and bool(before_conditions)
+                )
+            check(
+                "late_opinion_preserves_unrelated_current_obligation",
+                len(stable) == 2 and all(stable),
+            )
+            old_body = next(
+                section["body"]
+                for section in merged(world, subs[0])["report"]["sections"]
+                if section["section_id"] == "revenue"
+            )
+            check(
+                "accepted_result_and_bad_old_delivery_both_preserved",
+                summary["accepted"] and len(subs) == 2 and ": 999;" in old_body,
+            )
         elif name == "private_visibility":
             author_obs = [
                 c["result"]
@@ -473,6 +568,7 @@ def run_case(name, output):
         "semantic_result": summary,
         "controlled_semantic_result": baseline,
         "immutable_initial_sha256": old,
+        "immutable_created_sha256": locals().get("created_hashes"),
     }
     write_json(output / "report.json", result)
     write_json(output / "final-state.json", world.store.load())

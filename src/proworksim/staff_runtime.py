@@ -12,7 +12,7 @@ from .experience import ExperienceRecorder
 from .storage import digest, json_bytes
 from .tool_outcomes import classify_tool_result, port_exception
 
-RUNTIME_VERSION = "staff-runtime-v0.10"
+RUNTIME_VERSION = "staff-runtime-v0.10.1"
 
 
 def _nonnegative(value, label):
@@ -71,6 +71,9 @@ class StaffRuntime:
 
     def _finish(self, label, status, reason, **details):
         self.roles[label].update(status=status, reason=reason)
+        if status == "binding_mismatch":
+            self.recorder.record("binding_error", {"status": status, "reason": reason,
+                                                   "policy_invoked": False}, worker_id=label)
         return {"worker_id": label, "status": status, "reason": reason,
                 "action_performed": False, **details}
 
@@ -103,8 +106,13 @@ class StaffRuntime:
             failure = port_exception(exc, operation="observation", context={"worker_id": label})
             self.recorder.record("interface_error", failure, worker_id=label)
             return self._finish(label, "environment_error", "Public interface raised", error=failure)
-        identity = {"world_id": observation.get("world_id"), "actor_id": observation.get("actor_id"),
+        identity = {"world_id": observation.get("world_id"),
+                    "instance_id": observation.get("instance_id"), "branch_id": observation.get("branch_id"),
+                    "actor_id": observation.get("actor_id"),
                     "project_ids": sorted(observation.get("projects", {}))}
+        if any(not isinstance(identity[key], str) or not identity[key]
+               for key in ("world_id", "instance_id", "branch_id", "actor_id")):
+            return self._finish(label, "binding_mismatch", "Public port lacks a complete world identity")
         if role["identity"] is not None and role["identity"] != identity:
             return self._finish(label, "binding_mismatch", "Public identity differs from saved role context")
         role["identity"] = identity

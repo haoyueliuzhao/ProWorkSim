@@ -189,3 +189,127 @@ def test_untriggered_event_cannot_be_silently_ignored(tmp_path):
     assert result["status"] == "worker_waiting"
     assert result["untriggered_events"] == ["future"]
     assert not result["controller"]["log"]
+
+
+def test_pending_boundary_stops_before_review_and_is_not_completed(tmp_path):
+    from proworksim.scenarios import run_scenario
+
+    declaration = spec("report-direct")
+    declaration["boundary"]["complete_when"] = {
+        "work": {"project": "REPORT", "node": "research", "phase": "pending"}
+    }
+    built = build_scenario(declaration, tmp_path / "world")
+    result = run_scenario(built)
+    assert result["status"] == "boundary_reached"
+    assert result["outcomes"][-1]["decision"]["action"] == "submit"
+    submission = built.world.state["work_items"]["REPORT::research"]["submissions"][-1]
+    assert submission["review"] is None
+
+
+def test_manifest_and_controller_checkpoint_bind_exact_spec_and_world(tmp_path):
+    from proworksim.scenarios import load_deployment
+
+    first = build_scenario(spec(), tmp_path / "first")
+    loaded = load_deployment(tmp_path / "first")
+    controller = ScenarioController(first)
+    assert ScenarioController(loaded, controller.snapshot()).snapshot() == controller.snapshot()
+    other = build_scenario(spec(), tmp_path / "other")
+    with pytest.raises(ValueError, match="same world"):
+        ScenarioController(other, controller.snapshot())
+    loaded.spec["boundary"]["max_opportunities"] -= 1
+    with pytest.raises(ValueError, match="same world"):
+        ScenarioController(loaded, controller.snapshot())
+
+
+@pytest.mark.parametrize("kind", ["event", "work", "source"])
+def test_missing_declared_inputs_are_unbuildable(tmp_path, kind):
+    from proworksim.scenarios import project_package
+
+    declaration = spec()
+    if kind == "event":
+        declaration["boundary"]["complete_when"] = {"event_fired": "absent"}
+    elif kind == "work":
+        declaration["boundary"]["complete_when"] = {
+            "work": {"project": "FINANCE", "node": "absent", "phase": "accepted"}
+        }
+    else:
+        package = project_package(declaration["projects"][0])
+        package["objects"] = [o for o in package["objects"] if o["alias"] != "statement"]
+        declaration["projects"] = [{"package": package}]
+    built = build_scenario(declaration, tmp_path / "world")
+    assert built.status == "unbuildable"
+    assert built.diagnostics
+    assert not built.role_bindings()
+
+
+def test_soft_cap_preserves_world_and_resume_uses_same_spec(tmp_path):
+    from proworksim.scenarios import bind_runtime, load_deployment, run_scenario
+
+    built = build_scenario(spec("report-direct"), tmp_path / "world")
+    result = run_scenario(built, max_opportunities=3)
+    assert result["status"] == "budget_exhausted"
+    assert result["opportunities"] == 3
+    loaded = load_deployment(tmp_path / "world")
+    runtime = bind_runtime(loaded, checkpoint=result["worker_checkpoint"])
+    controller = ScenarioController(loaded, result["controller"], recorder=runtime.recorder)
+    after = run_scenario(loaded, runtime, controller)
+    assert after["status"] == "completed"
+    assert (
+        after["experience"]["events"][: len(result["experience"]["events"])]
+        == result["experience"]["events"]
+    )
+
+
+def test_declared_episode_boundary_does_not_complete_unrelated_work(tmp_path):
+    from proworksim.scenarios import project_package, run_scenario
+
+    declaration = spec("report-direct")
+    unrelated = project_package(
+        {"recipe": "research_review", "parameters": {"project_id": "UNRELATED"}}
+    )
+    declaration["projects"].append({"package": unrelated})
+    declaration["boundary"]["complete_when"] = {
+        "work": {"project": "REPORT", "node": "research", "phase": "accepted"}
+    }
+    built = build_scenario(declaration, tmp_path / "world")
+    result = run_scenario(built)
+    assert result["status"] == "boundary_reached"
+    assert built.world.state["work_items"]["UNRELATED::research"]["submissions"] == []
+    assert (
+        built.world.state["work_items"]["REPORT::research"]["submissions"][-1]["review"]["decision"]
+        == "accepted"
+    )
+
+
+def test_prefix_rejection_is_preserved_and_not_hidden_by_later_work(tmp_path):
+    from proworksim.scenarios import load_deployment, run_scenario
+
+    declaration = spec("report-pending-start")
+    declaration["events"] = [
+        {
+            "event_id": "bad-external-write",
+            "when": {"clock_at_least": 0},
+            "fire_once": True,
+            "effects": [
+                {
+                    "actor": "author",
+                    "project": "REPORT",
+                    "tool": "write_object",
+                    "arguments": {"alias": "dataset", "data": {}},
+                }
+            ],
+        }
+    ]
+    built = build_scenario(declaration, tmp_path / "world")
+    result = run_scenario(built)
+    assert result["status"] == "unbuildable"
+    assert "rejected" in result["prefix"]["reason"]
+    assert result["prefix"]["opportunities"] == []
+    events = result["prefix"]["worker_checkpoint"]["experience"]["events"]
+    assert any(
+        e["kind"] == "controller_action"
+        and e["payload"].get("event_id") == "bad-external-write"
+        and e["payload"]["result"]["ok"] is False
+        for e in events
+    )
+    assert load_deployment(tmp_path / "world").status == "unbuildable"

@@ -15,7 +15,7 @@ from .experiments import run_matrix
 from .kernel import World
 from .learning import export_bundle
 from .runtime import DeepSeekBackend, load_env, run_model
-from .storage import Store, atomic_write, json_bytes, read_json
+from .storage import Store, atomic_write, json_bytes, read_json, digest
 from .validation import evaluate
 
 
@@ -127,6 +127,19 @@ def parser():
     continuous.add_argument(
         "--output", required=True, help="世界目录外的新 JSON 文件；父目录须已存在，保存 result 与 checkpoint"
     )
+    scenario = commands.add_parser("scenario-build", help="按声明部署已有模板、角色和外部事件")
+    scenario.add_argument("destination")
+    scenario.add_argument("--spec", required=True)
+    staff = commands.add_parser("staff-run", help="给独立角色行动机会并保存真实经历")
+    staff.add_argument("world")
+    staff.add_argument("--output", required=True, help="世界目录外的新运行文件，包含已完成动作边界checkpoint")
+    staff.add_argument("--checkpoint", help="上次staff-run输出；保持同世界、场景和策略身份")
+    staff.add_argument("--max-opportunities", type=int, help="本次主episode软上限，不超过场景声明；真实前缀使用独立预算")
+    assessment = commands.add_parser("episode-assess", help="只读分项评价，不将评分提供给工作人员")
+    assessment.add_argument("world")
+    assessment.add_argument("--experience", required=True, help="staff-run保存的完整运行文件")
+    assessment.add_argument("--spec", help="可选JSON：work_ids、independent_targets、process_requirements")
+    assessment.add_argument("--output", required=True, help="世界目录外的新评价文件")
     check = commands.add_parser("world-evaluate", help="独立检查固定提交的有限内容合同")
     check.add_argument("world")
     check.add_argument("--project", required=True)
@@ -277,7 +290,115 @@ def _continue_world(args):
             "output": str(output), "task_statuses": {key: task["status"] for key, task in result["tasks"].items()}}
 
 
+def _new_episode_output(world_root, filename):
+    root, requested = Path(world_root).resolve(), Path(filename)
+    output = requested.resolve()
+    if requested.is_symlink() or output.exists() or output == root or root in output.parents:
+        raise ValueError("Episode output needs a new file outside the world")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=output.parent, prefix=".episode-output-probe-"):
+        pass
+    return output
+
+
+def _episode_identity(world_root, state, manifest):
+    return {"world": str(Path(world_root).resolve()), "world_id": state["world_id"],
+            "instance_id": state["instance_id"], "branch_id": state["branch_id"],
+            "scenario_sha256": manifest["scenario_sha256"]}
+
+
+def _staff_run(args):
+    from .scenarios import load_deployment, bind_runtime, ScenarioController, run_scenario
+
+    root = Path(args.world).resolve()
+    output = _new_episode_output(root, args.output)
+    manifest = read_json(root / "control" / "scenario.json")
+    state = Store(root).load()
+    identity = _episode_identity(root, state, manifest)
+    maximum = manifest["spec"]["boundary"]["max_opportunities"]
+    if args.max_opportunities is not None and not 0 <= args.max_opportunities <= maximum:
+        raise ValueError("Soft opportunity limit must be between zero and the declared scenario limit")
+    marker_path = root / "control" / "last-staff-run.json"
+    saved = read_json(Path(args.checkpoint)) if args.checkpoint else None
+    if saved is not None:
+        if (saved.get("version") != "staff-run-v0.10"
+                or any(saved.get(key) != value for key, value in identity.items())):
+            raise ValueError("Staff checkpoint belongs to a different world instance or scenario")
+        if marker_path.exists() and read_json(marker_path)["checkpoint_sha256"] != digest(
+            json_bytes(saved["worker_checkpoint"])
+        ):
+            raise ValueError("Use the latest completed staff-run checkpoint for this world")
+    elif marker_path.exists():
+        raise ValueError("This scenario has run before; pass its latest --checkpoint to continue")
+    deployment = load_deployment(root)
+    if deployment.status != "ready":
+        payload = {"version": "staff-run-v0.10", **identity, "status": "unbuildable",
+                   "diagnostics": deployment.diagnostics}
+        atomic_write(output, json_bytes(payload))
+        return {"status": "unbuildable", "output": str(output), "diagnostics": deployment.diagnostics}
+    runtime = bind_runtime(deployment, checkpoint=saved["worker_checkpoint"] if saved else None)
+    controller = ScenarioController(
+        deployment, checkpoint=saved["controller_checkpoint"] if saved else None,
+        recorder=runtime.recorder,
+    )
+    if saved is None:
+        for record in deployment.deployment_log:
+            runtime.recorder.record("deployment_action", record)
+    result = run_scenario(deployment, runtime, controller, max_opportunities=args.max_opportunities)
+    summary = {key: value for key, value in result.items()
+               if key not in {"worker_checkpoint", "experience", "controller", "outcomes", "prefix"}}
+    prefix = {key: value for key, value in deployment.prefix.items()
+              if key not in {"worker_checkpoint", "opportunities"}}
+    payload = {"version": "staff-run-v0.10", **identity, "result": summary,
+               "prefix": prefix, "worker_checkpoint": runtime.snapshot(),
+               "controller_checkpoint": controller.snapshot(),
+               "scope": "Actual public experience is retained once in worker_checkpoint.experience; prefix full facts remain in scenario manifest. Completed-action continuation only."}
+    atomic_write(output, json_bytes(payload))
+    atomic_write(marker_path, json_bytes({**identity, "output": str(output),
+                                        "checkpoint_sha256": digest(json_bytes(payload["worker_checkpoint"]))}))
+    return {**summary, "run_id": runtime.run_id, "output": str(output),
+            "experience": runtime.recorder.summary(), "prefix": prefix}
+
+
+def _episode_assess(args):
+    from .evaluation import assess_episode
+
+    root = Path(args.world).resolve()
+    output = _new_episode_output(root, args.output)
+    saved = read_json(Path(args.experience))
+    store = Store(root)
+    state = store.load()
+    manifest = read_json(root / "control" / "scenario.json")
+    identity = _episode_identity(root, state, manifest)
+    if saved.get("version") != "staff-run-v0.10" or any(
+        saved.get(key) != value for key, value in identity.items()
+    ):
+        raise ValueError("Assessment experience belongs to another world or scenario")
+    spec = read_json(Path(args.spec)) if args.spec else {}
+    if not isinstance(spec, dict) or set(spec) - {"work_ids", "independent_targets", "process_requirements"}:
+        raise ValueError("Unsupported independent assessment specification")
+    result = assess_episode(store, state, saved["worker_checkpoint"]["experience"], **spec)
+    atomic_write(output, json_bytes({**identity, "assessment": result}))
+    return {"status": result["assessment_execution"]["status"], "output": str(output),
+            "note": "Institutional progress, content, independent targets, process and incompleteness are separate; no combined success score."}
+
+
 def execute(args):
+    if args.command == "scenario-build":
+        from .scenarios import build_scenario, save_deployment
+
+        if Path(args.destination).exists():
+            raise ValueError("Scenario construction requires a new destination")
+        deployment = build_scenario(read_json(Path(args.spec)), args.destination)
+        manifest = save_deployment(deployment) if deployment.world is not None else None
+        return {"status": deployment.status, "diagnostics": deployment.diagnostics,
+                "world": str(Path(args.destination).resolve()),
+                "manifest": str(manifest) if manifest is not None else None,
+                "start": deployment.prefix}
+    if args.command == "staff-run":
+        return _staff_run(args)
+    if args.command == "episode-assess":
+        return _episode_assess(args)
     if args.command == "world-continue":
         return _continue_world(args)
     if args.command in {
@@ -437,6 +558,10 @@ def main(argv=None):
             and not result.get("complete")
             and result.get("reason") != "blocked_unavailable"
         ):
+            return_code = 1
+        if args.command in {"scenario-build", "staff-run", "episode-assess"} and result.get("status") in {
+            "unbuildable", "controller_rejected", "environment_error", "policy_error", "evaluator_error"
+        }:
             return_code = 1
         if args.command == "act" and not result.get("ok"):
             return_code = 1
