@@ -1,0 +1,188 @@
+{
+  "archive": "Actual declaration/run/cut/resume/assessment CLI processes",
+  "raw_report": {
+    "path": "runs/platform-cli-v10-final/report.json",
+    "sha256": "6ceb7e90ffc7c578cd2ab3f78d6eb4831ce5a8f1706a9dba2290a21c7cb1d2cb",
+    "bytes": 6616
+  },
+  "report": {
+    "protocol": {
+      "suite": "platform-cli-v0.10",
+      "checks": [
+        "declaration_builds_real_world",
+        "explicit_opportunity_cut",
+        "checkpoint_continuation_completes",
+        "original_public_experience_preserved",
+        "assessment_executes_separate_from_workers",
+        "no_undeclared_overall_score",
+        "read_only_assessment_preserves_state_and_versions",
+        "controller_and_environment_are_recorded_separately"
+      ],
+      "scenario": "examples/scenarios-v10/chain-accepted.json",
+      "soft_cut": 8,
+      "scope": "Actual CLI processes deploy a declared two-template world, cut, resume and separately assess. No prepare/deliver/review calls occur in this driver; no independent target is silently invented."
+    },
+    "source_before": {
+      "code_commit": "55277d59ce0a17eff9555478f6b9fb43bd921394",
+      "code_dirty": false,
+      "source_tree_sha256": "7a8ac58e556bdc1ed1e3b4cc86e91b46f6ae336c0bbd91bf5901c42eacac7735"
+    },
+    "source_after": {
+      "code_commit": "55277d59ce0a17eff9555478f6b9fb43bd921394",
+      "code_dirty": false,
+      "source_tree_sha256": "7a8ac58e556bdc1ed1e3b4cc86e91b46f6ae336c0bbd91bf5901c42eacac7735"
+    },
+    "calls": [
+      {
+        "command": [
+          "/data1/zhuxinrui/projects/ProWorkSim/.venv/bin/python",
+          "-m",
+          "proworksim",
+          "scenario-build",
+          "runs/platform-cli-v10-final/world",
+          "--spec",
+          "examples/scenarios-v10/chain-accepted.json"
+        ],
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"ready\",\n  \"diagnostics\": [],\n  \"world\": \"/data1/zhuxinrui/projects/ProWorkSim/runs/platform-cli-v10-final/world\",\n  \"manifest\": \"/data1/zhuxinrui/projects/ProWorkSim/runs/platform-cli-v10-final/world/control/scenario.json\",\n  \"start\": {\n    \"prefix_executed\": false\n  }\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/data1/zhuxinrui/projects/ProWorkSim/.venv/bin/python",
+          "-m",
+          "proworksim",
+          "staff-run",
+          "runs/platform-cli-v10-final/world",
+          "--max-opportunities",
+          "8",
+          "--output",
+          "runs/platform-cli-v10-final/cut.json"
+        ],
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"budget_exhausted\",\n  \"actions\": 2,\n  \"opportunities\": 8,\n  \"untriggered_events\": [\n    \"correct-statement\"\n  ],\n  \"pending_environment_events\": 0,\n  \"declared_opportunity_limit\": 600,\n  \"invocation_opportunity_limit\": 8,\n  \"total_runtime_opportunities\": 8,\n  \"run_id\": \"11c1b9cccd884837877c5785d59ebdde\",\n  \"output\": \"/data1/zhuxinrui/projects/ProWorkSim/runs/platform-cli-v10-final/cut.json\",\n  \"experience\": {\n    \"version\": \"staff-experience-v0.10\",\n    \"count\": 35,\n    \"kinds\": {\n      \"controller_action\": 4,\n      \"deployment_action\": 4,\n      \"public_tools\": 8,\n      \"public_observation\": 8,\n      \"policy_decision\": 8,\n      \"tool_call\": 2,\n      \"scenario_boundary\": 1\n    },\n    \"sha256\": \"28386012ab89d9065b2166475815d5a822b046225d9299238b04865927a80114\"\n  },\n  \"prefix\": {\n    \"prefix_executed\": false\n  }\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/data1/zhuxinrui/projects/ProWorkSim/.venv/bin/python",
+          "-m",
+          "proworksim",
+          "staff-run",
+          "runs/platform-cli-v10-final/world",
+          "--checkpoint",
+          "runs/platform-cli-v10-final/cut.json",
+          "--output",
+          "runs/platform-cli-v10-final/continued.json"
+        ],
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"completed\",\n  \"actions\": 50,\n  \"opportunities\": 176,\n  \"untriggered_events\": [],\n  \"pending_environment_events\": 0,\n  \"declared_opportunity_limit\": 600,\n  \"invocation_opportunity_limit\": 600,\n  \"total_runtime_opportunities\": 184,\n  \"run_id\": \"11c1b9cccd884837877c5785d59ebdde\",\n  \"output\": \"/data1/zhuxinrui/projects/ProWorkSim/runs/platform-cli-v10-final/continued.json\",\n  \"experience\": {\n    \"version\": \"staff-experience-v0.10\",\n    \"count\": 618,\n    \"kinds\": {\n      \"controller_action\": 6,\n      \"deployment_action\": 4,\n      \"public_tools\": 184,\n      \"public_observation\": 184,\n      \"policy_decision\": 184,\n      \"tool_call\": 52,\n      \"scenario_boundary\": 2,\n      \"environment_event\": 2\n    },\n    \"sha256\": \"e5564f7adb1cfe9642cef055e6a1fd503b8b61c28e96c23b62d3ad0c50909d41\"\n  },\n  \"prefix\": {\n    \"prefix_executed\": false\n  }\n}\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "/data1/zhuxinrui/projects/ProWorkSim/.venv/bin/python",
+          "-m",
+          "proworksim",
+          "episode-assess",
+          "runs/platform-cli-v10-final/world",
+          "--experience",
+          "runs/platform-cli-v10-final/continued.json",
+          "--output",
+          "runs/platform-cli-v10-final/assessment.json"
+        ],
+        "exit_code": 0,
+        "stdout": "{\n  \"status\": \"complete\",\n  \"output\": \"/data1/zhuxinrui/projects/ProWorkSim/runs/platform-cli-v10-final/assessment.json\",\n  \"note\": \"Institutional progress, content, independent targets, process and incompleteness are separate; no combined success score.\"\n}\n",
+        "stderr": ""
+      }
+    ],
+    "checks": [
+      {
+        "name": "declaration_builds_real_world",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "explicit_opportunity_cut",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "checkpoint_continuation_completes",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "original_public_experience_preserved",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "assessment_executes_separate_from_workers",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "no_undeclared_overall_score",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "read_only_assessment_preserves_state_and_versions",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      },
+      {
+        "name": "controller_and_environment_are_recorded_separately",
+        "passed": true,
+        "expected": true,
+        "actual": true,
+        "not_executed": false
+      }
+    ],
+    "error": null,
+    "passed": true,
+    "passed_checks": 8,
+    "total_checks": 8,
+    "not_executed": 0
+  },
+  "artifacts": {
+    "protocol.json": {
+      "path": "runs/platform-cli-v10-final/protocol.json",
+      "sha256": "d5b35b2086bcca16133562ea60d03846ba6a7f457cdc1a1bdbc9d9a958fdfa76",
+      "bytes": 690
+    },
+    "cut.json": {
+      "path": "runs/platform-cli-v10-final/cut.json",
+      "sha256": "90d03e9a40037b4441fcb6f4f40fab0703cd2c96ab39fe9e3ea513068eb15f3c",
+      "bytes": 319141
+    },
+    "continued.json": {
+      "path": "runs/platform-cli-v10-final/continued.json",
+      "sha256": "c571269d08ea5cbf07cb4edf808c18cdfbe82baa7928189aa2a75065c48429da",
+      "bytes": 6969698
+    },
+    "assessment.json": {
+      "path": "runs/platform-cli-v10-final/assessment.json",
+      "sha256": "93e0cc1bc4ac30ac8416827cc15dacc48a70a2256823f848cfddfb27bea3680f",
+      "bytes": 161194
+    }
+  },
+  "omissions": [
+    "Large actual experiences and checkpoints remain in the referenced cut/continued artifacts; assessment was invoked only after the workers finished."
+  ]
+}

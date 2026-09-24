@@ -1,6 +1,6 @@
 # v0.10 统一运行、声明场景与分项评价
 
-依据：[审计](reference/platform-modules-audit.md)与[两阶段计划](platform-modules-v010-plan.md)。本版继续使用核对、报告两个模板，新增模块职责分离；实验结果另见最终报告。
+依据：[审计](reference/platform-modules-audit.md)与[两阶段计划](platform-modules-v010-plan.md)。本版继续使用核对、报告两个模板，新增模块职责分离；实验结果见[最终报告](experiments/platform-modules-v010.md)。
 
 软件版本0.10.0；工作人员checkpoint为`staff-runtime-v0.10.1`，经历为`staff-experience-v0.10`，场景和评价接口各自版本化。WorldCore核心状态仍为world-core-v0.9、work-world-v0.9：本轮没有为新模块增加一套核心业务事实或复制运行器。经营/出版旧单模板仍保留自身格式，不将它们的结果冒充新世界能力。
 
@@ -71,7 +71,7 @@ Scenario以有限JSON声明world、installer、projects、roles、setup、events
 
 初始材料与已发生经历分开。start为initial时仅按配置部署；executed_prefix起点必须通过真实runtime机会到达指定waiting/pending等状态，保存原始经历区间、摘要和checkpoint。前缀有独立声明预算；目标不达或外部动作被拒绝时保留unbuildable及已发生前缀，不伪造背景历史。
 
-显式complete_when在完整机会之间检查。声明的部分范围到达可返回boundary_reached，其他项目仍保留；completed另要求制度接受、应有发布已兑现且无待处理环境事件。accepted并不自动等于声明的public_delivery已完成。没有显式边界时，通过一轮所有角色都不行动的观察区分完成、世界阻塞或策略等待。
+显式complete_when在完整机会之间检查。声明的部分范围到达可返回boundary_reached，其他项目仍保留；completed另要求制度接受、应有发布已兑现、无待处理环境事件且没有遗漏的声明事件。accepted并不自动等于声明的public_delivery已完成。没有显式边界时，通过一轮所有角色都不行动的观察区分完成、世界阻塞或策略等待。
 
 单维结构对照只改变资料direct/route或更正阶段；文件名、显示名变化另作表面变化。不能把名称数量当作流程种类数量。
 
