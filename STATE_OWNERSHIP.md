@@ -102,3 +102,17 @@ E1 的缓存操作仅使用 `core.projections.projection_paths` 明确列出的�
 | 公共instance_id/branch_id | 既有世界身份的只读投影；不改变存储事实或授予权限 |
 
 Episode停止不删除world/project/work或其他项目。世界可以仍有未完成工作而本次声明的观察范围已到达boundary_reached。
+
+## v0.11 模型、历史边界和SQL执行
+
+| 记录 | 归属与修改边界 |
+| --- | --- |
+| 模型request/attempt/response/usage | 世界外O；实际HTTP与角色机会绑定，未知用量不补造，模型提议不算世界执行 |
+| adapter messages/context_selection | 世界外Q/O；保存完整真实对话，请求筛选单列索引及哈希，不事后改写经历 |
+| EpisodeManifest及start/end版本副本 | 世界外只读证据；固定职责/提交/经历区间，副本不成为新的世界权威，未来live状态不能回填 |
+| RewardSpec与奖励 | 世界外显式训练合同；不覆盖制度或内容评价，未知/实现故障保持无可训练奖励 |
+| SQL/config及实际输出 | 世界版本化B；通过公开写入/构建工具产生，不把临时数据库变成第二权威存储 |
+| version.execution_provenance | 实际SQL执行边界写入的版本元数据；普通write_object不能伪造此元数据，提交须对应实际代码及源版本 |
+| 临时.sql与DuckDB | 受限执行的派生文件；权威是已提交SQL、输入引用和逻辑结果，不承诺物理DB字节恢复 |
+
+模型权重、LoRA与训练概率在世界之外，商业API调用不是参数更新。原始token/mask来自实际生成，不能从最终文本补造。策略停机、episode结束、机构接受、独立质量和奖励资格分别记录。

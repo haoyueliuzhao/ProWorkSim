@@ -1,0 +1,112 @@
+{
+  "version": "scenario-v0.10",
+  "scenario_id": "model-report-deepseek",
+  "world": {
+    "world_id": "declared-work-chain",
+    "actors": {
+      "operator": {
+        "display_name": "operator"
+      },
+      "analyst": {
+        "display_name": "analyst"
+      },
+      "author": {
+        "display_name": "author"
+      },
+      "reviewer": {
+        "display_name": "reviewer"
+      }
+    },
+    "applications": [
+      "files"
+    ],
+    "publication_policy": "explicit",
+    "bootstrap_grants": [
+      {
+        "actor_id": "operator",
+        "scope": "world",
+        "power": "install_project"
+      }
+    ]
+  },
+  "installer": "operator",
+  "projects": [
+    {
+      "recipe": "research_review",
+      "parameters": {
+        "project_id": "REPORT"
+      }
+    }
+  ],
+  "roles": [
+    {
+      "role_id": "author",
+      "actor": "author",
+      "project": "REPORT",
+      "policy": "model",
+      "config": {
+        "backend_id": "deepseek-official",
+        "model": "deepseek-flash",
+        "base_url": "https://api.deepseek.com",
+        "api_key_env": "DEEPSEEK_API_KEY",
+        "task": "Fulfill the publicly visible responsibilities of your bound role.",
+        "model_revision": {
+          "provider_alias": "DeepSeek-V4.1-Flash",
+          "immutable_weights_verified": false,
+          "verified_at": "2026-09-24",
+          "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+        },
+        "weight_identity": null,
+        "thinking": false,
+        "reasoning_effort": null,
+        "temperature": 0.3,
+        "max_output_tokens": 8192,
+        "timeout_seconds": 120,
+        "max_context_tokens": null,
+        "retry": {
+          "max_attempts": 2,
+          "retry_statuses": [
+            408,
+            429,
+            500,
+            502,
+            503,
+            504
+          ],
+          "backoff_seconds": [
+            1
+          ]
+        },
+        "budget": {
+          "max_decisions": 120,
+          "max_http_attempts": 150,
+          "max_total_tokens": 500000,
+          "max_cost_usd": 1.0,
+          "max_context_bytes": 320000
+        },
+        "pricing": {
+          "input_miss_per_million": 0.3,
+          "input_hit_per_million": 0.006,
+          "output_per_million": 1.2
+        },
+        "action_protocol": "single_decision_json",
+        "context_policy": "latest_observation"
+      }
+    },
+    {
+      "role_id": "report_reviewer",
+      "actor": "reviewer",
+      "project": "REPORT",
+      "policy": "reviewer",
+      "config": {}
+    }
+  ],
+  "setup": [],
+  "events": [],
+  "start": {
+    "kind": "initial"
+  },
+  "boundary": {
+    "max_opportunities": 600
+  }
+}

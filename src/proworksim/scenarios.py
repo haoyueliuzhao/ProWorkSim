@@ -511,6 +511,8 @@ def _validate_bound_predicate(deployment, predicate, event_ids):
         item = state["work_items"].get(node)
         if item is None or item["project_id"] != value["project"] or item["node_id"] != node:
             raise ValueError("Predicate requires an installed work node: " + node)
+        if value["phase"] == "published" and item.get("requirements", {}).get("public_delivery", {}).get("publish") is not True:
+            raise ValueError("Published phase requires an explicit public_delivery.publish obligation")
         if (
             value.get("source_alias")
             and value["source_alias"] not in state["workspaces"][value["project"]]
@@ -678,7 +680,11 @@ class ScenarioController:
         if wid not in state["work_items"]:
             return False
         if value["phase"] == "published":
-            return work_stage(state, wid, None) == "accepted" and _publication_complete(self.world, [wid])
+            declared = state["work_items"][wid].get("requirements", {}).get("public_delivery", {})
+            submissions = state["work_items"][wid].get("submissions", [])
+            return (declared.get("publish") is True and work_stage(state, wid, None) == "accepted"
+                    and bool(submissions and submissions[-1]["artifact_versions"])
+                    and _publication_complete(self.world, [wid]))
         if value["phase"] == "blocked":
             return derive_current_work_view(state)[wid]["status"] == "blocked"
         source = state["workspaces"].get(value["project"], {}).get(value.get("source_alias"))

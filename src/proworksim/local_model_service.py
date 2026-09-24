@@ -187,6 +187,7 @@ class LocalInference:
             config = (work["maximum"], float(work["request"].get("temperature", 0.3)))
             groups.setdefault(config, []).append(work)
         for (maximum, temperature), group in groups.items():
+            group_id = uuid.uuid4().hex
             inputs = self.tokenizer([w["rendered"] for w in group], padding=True,
                                     add_special_tokens=False, return_tensors="pt").to("cuda")
             width = inputs.input_ids.shape[1]
@@ -225,6 +226,7 @@ class LocalInference:
                                     "source": "actual generation token IDs and sampling logits, not retokenized text"},
                     "effective_generation": {key: value for key, value in options.items() if key != "logits_processor"},
                     "service_record": {"batch_index": self.batch_index, "batch_size": len(group),
+                                       "batch_group_id": group_id, "batch_row_index": index, "prefix_width": width,
                                        "batch_seconds": elapsed, "queue_and_generation_seconds": time.time() - work["started"]},
                 }
                 atomic_write(self.output / (call_id + ".json"), json_bytes({

@@ -208,3 +208,142 @@ def test_logprob_tolerance_preserves_all_raw_values_and_signed_errors():
     assert not compare_logprobs([-0.7, -0.2], behavior, 0.2, 0.03)["passed"]
     with pytest.raises(ValueError):
         compare_logprobs([float("nan")], [-0.1], 0.2, 0.03)
+
+
+def batch_evidence(tmp_path):
+    import json
+    from scripts.first_decision_rl_v011 import original_batch_groups
+
+    rows = []
+    for index in range(3):
+        manifest, history, reward = evidence(0)
+        body = history["events"][2]["payload"]["response"]
+        body["id"] = "original-local-" + str(index)
+        body["service_record"] = {
+            "batch_index": 2 if index == 0 else 3,
+            "batch_size": 1 if index == 0 else 2,
+        }
+        body["effective_generation"]["pad_token_id"] = 0
+        row = extract(manifest, history, reward)
+        row["episode_name"] = "finance-direct-qwen-" + str(index + 1)
+        rows.append(row)
+        (tmp_path / (body["id"] + ".json")).write_text(
+            json.dumps({"request": {"model": body["model"]}, "response": body})
+        )
+    return rows, original_batch_groups
+
+
+def test_replay_batch_membership_uses_complete_original_ledger_without_inventing_row_index(
+    tmp_path,
+):
+    rows, group = batch_evidence(tmp_path)
+    batches = group(rows, tmp_path)
+    assert [item["indices"] for item in batches] == [[0], [1, 2]]
+    assert [item["batch_size"] for item in batches] == [1, 2]
+    assert batches[1]["original_recorded_row_indices"] == [None, None]
+    assert "not backfilled" in batches[1]["replay_row_order"]
+    assert all(item["original_service_files"] for item in batches)
+
+
+def test_replay_rejects_silently_dropping_original_batch_peer(tmp_path):
+    rows, group = batch_evidence(tmp_path)
+    with pytest.raises(ValueError, match="peers"):
+        group(rows[:2], tmp_path)
+
+
+def test_replay_rejects_changed_original_service_response(tmp_path):
+    import json
+
+    rows, group = batch_evidence(tmp_path)
+    file = tmp_path / "original-local-1.json"
+    record = json.loads(file.read_text())
+    record["response"]["token_trace"]["behavior_logprobs"][0] = -2
+    file.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="ledger"):
+        group(rows, tmp_path)
+
+
+def test_replay_rejects_undeclared_extra_peer(tmp_path):
+    import json
+
+    rows, group = batch_evidence(tmp_path)
+    extra = copy.deepcopy(rows[1]["first_response"])
+    extra["id"] = "extra-peer"
+    (tmp_path / "extra-peer.json").write_text(json.dumps({"response": extra}))
+    with pytest.raises(ValueError, match="peers"):
+        group(rows, tmp_path)
+
+
+def test_cached_replay_keeps_prefix_gradients_and_complete_output_targets():
+    from types import SimpleNamespace
+    from scripts.first_decision_rl_v011 import cached_batch_logprobs
+
+    torch = pytest.importorskip("torch")
+    torch.manual_seed(11)
+
+    class TinyCausal(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.embedding = torch.nn.Embedding(9, 4, dtype=torch.float64)
+            self.projection = torch.nn.Linear(4, 9, bias=False, dtype=torch.float64)
+
+        def prepare_inputs_for_generation(self, ids, **kwargs):
+            return {
+                "input_ids": ids if kwargs["past_key_values"] is None else ids[:, -1:],
+                **kwargs,
+            }
+
+        def forward(self, input_ids, attention_mask, past_key_values, **kwargs):
+            mask = attention_mask[:, -input_ids.shape[1] :, None]
+            additions = (self.embedding(input_ids) * mask).sum(dim=1)
+            hidden = additions if past_key_values is None else past_key_values + additions
+            return SimpleNamespace(logits=self.projection(hidden)[:, None], past_key_values=hidden)
+
+        def _update_model_kwargs_for_generation(self, output, kwargs, **unused):
+            return {
+                **kwargs,
+                "past_key_values": output.past_key_values,
+                "attention_mask": torch.cat(
+                    (kwargs["attention_mask"], torch.ones_like(kwargs["attention_mask"][:, :1])),
+                    dim=1,
+                ),
+                "cache_position": kwargs["cache_position"][-1:] + 1,
+            }
+
+    rows = [
+        {
+            "input_tokens": 2,
+            "output_tokens": 3,
+            "token_trace": {"input_ids": [1, 2], "output_ids": [3, 4, 5]},
+            "first_response": {"effective_generation": {"pad_token_id": 0}},
+        },
+        {
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "token_trace": {"input_ids": [6], "output_ids": [7, 8]},
+            "first_response": {"effective_generation": {"pad_token_id": 0}},
+        },
+    ]
+    net = TinyCausal().eval()
+    cached = cached_batch_logprobs(net, rows, torch=torch, device="cpu")
+    prefix = []
+    for row in rows:
+        values = []
+        for index, chosen in enumerate(row["token_trace"]["output_ids"]):
+            ids = torch.tensor(
+                [row["token_trace"]["input_ids"] + row["token_trace"]["output_ids"][:index]]
+            )
+            actual = net(ids, torch.ones_like(ids), None).logits[0, -1].float() / 0.3
+            values.append(torch.log_softmax(actual, dim=-1)[chosen])
+        prefix.append(torch.stack(values))
+    for index, row in enumerate(rows):
+        torch.testing.assert_close(
+            cached[index, : row["output_tokens"]], prefix[index], rtol=1e-12, atol=1e-12
+        )
+    loss = 0.5 * sum(cached[i, : row["output_tokens"]].sum() for i, row in enumerate(rows)) / 2
+    loss.backward()
+    cached_grad = net.embedding.weight.grad.clone()
+    assert cached_grad[1].abs().sum() > 0 and cached_grad[6].abs().sum() > 0
+    net.zero_grad(set_to_none=True)
+    (0.5 * sum(value.sum() for value in prefix) / 2).backward()
+    torch.testing.assert_close(cached_grad, net.embedding.weight.grad, rtol=1e-12, atol=1e-12)

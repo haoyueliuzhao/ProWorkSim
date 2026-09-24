@@ -1,6 +1,6 @@
 # v0.11 首决策策略梯度实验合同
 
-本文先描述待执行合同；脚本及离线数据测试通过不代表发生训练。实际执行后须以独立运行报告补充结果，不能预写参数变化或学习收益。
+本文区分最初 v0.11 对照与 v0.11.1 缓存重放修订。原训练尝试在行为概率门槛处停止，optimizer_steps=0，原报告保留；后续修订是否实际训练，以新的独立运行报告为准，不能预写参数变化或学习收益。
 
 ## 固定研究范围
 
@@ -18,7 +18,7 @@
 - 轨迹策略来自 `ModelPolicy` 的 `local-qwen-http`，模型为 Qwen2.5-7B-Instruct，修订为 `a09a35458c702b33eeacc393d103063234e8bc28`，温度 0.3，单 JSON 决策协议。DeepSeek Teacher 经历不作为这个实验的 on-policy 输入。
 - 原始首决策的 call ID、完成响应、实际 HTTP attempt、角色和 episode 区间一一对应。只收纳一次成功 attempt；首决策发生服务重试或响应不可读时单列排除，不能从几个响应中挑一个。
 - `input_ids`、`output_ids`、`input_mask`、`output_mask`、`behavior_logprobs` 来自本地推理时实际 token 与采样 logits。不得从最终文本重新分词、补写行为概率或猜测缺失 mask。
-- 输入 mask 全为 0，输出 mask 全为 1；实际 usage 与 ID 数量一致。保留整个输出序列，包括实际 EOS；不裁剪、不只选正确片段、不把输入作为预测目标。
+- 输入损失 mask 全为 0，输出损失 mask 全为 1（不同于注意力 mask：真实 token 为 1、左 padding 为 0）；实际 usage 与 ID 数量一致。保留整个输出序列，包括实际 EOS；不裁剪、不只选正确片段、不把输入作为预测目标。
 - 行为分布为真实温度 0.3、top-p 1、top-k 0、repetition penalty 1。服务通过独立 logits processor 应用温度，因此其生成配置中的 temperature 为 1；训练复算使用真实 logits / 0.3。
 - 三项可用输入必须来自同一未变化策略，源代码起止一致且干净；要求完整权重文件摘要与传入的只读 base 目录吻合，拒绝含已有 adapter 的目录。
 
@@ -52,26 +52,39 @@ L(\theta) = \frac{1}{N}\sum_{i\in\text{eligible}}
 
 ## 模型与数值检查
 
-LoRA 只更新 q_proj/v_proj，r=8、alpha=16、dropout=0、bias=none。采用 AdamW，学习率 1e-6、weight_decay=0、betas=(0.9,0.999)、eps=1e-8，一步，梯度范数裁剪到 1。输入来自真实 token ID，不再加载 tokenizer 重建轨迹。模型使用 BF16/SDPA；`model.eval()` 关闭 dropout，训练计算显式开启梯度。采用非重入整次前向的激活重计算，不改变可见输入或输出目标。只计算最后输出相关的 logits，原始完整上下文仍进入模型。
+LoRA 只更新 q_proj/v_proj，r=8、alpha=16、dropout=0、bias=none。采用 AdamW，学习率 1e-6、weight_decay=0、betas=(0.9,0.999)、eps=1e-8，一步，梯度范数裁剪到 1。输入来自真实 token ID，不再加载 tokenizer 重建轨迹。模型使用 BF16/SDPA；`model.eval()` 关闭 dropout，训练计算显式开启梯度。v0.11.1 默认 `cached_replay`：由原服务记录核对完整 batch 归属，每一步以 `prepare_inputs_for_generation`、`forward(use_cache=True, logits_to_keep=1)` 和 HF generation 的 kwargs 更新规则计算原 token 的概率；再追加已经记录的 token，不抽样。attention mask 随原生成规则追加 1，位置来自 mask 的累计和，已结束的同 batch 行继续使用原 pad。过去 KV 始终保留在计算图，不 detach、不只训练末尾 token。
 
-在任何 optimizer.step 之前，使用同 base 加初始零效果 LoRA 复算每个实际输出 token 的行为概率，分别保存原值、复算值、逐 token 有符号误差、最大/平均绝对误差及整个序列差异。默认预声明容差为最大绝对误差 0.2 nat、平均绝对误差 0.03 nat；这是接受 BF16 缓存／批 padding 数值差异的实验阈值，不是 bitwise 相等主张。任一准入记录不满足阈值，则整个训练在更新前停止，保留失败比较，不挑掉这条记录后继续。
+三条实际记录组成原来的 1+2 两组。脚本核对 `runs/qwen-service-v11/{completion_id}.json` 的完整 response，扫描相同 batch 的全部原文件；缺少 peer、额外 peer 或内容不一致均拒绝，不能把 batch 静默缩小。原服务没有记录行号，重放采用预先声明的 episode 顺序并明确标记，没有根据文件时间补造原入队顺序。原逐 token 概率门槛为这种排布提供实测支持。
+
+正式反向采用 `torch.autograd.graph.save_on_cpu(pin_memory=True)` 将 autograd 需要保存的中间张量放到 CPU，保留完整 KV 的反向链。它改变存储位置，不改变损失、梯度目标或上下文。每组内分别计算每个 episode 的完整输出 logp 总和，统一除以准入 episode 总数，不能把 1+2 两组误当成两个等权样本。
+
+在任何 optimizer.step 之前，使用同 base 加初始零效果 LoRA 复算每个实际输出 token 的行为概率，分别保存原值、复算值、逐 token 有符号误差、最大/平均绝对误差及整个序列差异。默认预声明容差为最大绝对误差 0.2 nat、平均绝对误差 0.03 nat；这是接受 BF16 缓存／批 padding 数值差异的实验阈值，不是 bitwise 相等主张。任一准入记录不满足阈值，则整个训练在更新前停止，保留失败比较，不挑掉这条记录后继续。除 no-grad 前置核对外，实际 grad-enabled 前向也逐 token 复核同一门槛；其报告独立保存在 `gradient-probability-check.json`。
 
 保存实际完整裁剪前/后 LoRA 梯度、更新前 adapter、更新后 checkpoint、参数摘要及改变的元素数。重新加载 base+adapter，验证 adapter 参数摘要完全相等；另以同样显式数值阈值比较更新后/重载后的函数输出。保存与重载成功只证明这个训练机制实际运行及参数持久化，不能替代独立工作结果的收益测试。
 
 PEFT 的目标模块和 adapter 配置接口见[官方 LoRA 说明](https://huggingface.co/docs/peft/en/package_reference/lora)；`eval()` 与梯度开关独立，见[PyTorch autograd 说明](https://docs.pytorch.org/docs/stable/notes/autograd)。具体库版本以实际运行报告为准。
+
+## 已保留的数值反例与修订依据
+
+原 `teacher_forcing` 单条全序列复算对第一条通过；第二、第三条最大绝对差分别为 0.3891、0.5204 nat，超过预声明 0.2，而不是把失败改成“已完成训练”。整个尝试在 optimizer.step 前停止。阈值及三个零奖励 episode 均保持不变。
+
+独立只读 GPU 诊断比较了单条全序列、保留原两行左 padding 与显式 position IDs 的成对全序列、原 batch/cache 强制 token 重放。成对全序列仍有第三条最大差约 0.4411；原 batch 的增量缓存重放则三条逐 token 与原记录相等。另以可微 helper 的 base/no-grad，以及初始零效果 LoRA 的 grad-enabled 前向检查，均得到相同结果；没有新采样、反传或优化步骤。
+
+这支持修订复算路径，不能解释为扩大容差或换数据。旧模式仍可通过 `--replay-mode teacher_forcing` 明确运行；它是保留的数值对照，不会被默认悄悄选用。上述小范围结果不宣称所有模型、硬件、batch 或精度路径都逐 bit 相等。
 
 ## 执行与产物
 
 这份脚本须在正式模型批、奖励攻击验收完成并另行冻结后，由主运行者执行；不与本项目自己的推理服务同时占用双份模型内存。共享 GPU 的其他任务允许继续，运行前后记录实际 GPU、进程、显存和利用率，不中止其他项目。
 
 ```bash
-CUDA_VISIBLE_DEVICES=7 .train-venv/bin/python scripts/first_decision_rl_v011.py \
+CUDA_VISIBLE_DEVICES=7 PYTHONPATH=src .train-venv/bin/python scripts/first_decision_rl_v011.py \
   --episode runs/model-api-v11-development/finance-direct-qwen-1/episode \
             runs/model-api-v11-development/finance-direct-qwen-2/episode \
             runs/model-api-v11-development/finance-direct-qwen-3/episode \
   --model /data1/zhuxinrui/models/Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28 \
-  --output runs/first-decision-rl-v011 \
-  --max-length 8192 --logprob-max-atol 0.2 --logprob-mean-atol 0.03
+  --output runs/first-decision-rl-v011-cached-new \
+  --max-length 8192 --logprob-max-atol 0.2 --logprob-mean-atol 0.03 \
+  --replay-mode cached_replay --service-records runs/qwen-service-v11
 ```
 
-`--prepare-only` 仅验收输入、奖励及权重，不运行梯度更新。任何模式都要求新的独立输出目录，不能放在源模型或 episode 档案内部。`targets.json` 保留每项选择、奖励、完整 token/标签/mask 和排除原因；`behavior-probability-check.json` 保存真实行为概率核对；`actual-gradients.safetensors` 保存实际梯度；`adapter/` 是独立 adapter；`reload-probability-check.json` 和 `report.json` 给出重载和执行事实。原 base 文件保持只读。
+`--prepare-only` 仅验收输入、奖励及权重，不运行梯度更新。任何模式都要求新的独立输出目录，不能放在源模型或 episode 档案内部。`targets.json` 保留每项选择、奖励、完整 token/标签/mask 和排除原因；`behavior-probability-check.json` 保存真实行为概率核对；`gradient-probability-check.json` 另核对实际可微前向；`actual-gradients.safetensors` 保存实际梯度；`adapter/` 是独立 adapter；`reload-probability-check.json` 和 `report.json` 给出重载和执行事实。原 base 文件保持只读。

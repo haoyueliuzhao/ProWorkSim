@@ -46,3 +46,19 @@ def test_unknown_prefix_role_is_unbuildable_without_silently_changing_schedule()
                      'when': {'work': {'project': 'P0', 'node': 'build', 'phase': 'published'}}}
     with pytest.raises(ValueError, match='role'):
         validate_scenario(spec)
+
+
+def test_accepted_without_publication_is_never_a_published_prefix(tmp_path):
+    from pathlib import Path
+    from proworksim.scenarios import build_scenario, run_scenario, ScenarioController
+
+    spec = json.loads((Path(__file__).resolve().parents[1] / 'examples/scenarios-v10/report-direct.json').read_text())
+    built = build_scenario(spec, tmp_path / 'accepted')
+    assert run_scenario(built)['status'] == 'completed'
+    assert not built.world.state['releases']
+    predicate = {'work': {'project': 'REPORT', 'node': 'research', 'phase': 'published'}}
+    assert ScenarioController(built).matches(predicate) is False
+    spec['start'] = {'kind': 'executed_prefix', 'when': predicate, 'max_opportunities': 20}
+    rejected = build_scenario(spec, tmp_path / 'unbuildable')
+    assert rejected.status == 'unbuildable'
+    assert 'public_delivery.publish' in ' '.join(rejected.diagnostics)

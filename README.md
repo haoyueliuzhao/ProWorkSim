@@ -1,82 +1,78 @@
 # ProWorkSim
 
-**面向智能体学习的专业工作世界模拟与任务流合成。** v0.10 将现有财务资料核对与有限报告审阅接入统一工作人员运行、声明场景、实际经历与分项评价接口。“核对—发布—报告—审阅”链可以从同一规格构建并持续运行。
+**面向智能体学习的专业工作世界模拟与任务流合成。** v0.11 接通真实 API 工作人员、固定历史 episode、显式奖励，以及可实际编辑和执行 SQL 的四项目工作链。
 
-世界核心负责权限、版本、工作义务与问题处理关系；工作人员策略决定业务动作；场景控制器执行预声明的外部事件。机构接受、内容正确、来源忠实性、独立目标和未评项分别记录。
+WorldCore管理权限、版本、采用、工作义务和问题处理；工作人员决定业务动作；场景控制器执行预声明事件。机构接受、内容正确、未知、服务故障和训练奖励分别记录。
 
-## 安装与运行
+## 安装与真实模型运行
 
-需要 Python 3.11+，使用新世界目录及新输出文件：
+需要 Python 3.11+；DeepSeek密钥放在`.env`的`DEEPSEEK_API_KEY`，密钥不进入检查点或提交。
 
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
 
-.venv/bin/proworksim scenario-build runs/platform-demo --spec examples/scenarios-v10/chain-accepted.json
-.venv/bin/proworksim staff-run runs/platform-demo --output runs/platform-demo-run.json
-.venv/bin/proworksim episode-assess runs/platform-demo --experience runs/platform-demo-run.json --output runs/platform-demo-assessment.json
+.venv/bin/proworksim scenario-build runs/model-report-demo --spec examples/model-v11/report-deepseek.json
+.venv/bin/proworksim staff-run runs/model-report-demo --output runs/model-report-demo.json
+.venv/bin/proworksim episode-assess runs/model-report-demo --experience runs/model-report-demo.json --output runs/model-report-grade.json
 ```
 
-[八份场景规格](examples/scenarios-v10/README.md)包括独立核对、独立报告、三种更正时点的跨模板链、真实待审起点和显示名表面变体。场景只使用现有两个模板。缺资料、无效引用或不可达起点会返回明确诊断，实际已发生的构造与前缀保留。
+使用新世界目录及世界目录外的新输出文件。模型通过真实公开工具读写、采用、提交和回应，不由规则策略补答案。模板的有限输出语法与字段约束公开给角色。调用、失败、重试、usage和真实动作分开保存；单动作JSON不合规会保留并停止，不猜测修正。
 
-运行输出包含实际经历及检查点。若要在完整行动之后截断、继续，可在首次staff-run指定`--max-opportunities 8`，再次运行时传`--checkpoint 上次输出文件`并指定新的`--output`。继续要求同实例、同分支、同规格及最新完整检查点；预算截断记录保留。输出文件放在世界目录外。
+[模型配置与本地服务](examples/model-v11/README.md)提供两个单角色API示例及冻结实验协议。每角色有决策、attempt、token、请求大小和金额上限，可能在名义120次决策之前停止。latest_observation仅从实际HTTP请求筛除旧观察，完整经历不删改，选择过程可核对。
 
-默认评价没有独立业务目标或过程要求时，相应项目为unassessed。可用`episode-assess --spec 文件.json`显式提供work_ids、independent_targets、process_requirements；接口不生成总体成功布尔值。
+## 可执行公开项目群
 
-## 本版模块
-
-- **StaffRuntime**：每个角色保留独立公开上下文、记忆和上次实际返回；透明轮转行动机会，每次最多调用一个工具。核对、写作、审阅与局部修复均由可替换策略决定。
-- **Scenario**：声明项目、角色、共享、资料到达时点、实际执行前缀和运行边界；部署和事件通过真实工具执行。控制器不根据独立评分临时补料或改正文。
-- **ExperienceRecorder**：保存实际观察、决定、动作和返回；背景部署、真实前缀、控制器干预与环境事件分别记录。
-- **只读评价**：区分pass、structure_failure、content_failure、source_unavailable、unassessed、evaluator_error；episode另列制度进度、内容、独立目标、过程约束、不完备与运行问题。
-
-声明范围到达可返回boundary_reached，其他项目保持开放；completed还要求制度接受、公开交付中的发布义务兑现且没有待处理环境事件。工作结束、机构批准和内容正确有不同判据。
-
-[实现设计](docs/platform-modules-v010.md)、[两阶段计划](docs/platform-modules-v010-plan.md)、[核心语义](CORE_SEMANTICS.md)、[行动合同](ACTION_CONTRACTS.md)与[状态归属](STATE_OWNERSHIP.md)说明具体接口。既有模板业务与共同问题关系见[v0.9设计](docs/template-expansion-v09.md)及[旧公开端口示例](examples/templates-v09/README.md)。
-
-## 正式实验
-
-最终实现冻结`55277d59ce0a17eff9555478f6b9fb43bd921394`，**573项测试通过，Ruff通过**。阶段A冻结`0b53a24`的R0 98/98、R1 40/40及550项测试也独立保留。两阶段分母不相加，后续新增检查不倒填旧结果。
-
-| 组别 | 最终结果 |
-| --- | --- |
-| R0 评价边界 | 14条件，98/98；真实合法提交的结构错、业务错、来源缺口及评价器故障分开 |
-| R1/R2 工作人员协作 | 8案例，93/93；正确首交、逐项修复、反驳、等待、非法操作、私有性与晚到历史 |
-| R3 声明场景 | 8场景，85/85；相同起点重复性、单维结构变化、真实前缀及表面变体 |
-| R4 分项评价 | 4条件，69/69；上游错而下游忠实、metadata对而正文错、合理未知、评价器故障 |
-| 实际CLI链 | 8/8；声明部署、截断、续行、保留经历与只读评价 |
-
-通过表示符合预声明后果，也包括应拒绝、应未评或应内容失败的情况。R4四组均到达声明范围边界，无关项目仍开放。详细[实验报告](docs/experiments/platform-modules-v010.md)保留源码身份、原始反例、开发失败、测量修订与证据引用。
+将上例spec替换为`examples/model-v11/sql-deepseek.json`，可让DeepSeek承担P1 SQL指标工作，其余角色固定。纯规则可行链使用：
 
 ```bash
-.venv/bin/python scripts/evaluation_boundary_experiment.py --output runs/r0-new
-.venv/bin/python scripts/staff_runtime_experiment.py --output runs/r12-new
-.venv/bin/python scripts/scenario_experiment.py --output runs/r3-new
-.venv/bin/python scripts/episode_assessment_experiment.py --output runs/r4-new
-.venv/bin/python scripts/platform_cli_experiment.py --output runs/cli-new
+.venv/bin/proworksim scenario-build runs/sql-rule-demo --spec examples/public-projects-v11/dynamic.json
+.venv/bin/proworksim staff-run runs/sql-rule-demo --output runs/sql-rule-demo.json
+```
+
+P0准备数据，P1经营指标与P2客户分析协调客户／月份粒度，P3汇合核验。SQL、配置、构建结果及执行错误形成真实世界版本；SQL查询使用当前工作采用的确切共享版本。复制结果或篡改项目自测不能替代独立业务评价。
+
+来源为固定版本的官方`jaffle_shop_duckdb`虚构数据；新增组织流程属于研究设计。当前使用受限DuckDB执行，不宣称完整dbt、生产CI或任意终端沙箱。[公开项目说明](examples/public-projects-v11/README.md)列出来源、权限、SQL范围与资源限制。
+
+## 历史评价、继续与奖励
+
+每次staff-run保存可读的起止快照、原经历区间、责任工作、确切提交/产物和终止原因。`episode-assess`只评价该段结束时刻；`world-assess`另查当前进度。后来完成的工作不能回填旧episode。
+
+`staff-run --max-opportunities N`可在完整行动后截断；随后用`--checkpoint 上次输出`及新output继续，生成另一个有父子关系的episode。声明的真实准备前缀单列，不伪造历史。模型done、等待、场景边界、机构接受和内容通过是不同事实。
+
+RewardSpec可通过`episode-assess --reward-spec 文件.json`显式启用。原分项评价保留；真实可评失败为0，未知依据、评价故障或服务重试耗尽等导致不可评的故障没有可训练奖励，不能混作0。重复批准、发布或消息数量没有正奖励。
+
+## 实验结果与边界
+
+本轮已完成36个真实单模型开发episode，另单列原协议pilot、双模型协作、公开项目和接口校准；失败全部保留。
+
+- **36个目标奖励均为0。**DeepSeek的2次制度completed仍未通过独立质量合同；其余为预算／格式失败。Qwen18次均在当前单JSON协议下格式失败。
+- 公开项目模型试跑已实际改SQL、运行构建和查询，并根据SQL错误再次修改；完整交付及后继工作仍有失败，不能称可靠完成。
+- 规则机制：条件范围7/7、历史边界14/14、四项目SQL58/58、奖励反例21/21。
+- 第一冻结完整测试643项通过；第二冻结675项通过，Ruff通过。后续窄补修与数值诊断分别记录，不倒填旧结果。
+- 首决策训练首次因行为概率复算超出固定容差而在更新前停止；训练是否实际发生及后续诊断详见报告，不将参数变化或loss当作学习收益。
+
+[详细实验报告](docs/experiments/model-executable-v011.md)区分规则结果、真实模型、接口修订及训练证据；[实施计划](docs/model-executable-v011-plan.md)、[模块设计](docs/model-executable-v011.md)、[模型协议](docs/model-policy-v011.md)和[首决策训练范围](docs/first-decision-rl-v011.md)给出具体合同。
+
+```bash
+.venv/bin/python scripts/condition_scope_experiment_v011.py --output runs/conditions-new
+.venv/bin/python scripts/episode_boundary_experiment_v011.py --output runs/boundary-new
+.venv/bin/python scripts/executable_project_experiment.py --output runs/sql-new --workers 3
+.venv/bin/python scripts/reward_contract_experiment_v011.py --output runs/reward-new --executable-episode runs/sql-new/tests_tampered/episode
 .venv/bin/python -m pytest -q
 .venv/bin/python -m ruff check src tests scripts
 ```
 
-Git保存协议和紧凑证据，完整世界、逐次轨迹和检查点保留在服务器runs目录。本轮未使用模型API/GPU或训练；规则策略结果不代表模型能力。后续固定模型角色实验应另行冻结预算，真实保留失败。
+Git保存协议与紧凑证据，完整世界、HTTP原始调用和检查点保留在服务器runs。当前仍是有限模板、一个公开虚构项目家族、单写者及完整行动边界；144次主批、完整多轮Agentic RL及三组学习收益对照尚未执行。
 
-## 范围与历史
+## 历史与语义
 
-核对模板保留冲突、不可比、缺失和歧义；报告评价针对公开有限句式中的数字、期间、趋势及引用，开放论证与专业充分性未评。可信Python策略接口不是恶意代码沙箱。当前单写者、完整行动返回后的继续，不证明任意并发、断电或策略崩溃恢复。
+核心世界格式沿用world-core-v0.9，模块分别版本化；旧世界不静默迁移。原经营单模板仍保留自身0.5格式入口。以新版实现为准，旧冻结结果仅作各自范围的历史证据。
 
-软件版本0.10.0，核心世界格式仍为world-core-v0.9；不静默迁移旧v0.6–v0.8世界。最终工作人员检查点为staff-runtime-v0.10.1，以实例和分支身份阻止同名世界间误用记忆，不兼容阶段A旧检查点。
-
-原经营单模板入口保留自身0.5格式：
-
-```bash
-.venv/bin/proworksim build runs/operating-demo --seed 17 --delivery continuous --information clarification
-.venv/bin/proworksim run runs/operating-demo --provider baseline --inject-stale-memo
-.venv/bin/proworksim evaluate runs/operating-demo
-```
-
-- [本轮依据审计](docs/reference/platform-modules-audit.md)
+- [核心语义](CORE_SEMANTICS.md)、[行动合同](ACTION_CONTRACTS.md)、[状态归属](STATE_OWNERSHIP.md)
+- [本轮依据审计](docs/reference/model-executable-audit.md)
+- [v0.10模块实验](docs/experiments/platform-modules-v010.md)
 - [v0.9双模板实验](docs/experiments/template-expansion-v09.md)
-- [v0.8持续工作](docs/continuous-work-v08.md)及[实验报告](docs/experiments/continuous-work-v08.md)
-- [v0.7工作能力](docs/work-capabilities-v07.md)及[历史报告](docs/experiments/work-capabilities-v07.md)
+- [v0.8持续工作](docs/continuous-work-v08.md)、[v0.7工作能力](docs/work-capabilities-v07.md)
 - [v0.6多项目世界](docs/world-core-v06.md)、[v0.5状态一致性](docs/state-consistency-v05.md)
-- [v0.4内核迁移](docs/semantics-kernel-v04.md)、[原始设计](docs/reference/design-v0.1.md)
+- [原始设计](docs/reference/design-v0.1.md)

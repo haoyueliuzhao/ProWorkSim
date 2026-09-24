@@ -96,3 +96,14 @@
 工作人员运行器的step是一次调度机会，不是新业务动作；实际业务仍由可信绑定ProjectSession调用现有工具。策略decide只能选择自己的动作/等待；运行器不替它修复、批准或发布。参数形状错误/真实工具拒绝/环境异常的记录不混为一个失败原因。
 
 场景构建与事件控制器执行预声明的真实工具，记录触发与结果，不按独立评分改规则。只读evaluation不产生业务行动；structure_failure/content_failure/source_unavailable/unassessed/evaluator_error分别说明评价边界。旧无content_checks而仅有required_fields的合同只能验证字段结构，不能宣称内容已获独立通过。
+
+## v0.11 有限SQL工作能力
+
+| 行动 | 执行依据与效果 |
+| --- | --- |
+| SqlBuild | sql应用、execute_sql范围权、本人当前work、声明code/result别名；读取代码和本work精确adoption输入，隔离执行有限SQL，保存实际错误/表/测试与执行元数据为新版本 |
+| SqlQuery | 同类权限与声明query输出；有本work adoption时读取确切绑定版，未采用仅可查询本项目合法对象，不取未共享最新草稿或借其他work绑定 |
+| WriteObject dependencies | 文件依赖须显式指向实际来源版本；adopt和JSON sources都不会代替文件依赖事实，机构接受不保证来源合同通过 |
+| 历史episode评价 | 仅读取封闭快照及确切提交/经历；不产生世界行动、不调用恢复、不改旧奖励依据 |
+
+SQL工具的`ok=true`表示工具完成并记录执行结果，不保证SQL执行成功或业务正确；execution_status、自测结果与独立评价分别读取。模型服务错误不算世界工具执行，格式失败不会被运行器补成动作。公开工具合同不包含正确SQL或具体修复方案。

@@ -23,7 +23,7 @@ from proworksim.episode import assess_historical_episode
 from proworksim.rewards import episode_reward
 from proworksim.storage import atomic_write, json_bytes, read_json
 
-VERSION = "first-decision-reinforce-v0.11"
+VERSION = "first-decision-reinforce-v0.11.1"
 REVISION = "a09a35458c702b33eeacc393d103063234e8bc28"
 EPISODE_NAMES = ["finance-direct-qwen-1", "finance-direct-qwen-2", "finance-direct-qwen-3"]
 ROLE, NODE = "analyst", "FINANCE::reconcile"
@@ -396,6 +396,148 @@ def verify_weights(model_path, row):
     }
 
 
+def replay_tensors(rows, *, torch, device, pad_token_id):
+    width = max(row["input_tokens"] for row in rows)
+    ids = [
+        [pad_token_id] * (width - row["input_tokens"]) + row["token_trace"]["input_ids"]
+        for row in rows
+    ]
+    masks = [[0] * (width - row["input_tokens"]) + [1] * row["input_tokens"] for row in rows]
+    return torch.tensor(ids, dtype=torch.long, device=device), torch.tensor(
+        masks, dtype=torch.long, device=device
+    )
+
+
+def cached_batch_logprobs(network, rows, *, torch, device, temperature=0.3):
+    """Full recorded output log probabilities with differentiable past KV states.
+
+    Uses installed HF preparation/update helpers to preserve cache positions and
+    the same attention-mask cumsum position IDs as generation. Every past remains
+    on its computation graph; finished peer rows stay in the batch with real pad.
+    """
+    pad = rows[0]["first_response"]["effective_generation"]["pad_token_id"]
+    ids, mask = replay_tensors(rows, torch=torch, device=device, pad_token_id=pad)
+    width = ids.shape[1]
+    kwargs = {
+        "attention_mask": mask,
+        "use_cache": True,
+        "logits_to_keep": 1,
+        "cache_position": torch.arange(width, device=device),
+        "past_key_values": None,
+    }
+    values = []
+    maximum = max(row["output_tokens"] for row in rows)
+    for index in range(maximum):
+        inputs = network.prepare_inputs_for_generation(ids, **kwargs)
+        outputs = network(**inputs, return_dict=True)
+        chosen = torch.tensor(
+            [
+                row["token_trace"]["output_ids"][index] if index < row["output_tokens"] else pad
+                for row in rows
+            ],
+            dtype=torch.long,
+            device=device,
+        )
+        logits = outputs.logits[:, -1, :].float() / temperature
+        values.append(torch.log_softmax(logits, dim=-1).gather(1, chosen[:, None]).squeeze(1))
+        kwargs = network._update_model_kwargs_for_generation(
+            outputs, kwargs, is_encoder_decoder=False
+        )
+        ids = torch.cat((ids, chosen[:, None]), dim=1)
+    return torch.stack(values, dim=1)
+
+
+def original_batch_groups(rows, service_root):
+    """Verify complete historical batch membership against original service files.
+
+    Original v0.11 records did not include row indices. Replays use predeclared
+    episode order and verify token likelihoods; no historical row order is invented.
+    """
+    root = Path(service_root).resolve()
+
+    def key(response):
+        meta = response.get("service_record", {})
+        if (
+            type(meta.get("batch_index")) is not int
+            or type(meta.get("batch_size")) is not int
+            or meta["batch_size"] < 1
+        ):
+            raise ValueError("Original service batch identity is unavailable")
+        value = {
+            "model": response.get("model"),
+            "fingerprint": response.get("system_fingerprint"),
+            "batch_index": meta["batch_index"],
+            "batch_size": meta["batch_size"],
+            "generation": response.get("effective_generation"),
+            "temperature": response.get("token_trace", {}).get("sampling_temperature"),
+            "recorded_group_id": meta.get("group_id"),
+        }
+        return hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+
+    selected = {}
+    for index, row in enumerate(rows):
+        response = row["first_response"]
+        identity = response.get("id")
+        if not isinstance(identity, str) or not identity or Path(identity).name != identity:
+            raise ValueError("Original service completion identity is not a safe local record name")
+        path = root / (identity + ".json")
+        original = read_json(path)
+        if json_bytes(original.get("response")) != json_bytes(response):
+            raise ValueError("Saved episode response differs from its original service ledger")
+        identity_key = key(response)
+        selected.setdefault(identity_key, []).append((index, row, path))
+    peers = {identity: [] for identity in selected}
+    for path in sorted(root.glob("*.json")):
+        value = read_json(path)
+        response = value.get("response")
+        if (
+            not isinstance(response, dict)
+            or not response.get("token_trace")
+            or not response.get("service_record")
+        ):
+            continue
+        identity_key = key(response)
+        if identity_key in peers:
+            peers[identity_key].append((response["id"], path))
+    groups = []
+    for identity_key, members in selected.items():
+        first = members[0][1]["first_response"]
+        expected_size = first["service_record"]["batch_size"]
+        selected_ids = [member[1]["first_response"]["id"] for member in members]
+        peer_ids = [identity for identity, _ in peers[identity_key]]
+        if (
+            len(peer_ids) != expected_size
+            or len(set(peer_ids)) != expected_size
+            or set(peer_ids) != set(selected_ids)
+        ):
+            raise ValueError(
+                "Original batch peers are not all covered by the admitted preselected episodes; do not silently shrink or replace it"
+            )
+        groups.append(
+            {
+                "derived_group_key": identity_key,
+                "service_root": str(root),
+                "batch_index": first["service_record"]["batch_index"],
+                "batch_size": expected_size,
+                "indices": [member[0] for member in members],
+                "episode_names": [member[1]["episode_name"] for member in members],
+                "actual_completion_ids": selected_ids,
+                "original_service_files": [file_reference(member[2]) for member in members],
+                "original_recorded_row_indices": [
+                    member[1]["first_response"]["service_record"].get("batch_row_index")
+                    for member in members
+                ],
+                "replay_row_order": "Predeclared selected episode order; original missing row indices are not backfilled",
+                "prefix_width": max(member[1]["input_tokens"] for member in members),
+                "pad_token_id": first["effective_generation"]["pad_token_id"],
+                "original_effective_generation": copy.deepcopy(first["effective_generation"]),
+            }
+        )
+    return groups
+
+
 def protocol(args):
     return {
         "version": VERSION,
@@ -430,7 +572,10 @@ def protocol(args):
             "mean_absolute_nats": args.logprob_mean_atol,
             "applied_before_any_update": True,
         },
-        "execution": "model.eval with gradients enabled; full causal context, only output targets; whole-forward nonreentrant activation recomputation; no inference generation",
+        "execution": "model.eval with gradients enabled; complete original batch/cache trajectory; past KV remains differentiable; saved autograd tensors offloaded with save_on_cpu(pin_memory=True); no new sampling",
+        "replay_mode": args.replay_mode,
+        "service_records": str(args.service_records),
+        "teacher_forcing_control": "Explicit legacy mode retained; it failed the original likelihood gate on two recorded batched episodes; no tolerance or data change",
         "not_claimed": [
             "Full multi-turn Agentic RL",
             "Three-arm training comparison",
@@ -450,6 +595,10 @@ def main():
     parser.add_argument("--logprob-max-atol", type=float, default=0.2)
     parser.add_argument("--logprob-mean-atol", type=float, default=0.03)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument(
+        "--replay-mode", choices=("cached_replay", "teacher_forcing"), default="cached_replay"
+    )
+    parser.add_argument("--service-records", type=Path, default=Path("runs/qwen-service-v11"))
     args = parser.parse_args()
     if args.output.exists() or args.output.is_symlink():
         parser.error("Output requires a new independent destination")
@@ -494,6 +643,13 @@ def main():
             report["status"] = "no_eligible_episodes"
             save("admission")
             return 1
+        original_groups = original_batch_groups(admitted, args.service_records)
+        report["original_replay_groups"] = original_groups
+        groups = (
+            original_groups
+            if args.replay_mode == "cached_replay"
+            else [{"indices": [index], "mode": "teacher_forcing"} for index in range(len(admitted))]
+        )
         report["base_identity"] = verify_weights(model_path, admitted[0])
         save("validated_inputs")
         if args.prepare_only:
@@ -505,7 +661,6 @@ def main():
         import peft
         from peft import LoraConfig, PeftModel, get_peft_model, get_peft_model_state_dict
         from safetensors.torch import save_file
-        from torch.utils.checkpoint import checkpoint
         from transformers import AutoModelForCausalLM
 
         if not torch.cuda.is_available():
@@ -588,23 +743,41 @@ def main():
                 raise ValueError("Output logit selection did not preserve every target")
             return torch.log_softmax(logits, dim=-1).gather(1, targets[:, None]).squeeze(1)
 
+        def grouped_logprobs(network, group_rows):
+            if args.replay_mode == "cached_replay":
+                return cached_batch_logprobs(
+                    network, group_rows, torch=torch, device="cuda", temperature=TEMPERATURE
+                )
+            if len(group_rows) != 1:
+                raise ValueError("Legacy teacher-forcing control expects one episode per forward")
+            return selected_logprobs(network, group_rows[0])[None, :]
+
         before = adapter_state(model)
         save_file(before, output / "adapter-before.safetensors")
         report["before_adapter_sha256"] = tensor_digest(before)
         comparisons = []
-        for row in admitted:
+        for group in groups:
+            group_rows = [admitted[index] for index in group["indices"]]
             with torch.no_grad():
-                actual = selected_logprobs(model, row).cpu().tolist()
-            comparison = {
-                "episode_name": row["episode_name"],
-                **compare_logprobs(
-                    actual,
-                    row["token_trace"]["behavior_logprobs"],
-                    args.logprob_max_atol,
-                    args.logprob_mean_atol,
-                ),
-            }
-            comparisons.append(comparison)
+                values = grouped_logprobs(model, group_rows)
+                actual = [
+                    values[index, : row["output_tokens"]].cpu().tolist()
+                    for index, row in enumerate(group_rows)
+                ]
+            for row, observed in zip(group_rows, actual):
+                comparison = {
+                    "episode_name": row["episode_name"],
+                    "replay_mode": args.replay_mode,
+                    "batch_size": len(group_rows),
+                    **compare_logprobs(
+                        observed,
+                        row["token_trace"]["behavior_logprobs"],
+                        args.logprob_max_atol,
+                        args.logprob_mean_atol,
+                    ),
+                }
+                comparisons.append(comparison)
+            del values
         atomic_write(output / "behavior-probability-check.json", json_bytes(comparisons))
         if not all(row["passed"] for row in comparisons):
             report["status"] = "behavior_probability_mismatch"
@@ -631,33 +804,59 @@ def main():
             weight_decay=0,
         )
         optimizer.zero_grad(set_to_none=True)
-        losses = []
+        losses, gradient_probability_checks = [], []
+        report["backward_groups_completed"] = 0
         with torch.enable_grad():
-            for row in admitted:
-                # Nonreentrant activation recomputation works while module.eval
-                # remains set; no hidden dropout or mean-token normalization.
-                dummy = torch.zeros((), device="cuda", requires_grad=True)
-                logp = checkpoint(
-                    lambda marker, selected=row, network=model: (
-                        selected_logprobs(network, selected) + marker * 0
-                    ),
-                    dummy,
-                    use_reentrant=False,
-                )
-                loss = -row["advantage"] * logp.sum() / len(admitted)
-                if not torch.isfinite(loss):
-                    raise ValueError("Nonfinite actual REINFORCE loss")
-                loss.backward()
-                losses.append(
-                    {
-                        "episode_name": row["episode_name"],
-                        "reward": row["reward"],
-                        "advantage": row["advantage"],
-                        "output_tokens": len(logp),
-                        "logprob_sum": float(logp.detach().sum()),
-                        "loss_contribution": float(loss.detach()),
-                    }
-                )
+            for group in groups:
+                group_rows = [admitted[index] for index in group["indices"]]
+                with torch.autograd.graph.save_on_cpu(pin_memory=True):
+                    logp = grouped_logprobs(model, group_rows)
+                    terms = []
+                    for index, row in enumerate(group_rows):
+                        selected = logp[index, : row["output_tokens"]]
+                        measured = compare_logprobs(
+                            selected.detach().cpu().tolist(),
+                            row["token_trace"]["behavior_logprobs"],
+                            args.logprob_max_atol,
+                            args.logprob_mean_atol,
+                        )
+                        gradient_probability_checks.append(
+                            {
+                                "episode_name": row["episode_name"],
+                                "grad_enabled": selected.requires_grad,
+                                "batch_size": len(group_rows),
+                                **measured,
+                            }
+                        )
+                        if not selected.requires_grad or not measured["passed"]:
+                            atomic_write(
+                                output / "gradient-probability-check.json",
+                                json_bytes(gradient_probability_checks),
+                            )
+                            report["status"] = "gradient_probability_mismatch"
+                            save("gradient_probability_check_failed_no_update")
+                            return 1
+                        term = -row["advantage"] * selected.sum() / len(admitted)
+                        terms.append(term)
+                        losses.append(
+                            {
+                                "episode_name": row["episode_name"],
+                                "reward": row["reward"],
+                                "advantage": row["advantage"],
+                                "output_tokens": len(selected),
+                                "logprob_sum": float(selected.detach().sum()),
+                                "loss_contribution": float(term.detach()),
+                            }
+                        )
+                    loss = torch.stack(terms).sum()
+                    if not torch.isfinite(loss):
+                        raise ValueError("Nonfinite actual REINFORCE loss")
+                    loss.backward()
+                    report["backward_groups_completed"] += 1
+                del logp, loss, selected, term, terms
+        atomic_write(
+            output / "gradient-probability-check.json", json_bytes(gradient_probability_checks)
+        )
         gradients = {
             "pre_clip." + name: value.grad.detach().cpu().contiguous().clone()
             for name, value in parameters
@@ -698,9 +897,14 @@ def main():
         checkpoint_path = output / "adapter"
         model.save_pretrained(checkpoint_path, safe_serialization=True, save_embedding_layers=False)
         with torch.no_grad():
-            updated_probabilities = selected_logprobs(model, admitted[0]).cpu().tolist()
+            probe_rows = [admitted[index] for index in groups[0]["indices"]]
+            updated_probabilities = (
+                grouped_logprobs(model, probe_rows)[0, : probe_rows[0]["output_tokens"]]
+                .cpu()
+                .tolist()
+            )
         save("adapter_saved")
-        del optimizer, model, base, parameters, logp, loss, dummy, norm
+        del optimizer, model, base, parameters, norm
         gc.collect()
         torch.cuda.empty_cache()
         base = load_base()
@@ -709,7 +913,11 @@ def main():
         restored_state = adapter_state(restored)
         report["reloaded_adapter_sha256"] = tensor_digest(restored_state)
         with torch.no_grad():
-            restored_probabilities = selected_logprobs(restored, admitted[0]).cpu().tolist()
+            restored_probabilities = (
+                grouped_logprobs(restored, probe_rows)[0, : probe_rows[0]["output_tokens"]]
+                .cpu()
+                .tolist()
+            )
         functional = compare_logprobs(
             restored_probabilities,
             updated_probabilities,
