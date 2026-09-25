@@ -130,7 +130,7 @@ def validate_scenario(spec):
         if "package" in project:
             _mapping(project["package"], "project package")
         else:
-            if project["recipe"] not in {"reconciliation", "research_review", "linked_report"}:
+            if project["recipe"] not in {"reconciliation", "research_review", "linked_report", "decision_team"}:
                 raise ValueError("Unsupported template recipe")
             _mapping(project.get("parameters", {}), "recipe parameters")
     role_ids = set()
@@ -224,6 +224,10 @@ def project_package(declaration):
     if "package" in declaration:
         return copy.deepcopy(declaration["package"])
     recipe, params = declaration["recipe"], copy.deepcopy(declaration.get("parameters", {}))
+    if recipe == "decision_team":
+        from .templates.decision_team import package
+
+        return package(**params)
     if recipe == "reconciliation":
         continuous = params.pop("continuous", False)
         output_alias = params.pop("output_alias", "comparison")
@@ -918,7 +922,7 @@ def run_scenario(deployment, runtime=None, controller=None, max_opportunities=No
         if reached:
             status = reached
             break
-        if result["action_performed"]:
+        if result["action_performed"] or result["status"] == "model_format_feedback":
             idle.clear()
         else:
             idle.add(result["worker_id"])

@@ -17,7 +17,7 @@ from .model_transport import HTTPModelTransport, TransportFailure
 from .staff_runtime import PolicyBoundaryError
 from .storage import atomic_write, digest, json_bytes
 
-ADAPTER_VERSION = "model-policy-v0.11.2"
+ADAPTER_VERSION = "model-policy-v0.12"
 CONTROL_TOOLS = (
     {
         "name": "staff_wait",
@@ -90,6 +90,8 @@ def normalize_config(config):
         "backend_id": "deepseek",
         "action_protocol": "native_tools",
         "context_policy": "full_history",
+        "format_error_policy": "stop",
+        "format_limits": {"max_total": 4, "max_consecutive": 2},
         "model": "deepseek-flash",
         "base_url": "https://api.deepseek.com",
         "api_key_env": "DEEPSEEK_API_KEY",
@@ -125,7 +127,7 @@ def normalize_config(config):
             "Unknown model configuration keys: " + str(sorted(set(config) - set(defaults)))
         )
     result = {**copy.deepcopy(defaults), **copy.deepcopy(config)}
-    for name in ("retry", "budget", "pricing"):
+    for name in ("retry", "budget", "pricing", "format_limits"):
         if not isinstance(result[name], dict) or set(result[name]) - set(defaults[name]):
             raise ValueError("Invalid model " + name + " configuration")
         result[name] = {**defaults[name], **result[name]}
@@ -139,6 +141,10 @@ def normalize_config(config):
         raise ValueError("Unknown explicitly selected model action protocol")
     if result["context_policy"] not in {"full_history", "latest_observation"}:
         raise ValueError("Unknown explicitly selected model context policy")
+    if result["format_error_policy"] not in {"stop", "format_feedback_continue"}:
+        raise ValueError("Unknown explicitly selected model format-error policy")
+    for name, value in result["format_limits"].items():
+        _integer(value, "format_limits." + name)
     if result["thinking"] is not None and type(result["thinking"]) is not bool:
         raise ValueError("thinking must be boolean or None (parameter omitted)")
     if result["reasoning_effort"] not in {None, "low", "high", "max"}:
@@ -225,6 +231,100 @@ class ModelPolicy:
             details=details,
         )
 
+    def _format_failure(self, memory, reason, association, **details):
+        """One consumed model decision, never an in-call repair or a world tool."""
+        counts = memory.setdefault("format_errors", {"total": 0, "consecutive": 0})
+        counts["total"] += 1
+        counts["consecutive"] += 1
+        limits = self.config["format_limits"]
+        reached = [
+            name for name in ("total", "consecutive") if counts[name] >= limits["max_" + name]
+        ]
+        continues = self.config["format_error_policy"] == "format_feedback_continue" and not reached
+        self._emit(
+            "model_call",
+            {
+                **association,
+                "stage": "finished",
+                "status": "model_format_error",
+                "error": reason,
+                "meter": memory["meter"],
+                "format_errors": counts,
+                "continues_on_later_opportunity": continues,
+                **details,
+            },
+        )
+        if self.config["format_error_policy"] == "stop":
+            self._fail(
+                memory,
+                "model_format_error",
+                reason,
+                model_call_id=association["call_id"],
+                **details,
+            )
+        # Keep the exact rejected assistant in archival memory. Native call objects
+        # cannot remain dangling in a later API transcript; quote them as data in
+        # the HTTP projection, with explicit original/wire provenance.
+        index = len(memory["messages"]) - 1
+        message = memory["messages"][index]
+        if message.get("tool_calls") not in (None, []) or not isinstance(
+            message.get("content"), (str, type(None))
+        ):
+            memory.setdefault("rejected_assistant_messages", []).append(
+                {"index": index, "sha256": digest(json_bytes(message))}
+            )
+        feedback = {
+            "version": "public-format-feedback-v0.12",
+            "model_call_id": association["call_id"],
+            "status": "decision_rejected",
+            "reason": reason,
+            "action_protocol": self.config["action_protocol"],
+            "world_action_executed": False,
+            "decision_consumed": True,
+            "format_errors": copy.deepcopy(counts),
+            "format_limits": copy.deepcopy(limits),
+            "continues_on_later_opportunity": continues,
+            "contract": (
+                'Return exactly one JSON object: {"kind":"act","action":"PUBLIC_TOOL_NAME","arguments":{}} '
+                'or {"kind":"wait","reason":"..."} or {"kind":"done","reason":"..."}. '
+                "Replace PUBLIC_TOOL_NAME and arguments using the current public tool definition. "
+                "No extra fields, arrays, Markdown, native calls or multiple decisions."
+                if self.config["action_protocol"] == "single_decision_json"
+                else "Return exactly one native function call using the current public tool definition. "
+                "Multiple calls are all rejected. Use staff_wait or staff_done with a reason for control."
+            ),
+            **details,
+        }
+        memory["messages"].append(
+            {
+                "role": "user",
+                "content": json.dumps({"public_format_feedback": feedback}, ensure_ascii=False),
+            }
+        )
+        self._emit("model_format_feedback", {**association, "feedback": feedback})
+        if reached:
+            self._fail(
+                memory,
+                "model_format_error",
+                "Frozen format-error limit reached",
+                model_call_id=association["call_id"],
+                format_errors=counts,
+                format_limits=limits,
+                reached_limits=reached,
+                original_error=reason,
+            )
+        return {
+            "kind": "protocol_rejection",
+            "reason": reason,
+            "memory": memory,
+            "model_call_id": association["call_id"],
+            "decision_id": association["decision_id"],
+        }
+
+    @staticmethod
+    def _valid_format(memory):
+        memory.setdefault("format_errors", {"total": 0, "consecutive": 0})["consecutive"] = 0
+
     def _select_messages(self, memory):
         """Select HTTP inputs by append-time provenance, never by content guesses.
 
@@ -259,9 +359,37 @@ class ModelPolicy:
             set(indices[:-1]) if self.config["context_policy"] == "latest_observation" else set()
         )
         selected_indices = [index for index in range(len(messages)) if index not in removed]
-        selected = [copy.deepcopy(messages[index]) for index in selected_indices]
+        rejected = {}
+        for entry in memory.get("rejected_assistant_messages", []):
+            if (
+                not isinstance(entry, dict)
+                or set(entry) != {"index", "sha256"}
+                or type(entry["index"]) is not int
+                or not 0 <= entry["index"] < len(messages)
+                or entry["index"] in rejected
+            ):
+                raise ValueError("Invalid rejected assistant provenance")
+            index = entry["index"]
+            if (
+                messages[index].get("role") != "assistant"
+                or digest(json_bytes(messages[index])) != entry["sha256"]
+            ):
+                raise ValueError("Rejected assistant differs from its actual archived message")
+            rejected[index] = entry
+        projected = {
+            index: {
+                "role": "assistant",
+                "content": json.dumps(
+                    {"rejected_assistant_response": messages[index]}, ensure_ascii=False
+                ),
+            }
+            for index in rejected
+        }
+        selected = [
+            copy.deepcopy(projected.get(index, messages[index])) for index in selected_indices
+        ]
         audit = {
-            "version": "context-selection-v0.11.2",
+            "version": "context-selection-v0.12",
             "policy": self.config["context_policy"],
             "original_message_count": len(messages),
             "original_messages_sha256": digest(json_bytes(messages)),
@@ -276,6 +404,10 @@ class ModelPolicy:
                     "role": message.get("role"),
                     "sha256": digest(json_bytes(message)),
                     "selected": index not in removed,
+                    "wire_sha256": digest(json_bytes(projected.get(index, message))),
+                    "projection": "rejected_assistant_as_data"
+                    if index in projected
+                    else "unchanged",
                     "reason": "earlier_registered_public_observation"
                     if index in removed
                     else "full_history_policy"
@@ -286,7 +418,7 @@ class ModelPolicy:
                 }
                 for index, message in enumerate(messages)
             ],
-            "scope": "Only earlier explicitly registered public observation messages may be omitted from this HTTP request; full actual dialogue remains in memory",
+            "scope": "Earlier registered observations may be omitted; rejected native assistant calls may be explicitly quoted as data, never fake tool results. Original messages remain unchanged in memory.",
         }
         return selected, audit
 
@@ -442,6 +574,8 @@ class ModelPolicy:
                     }
                 ],
                 "observation_messages": [],
+                "format_errors": {"total": 0, "consecutive": 0},
+                "rejected_assistant_messages": [],
                 "meter": {
                     "decisions": 0,
                     "http_attempts": 0,
@@ -454,6 +588,15 @@ class ModelPolicy:
                     "unknown_usage_attempts": 0,
                 },
             }
+            if self.config["format_error_policy"] == "format_feedback_continue":
+                memory["messages"][0]["content"] += (
+                    "\nThis frozen protocol counts a malformed response as one consumed decision. "
+                    "It executes no world action and returns public format feedback for a later role opportunity. "
+                    "The whole rejected response is retained; no automatic correction or same-call resampling occurs. "
+                    "Format limits (reaching either stops this worker): "
+                    + json.dumps(self.config["format_limits"], sort_keys=True)
+                    + ".\n"
+                )
         pending = memory.pop("pending_tool", None)
         if pending:
             if (
@@ -731,8 +874,14 @@ class ModelPolicy:
                 model_call_id=call_id,
             )
         memory["messages"].append(copy.deepcopy(message))
+        if choices[0].get("finish_reason") == "length":
+            return self._format_failure(
+                memory,
+                "Completion reached the fixed output limit; no proposed action executed",
+                association,
+                finish_reason="length",
+            )
         if choices[0].get("finish_reason") in {
-            "length",
             "content_filter",
             "insufficient_system_resource",
         }:
@@ -794,6 +943,7 @@ class ModelPolicy:
                     )
                 else:
                     action = {"action": function["name"], "arguments": arguments}
+                    self._valid_format(memory)
                     memory["pending_tool"] = {
                         "call_id": call_id,
                         "tool_call_id": call["id"],
@@ -830,17 +980,8 @@ class ModelPolicy:
                     raise ValueError("A no-tool completion must declare wait/done and a reason")
                 kind, reason = control["kind"], control["reason"]
         except (ValueError, TypeError, KeyError) as error:
-            self._emit(
-                "model_call",
-                {
-                    **association,
-                    "stage": "finished",
-                    "status": "model_format_error",
-                    "error": str(error),
-                    "meter": meter,
-                },
-            )
-            self._fail(memory, "model_format_error", str(error), model_call_id=call_id)
+            return self._format_failure(memory, str(error), association)
+        self._valid_format(memory)
         if kind == "done":
             memory["done"] = reason
         self._emit(
@@ -883,6 +1024,7 @@ class ModelPolicy:
                         "Action decision requires exactly kind/action/arguments without transport identifiers"
                     )
                 action = {"action": decision["action"], "arguments": decision["arguments"]}
+                self._valid_format(memory)
                 memory["pending_tool"] = {
                     "call_id": call_id,
                     "tool_call_id": None,
@@ -917,17 +1059,8 @@ class ModelPolicy:
                     "Control decision requires exactly wait/done and a nonempty reason"
                 )
         except (ValueError, TypeError, KeyError) as error:
-            self._emit(
-                "model_call",
-                {
-                    **association,
-                    "stage": "finished",
-                    "status": "model_format_error",
-                    "error": str(error),
-                    "meter": memory["meter"],
-                },
-            )
-            self._fail(memory, "model_format_error", str(error), model_call_id=call_id)
+            return self._format_failure(memory, str(error), association)
+        self._valid_format(memory)
         if kind == "done":
             memory["done"] = decision["reason"]
         self._emit(

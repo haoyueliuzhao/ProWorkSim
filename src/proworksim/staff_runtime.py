@@ -12,7 +12,7 @@ from .experience import ExperienceRecorder
 from .storage import digest, json_bytes
 from .tool_outcomes import classify_tool_result, port_exception
 
-RUNTIME_VERSION = "staff-runtime-v0.11"
+RUNTIME_VERSION = "staff-runtime-v0.12"
 
 
 class PolicyBoundaryError(Exception):
@@ -209,7 +209,7 @@ class StaffRuntime:
             json_bytes(decision)
             if (
                 not isinstance(decision, dict)
-                or decision.get("kind") not in {"act", "wait", "done"}
+                or decision.get("kind") not in {"act", "wait", "done", "protocol_rejection"}
                 or not isinstance(decision.get("memory"), dict)
             ):
                 raise ValueError("Policy must return a declared decision with its own JSON memory")
@@ -254,6 +254,14 @@ class StaffRuntime:
             worker_id=label,
         )
         role["memory"] = copy.deepcopy(decision["memory"])
+        if decision["kind"] == "protocol_rejection":
+            return self._finish(
+                label,
+                "model_format_feedback",
+                decision.get("reason", "Protocol rejected a consumed model decision"),
+                decision=public_decision,
+                decision_consumed=True,
+            )
         if decision["kind"] != "act":
             status = "completed" if decision["kind"] == "done" else "worker_waiting"
             if status == "worker_waiting" and any(
@@ -334,7 +342,7 @@ class StaffRuntime:
             outcome = self.step()
             outcomes.append(outcome)
             label = outcome["worker_id"]
-            if outcome["action_performed"]:
+            if outcome["action_performed"] or outcome["status"] == "model_format_feedback":
                 idle.clear()
             else:
                 idle.add(label)

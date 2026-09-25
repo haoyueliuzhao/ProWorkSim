@@ -239,4 +239,4 @@ def test_context_policy_and_provenance_errors_are_explicit():
                 "observation_messages": [{"index": 0, "sha256": digest(json_bytes(message))}],
             }
         )
-    assert ADAPTER_VERSION == "model-policy-v0.11.2"
+    assert ADAPTER_VERSION == "model-policy-v0.12"

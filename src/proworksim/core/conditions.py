@@ -132,7 +132,12 @@ def _match_response(state, condition, response, replay=False):
     message = next(
         (m for m in state.get("messages", []) if m.get("message_id") == request_id), None
     )
-    if message is None or message.get("sender") != item.get("owner_role"):
+    requester = (
+        request.get("requester_id")
+        if request and request.get("mode") == "manual"
+        else item.get("owner_role")
+    )
+    if message is None or message.get("sender") != requester:
         return _check("FAIL", "request_identity_not_established")
     responder = response.get("responder")
     if responder not in message.get("recipients", []) or responder not in condition.get(
@@ -171,6 +176,11 @@ def _match_response(state, condition, response, replay=False):
     if condition.get("required_power"):
         from ..policies.organization import authority
 
+        object_id = (_reference(response.get("reference")) or (None, None))[0]
+        if response.get("status") == "unavailable" and request and request.get("mode") == "manual":
+            # A truthful inability response has no supplied evidence reference;
+            # authority is still scoped to the route object named at request.
+            object_id = condition.get("provider_object_id")
         if not authority(
             state,
             responder,
@@ -178,7 +188,7 @@ def _match_response(state, condition, response, replay=False):
             condition["subject"],
             item.get("node_id", item["work_item_id"]),
             project_id=item.get("project_id"),
-            object_id=(_reference(response.get("reference")) or (None, None))[0],
+            object_id=object_id,
         ):
             return _check("FAIL", "provider_lacks_authority")
     if response.get("status") == "unavailable":
@@ -249,6 +259,14 @@ def apply_response(state, response):
                     attestations[attestation_id] = copy.deepcopy(
                         state["attestations"][attestation_id]
                     )
+    if reference is None and response.get("status") == "unavailable":
+        # Preserve only existence of the route's authority target, not a made-up
+        # supplied version. Object-scoped grants otherwise fail during replay.
+        for definition in state.get("condition_specs", {}).values():
+            if definition.get("request_id") == response.get("request_id"):
+                oid = definition.get("provider_object_id")
+                if oid in state.get("artifacts", {}):
+                    evidence_artifacts[oid] = {"versions": {}}
     condition_facts = {}
     for cid, definition in state.get("condition_specs", {}).items():
         if response.get("request_id") in (
@@ -265,6 +283,7 @@ def apply_response(state, response):
                     "purpose",
                     "required_power",
                     "subject",
+                    "provider_object_id",
                 )
                 if key in definition
             }

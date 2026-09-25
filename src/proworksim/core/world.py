@@ -232,6 +232,7 @@ def new_world_state(spec):
         "condition_responses": {},
         "raw_condition_responses": {},
         "requests": {},
+        "handoffs": {},
         "blockers": {},
         "future_opportunities": [],
         "knowledge": {aid: {"read_artifacts": [], "read_messages": []} for aid in actors},
@@ -637,6 +638,8 @@ def validate_package(state, package):
                 "availability",
                 "version_id",
                 "version_policy",
+                "mode",
+                "recipients",
             },
             "information route",
         )
@@ -647,8 +650,19 @@ def validate_package(state, package):
         provider = route.get("provider")
         oid = aliases.get(route.get("object_alias"))
         obj = object_plan.get(oid)
-        if provider not in participants or obj is None or provider not in obj["writers"]:
-            raise ValueError("Information route requires the project's actual object provider")
+        mode = route.get("mode", "automatic")
+        if mode not in {"automatic", "manual"}:
+            raise ValueError("Information route mode must be automatic or manual")
+        if (provider not in participants or obj is None
+                or provider not in (obj["readers"] if mode == "manual" else obj["writers"])):
+            raise ValueError("Information route requires its declared readable/delegated provider")
+        recipients = route.get(
+            "recipients", [by_work[_work_id(pid, route["work_id"])]["owner_role"]]
+        )
+        if (not isinstance(recipients, list) or not recipients
+                or len(recipients) != len(set(recipients))
+                or not set(recipients) <= set(participants)):
+            raise ValueError("Information route recipients must be distinct project participants")
         delay = route.get("delay", 3)
         availability = route.get("availability", "available")
         if (
@@ -680,6 +694,8 @@ def validate_package(state, package):
             {
                 **route,
                 "route_id": route_id,
+                "mode": mode,
+                "recipients": recipients,
                 "project_id": pid,
                 "work_id": wid,
                 "work_node": wid,

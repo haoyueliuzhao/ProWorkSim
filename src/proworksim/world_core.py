@@ -282,6 +282,7 @@ class WorldCore(WorldRunner):
                 ("episodes",),
                 ("adoptions",),
                 ("requests",),
+                ("handoffs",),
                 ("raw_condition_responses",),
                 ("shares",),
                 ("attestations",),
@@ -345,6 +346,7 @@ class WorldCore(WorldRunner):
                 "adopt",
                 "adopt_version",
                 "submit",
+                "preflight_submission",
                 "approve",
                 "inspect_submission",
                 "raise_issue",
@@ -355,6 +357,7 @@ class WorldCore(WorldRunner):
                 "revise",
                 "request",
                 "request_information",
+                "handoff_information",
                 "set_information_availability",
                 "read_messages",
                 "close_project",
@@ -423,6 +426,18 @@ class WorldCore(WorldRunner):
                 required.append("kind")
             for key in arrays & properties.keys():
                 properties[key]["items"] = {"type": "object" if key in {"dependencies", "evidence"} else "string"}
+            if project_id is not None:
+                public_works = [item for item in self.state["work_items"].values()
+                                if item["project_id"] == project_id]
+                choices = sorted({item["work_item_id"] for item in public_works})
+                choices += sorted({item["local_work_id"] for item in public_works
+                                   if item.get("local_work_id") and item["local_work_id"] not in choices})
+                if "work_id" in properties:
+                    properties["work_id"]["description"] = "An exact visible work_item_id (or its declared local alias), not a project ID. Choose the intended public obligation; scope and authority still checked."
+                    if choices:
+                        properties["work_id"]["enum"] = choices
+                if "work_ids" in properties and choices:
+                    properties["work_ids"]["items"]["enum"] = choices
             if "locator" in properties:
                 properties["locator"]["items"] = {"type": ["string", "integer"]}
             if "answer" in properties:
@@ -430,11 +445,14 @@ class WorldCore(WorldRunner):
                     "description": "Optional answer value, if required by the public work contract"
                 }
             descriptions = {
+                "request_information": "Ask through a declared information route. A manual route records your request and waits for a real member decision; it never chooses evidence or replies automatically. Only the route's declared recipients may request its provider.",
+                "handoff_information": "For a manual route you provide: actually read an exact evidence version, then choose that reference and explain the handoff. Omit request_id for a proactive handoff or bind the real request_id for a reply. Fixed transport delay grants only the chosen version to declared recipients. No adoption, business correctness or approval is created. An unavailable reply requires a real request and no reference.",
                 "read_object": "Read an exact visible JSON version. Reading records knowledge only: it does not adopt that version for a work or establish a deliverable source binding.",
                 "write_object": "Write a new managed JSON version. When a source contributes to a deliverable, supply its exact object/version in dependencies. Adoption and JSON sources fields do not automatically record file dependencies; omitting dependencies retains the previous version dependency list. Existing submitted versions and reviews stay immutable. Editing a pending submission's objects does not update that submission; withdraw it before resubmitting the repaired versions.",
                 "adopt": "Bind an exact source object/version to each listed current work edition under its declared input policy. Source-based content contracts require these per-work bindings before submission; reading a source or writing a sources field does not replace adoption.",
                 "adopt_version": "Explicitly update an existing non-fixed adoption for one exact work edition. Use adopt for a new work binding. A fixed binding cannot be advanced.",
                 "submit": "Submit the current versions of workspace artifact aliases, not object IDs. Artifacts is a list of alias strings in this bound project. Source-based contracts require exact adoptions for this work and matching source references/dependencies; reading alone is insufficient. A pending submission must be withdrawn before a replacement submission.",
+                "preflight_submission": "Read-only structural check of selected visible files against this work's public contract: missing fields, work adoptions, exact source references and file dependencies. Never checks hidden business answers, chooses sources, fixes files or submits. Execution lineage lists actual SQL inputs, not all files read or all business basis.",
                 "withdraw": "Withdraw the named pending submission before repairing/resubmitting the same work. Withdrawal preserves fixed versions and does not automatically resolve located review issues.",
                 "inspect_submission": "Inspect one exact submission identified by pending_submission_id or latest_submission_id in the public work observation, subject to actual artifact access checks.",
             }
@@ -1084,6 +1102,33 @@ class WorldCore(WorldRunner):
             extensions={"adoption_snapshot": snapshots},
         )
 
+    def _action_preflight_submission(self, actor, project_id, work_id, artifacts):
+        from .public_preflight import inspect_structure
+
+        item = self._work(actor, project_id, work_id)
+        if not isinstance(artifacts, list) or any(not isinstance(a, str) for a in artifacts) or len(set(artifacts)) != len(artifacts):
+            raise ValueError("Artifact aliases must be unique strings")
+        documents = []
+        for alias in artifacts:
+            artifact, vid = self._object(actor, project_id, alias=alias)
+            if artifact.get("project_id") != project_id:
+                raise ValueError("Preflight inspects only bound-project deliverable files")
+            version = artifact["versions"][vid]
+            data = None
+            if artifact["kind"] == "json":
+                content = self.store.version_path(artifact, vid).read_bytes()
+                if digest(content) != version["sha256"]:
+                    raise ValueError("Selected version content integrity mismatch")
+                data = read("json", content)
+            documents.append({
+                "alias": alias, "object_id": artifact["artifact_id"], "version_id": vid,
+                "kind": artifact["kind"], "role": artifact.get("deliverable_role"),
+                "data": data, "dependencies": copy.deepcopy(version.get("derived_from", [])),
+                "execution_provenance": copy.deepcopy(version.get("execution_provenance")),
+            })
+        bindings = {b["alias"]: b for b in snapshot_bindings(self.state, item).values()}
+        return inspect_structure(item, documents, bindings)
+
     def _action_approve(self, actor, project_id, work_id, submission_id):
         item = self._work(actor, project_id, work_id)
         self._require_credentials(actor, item)
@@ -1241,6 +1286,15 @@ class WorldCore(WorldRunner):
         if type(delay) is not int or not 1 <= delay <= 100:
             raise ValueError("Reply delay must be between 1 and 100")
         ref = VersionRef.from_mapping(reference)
+        manual = next((route for route in self.state["projects"][project_id].get("information_routes", [])
+                       if route.get("mode") == "manual" and route["work_node"] == item["node_id"]
+                       and route["object_id"] == ref.object_id), None)
+        if manual is not None:
+            raise ToolRejection(
+                "This evidence uses a manual member route; use request_information and wait for a real handoff",
+                code="manual_route_requires_member_handoff", category="policy_error",
+                context={"route_id": manual["route_id"], "work_id": item["work_item_id"]},
+            )
         self._project_power(
             provider, project_id, "provide", purpose, item["node_id"], ref.object_id
         )
@@ -1345,6 +1399,8 @@ class WorldCore(WorldRunner):
         route = next((r for r in routes if r["route_id"] == route_id), None)
         if route is None or item["node_id"] != route["work_node"]:
             raise ValueError("No supported information route for this exact work lineage")
+        if route.get("mode", "automatic") == "manual":
+            return self._request_manual_information(actor, project_id, item, route)
         version = route["version_id"]
         if route["version_policy"] == "work_requirement":
             version = declared_version(item, route["object_alias"])
@@ -1393,10 +1449,118 @@ class WorldCore(WorldRunner):
                 event["payload"].update(grant_on_reply=True, availability=route["availability"])
         return result
 
+    def _request_manual_information(self, actor, project_id, item, route):
+        if actor not in route["recipients"] or actor == route["provider"]:
+            raise ValueError("Manual requests must come from a declared recipient to another member")
+        if item["work_item_id"] in self.state["work_replacements"] or any(
+            (sub.get("review") or {}).get("decision") == "accepted"
+            for sub in item.get("submissions", [])
+        ):
+            raise ValueError("Manual request requires an unfinished current work edition")
+        message = self._message(actor, [route["provider"]], project_id,
+                                "Information requested from team member", {
+                                    "origin": "member_action", "mode": "manual",
+                                    "route_id": route["route_id"], "purpose": route["purpose"],
+                                    "work_item_id": item["work_item_id"],
+                                    "requirement_version": item["requirement_version"],
+                                })
+        message["work_item_id"] = item["work_item_id"]
+        request_id = message["message_id"]
+        condition_id = project_id + "::condition-" + request_id
+        self.state["requests"][request_id] = {
+            "request_id": request_id, "condition_id": condition_id, "project_id": project_id,
+            "work_item_id": item["work_item_id"], "requirement_version": item["requirement_version"],
+            "requested_role": route["provider"], "requester_id": actor,
+            "route_id": route["route_id"], "mode": "manual", "status": "pending",
+            "evidence_reference": None,
+        }
+        self.state["condition_specs"][condition_id] = {
+            "condition_id": condition_id, "work_item_id": item["work_item_id"],
+            "requirement_version": item["requirement_version"], "request_id": request_id,
+            "providers": [route["provider"]], "expected_version": item["requirement_version"],
+            "purpose": route["purpose"], "required_power": "provide", "subject": route["purpose"],
+            "provider_object_id": route["object_id"],
+            "evidence_spec": {"kind": "version"},
+            "history": [{"event": "created", "at": self.state["clock"], "request_id": request_id}],
+        }
+        return {"request_id": request_id, "condition_id": condition_id,
+                "mode": "manual", "automatic_reply_scheduled": False}
+
+    def _action_handoff_information(self, actor, project_id, route_id, work_id,
+                                    handoff_key, body, reference=None, request_id=None,
+                                    status="delivered"):
+        item = self._work(actor, project_id, work_id, current=False)
+        route = next((r for r in self.state["projects"][project_id]["information_routes"]
+                      if r["route_id"] == route_id), None)
+        if (route is None or route.get("mode") != "manual" or actor != route["provider"]
+                or item["node_id"] != route["work_node"]):
+            raise ValueError("Handoff requires the declared manual provider and exact work lineage")
+        if status not in {"delivered", "unavailable"}:
+            raise ValueError("Handoff status must be delivered or unavailable")
+        if not isinstance(handoff_key, str) or not handoff_key.strip() or not isinstance(body, str) or not body.strip():
+            raise ValueError("Handoff needs a nonempty identity and actual provider explanation")
+        self._project_power(actor, project_id, "provide", route["purpose"],
+                            item["node_id"], route["object_id"])
+        recipients = list(route["recipients"])
+        if request_id is not None:
+            request = self.state["requests"].get(request_id)
+            if (request is None or request.get("mode") != "manual"
+                    or request.get("route_id") != route_id
+                    or request.get("work_item_id") != item["work_item_id"]
+                    or request.get("requirement_version") != item["requirement_version"]
+                    or request.get("requested_role") != actor):
+                raise ValueError("Handoff does not match the exact manual request")
+            recipients = [request["requester_id"]]
+        elif status == "unavailable":
+            raise ValueError("Formal unavailable response requires a real manual request")
+        ref = None
+        if status == "delivered":
+            parsed = VersionRef.from_mapping(reference)
+            if parsed.object_id != route["object_id"]:
+                raise ValueError("Chosen evidence is outside the declared information route")
+            artifact, _ = self._object(actor, project_id, object_id=parsed.object_id,
+                                       version_id=parsed.version_id)
+            if artifact.get("project_id") != project_id:
+                raise ValueError("Manual delegation covers only this project's declared material")
+            if not any(r.get("artifact_id") == parsed.object_id and r.get("version_id") == parsed.version_id
+                       and r.get("project_id") == project_id
+                       for r in self.state["knowledge"][actor]["read_artifacts"]):
+                raise ValueError("Provider must actually read the exact evidence before handing it off")
+            ref = parsed.to_dict()
+        elif reference is not None:
+            raise ValueError("An unavailable response cannot carry fabricated evidence")
+        handoff_id = "handoff-" + journal.canonical_digest([project_id, actor, item["work_item_id"], route_id, handoff_key])[:24]
+        declaration = {
+            "handoff_id": handoff_id, "handoff_key": handoff_key, "origin": "member_action",
+            "project_id": project_id, "work_item_id": item["work_item_id"],
+            "requirement_version": item["requirement_version"], "route_id": route_id,
+            "sender": actor, "recipients": recipients, "request_id": request_id,
+            "reference": ref, "body": body, "response_status": status, "purpose": route["purpose"],
+        }
+        existing = self.state.setdefault("handoffs", {}).get(handoff_id)
+        if existing is not None:
+            if any(existing.get(key) != value for key, value in declaration.items()):
+                raise ValueError("Handoff identity cannot be reused for different evidence or recipients")
+            return {"handoff_id": handoff_id, "event_id": existing["event_id"], "created": False}
+        event = self._event("manual_handoff", {**declaration, "actor": actor}, route["delay"])
+        self.state["handoffs"][handoff_id] = {**declaration, "at": self.state["clock"],
+                                                "event_id": event["event_id"], "status": "queued"}
+        return {"handoff_id": handoff_id, "event_id": event["event_id"], "created": True,
+                "origin": "member_action", "request_id": request_id, "reference": ref}
+
     def _event_actor(self, event):
         return event["payload"]["actor"]
 
     def _event_frame(self, event):
+        if event["kind"] == "manual_handoff":
+            payload = event["payload"]
+            paths = [("messages",), ("shares",), ("raw_condition_responses",),
+                     ("handoffs", payload["handoff_id"])]
+            if payload.get("request_id"):
+                request = self.state["requests"][payload["request_id"]]
+                paths += [("requests", payload["request_id"]),
+                          ("condition_specs", request["condition_id"])]
+            return ActionFrame("ManualHandoffDelivery", tuple(paths))
         if event["kind"] == "maintenance_impact":
             payload = event["payload"]
             item = self.state["work_items"][payload["target_work_id"]]
@@ -1436,6 +1600,8 @@ class WorldCore(WorldRunner):
 
     def _apply_event(self, event):
         payload = event["payload"]
+        if event["kind"] == "manual_handoff":
+            return self._apply_manual_handoff(event)
         if event["kind"] == "maintenance_impact":
             result = apply_impact(self.state, payload)
             if result["created"] and result["outcome"] == "applied":
@@ -1472,6 +1638,7 @@ class WorldCore(WorldRunner):
             if payload.get("availability") == "unavailable"
             else "delivered",
             "reference": payload["reference"],
+            "origin": "automatic_service",
         }
         # Only an explicitly installed information route delegates exact-version
         # delivery. Ordinary replies never infer an access grant.
@@ -1517,6 +1684,50 @@ class WorldCore(WorldRunner):
         )
         request["status"] = response["status"]
         return {"outcome": "applied", "result": result}
+
+    def _apply_manual_handoff(self, event):
+        payload = event["payload"]
+        item = self.state["work_items"][payload["work_item_id"]]
+        current = (current_id(self.state, item["work_item_id"]) == item["work_item_id"]
+                   and item["requirement_version"] == payload["requirement_version"]
+                   and item.get("cancelled_at") is None
+                   and not any((s.get("review") or {}).get("decision") == "accepted"
+                               for s in item.get("submissions", [])))
+        if current and payload["response_status"] == "delivered":
+            ref = VersionRef.from_mapping(payload["reference"])
+            self._object(payload["sender"], payload["project_id"], object_id=ref.object_id,
+                         version_id=ref.version_id)
+            self.state["shares"].append({
+                "share_id": "share-" + str(len(self.state['shares']) + 1),
+                "object_id": ref.object_id, "version_id": ref.version_id,
+                "project_id": payload["project_id"], "actor_ids": payload["recipients"],
+                "actor_id": payload["sender"], "at": self.state["clock"],
+                "follow_updates": False, "route_id": payload["route_id"],
+                "handoff_id": payload["handoff_id"],
+            })
+        response = None
+        if payload.get("request_id"):
+            response = {
+                "response_id": "response-" + payload["handoff_id"],
+                "request_id": payload["request_id"], "work_item_id": item["work_item_id"],
+                "requirement_version": payload["requirement_version"],
+                "responder": payload["sender"], "condition_version": payload["requirement_version"],
+                "purpose": payload["purpose"], "status": payload["response_status"],
+                "reference": payload["reference"], "origin": "member_action",
+                "handoff_id": payload["handoff_id"],
+            }
+            apply_response(self.state, response)
+            self.state["requests"][payload["request_id"]]["status"] = payload["response_status"]
+        message = self._message(payload["sender"], payload["recipients"], payload["project_id"],
+                                "Team evidence handoff", {**payload, "delivered_for_current_work": current,
+                                                         "response_id": response["response_id"] if response else None})
+        self.state["handoffs"][payload["handoff_id"]].update(
+            status="delivered" if current else "obsolete", received_at=self.state["clock"],
+            message_id=message["message_id"],
+        )
+        return {"outcome": "applied" if current else "historical_only",
+                "result": {"handoff_id": payload["handoff_id"], "message_id": message["message_id"],
+                           "granted_reference": payload["reference"] if current else None}}
 
     def _action_read_messages(self, actor, project_id):
         rows = [
@@ -1734,7 +1945,10 @@ class WorldCore(WorldRunner):
                                 "work_node",
                                 "availability",
                                 "availability_revision",
+                                "mode",
+                                "recipients",
                             )
+                            if key in route
                         },
                         "work_id": wid,
                     }
@@ -1758,6 +1972,15 @@ class WorldCore(WorldRunner):
                     cid: copy.deepcopy(condition)
                     for cid, condition in self.state["condition_specs"].items()
                     if condition["work_item_id"] in work
+                },
+                "handoffs": {
+                    hid: copy.deepcopy(handoff)
+                    for hid, handoff in self.state.get("handoffs", {}).items()
+                    if handoff["project_id"] in projects and (
+                        actor == handoff["sender"] or (
+                            actor in handoff["recipients"] and handoff["status"] != "queued"
+                        )
+                    )
                 },
                 "publications": [
                     copy.deepcopy(release)
