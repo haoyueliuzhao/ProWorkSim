@@ -47,6 +47,9 @@ def run_case(row, protocol, destination):
         role['policy'] = 'model'
         role['config'] = copy.deepcopy(backend)
         role['config']['task'] = protocol['tasks'].get(role['role_id'], protocol['default_task'])
+    expected = row.get('expected_scenario_sha256')
+    if expected is not None and expected != digest(json_bytes(spec)):
+        raise ValueError('Actual configured scenario differs from predeclared slot identity')
     atomic_write(folder / 'scenario.json', json_bytes(spec))
     record = {'episode_name': row['episode_name'], 'backend': row['backend'],
               'scenario': row['scenario'], 'repeat': row['repeat'],

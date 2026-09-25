@@ -18,18 +18,20 @@ from proworksim.runtime import load_env
 from proworksim.storage import atomic_write, json_bytes
 
 
-def execute(protocol_path, destination):
+def execute(protocol_path, destination, execution_queue=None):
     path, root = Path(protocol_path), Path(destination)
     protocol = json.loads(path.read_text())
-    rows = protocol['episodes']
+    all_rows = protocol['episodes']
+    rows = [row for row in all_rows if execution_queue is None or row.get('execution_queue', row['backend']) == execution_queue]
     if not rows or len({row['episode_name'] for row in rows}) != len(rows):
         raise ValueError('Freeze a nonempty distinct raw episode inventory')
     root.mkdir(parents=True, exist_ok=False)
     identity = code_identity()
     if identity['code_dirty'] and not protocol.get('development_pilot', False):
         raise ValueError('Formal collection requires clean committed source')
-    shuffled = list(rows)
+    shuffled = list(all_rows)
     random.Random(protocol['order_seed']).shuffle(shuffled)
+    shuffled = [row for row in shuffled if execution_queue is None or row.get('execution_queue', row['backend']) == execution_queue]
     queues = {}
     for ordinal, row in enumerate(shuffled):
         queues.setdefault(row.get('execution_queue', row['backend']), []).append((ordinal, row))
@@ -37,7 +39,7 @@ def execute(protocol_path, destination):
         'version': 'id-vtdo-model-batch-v0.12', 'source_before': identity,
         'started_at': now(), 'resource_before': resources(),
         'protocol_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
-        'planned': len(rows), 'scope': protocol['scope'], 'cases': [],
+        'planned': len(rows), 'full_protocol_inventory': len(all_rows), 'execution_queue_filter': execution_queue, 'scope': protocol['scope'], 'cases': [],
         'randomized_admission_order': [r['episode_name'] for r in shuffled],
         'queue_rule': 'Sequential within each backend, independent backends concurrent. Completion times are not randomized. One shared local RNG, actual ledger retained.',
     }
@@ -87,9 +89,10 @@ def main():
     parser.add_argument('--protocol', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--env-file', default='.env')
+    parser.add_argument('--execution-queue', help='Run one predeclared backend queue; raw subbatch remains explicit')
     args = parser.parse_args()
     load_env(args.env_file)
-    execute(args.protocol, args.output)
+    execute(args.protocol, args.output, args.execution_queue)
 
 
 if __name__ == '__main__':

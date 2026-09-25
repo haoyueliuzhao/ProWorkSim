@@ -1,6 +1,17 @@
-# 数据合同与扩展接口（v0.10模块；核心状态v0.9）
+# 当前数据合同：v0.12与ID-VTDO预检
 
-当前软件包`0.10.0`，WorldCore schema为`world-core-v0.9`、语义为`work-world-v0.9`、内容评价为`finite-products-v0.10`；共用回执继续为`phase-deltas-v0.5`。沿用两个领域合同和共同定位问题关系，本版增加统一运行、场景与分项评价模块，详见[模块合同](platform-modules-v010.md)与[既有两模板合同](template-expansion-v09.md)。旧schema世界使用对应冻结运行时，不隐式迁移历史。
+软件包为0.12.0，WorldCore仍使用world-core-v0.9语义核心，内容评价注册扩展为finite-products-v0.12。当前研究目标见[ID-VTDO设计](research/id-vtdo.md)，实施与门槛见[v0.12计划](id-vtdo-v012-plan.md)。以下旧章节保留原阶段口径，不覆盖历史冻结。
+
+新增manual信息路线：实际成员选择、确读并交接资料，系统仅送达和检查授权；通用自动请求不能绕过该模式。资料持有者的provide授权不授予写业务依据权限。声明允许旧automatic路线只用于相应场景，不能把它的响应记作模型成员动作。详见[团队合同](decision-team-v012.md)。
+
+模型格式继续协议是显式Gamma选择，一次格式错误消耗一次决策，不执行部分动作；完整档案、HTTP选择及服务实际prompt/token分别保存。只读[交付结构预检](public-preflight-v012.md)不查隐藏答案或补来源。
+
+[TeamRollout/MemberView与支持](team-rollouts-v012.md)分别保存奖励可训练性、三值工作有效性与成员重配资格。场景登记固定来源/世界家族用途划分；布局、重复运行和三成员投影不扩大独立来源分母。第一版[多轮PPO](multiturn-ppo-v012.md)有独立数据门槛，Q=B算术或参数变化不冒称工作学习成立。
+
+## v0.10模块合同（历史阶段）
+
+
+该历史阶段软件包`0.10.0`，WorldCore schema为`world-core-v0.9`、语义为`work-world-v0.9`、内容评价为`finite-products-v0.10`；共用回执继续为`phase-deltas-v0.5`。沿用两个领域合同和共同定位问题关系，本版增加统一运行、场景与分项评价模块，详见[模块合同](platform-modules-v010.md)与[既有两模板合同](template-expansion-v09.md)。旧schema世界使用对应冻结运行时，不隐式迁移历史。
 
 以下保留v0.8及更早版本的合同沿革。v0.8阶段A评价为finite-products-v0.8，阶段B为finite-products-v0.8.1；其工作绑定及持续义务被本版复用，不能把旧运行身份写为新版。v0.9新增字段和工具见文末及本版说明。
 

@@ -1,0 +1,542 @@
+{
+  "version": "scenario-v0.10",
+  "scenario_id": "decision-team-orders_b-split_b-base",
+  "world": {
+    "world_id": "decision-team",
+    "actors": {
+      "provider": {},
+      "implementer": {},
+      "reviewer": {},
+      "operator": {}
+    },
+    "applications": [
+      "files",
+      "sql"
+    ],
+    "publication_policy": "explicit",
+    "bootstrap_grants": [
+      {
+        "actor_id": "operator",
+        "power": "install_project",
+        "scope": "world"
+      }
+    ]
+  },
+  "installer": "operator",
+  "projects": [
+    {
+      "package": {
+        "project_id": "TEAM",
+        "goal": "Deliver and independently review customer metrics for the publicly stated period using applicable evidence held by different team members. Communicate as needed; no communication order is prescribed.",
+        "participants": [
+          "provider",
+          "implementer",
+          "reviewer",
+          "operator"
+        ],
+        "objects": [
+          {
+            "alias": "data",
+            "filename": "data.json",
+            "kind": "json",
+            "owner": "operator",
+            "readers": [
+              "provider",
+              "implementer",
+              "reviewer",
+              "operator"
+            ],
+            "deliverable_role": "draft",
+            "data": {
+              "tables": {
+                "customers": {
+                  "columns": [
+                    {
+                      "name": "customer_id",
+                      "type": "BIGINT"
+                    }
+                  ],
+                  "rows": [
+                    [
+                      1
+                    ],
+                    [
+                      2
+                    ],
+                    [
+                      3
+                    ]
+                  ]
+                },
+                "transactions": {
+                  "columns": [
+                    {
+                      "name": "order_id",
+                      "type": "BIGINT"
+                    },
+                    {
+                      "name": "customer_id",
+                      "type": "BIGINT"
+                    },
+                    {
+                      "name": "status",
+                      "type": "VARCHAR"
+                    },
+                    {
+                      "name": "period",
+                      "type": "VARCHAR"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "BIGINT"
+                    }
+                  ],
+                  "rows": [
+                    [
+                      1,
+                      1,
+                      "completed",
+                      "2018-01",
+                      700
+                    ],
+                    [
+                      1,
+                      1,
+                      "completed",
+                      "2018-01",
+                      300
+                    ],
+                    [
+                      2,
+                      2,
+                      "returned",
+                      "2018-01",
+                      200
+                    ],
+                    [
+                      3,
+                      2,
+                      "completed",
+                      "2018-01",
+                      600
+                    ],
+                    [
+                      4,
+                      3,
+                      "pending",
+                      "2018-01",
+                      400
+                    ],
+                    [
+                      5,
+                      3,
+                      "completed",
+                      "2018-02",
+                      800
+                    ]
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "alias": "code",
+            "filename": "code.json",
+            "kind": "json",
+            "owner": "implementer",
+            "readers": [
+              "provider",
+              "implementer",
+              "reviewer",
+              "operator"
+            ],
+            "deliverable_role": "sql_code",
+            "data": {
+              "models": [
+                {
+                  "name": "metrics",
+                  "sql": "SELECT customer_id,SUM(amount)::BIGINT AS revenue_cents,COUNT(*) AS order_count FROM transactions GROUP BY customer_id"
+                }
+              ],
+              "tests": [
+                {
+                  "name": "unique_customer",
+                  "sql": "SELECT customer_id FROM metrics GROUP BY customer_id HAVING COUNT(*) <> 1"
+                }
+              ],
+              "config": {
+                "exports": [
+                  "metrics"
+                ],
+                "description": "Edit the SQL to implement the public task using the selected approved basis."
+              }
+            }
+          },
+          {
+            "alias": "result",
+            "filename": "result.json",
+            "kind": "json",
+            "owner": "implementer",
+            "readers": [
+              "provider",
+              "implementer",
+              "reviewer",
+              "operator"
+            ],
+            "deliverable_role": "sql_result",
+            "data": {}
+          },
+          {
+            "alias": "query",
+            "filename": "query.json",
+            "kind": "json",
+            "owner": "implementer",
+            "readers": [
+              "provider",
+              "implementer",
+              "reviewer",
+              "operator"
+            ],
+            "deliverable_role": "draft",
+            "data": {}
+          },
+          {
+            "alias": "basis",
+            "filename": "basis.json",
+            "kind": "json",
+            "owner": "operator",
+            "readers": [
+              "operator",
+              "reviewer"
+            ],
+            "deliverable_role": "draft",
+            "data": {
+              "tables": {
+                "basis_meta": {
+                  "columns": [
+                    {
+                      "name": "period",
+                      "type": "VARCHAR"
+                    },
+                    {
+                      "name": "edition",
+                      "type": "VARCHAR"
+                    },
+                    {
+                      "name": "amount_factor",
+                      "type": "BIGINT"
+                    }
+                  ],
+                  "rows": [
+                    [
+                      "2018-01",
+                      "approved",
+                      1
+                    ]
+                  ]
+                },
+                "allowed_statuses": {
+                  "columns": [
+                    {
+                      "name": "status",
+                      "type": "VARCHAR"
+                    }
+                  ],
+                  "rows": [
+                    [
+                      "completed"
+                    ],
+                    [
+                      "returned"
+                    ]
+                  ]
+                }
+              },
+              "note": "Only an approved definition applicable to the public work period can support its delivery. The status list is the business filter, not a precomputed answer."
+            },
+            "writers": [
+              "operator"
+            ]
+          },
+          {
+            "alias": "audit_basis",
+            "filename": "audit_basis.json",
+            "kind": "json",
+            "owner": "operator",
+            "readers": [
+              "operator",
+              "provider"
+            ],
+            "deliverable_role": "draft",
+            "data": {
+              "period": "2018-01",
+              "edition": "approved",
+              "allowed_statuses": [
+                "completed",
+                "returned"
+              ],
+              "amount_factor": 1,
+              "release_checks": [
+                "Exact submitted code and result were read.",
+                "Every public customer remains, including zero amounts.",
+                "Amounts include only the stated period and status scope.",
+                "Multiple transaction rows for one order add their money but count as one order.",
+                "Chosen data and basis references/dependencies match the actual SQL execution."
+              ],
+              "note": "Independent review instructions and business source; no expected numeric output is supplied."
+            },
+            "writers": [
+              "operator"
+            ]
+          }
+        ],
+        "works": [
+          {
+            "work_id": "build",
+            "owner": "implementer",
+            "approval_policy": "review",
+            "goal": "Create the finite customer metrics table for 2018-01 using actually adopted applicable business evidence, then resolve genuine review or obtain justified acceptance.",
+            "visible_requirements": [
+              "Information holders, request recipients and exact communication semantics are in public manual routes. There is no automatic provider answer.",
+              "Use preflight_submission for the declared file/reference contract; business correctness still requires evidence and reasoning."
+            ],
+            "requirements": {
+              "input_policies": {
+                "data": "fixed",
+                "basis": "fixed"
+              },
+              "input_versions": {
+                "data": "v1"
+              },
+              "source_objects": {
+                "data": "obj-ce6df59356455075dcb4aa81",
+                "basis": "obj-9f9810e0cce067d1c4e27122"
+              },
+              "sql_project": {
+                "kind": "decision_team",
+                "code_alias": "code",
+                "result_alias": "result",
+                "query_alias": "query"
+              },
+              "output_alias": "result",
+              "reporting_period": "2018-01",
+              "public_format": {
+                "sources": "The result file has sources.data and sources.basis exact references, established by actual adoptions and sql_build input_aliases=[data,basis]. Merely reading is not adoption. The chosen basis version is not selected for you.",
+                "output": "Exactly one metrics table with columns customer_id,revenue_cents,order_count, one row for every data.customers ID. Amounts are integer cents. Preserve zero rows. For the stated period include only basis.allowed_statuses; multiply amounts by basis_meta.amount_factor. Sum all qualifying transaction rows but count distinct order_id. Basis must be approved for the stated period.",
+                "execution": "Submit exactly aliases code and result from the actual build. sql_build accepts existing typed table sources and records real inputs; editable tests are feedback only.",
+                "preflight": "preflight_submission(work_id,artifacts=[code,result]) checks only public structure/references/dependencies. It never computes hidden business answers or supplies evidence."
+              },
+              "review_contract": {
+                "audit_alias": "audit_basis",
+                "requirements": "Reviewer must actually read the exact submitted code/result and an approved audit_basis applicable to the reporting period; inspect data and check its independent release conditions. Use located issues and real response decisions, or approve justified first delivery."
+              }
+            },
+            "deliverable_contract": {
+              "min_files": 2,
+              "max_files": 2,
+              "allowed_roles": [
+                "sql_code",
+                "sql_result"
+              ],
+              "allowed_kinds": [
+                "json"
+              ],
+              "required_fields": [
+                "tables",
+                "sources"
+              ],
+              "content_checks": [
+                {
+                  "kind": "decision_team_sql",
+                  "role": "sql_result",
+                  "path": [
+                    "tables"
+                  ],
+                  "period": "2018-01",
+                  "sources": [
+                    {
+                      "alias": "data",
+                      "reference_path": [
+                        "sources",
+                        "data"
+                      ]
+                    },
+                    {
+                      "alias": "basis",
+                      "reference_path": [
+                        "sources",
+                        "basis"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "grants": [
+          {
+            "actor_id": "implementer",
+            "power": "adopt",
+            "subject": "artifact",
+            "work_nodes": [
+              "build"
+            ]
+          },
+          {
+            "actor_id": "implementer",
+            "power": "execute_sql",
+            "subject": "artifact",
+            "work_nodes": [
+              "build"
+            ]
+          },
+          {
+            "actor_id": "reviewer",
+            "power": "review",
+            "subject": "deliverable",
+            "work_nodes": [
+              "build"
+            ]
+          },
+          {
+            "actor_id": "reviewer",
+            "power": "approve",
+            "subject": "deliverable",
+            "work_nodes": [
+              "build"
+            ]
+          },
+          {
+            "actor_id": "operator",
+            "power": "revise_requirement",
+            "subject": "requirements",
+            "work_nodes": [
+              "build"
+            ]
+          },
+          {
+            "actor_id": "reviewer",
+            "power": "provide",
+            "subject": "basis",
+            "work_nodes": [
+              "build"
+            ],
+            "object_ids": [
+              "basis"
+            ]
+          },
+          {
+            "actor_id": "provider",
+            "power": "provide",
+            "subject": "audit_basis",
+            "work_nodes": [
+              "build"
+            ],
+            "object_ids": [
+              "audit_basis"
+            ]
+          }
+        ],
+        "information_routes": [
+          {
+            "route_id": "basis",
+            "mode": "manual",
+            "work_id": "build",
+            "provider": "reviewer",
+            "object_alias": "basis",
+            "recipients": [
+              "implementer"
+            ],
+            "purpose": "basis",
+            "delay": 1
+          },
+          {
+            "route_id": "audit_basis",
+            "mode": "manual",
+            "work_id": "build",
+            "provider": "provider",
+            "object_alias": "audit_basis",
+            "recipients": [
+              "reviewer"
+            ],
+            "purpose": "audit_basis",
+            "delay": 1
+          }
+        ],
+        "provenance": {
+          "kind": "synthetic",
+          "source_evidence_refs": [
+            "ProWorkSim finite team SQL mechanism derived from the pinned Jaffle Shop family conventions"
+          ],
+          "note": "Small explicitly synthetic transactions. Instance/layout labels remain in the host scenario manifest, not role prompts. No hidden numerical answer is supplied to members."
+        }
+      }
+    }
+  ],
+  "roles": [
+    {
+      "role_id": "provider",
+      "actor": "provider",
+      "project": "TEAM",
+      "policy": "model",
+      "config": {
+        "task": "You are a member responsible for the information you hold. Read the visible work goal, your evidence and manual routes; choose applicable exact evidence and how to communicate it, or truthfully report unavailable requested material. Retain explicit sources. Coordinate through the public tools. No prescribed communication order is required."
+      }
+    },
+    {
+      "role_id": "implementer",
+      "actor": "implementer",
+      "project": "TEAM",
+      "policy": "model",
+      "config": {
+        "task": "You implement the assigned SQL work. Use actual accessible data and applicable business basis, choose and record exact adoptions, edit/build/query code, check the public structure with preflight_submission, submit code and result, and handle real review feedback. Read manual routes and messages when information is missing. Do not fabricate inaccessible facts."
+      }
+    },
+    {
+      "role_id": "reviewer",
+      "actor": "reviewer",
+      "project": "TEAM",
+      "policy": "model",
+      "config": {
+        "task": "You independently review the exact submitted code and result using your applicable audit basis and public data. Read real submissions/evidence, raise located issues when justified, assess actual responses and approve only supported work. Coordinate through manual routes for information you hold or need. Do not infer correctness from submission labels."
+      }
+    }
+  ],
+  "setup": [],
+  "events": [],
+  "start": {
+    "kind": "initial"
+  },
+  "boundary": {
+    "max_opportunities": 180
+  },
+  "variation": {
+    "kind": "structure",
+    "xi": {
+      "instance": "orders_b",
+      "layout": "split_b",
+      "control": "base"
+    },
+    "validity_spec": {
+      "spec_id": "decision-team-validity-v0.12",
+      "project_id": "TEAM",
+      "work_node": "TEAM::build",
+      "implementer": "implementer",
+      "reviewer": "reviewer",
+      "required_handoff_routes": [
+        "basis",
+        "audit_basis"
+      ],
+      "required_direct_reads": [
+        {
+          "member_id": "reviewer",
+          "alias": "audit_basis"
+        }
+      ],
+      "allow_rejected_actions": true,
+      "allow_repair": true,
+      "blocked_outcome": "unknown"
+    }
+  }
+}

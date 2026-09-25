@@ -1,0 +1,675 @@
+{
+  "version": "id-vtdo-model-protocol-v0.12",
+  "scope": "D1/D2 fixed support census,32jointrollouts.2syntheticinstances×2informationlayouts×4repeats×2backends. All3roles are model decisions; no forced proactive/requested prompts. Separate backend queues may execute at different times from same frozeninventory. Not algorithm effect or independent-source generalization.",
+  "order_seed": 20260926,
+  "max_environment_opportunities": 240,
+  "backends": {
+    "deepseek": {
+      "backend_id": "deepseek-official",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "task": "Fulfill the publicly visible responsibilities of your bound role.",
+      "model_revision": {
+        "provider_alias": "DeepSeek-V4.1-Flash",
+        "immutable_weights_verified": false,
+        "verified_at": "2026-09-25",
+        "source": "https://api-docs.deepseek.com/quick_start/pricing/"
+      },
+      "weight_identity": null,
+      "thinking": false,
+      "reasoning_effort": null,
+      "temperature": 0.3,
+      "max_output_tokens": 4096,
+      "timeout_seconds": 120,
+      "max_context_tokens": null,
+      "retry": {
+        "max_attempts": 2,
+        "retry_statuses": [
+          408,
+          429,
+          500,
+          502,
+          503,
+          504
+        ],
+        "backoff_seconds": [
+          1
+        ]
+      },
+      "budget": {
+        "max_decisions": 40,
+        "max_http_attempts": 60,
+        "max_total_tokens": 500000,
+        "max_cost_usd": 0.5,
+        "max_context_bytes": 320000
+      },
+      "pricing": {
+        "input_miss_per_million": 0.3,
+        "input_hit_per_million": 0.006,
+        "output_per_million": 1.2
+      },
+      "action_protocol": "native_tools",
+      "context_policy": "latest_observation",
+      "format_error_policy": "format_feedback_continue",
+      "format_limits": {
+        "max_total": 4,
+        "max_consecutive": 2
+      }
+    },
+    "qwen": {
+      "backend_id": "local-qwen-http",
+      "model": "Qwen2.5-7B-Instruct",
+      "base_url": "http://127.0.0.1:18763/v1",
+      "api_key_env": null,
+      "task": "Fulfill the publicly visible responsibilities of your bound role.",
+      "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "weight_identity": {
+        "path": "/data1/zhuxinrui/models/Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28",
+        "manifest": "runs/model-api-v11-preflight/qwen-weights.json",
+        "manifest_sha256": "4feb7d71c4447906058958c928209c81cd37cce293249b420ba1488fbdf3aa83",
+        "service_profile": {
+          "dtype": "float32",
+          "attention": "sdpa",
+          "max_batch": 1,
+          "native_tool_prompt": "single_call"
+        },
+        "service_manifest": "runs/qwen-service-v12-gpu4/service.json",
+        "service_manifest_sha256": "6d7ca04f4e779172e385749db60bfcbbece8e770fc03621bb2ae93ceafbcaf7f",
+        "inference_profile_sha256": "3f619d2bad3209e52947cbe89b5ed7a52d478025faf1277308b96813f96721fd",
+        "base_manifest_sha256": "4feb7d71c4447906058958c928209c81cd37cce293249b420ba1488fbdf3aa83"
+      },
+      "thinking": null,
+      "reasoning_effort": null,
+      "temperature": 0.3,
+      "max_output_tokens": 4096,
+      "timeout_seconds": 600,
+      "max_context_tokens": 32768,
+      "retry": {
+        "max_attempts": 2,
+        "retry_statuses": [
+          408,
+          429,
+          500,
+          502,
+          503,
+          504
+        ],
+        "backoff_seconds": [
+          1
+        ]
+      },
+      "budget": {
+        "max_decisions": 40,
+        "max_http_attempts": 60,
+        "max_total_tokens": 500000,
+        "max_cost_usd": 0.5,
+        "max_context_bytes": 320000
+      },
+      "pricing": {
+        "input_miss_per_million": 0,
+        "input_hit_per_million": 0,
+        "output_per_million": 0
+      },
+      "action_protocol": "native_tools",
+      "context_policy": "latest_observation",
+      "format_error_policy": "format_feedback_continue",
+      "format_limits": {
+        "max_total": 4,
+        "max_consecutive": 2
+      }
+    }
+  },
+  "tasks": {
+    "provider": "You are a member responsible for the information you hold. Read the visible work goal, your evidence and manual routes; choose applicable exact evidence and how to communicate it, or truthfully report unavailable requested material. Retain explicit sources. Coordinate through the public tools. No prescribed communication order is required.",
+    "implementer": "You implement the assigned SQL work. Use actual accessible data and applicable business basis, choose and record exact adoptions, edit/build/query code, check the public structure with preflight_submission, submit code and result, and handle real review feedback. Read manual routes and messages when information is missing. Do not fabricate inaccessible facts.",
+    "reviewer": "You independently review the exact submitted code and result using your applicable audit basis and public data. Read real submissions/evidence, raise located issues when justified, assess actual responses and approve only supported work. Coordinate through manual routes for information you hold or need. Do not infer correctness from submission labels."
+  },
+  "default_task": "Fulfill your publicly visible responsibilities using actual tools, sources and work contracts. You may use preflight_submission to check public file/source/dependency structure before submitting; it does not evaluate business values or choose sources. Only your own public observation and actual tool responses are available. Approval and independent work correctness are separate.",
+  "episodes": [
+    {
+      "episode_name": "d1-deepseek-orders_a-split_a-1",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "ac1b891bd39c225db2fea343ceb49d2a26effe2f221e758d5cc4b77aed40f826",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_a-2",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "ac1b891bd39c225db2fea343ceb49d2a26effe2f221e758d5cc4b77aed40f826",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_a-3",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "ac1b891bd39c225db2fea343ceb49d2a26effe2f221e758d5cc4b77aed40f826",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_a-4",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 4,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "ac1b891bd39c225db2fea343ceb49d2a26effe2f221e758d5cc4b77aed40f826",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_b-1",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "d1168dcaba82ba537b8a3b5ba2460505f3d68bf39bb9517de858b693c0ffde21",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_b-2",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "d1168dcaba82ba537b8a3b5ba2460505f3d68bf39bb9517de858b693c0ffde21",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_b-3",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "d1168dcaba82ba537b8a3b5ba2460505f3d68bf39bb9517de858b693c0ffde21",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_a-split_b-4",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 4,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "d1168dcaba82ba537b8a3b5ba2460505f3d68bf39bb9517de858b693c0ffde21",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_a-1",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "f0b510b7d7d04f5dea1c16cc01532fa3033f98fb84be6b1a94798ebcb7e733c6",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_a-2",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "f0b510b7d7d04f5dea1c16cc01532fa3033f98fb84be6b1a94798ebcb7e733c6",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_a-3",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "f0b510b7d7d04f5dea1c16cc01532fa3033f98fb84be6b1a94798ebcb7e733c6",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_a-4",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 4,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "f0b510b7d7d04f5dea1c16cc01532fa3033f98fb84be6b1a94798ebcb7e733c6",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_b-1",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 1,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "498304238103c3b3c345259cdcd4a43bfcd53323dcbbf55049c9322cfb5085f0",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_b-2",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 2,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "498304238103c3b3c345259cdcd4a43bfcd53323dcbbf55049c9322cfb5085f0",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_b-3",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 3,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "498304238103c3b3c345259cdcd4a43bfcd53323dcbbf55049c9322cfb5085f0",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-deepseek-orders_b-split_b-4",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 4,
+      "backend": "deepseek",
+      "execution_queue": "deepseek",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "498304238103c3b3c345259cdcd4a43bfcd53323dcbbf55049c9322cfb5085f0",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_a-1",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "7a930e583deda698f3ecfb0b63cb07917adc1078da3afa63118f8ebbcf8e3059",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_a-2",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "7a930e583deda698f3ecfb0b63cb07917adc1078da3afa63118f8ebbcf8e3059",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_a-3",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "7a930e583deda698f3ecfb0b63cb07917adc1078da3afa63118f8ebbcf8e3059",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_a-4",
+      "scenario": "decision-team-orders_a-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_a.json",
+      "repeat": 4,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "7a930e583deda698f3ecfb0b63cb07917adc1078da3afa63118f8ebbcf8e3059",
+      "situation_registry_id": "decision-team-orders_a-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_b-1",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "88e8844b5a4610dc785ca78118457b53ce2dac27b0a4ada4b5d4ded2c85a6a7d",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_b-2",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "88e8844b5a4610dc785ca78118457b53ce2dac27b0a4ada4b5d4ded2c85a6a7d",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_b-3",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "88e8844b5a4610dc785ca78118457b53ce2dac27b0a4ada4b5d4ded2c85a6a7d",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_a-split_b-4",
+      "scenario": "decision-team-orders_a-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_a-split_b.json",
+      "repeat": 4,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "88e8844b5a4610dc785ca78118457b53ce2dac27b0a4ada4b5d4ded2c85a6a7d",
+      "situation_registry_id": "decision-team-orders_a-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_a-1",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "32a8419fe0e98ba64a25c2b4d328aa0b51d4ae2408b9a93ae52f1fca8512fe99",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_a-2",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "32a8419fe0e98ba64a25c2b4d328aa0b51d4ae2408b9a93ae52f1fca8512fe99",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_a-3",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "32a8419fe0e98ba64a25c2b4d328aa0b51d4ae2408b9a93ae52f1fca8512fe99",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_a-4",
+      "scenario": "decision-team-orders_b-split_a-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_a.json",
+      "repeat": 4,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "32a8419fe0e98ba64a25c2b4d328aa0b51d4ae2408b9a93ae52f1fca8512fe99",
+      "situation_registry_id": "decision-team-orders_b-split_a-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_b-1",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 1,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "5349d55630aaa8f56b91dbada09d3009d521551d4473041a14dcfb73c3c0a94e",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_b-2",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 2,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "5349d55630aaa8f56b91dbada09d3009d521551d4473041a14dcfb73c3c0a94e",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_b-3",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 3,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "5349d55630aaa8f56b91dbada09d3009d521551d4473041a14dcfb73c3c0a94e",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    },
+    {
+      "episode_name": "d1-qwen-orders_b-split_b-4",
+      "scenario": "decision-team-orders_b-split_b-base",
+      "scenario_file": "examples/id-vtdo-v12/orders_b-split_b.json",
+      "repeat": 4,
+      "backend": "qwen",
+      "execution_queue": "qwen",
+      "target_roles": [
+        "provider",
+        "implementer",
+        "reviewer"
+      ],
+      "expected_scenario_sha256": "5349d55630aaa8f56b91dbada09d3009d521551d4473041a14dcfb73c3c0a94e",
+      "situation_registry_id": "decision-team-orders_b-split_b-base"
+    }
+  ],
+  "situation_registry": {
+    "path": "examples/id-vtdo-v12/situation-registry.json",
+    "sha256": "6db0297d15a647bc94c3ea9857fbcc798908e5253c01fe9d939f7f3992011aa3"
+  },
+  "mapper": {
+    "route_id": "basis",
+    "spec_id": "natural-basis-handoff-v0.12"
+  },
+  "min_class_count": 2,
+  "interface_choice": {
+    "profile": "native_feedback",
+    "selection": "Fixed candidate chosen in the plan for support diagnosis even ifD0gatefails; D0work success remains a separately measured prerequisite for realPPO. No claim a failedD0interface is reliable."
+  },
+  "training_slot_selection": {
+    "backend": "qwen",
+    "repeat": 1,
+    "members": [
+      "provider",
+      "implementer",
+      "reviewer"
+    ],
+    "count": 4,
+    "all_decisions": true,
+    "selection_precedes_rewards": true
+  },
+  "cost_contract": {
+    "paid_roles": 48,
+    "per_paid_role_usd": 0.5,
+    "D1_paid_cap_usd": 24,
+    "round_paid_cap_usd": 34,
+    "peak_per_million": {
+      "input_miss": 0.3,
+      "input_hit": 0.006,
+      "output": 1.2
+    },
+    "unknown_usage_reserved": true
+  },
+  "base_reward_contract": {
+    "version": "reward-spec-v0.11",
+    "reward_id": "development-content-adoption-v011",
+    "objectives": [
+      {
+        "kind": "content",
+        "work_node": "TEAM::build",
+        "weight": 1
+      }
+    ],
+    "process_requirements": [
+      "source-adoption-0"
+    ]
+  },
+  "base_assessment_contract": {
+    "process_requirements": [
+      {
+        "requirement_id": "source-adoption-0",
+        "kind": "required_source_adoption",
+        "work_node": "TEAM::build",
+        "aliases": [
+          "basis",
+          "data"
+        ]
+      }
+    ]
+  }
+}

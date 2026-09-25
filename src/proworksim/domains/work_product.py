@@ -32,7 +32,7 @@ _KINDS = {
     "json_linear_sources",
 }
 _COMMON = {"kind", "role"}
-EVALUATOR_VERSION = "finite-products-v0.11"
+EVALUATOR_VERSION = "finite-products-v0.12"
 
 
 def _path(value, label):
