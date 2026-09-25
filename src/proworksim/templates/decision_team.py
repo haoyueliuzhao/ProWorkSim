@@ -182,6 +182,12 @@ def package(*, instance="orders_a", layout="split_a", control="base"):
         },
         "output_alias": "result",
         "reporting_period": PERIOD,
+        "public_structure": {
+            "sql_result": {
+                "required_paths": [["tables", "metrics"]],
+                "table_columns": {"metrics": ["customer_id", "revenue_cents", "order_count"]},
+            }
+        },
         "public_format": {
             "sources": "The result file has sources.data and sources.basis exact references, established by actual adoptions and sql_build input_aliases=[data,basis]. Merely reading is not adoption. The chosen basis version is not selected for you.",
             "output": "Exactly one metrics table with columns customer_id,revenue_cents,order_count, one row for every data.customers ID. Amounts are integer cents. Preserve zero rows. For the stated period include only basis.allowed_statuses; multiply amounts by basis_meta.amount_factor. Sum all qualifying transaction rows but count distinct order_id. Basis must be approved for the stated period.",

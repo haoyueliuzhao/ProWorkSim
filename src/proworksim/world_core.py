@@ -406,7 +406,7 @@ class WorldCore(WorldRunner):
             if name in {"sql_build", "sql_query"}:
                 properties["output_alias"]["description"] = "Existing owned JSON artifact receiving a new immutable execution result; errors and tests are retained."
                 if name == "sql_build":
-                    properties["input_aliases"]["description"] = "Exact work-adopted JSON sources exposing typed tables. Code object: models[{name,sql}], tests[{name,sql}], config{exports,description}; SELECT/CTE only, tests return failing rows."
+                    properties["input_aliases"]["description"] = "The alias strings previously chosen in adopt(alias=...), NOT object IDs or workspace paths. Every alias must already be adopted for this exact work; reading a source alone is insufficient. Sources expose typed tables. Code object: models[{name,sql}], tests[{name,sql}], config{exports,description}; SELECT/CTE only, tests return failing rows."
                 else:
                     properties["sql"]["description"] = "One SELECT/CTE against the source artifact tables; external files/network/extensions and mutable SQL are disabled."
             if name == "create_object":
@@ -456,6 +456,10 @@ class WorldCore(WorldRunner):
                 "withdraw": "Withdraw the named pending submission before repairing/resubmitting the same work. Withdrawal preserves fixed versions and does not automatically resolve located review issues.",
                 "inspect_submission": "Inspect one exact submission identified by pending_submission_id or latest_submission_id in the public work observation, subject to actual artifact access checks.",
             }
+            if name == "adopt":
+                properties["alias"]["description"] = "The work-scoped input name required by the public contract, such as its source alias. This name is later used in sql_build.input_aliases."
+                properties["object_id"]["description"] = "Copy the actual object identifier from a visible object's metadata or read_object.reference (object_id/artifact_id); do not put the source alias here."
+                properties["version_id"]["description"] = "An exact readable source version chosen by you. Reading, adopting and using it in a build are separate actions."
             if "dependencies" in properties:
                 properties["dependencies"]["description"] = "Exact object_id/version_id references of sources contributing to this file version. Adoption and JSON source fields do not populate dependencies. A write with omitted dependencies retains previous dependencies; creation defaults to none."
             if name == "sql_query":

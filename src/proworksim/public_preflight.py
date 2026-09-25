@@ -55,6 +55,24 @@ def inspect_structure(item, documents, bindings):
         if not any(_get(d.get("data"), [key])[0] for d in documents):
             issue("missing_field", path=[key])
 
+    # Optional machine-readable public structure. These names are declared in
+    # the actor-visible requirements, never imported from a private evaluator.
+    for role, shape in item.get("requirements", {}).get("public_structure", {}).items():
+        selected = [d for d in documents if d["role"] == role]
+        for path in shape.get("required_paths", []):
+            if not any(_get(d.get("data"), path)[0] for d in selected):
+                issue("missing_public_path", role=role, path=path)
+        for name, expected_columns in shape.get("table_columns", {}).items():
+            for doc in selected:
+                present, table = _get(doc.get("data"), ["tables", name])
+                if not present:
+                    continue
+                columns = table.get("columns") if isinstance(table, dict) else None
+                actual = [c.get("name") for c in columns if isinstance(c, dict)] if isinstance(columns, list) else []
+                if len(actual) != len(expected_columns) or set(actual) != set(expected_columns):
+                    issue("public_table_columns", artifact=doc["alias"], table=name,
+                          required_columns=expected_columns)
+
     checks = contract.get("content_checks", [])
     for check in checks:
         selected = [d for d in documents if not check.get("role") or d["role"] == check["role"]]

@@ -682,6 +682,15 @@ def train(prepared, model_path, output, report, save):
         return hashed.hexdigest()
 
     profile = read_json(prepared["service_manifest_reference"]["path"])["inference_profile"]
+    from proworksim.local_model_service import configure_attention_runtime
+
+    replay_runtime = configure_attention_runtime(
+        profile["attention"], profile.get("declared_matmul_precision", "highest")
+    )
+    for key, actual in replay_runtime.items():
+        if key in profile and profile[key] != actual:
+            raise ValueError("Replay numerical runtime differs from recorded behavior: " + key)
+    report["replay_numerical_runtime"] = replay_runtime
 
     def base():
         return AutoModelForCausalLM.from_pretrained(

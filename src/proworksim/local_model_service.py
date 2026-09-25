@@ -6,6 +6,8 @@ never opens a world, calls business algorithms, or invents tool responses.
 
 import argparse
 import copy
+import gc
+import math
 import json
 import os
 import queue
@@ -131,6 +133,193 @@ class SamplingTrace:
         return result if self.temperature > 0 else None
 
 
+def sdpa_explicit_kv_attention_forward(
+    module,
+    query,
+    key,
+    value,
+    attention_mask,
+    dropout=0.0,
+    scaling=None,
+    is_causal=None,
+    **kwargs,
+):
+    """Preserve grouped KV semantics, require the efficient CUDA kernel.
+
+    Only this invocation expands KV heads; the model's original four-head cache
+    stays unchanged. There is no math, eager, lower-precision or CPU fallback.
+    """
+    import torch
+    from torch.nn.attention import SDPBackend, sdpa_kernel
+
+    if any(tensor.device.type != "cuda" for tensor in (query, key, value)):
+        raise ValueError("sdpa_explicit_kv requires CUDA; no CPU math fallback")
+    if kwargs.get("output_attentions", False) or kwargs.get("head_mask") is not None:
+        raise ValueError("sdpa_explicit_kv does not produce attention weights or head masks")
+    groups = module.num_key_value_groups
+    if (
+        type(groups) is not int
+        or groups < 1
+        or key.shape[1] != value.shape[1]
+        or query.shape[1] != key.shape[1] * groups
+    ):
+        raise ValueError("Declared query/KV head grouping differs from the actual tensors")
+    key = key.repeat_interleave(groups, dim=1)
+    value = value.repeat_interleave(groups, dim=1)
+    if attention_mask is not None and attention_mask.ndim == 4:
+        attention_mask = attention_mask[:, :, :, : key.shape[-2]]
+    if is_causal is None:
+        is_causal = (
+            query.shape[2] > 1 and attention_mask is None and getattr(module, "is_causal", True)
+        )
+    if torch.jit.is_tracing() and hasattr(is_causal, "item"):
+        is_causal = is_causal.item()
+    with sdpa_kernel(backends=[SDPBackend.EFFICIENT_ATTENTION]):
+        result = torch.nn.functional.scaled_dot_product_attention(
+            query,
+            key,
+            value,
+            attn_mask=attention_mask,
+            dropout_p=dropout,
+            scale=scaling,
+            is_causal=is_causal,
+            enable_gqa=False,
+        )
+    return result.transpose(1, 2).contiguous(), None
+
+
+def configure_attention_runtime(attention, matmul_precision="highest"):
+    """Explicit process-local runtime setup; never edits installed libraries."""
+    import torch
+
+    if attention not in {"sdpa", "eager", "sdpa_explicit_kv"}:
+        raise ValueError("Unknown frozen attention profile")
+    if matmul_precision not in {"highest", "high"}:
+        raise ValueError("Unknown frozen float32 matmul precision")
+    torch.set_float32_matmul_precision(matmul_precision)
+    if attention == "sdpa_explicit_kv":
+        from transformers.masking_utils import ALL_MASK_ATTENTION_FUNCTIONS, AttentionMaskInterface
+        from transformers.modeling_utils import AttentionInterface
+
+        AttentionInterface.register(attention, sdpa_explicit_kv_attention_forward)
+        # Keep exactly the installed SDPA mask/causal/position semantics. A custom
+        # attention name without its mask registration would silently drop masks.
+        AttentionMaskInterface.register(attention, ALL_MASK_ATTENTION_FUNCTIONS["sdpa"])
+    return {
+        "attention_adapter_version": "explicit-kv-efficient-v0.12.1"
+        if attention == "sdpa_explicit_kv"
+        else None,
+        "sdpa_backend_policy": "efficient_only_no_fallback"
+        if attention == "sdpa_explicit_kv"
+        else "installed_library_default",
+        "kv_head_handling": "repeat_interleave_in_attention_only"
+        if attention == "sdpa_explicit_kv"
+        else "installed_library_default",
+        "declared_matmul_precision": matmul_precision,
+        "actual_float32_matmul_precision": torch.get_float32_matmul_precision(),
+        "cuda_matmul_allow_tf32": torch.backends.cuda.matmul.allow_tf32,
+        "cudnn_allow_tf32": torch.backends.cudnn.allow_tf32,
+        "nvidia_tf32_override": os.getenv("NVIDIA_TF32_OVERRIDE"),
+    }
+
+
+def startup_reserve_value(value):
+    """CLI parser and helper boundary share the same finite 0..64 GiB rule."""
+    try:
+        result = float(value)
+    except (TypeError, ValueError) as error:
+        raise argparse.ArgumentTypeError("startup-reserve-gib must be finite in [0,64]") from error
+    if isinstance(value, bool) or not math.isfinite(result) or not 0 <= result <= 64:
+        raise argparse.ArgumentTypeError("startup-reserve-gib must be finite in [0,64]")
+    return result
+
+
+def cuda_resource_snapshot(torch):
+    free, total = torch.cuda.mem_get_info()
+    return {
+        "allocated_bytes": torch.cuda.memory_allocated(),
+        "reserved_bytes": torch.cuda.memory_reserved(),
+        "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
+        "peak_reserved_bytes": torch.cuda.max_memory_reserved(),
+        "device_free_bytes": free,
+        "device_total_bytes": total,
+    }
+
+
+def load_with_startup_reservation(load_cpu, *, torch, reserve_gib, record_path, on_device=None):
+    """Reserve own CUDA capacity, CPU-load, then reuse own allocator cache.
+
+    No other process is controlled. No empty_cache call releases the reservation
+    between the CPU load and moving weights. Resource peaks are not compute peaks.
+    """
+    reserve_gib = startup_reserve_value(reserve_gib)
+    record = {
+        "version": "startup-resource-v0.12.1",
+        "started_at": time.time(),
+        "pid": os.getpid(),
+        "cuda_visible_devices": os.getenv("CUDA_VISIBLE_DEVICES"),
+        "requested_reserve_gib": reserve_gib,
+        "requested_reserve_bytes": int(reserve_gib * 1024**3),
+        "allocator_environment": {
+            key: os.getenv(key) for key in ("PYTORCH_CUDA_ALLOC_CONF", "PYTORCH_ALLOC_CONF")
+        },
+        "other_processes_controlled": False,
+        "empty_cache_used": False,
+        "scope": "Startup capacity reservation/loading only; separate from generation compute memory",
+        "stages": [],
+    }
+    _reservation = None
+
+    def save_stage(stage):
+        record["stages"].append(
+            {"stage": stage, "at": time.time(), **cuda_resource_snapshot(torch)}
+        )
+        atomic_write(record_path, json_bytes(record))
+
+    atomic_write(record_path, json_bytes(record))
+    try:
+        save_stage("before_reservation")
+        torch.cuda.reset_peak_memory_stats()
+        if record["requested_reserve_bytes"]:
+            _reservation = torch.empty(
+                (record["requested_reserve_bytes"],), dtype=torch.uint8, device="cuda"
+            )
+        save_stage("reservation_held")
+        network = load_cpu()
+        save_stage("cpu_weights_loaded_reservation_held")
+        _reservation = None
+        gc.collect()
+        save_stage("reservation_released_to_own_allocator_cache")
+        network = network.to("cuda").eval()
+        if on_device is not None:
+            network = on_device(network)
+        save_stage("weights_on_device")
+        record["startup_peak_allocated_bytes"] = torch.cuda.max_memory_allocated()
+        record["startup_peak_reserved_bytes"] = torch.cuda.max_memory_reserved()
+        torch.cuda.reset_peak_memory_stats()
+        save_stage("compute_peak_counters_reset")
+        record.update(status="ready", ended_at=time.time())
+        atomic_write(record_path, json_bytes(record))
+        return network, record
+    except Exception as error:
+        _reservation = None
+        gc.collect()
+        record.update(
+            status="startup_error",
+            ended_at=time.time(),
+            error={"type": type(error).__name__, "message": str(error)},
+        )
+        try:
+            save_stage("startup_failed_reservation_released")
+        except Exception as snapshot_error:
+            record["resource_snapshot_error"] = {
+                "type": type(snapshot_error).__name__,
+                "message": str(snapshot_error),
+            }
+        atomic_write(record_path, json_bytes(record))
+        raise
+
+
 class LocalInference:
     def __init__(self, args):
         import torch
@@ -147,30 +336,39 @@ class LocalInference:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         torch.set_num_threads(8)
         torch.manual_seed(args.seed)
-        self.network = (
-            AutoModelForCausalLM.from_pretrained(
+        numerical_profile = configure_attention_runtime(args.attention, args.matmul_precision)
+        self.adapter_identity = None
+
+        def load_cpu():
+            return AutoModelForCausalLM.from_pretrained(
                 args.model,
                 local_files_only=True,
                 dtype=getattr(torch, args.dtype),
                 attn_implementation=args.attention,
             )
-            .to("cuda")
-            .eval()
-        )
-        self.adapter_identity = None
-        if args.adapter:
-            import hashlib
-            from peft import PeftModel
 
-            adapter = Path(args.adapter)
-            self.adapter_identity = {
-                p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                for p in adapter.iterdir()
-                if p.is_file()
-            }
-            self.network = PeftModel.from_pretrained(
-                self.network, adapter, is_trainable=False
-            ).eval()
+        def attach_adapter(network):
+            if args.adapter:
+                import hashlib
+                from peft import PeftModel
+
+                adapter = Path(args.adapter)
+                self.adapter_identity = {
+                    p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                    for p in adapter.iterdir()
+                    if p.is_file()
+                }
+                return PeftModel.from_pretrained(network, adapter, is_trainable=False).eval()
+            return network
+
+        startup_path = self.output / "startup-resource.json"
+        self.network, startup_resource = load_with_startup_reservation(
+            load_cpu,
+            torch=torch,
+            reserve_gib=args.startup_reserve_gib,
+            record_path=startup_path,
+            on_device=attach_adapter,
+        )
         self.policy_version = (
             args.revision
             if self.adapter_identity is None
@@ -179,7 +377,7 @@ class LocalInference:
             + __import__("hashlib").sha256(json_bytes(self.adapter_identity)).hexdigest()
         )
         self.inference_profile = {
-            "version": "local-inference-profile-v0.12",
+            "version": "local-inference-profile-v0.12.1",
             "dtype": args.dtype,
             "attention": args.attention,
             "actual_parameter_dtype": str(next(self.network.parameters()).dtype),
@@ -188,6 +386,7 @@ class LocalInference:
             "max_batch": args.max_batch,
             "max_context_tokens": args.max_context,
             "seed": args.seed,
+            **numerical_profile,
         }
         self.pending = queue.Queue(maxsize=24)
         self.batch_index = 0
@@ -210,6 +409,12 @@ class LocalInference:
             "base_generation_config": self.network.generation_config.to_dict(),
             "inference_profile": self.inference_profile,
             "inference_profile_sha256": digest(json_bytes(self.inference_profile)),
+            "startup_resource": startup_resource,
+            "startup_resource_reference": {
+                "path": str(startup_path.resolve()),
+                "sha256": digest(startup_path.read_bytes()),
+                "bytes": startup_path.stat().st_size,
+            },
             "source_sha256": __import__("hashlib").sha256(Path(__file__).read_bytes()).hexdigest(),
             "weight_files": {
                 p.name: {"bytes": p.stat().st_size, "mtime_ns": p.stat().st_mtime_ns}
@@ -322,11 +527,23 @@ class LocalInference:
                 options.update(temperature=1.0, top_p=1.0, top_k=0, typical_p=1.0)
             trace = SamplingTrace(temperature)
             options["logits_processor"] = [trace]
+            torch.cuda.reset_peak_memory_stats()
+            compute_baseline = cuda_resource_snapshot(torch)
             started = time.monotonic()
             with torch.inference_mode():
                 generated = self.network.generate(**inputs, **options)
             sampled_logprobs = trace.finish(generated)
             elapsed = time.monotonic() - started
+            compute_resource = cuda_resource_snapshot(torch)
+            compute_resource["baseline_allocated_bytes"] = compute_baseline["allocated_bytes"]
+            compute_resource["additional_peak_allocated_bytes"] = max(
+                0, compute_resource["peak_allocated_bytes"] - compute_baseline["allocated_bytes"]
+            )
+            compute_resource["scope"] = (
+                "Actual generation group after a fresh peak reset; allocated peak excludes the earlier "
+                "startup reservation. Reserved totals may include reused startup cache. Shared by all "
+                "rows of this same batch, not additive per response."
+            )
             for index, work in enumerate(group):
                 tokens = generated[index, width:].tolist()
                 tokens, finished = completed_tokens(
@@ -386,6 +603,7 @@ class LocalInference:
                         "batch_row_index": index,
                         "prefix_width": width,
                         "batch_seconds": elapsed,
+                        "compute_resource": compute_resource,
                         "queue_and_generation_seconds": time.time() - work["started"],
                     },
                 }
@@ -419,12 +637,16 @@ def service_parser():
     parser.add_argument("--max-batch", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20260924)
     parser.add_argument("--dtype", choices=("bfloat16", "float32"), default="bfloat16")
-    parser.add_argument("--attention", choices=("sdpa", "eager"), default="sdpa")
+    parser.add_argument(
+        "--attention", choices=("sdpa", "eager", "sdpa_explicit_kv"), default="sdpa"
+    )
     parser.add_argument(
         "--native-tool-prompt",
         choices=("template_default", "single_call"),
         default="template_default",
     )
+    parser.add_argument("--matmul-precision", choices=("highest", "high"), default="highest")
+    parser.add_argument("--startup-reserve-gib", type=startup_reserve_value, default=0.0)
     return parser
 
 

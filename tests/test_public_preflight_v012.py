@@ -110,3 +110,26 @@ def test_actual_query_input_is_not_reported_as_empty_execution_lineage(world):
     report = call(world, 'preflight_submission', work_id='work', artifacts=['result'])
     assert report['execution_lineage'][0]['actual_inputs'] == [
         {'object_id': world.state['workspaces']['P']['query_input'], 'version_id': 'v1'}]
+
+
+def test_explicit_public_table_contract_catches_names_without_computing_values(world):
+    # Pure public-shape contract control: no domain evaluator or expected
+    # business values are supplied to this checker.
+    from proworksim.public_preflight import inspect_structure
+    item = {'work_item_id': 'P::work', 'requirements': {'public_structure': {
+        'sql_result': {'required_paths': [['tables', 'metrics']],
+                       'table_columns': {'metrics': ['customer_id', 'revenue_cents', 'order_count']}}}}}
+    document = {'alias': 'result', 'object_id': 'result-id', 'version_id': 'v1',
+                'kind': 'json', 'role': 'sql_result', 'dependencies': [],
+                'data': {'tables': {'customer_metrics': {'columns': [], 'rows': [[1, 1000, 1]]}}}}
+    wrong_name = inspect_structure(item, [document], {})
+    assert {'code': 'missing_public_path', 'role': 'sql_result', 'path': ['tables', 'metrics']} in wrong_name['issues']
+    document['data']['tables'] = {'metrics': {'columns': [{'name': x} for x in ['customer_id', 'revenue_cents']], 'rows': [[1, -999]]}}
+    assert any(i['code'] == 'public_table_columns' for i in inspect_structure(item, [document], {})['issues'])
+    document['data']['tables']['metrics']['columns'].append({'name': 'order_count'})
+    document['data']['tables']['metrics']['rows'] = [[1, -999, 1]]
+    assert inspect_structure(item, [document], {})['structurally_ready']
+    # Existing declarations without this field remain a narrower check.
+    item['requirements'] = {}
+    document['data']['tables'] = {'anything': {}}
+    assert inspect_structure(item, [document], {})['structurally_ready']

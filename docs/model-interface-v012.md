@@ -61,3 +61,40 @@ D0 成组比较必须冻结上下文策略、输出上限与格式上限，并�
 后续 D0 应在相同起点、模型与业务要求下，按预先固定的顺序随机化协议配置，保留所有格式、预算和业务失败。先检查多个实例上能否重复形成合法完整交付，再固定 Γ 采联合支持材料；不能边调提示边把成功池当作当前团队支持。公开来源/交付结构预检由世界接口另行提供，模型适配器不导入评价器，也不替工作人员补采用或依赖。
 
 D3 将另建完整多轮、成员归属明确的训练材料和基础 PPO 合同，不继续训练 v0.11 的三条零奖励首决策。格式失败的自身生成 token 是真实动作记录；同事消息、工具返回、先前输出作为后来 prompt 的部分，均不成为当前输出目标。奖励可训练性、有效工作 V、可靠 Mapper 与可重配支持资格继续分开。
+
+## 6. D0/D1 初始冻结之后：显式 efficient attention 候选
+
+这一节属于新候选 `local-inference-profile-v0.12.1`，不回写原 D0 或初始 D1 的 Γ、失败和 token 概率。新服务启动命令可明确选择：
+
+```text
+--dtype float32 --attention sdpa_explicit_kv --max-batch 1
+--matmul-precision highest --native-tool-prompt single_call
+```
+
+`--matmul-precision` 只允许 `highest` 或 `high`，默认 `highest`。profile 同时保存声明值、`torch.get_float32_matmul_precision()`、CUDA matmul 的实际 `allow_tf32`、cuDNN 的实际 `allow_tf32` 和 `NVIDIA_TF32_OVERRIDE`。`high` 是另一个明确的数值配置，不能当作与 `highest` 位级相同；这组字段进入服务与每次响应的 profile SHA256。已有服务进程不热修改，新源仅供另一次冻结和启动。
+
+**发现的计算路径问题。**安装环境是 PyTorch 2.6.0+cu124 / Transformers 4.57.6。Qwen2.5-7B 是 28 个 query heads、4 个 KV heads。HF 对无 padding 的单批 prefill 省略显式 attention mask，使用 `is_causal`；其 SDPA 适配器在该条件下传 `enable_gqa=True`。PyTorch 2.6 的 GQA 仅支持 Flash/math；同版 CUDA 选择器的 Flash/cuDNN 分支要求 FP16/BF16，而允许 FP32 的 memory-efficient 分支不接收这种头数不一致的原生 GQA。因此该 FP32 组合会走 math attention。[PyTorch 2.6 SDPA 文档](https://docs.pytorch.org/docs/2.6/generated/torch.nn.functional.scaled_dot_product_attention.html)、[2.6 CUDA 后端选择源码](https://github.com/pytorch/pytorch/blob/v2.6.0/aten/src/ATen/native/transformers/cuda/sdp_utils.cpp)。
+
+这使长 prefill 的注意力中间量按 N² 增长。仅一个 `B=1,H=28,N,N` FP32 张量，在 N=12000 时就是 15.02 GiB；这是尺寸公式，不是实际模型总峰值预测，也不能乘以层数冒充同时存活量。原错误记录中本进程张量 allocated 约 67.12 GiB，另有约 7.26 GiB reserved-but-unallocated，不能都归因其他共享作业或未用缓存。PyTorch 说明 `empty_cache()` 释放的是未用缓存，不能释放仍被张量占用的内存。[CUDA 内存管理说明](https://docs.pytorch.org/docs/2.6/notes/cuda.html#memory-management)。HF generate 已对支持的 Qwen forward 自动设置 `logits_to_keep=1`，此次不能先把主要峰值解释为全 prompt 的 vocabulary logits。
+
+**独立小张量实证。**在另一个物理 GPU6 进程、固定 seed、B=1、heads=28/4、head_dim=128、FP32、L=64/128 上，没有加载模型或生成业务动作。两种长度的默认 profiler 均实际记录 `aten::_scaled_dot_product_attention_math`；强制 Flash 因 dtype 拒绝，强制原生 GQA efficient 因头数不等拒绝。显式把相同 KV 按原组关系重复后，`enable_gqa=False` 的 efficient 调用实际运行 `fmha_cutlassF_f32_aligned_64x128_rf_sm80`。相对 math 的最大绝对差分别约 3.10e-6、2.98e-6；显式重复配合 math 为零差。实际自身进程 GPU 快照最高 562 MiB、PyTorch 分配峰值约 26.63 MiB，低于声明的 1 GiB 进程上限；源码摘要起止一致。原报告、源、张量和资源记录位于 `/tmp/proworksim-v012-sdpa-microprobe/`。
+
+小张量结果只证实存在可用、数学结构一致的计算路径，不能推出 12k 上下文性能、语言模型输出概率一致或任务成功。原正式运行没有 profiler，不把新的小张量记录倒填为旧模型运行的 kernel 测量。
+
+**实现约束。**`sdpa_explicit_kv` 在每层 attention 调用内部将 4 组 KV 按原映射 repeat 到 28 头，再设置 `enable_gqa=False`，强制 `SDPBackend.EFFICIENT_ATTENTION`。模型 KV cache 保持原 4 头，不改变参数、不删除分组语义、不降低 dtype。注册自定义 attention 时同时复用安装版 `sdpa` mask 函数，避免自定义名称漏掉 causal/padding mask。kernel 不可用就明确失败，不回退 math、eager 或 CPU，不偷偷改精度。
+
+对应离线检查覆盖 CLI、原 prompt 投影、原 KV 值与分组保持、causal/mask 传递、拒绝回退，以及 attention/mask 双注册和 TF32 身份；其中真实 Torch CPU 测试不加载模型、不初始化 CUDA。多轮训练入口也先注册同一 profile 并核对实际精度旗标，原 `.02/.002 nat` 概率门槛不变。
+
+在新正式模型批次前仍须单独执行一次旧短 prompt 的真实模型开发核验，记录实际概率、backend、资源与用时，再决定是否采用新 profile。若采用，应重新冻结并采样新的本地槽；旧批已闭合、中断和未尝试槽分别保留，不能用新结果替换旧失败或混合 Γ。本文不预写该模型级核验、长上下文或新批已经通过。
+
+## 7. 独立启动资源预留
+
+新增资源选项 `--startup-reserve-gib`，默认 0，仅接受有限的 0–64 GiB（含边界）；NaN、无穷和越界值在 CLI 解析时拒绝。它不进入数值 `inference_profile`，不改变 attention、TF32、采样、提示或 PPO 概率门槛；启动资源单独记录在 `startup-resource.json`，完整记录及其路径/大小/SHA256纳入 service manifest。
+
+当值大于 0 时，本进程先申请指定字节数的 CUDA 空张量，持有它完成 CPU 权重加载；然后释放张量引用到**自身 allocator 缓存**，不调用 `empty_cache()`，再将已加载权重搬到 CUDA。可选 adapter 的加载也计入启动阶段。默认 0 不申请占位张量，仍保留启动阶段事实。预留不保证后续所有计算一定有空间，也不控制、暂停或终止其他项目进程。其他进程可能看到可用显存减少，这属于已声明的共享资源使用，不能称为没有竞争。
+
+阶段记录包含实际 allocated/reserved、峰值、设备 free/total、CUDA_VISIBLE_DEVICES、PID 和 allocator 环境变量；CPU加载或预留失败也写明实际错误并释放本进程的预留引用，绝不将启动失败伪造为一次模型响应。预留没有随机采样，不消耗模型输出序列。
+
+启动结束后明确保存 `startup_peak_allocated_bytes` 与 `startup_peak_reserved_bytes`，再重置峰值统计。每个真实 generation group 开始前再次重置统计，响应的 `service_record.compute_resource` 分开记录实际 allocated 峰值、生成前 allocated 基线和新增峰值。reserved 总量可能仍含启动缓存，不能当作计算新增占用；同一 batch 多行共享这份测量，不能按每条响应累加。
+
+CPU mock 验证了“先预留→持有期间CPU加载→释放到缓存→权重搬入→重置计算峰值”的调用顺序、默认零预留、预留申请/CPU加载失败、adapter计入启动以及参数边界；这些检查不分配GPU、不启动模型。主运行者记录的独立模型数值/资源核验见 `runs/id-vtdo-v12-kernel-model-probe-gpu0/report.json`，与启动预留测试和新正式采样批分别报告。
