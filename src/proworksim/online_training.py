@@ -750,6 +750,9 @@ class SharedActor:
             report["status"] = "updated" if report["actor_optimizer_steps"] else "zero_step_zero_actor_advantage_or_gradient"
             report["actor_enabled_without_step"] = actor_enabled and not report["actor_optimizer_steps"]
             return report
+        except (KeyboardInterrupt, SystemExit) as error:
+            report.update(status="interrupted", interruption={"type": type(error).__name__, "message": str(error)})
+            raise
         except Exception as error:
             report.update(status="window_update_error", error={"type": type(error).__name__, "message": str(error)})
             raise
@@ -781,8 +784,8 @@ def run_online_windows(owner, protocol, output_dir, collector):
     report = {"version": VERSION, "protocol_sha256": digest(json_bytes(protocol)),
               "transport_kind": "resident_direct", "actual_network_http_calls": 0,
               "mode": mode, "windows": [], "status": "running"}
-    owner.save_checkpoint(output_dir / "initial-checkpoint")
     try:
+        owner.save_checkpoint(output_dir / "initial-checkpoint")
         for index, spec in enumerate(windows):
             identity = owner.begin_window(spec["window_id"])
             directory = output_dir / ("window-" + str(index))
@@ -804,6 +807,9 @@ def run_online_windows(owner, protocol, output_dir, collector):
                 break
         else:
             report["status"] = "complete"
+    except (KeyboardInterrupt, SystemExit) as error:
+        report.update(status="interrupted", interruption={"type": type(error).__name__, "message": str(error)})
+        raise
     except Exception as error:
         report.update(status="error", error={"type": type(error).__name__, "message": str(error)})
         raise

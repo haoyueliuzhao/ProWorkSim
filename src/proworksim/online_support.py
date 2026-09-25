@@ -358,7 +358,9 @@ def diagnose_window(declaration, records):
     }
 
 
-def assess_online_validity(episode, spec, *, independent_capture, members, reward_result=None):
+def assess_online_validity(
+    episode, spec, *, independent_capture, members, reward_result=None, window=None
+):
     """Compose record/permission with independently evaluated scoped work facts.
 
     The scalar reward and its completion flag are never used as V. A short
@@ -368,7 +370,7 @@ def assess_online_validity(episode, spec, *, independent_capture, members, rewar
 
     from .online_rewards import assess_online_reward
     from .storage import read_json
-    from .team_rollout import work_validity
+    from .team_rollout import validate_window, work_validity
     from .team_validity import assess_record_permission
 
     root = Path(episode)
@@ -385,9 +387,17 @@ def assess_online_validity(episode, spec, *, independent_capture, members, rewar
         or reward.get("manifest_sha256") != manifest_sha
     ):
         raise ValueError("Scoped work facts do not bind this exact episode")
-    spec_id = "online-scoped-validity-v0.13:" + digest(json_bytes(spec))
+    if window is not None:
+        window = validate_window(window)
+        if window["team_policy_fingerprint"] != digest(json_bytes(manifest["policies"])):
+            raise ValueError("Record validation window differs from the actual episode policies")
+    spec_id = "online-scoped-validity-v0.13.1:" + digest(json_bytes(spec))
     common = assess_record_permission(
-        root, members=members, independent_capture=independent_capture, spec_id=spec_id
+        root,
+        members=members,
+        independent_capture=independent_capture,
+        spec_id=spec_id,
+        window=window,
     )
     checks = [
         row
@@ -431,6 +441,7 @@ def export_online_rollout(episode, *, window, members, independent_capture, rewa
         independent_capture=independent_capture,
         members=members,
         reward_result=reward,
+        window=window,
     )
     rollout = export_team_rollout(
         episode, window=window, members=members, validity=validity, reward=reward

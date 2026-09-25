@@ -30,6 +30,7 @@ def _record_permission_checks(
     *,
     allow_rejected_actions,
     allow_repair,
+    window=None,
 ):
     checks = []
     start, end = manifest["experience"]["start"], manifest["experience"]["end"]
@@ -81,7 +82,7 @@ def _record_permission_checks(
         view = member_view(
             {
                 "rollout_id": manifest["episode_id"],
-                "window": {},
+                "window": copy.deepcopy(window) if window is not None else {},
                 "manifest": manifest,
                 "members": members,
                 "events": events,
@@ -119,6 +120,7 @@ def _record_permission_checks(
             "All observed model generations have complete matching actual requests/responses; tokens are a separate actor gate",
             {
                 "member_id": member_id,
+                **({"online_window_id": window["window_id"]} if window is not None else {}),
                 "conflicts": conflicts,
                 "unlinked_action_sequences": unlinked_actions,
                 "required_decisions": [row["call_id"] for row in required_decisions],
@@ -169,6 +171,7 @@ def assess_record_permission(
     spec_id,
     allow_rejected_actions=True,
     allow_repair=True,
+    window=None,
 ):
     """Read only common evidence gates without imposing any task delivery scope."""
     root = Path(episode)
@@ -201,6 +204,7 @@ def assess_record_permission(
         manifest_ref,
         allow_rejected_actions=allow_rejected_actions,
         allow_repair=allow_repair,
+        window=window,
     )
     return work_validity(checks, spec_id=spec_id)
 

@@ -15,6 +15,7 @@ class FakeOwner:
         self.window_id = window_id
         self.provider_done = provider_done
         self.argument_error_then_read = argument_error_then_read
+        self.context_after = None
         self.recipe = {"temperature": 0.7, "max_output_tokens": 16, "max_length": 8192}
         self.calls = Counter()
         self.requests = []
@@ -44,6 +45,20 @@ class FakeOwner:
         role = observed["actor_id"]
         self.calls[role] += 1
         self.requests.append(copy.deepcopy(request))
+        if self.context_after is not None and self.calls[role] > self.context_after:
+            body = {
+                "error": {
+                    "code": "context_length_exceeded",
+                    "prompt_tokens": 8190,
+                    "requested_output": request["max_tokens"],
+                    "context_limit": 8192,
+                },
+                "transport_kind": "resident_direct",
+                "generation_started": False,
+                "actor_identity": self.freeze_identity(),
+                "online_window_id": self.window_id,
+            }
+            return {"http_status": 400, "body": body, "raw_body": json.dumps(body)}
         control = "staff_done" if role == "provider" and self.provider_done else "staff_wait"
         arguments = {"reason": "CPU collection fixture"}
         if self.argument_error_then_read and role == "provider" and self.calls[role] <= 2:
@@ -181,3 +196,44 @@ def test_postprocessing_fault_preserves_closed_unknown_sample(tmp_path, monkeypa
         "actor_mask": {"fixed-slot": False},
         "weights": {"fixed-slot": 1.0},
     }
+
+
+def test_context_stop_record_check_uses_frozen_window_and_retains_prior_actions(tmp_path):
+    from proworksim.member_views import member_view
+    from proworksim.online_support import assess_online_validity
+
+    owner = FakeOwner()
+    owner.context_after = 1
+    output = tmp_path / "collected"
+    entry = collect_window(owner, spec("train-w0-handoff"), output)[0]
+    rollout = entry["rollout"]
+    assert rollout is not None and entry["reward"]["eligible"] is True
+    assert entry["reward"]["reward"] == 0
+    view = member_view(rollout, "provider")
+    assert view["own_action_count"] == 1 and view["complete_actor_trajectory"]
+    assert view["decisions"][-1]["generation_status"] == "not_started_direct_context_limit"
+    assert rollout["work_validity"]["components"]["record"]["value"] is True
+    assert rollout["work_validity"]["spec_id"].startswith("online-scoped-validity-v0.13.1:")
+    capture = read_json(output / "slot-0/public-capture.json")
+    no_binding = assess_online_validity(
+        output / "slot-0/episode",
+        rollout["online_scope"]["reward_spec"],
+        independent_capture=capture,
+        members=rollout["members"],
+    )
+    assert no_binding["components"]["record"]["value"] is None
+    wrong = copy.deepcopy(rollout["window"])
+    wrong["window_id"] = "a-different-window"
+    foreign = assess_online_validity(
+        output / "slot-0/episode",
+        rollout["online_scope"]["reward_spec"],
+        independent_capture=capture,
+        members=rollout["members"],
+        window=wrong,
+    )
+    assert foreign["components"]["record"]["value"] is None
+    support = read_json(output / "support.json")
+    assert (
+        support["groups"][0]["support"]["blocks"]["provider"]["base_actor_mask"]["fixed-slot"]
+        is True
+    )

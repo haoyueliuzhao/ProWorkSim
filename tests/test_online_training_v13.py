@@ -305,3 +305,71 @@ def test_real_torchversion_metadata_roundtrips_with_weights_only(tmp_path):
     assert saved["inference_profile"] == owner.inference_profile
     assert type(saved["inference_profile"]["torch"]) is str
     assert record["serialized_reload_exact"] is True
+
+
+def test_collector_interruption_is_reported_and_reraised_with_actual_zero_steps(tmp_path):
+    import json
+
+    torch = pytest.importorskip("torch")
+    for index, interruption in enumerate((KeyboardInterrupt, SystemExit)):
+        owner = _owner(tmp_path, torch, name="interrupt-owner-" + str(index))
+        before = owner.freeze_identity()
+        output = tmp_path / ("interrupted-run-" + str(index))
+
+        def interrupted_collector(actor, spec, directory):
+            raise interruption("explicit collector stop")
+
+        with pytest.raises(interruption, match="explicit collector stop"):
+            run_online_windows(owner, {"windows": [{"window_id": "w", "slots": [{"slot_id": "a"}]}]},
+                               output, interrupted_collector)
+        record = json.loads((output / "report.json").read_text())
+        assert record["status"] == "interrupted"
+        assert record["interruption"]["type"] == interruption.__name__
+        assert record["actor_steps_total"] == record["critic_steps_total"] == 0
+        assert record["final_actor_identity"] == before
+        assert len(record["windows"]) == 1
+
+
+def test_update_interruption_preserves_zero_steps_and_reports_admission_stage(tmp_path):
+    import json
+
+    torch = pytest.importorskip("torch")
+    owner = _owner(tmp_path, torch)
+    owner.begin_window("window-0")
+    before = owner.freeze_identity()
+    entry = _sample_entry(owner, reward=1)
+
+    def interrupted_forward(*args, **kwargs):
+        raise KeyboardInterrupt("explicit pre-backward stop")
+
+    owner.model.forward = interrupted_forward
+    output = tmp_path / "interrupted-update"
+    with pytest.raises(KeyboardInterrupt, match="explicit pre-backward stop"):
+        owner.update_window([entry], output, feature_function=_features)
+    record = json.loads((output / "report.json").read_text())
+    assert record["status"] == "interrupted" and record["stage"] == "admission"
+    assert record["actor_optimizer_steps"] == record["critic_optimizer_steps"] == 0
+    assert record["backward_decisions_completed"] == 0
+    assert record["before_actor_identity"] == record["after_actor_identity"] == before
+
+
+def test_initial_checkpoint_failure_also_closes_runner_error_report(tmp_path):
+    import json
+
+    class Owner:
+        actor_steps = critic_steps = 0
+
+        def save_checkpoint(self, path):
+            raise RuntimeError("explicit startup checkpoint failure")
+
+        def freeze_identity(self):
+            return {"fixture": "unchanged"}
+
+    output = tmp_path / "startup-failed"
+    with pytest.raises(RuntimeError, match="explicit startup checkpoint failure"):
+        run_online_windows(Owner(), {"windows": [{"window_id": "w", "slots": [{"slot_id": "a"}]}]},
+                           output, lambda owner, spec, directory: [])
+    record = json.loads((output / "report.json").read_text())
+    assert record["status"] == "error" and record["windows"] == []
+    assert record["actor_steps_total"] == record["critic_steps_total"] == 0
+    assert record["error"]["message"] == "explicit startup checkpoint failure"
