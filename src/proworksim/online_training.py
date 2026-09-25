@@ -749,6 +749,7 @@ class SharedActor:
                 raise ValueError("An optimizer step occurred but no actor parameter changed")
             report["status"] = "updated" if report["actor_optimizer_steps"] else "zero_step_zero_actor_advantage_or_gradient"
             report["actor_enabled_without_step"] = actor_enabled and not report["actor_optimizer_steps"]
+            report["stage"] = "complete"
             return report
         except (KeyboardInterrupt, SystemExit) as error:
             report.update(status="interrupted", interruption={"type": type(error).__name__, "message": str(error)})

@@ -151,6 +151,7 @@ def test_two_real_cpu_sampling_update_cycles_share_optimizer_and_reload(tmp_path
         entry = _sample_entry(owner, reward=1.0)
         result = owner.update_window([entry], tmp_path / ("update-" + str(index)), feature_function=_features)
         assert result["status"] == "updated"
+        assert result["stage"] == "complete"
         assert result["actor_optimizer_steps"] == result["critic_optimizer_steps"] == 1
         assert result["behavior_probability_passed"] is True
         assert owner.freeze_identity() != previous_identity
