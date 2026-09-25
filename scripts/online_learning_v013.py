@@ -2,6 +2,7 @@
 
 import argparse
 import importlib
+import importlib.metadata
 from pathlib import Path
 
 from proworksim.audit import code_identity
@@ -22,6 +23,10 @@ def main():
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=False)
     protocol = read_json(Path(args.protocol))
+    dependencies = {name: importlib.metadata.version(name) for name in ("duckdb", "openpyxl", "torch", "transformers", "peft")}
+    if dependencies["duckdb"] != "1.5.5":
+        raise ValueError("Use the project-pinned DuckDB 1.5.5 in the resident world executor environment")
+    atomic_write(output / "runtime-dependencies.json", json_bytes(dependencies))
     before = code_identity()
     atomic_write(output / "source-before.json", json_bytes(before))
     module, name = args.collector.split(":", 1)
