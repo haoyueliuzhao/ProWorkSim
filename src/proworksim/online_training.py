@@ -7,6 +7,7 @@ here; collection belongs to an injected, separately versioned world runner.
 
 import copy
 import hashlib
+import json
 import math
 import os
 import resource
@@ -255,9 +256,11 @@ class SharedActor:
         (self.output / "calls").mkdir()
         self.recipe = recipe_config(recipe)
         self.device = device
-        self.base_identity = copy.deepcopy(base_identity)
-        self.inference_profile = copy.deepcopy(inference_profile)
-        self.inference_profile_sha256 = digest(json_bytes(inference_profile))
+        # Metadata is JSON data, never a library-specific str subclass in a
+        # torch checkpoint. TorchVersion otherwise needs unsafe pickle globals.
+        self.base_identity = json.loads(json_bytes(base_identity))
+        self.inference_profile = json.loads(json_bytes(inference_profile))
+        self.inference_profile_sha256 = digest(json_bytes(self.inference_profile))
         self.actor_parameters = {n: p for n, p in model.named_parameters() if p.requires_grad}
         if not self.actor_parameters or (require_lora and any("lora_" not in n for n in self.actor_parameters)):
             raise ValueError("Only one declared trainable LoRA actor is supported")
@@ -344,7 +347,7 @@ class SharedActor:
             "version": "resident-online-inference-v0.13", "dtype": "float32",
             "attention": attention, "max_batch": 1, "native_tool_prompt": "single_call",
             "max_context_tokens": recipe["max_length"], "seed": recipe["seed"],
-            "torch": torch.__version__, "transformers": transformers.__version__, "peft": peft.__version__,
+            "torch": str(torch.__version__), "transformers": str(transformers.__version__), "peft": str(peft.__version__),
             **numerical,
         }
         return cls(network, tokenizer, output=output, recipe=recipe, device="cuda",

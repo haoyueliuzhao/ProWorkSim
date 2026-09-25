@@ -79,3 +79,5 @@ PYTHONPATH=src CUDA_VISIBLE_DEVICES=0 .train-venv/bin/python scripts/online_lear
 ## 局部验证的范围
 
 新增 CPU 测试验证：失败/多轮完整保留与固定分母；错权重/丢失输出拒绝；长度不裁剪；两次真实 Torch 小模型采样→更新→新采样时使用同一 actor optimizer；零信号零步后继续下一窗口；概率不一致时两优化器都不更新；共同 actor/critic/optimizer/RNG 状态保存、重读与恢复；禁止 collector 丢弃失败槽。小模型没有专业工作能力，测试通过不能称为 Qwen 在线训练成功或跨工作迁移。
+
+初次真实 O0 在初始共同检查点安全重读时暴露了元数据序列化缺陷：`torch.__version__` 是 `TorchVersion` 字符串子类，直接进入 `.pt` 会被 `weights_only=True` 拒绝。该次在生成任何响应前停止，不能归为模型行为失败。修订将库版本显式转为普通 `str`，并在 owner 接收 base/profile 元数据时做 JSON 数据规范化，使嵌套值也只保留普通类型；没有关闭 `weights_only`、加入 pickle 全局白名单或改写原失败文件。真实 Torch CPU 回归同时复现原始子类安全加载失败，以及修订后共同检查点安全重读成功。

@@ -92,7 +92,7 @@ def test_sequence_limit_excludes_entire_member_without_cropping():
     assert result["slots"][0]["members"]["provider"]["exclusions"] == ["full_actual_sequence_exceeds_frozen_max_length"]
 
 
-def _owner(tmp_path, torch, name="owner"):
+def _owner(tmp_path, torch, name="owner", *, profile=None, base_identity=None):
     class TinyActor(torch.nn.Module):
         def __init__(self):
             super().__init__()
@@ -127,8 +127,8 @@ def _owner(tmp_path, torch, name="owner"):
             return "fixture output " + str(ids)
 
     return SharedActor(TinyActor(), Tokenizer(), output=tmp_path / name,
-                       base_identity={"manifest": {"sha256": "fixture-base"}},
-                       inference_profile={"native_tool_prompt": "single_call", "fixture": True},
+                       base_identity=base_identity or {"manifest": {"sha256": "fixture-base"}},
+                       inference_profile=profile or {"native_tool_prompt": "single_call", "fixture": True},
                        recipe={"max_length": 64, "max_output_tokens": 2}, device="cpu", torch_module=torch)
 
 
@@ -278,3 +278,30 @@ def test_reseed_requires_idle_episode_boundary_and_does_not_change_weights(tmp_p
     owner.busy = True
     with pytest.raises(ValueError, match="idle collection boundary"):
         owner.reseed(42, label="during-generation")
+
+
+def test_real_torchversion_metadata_roundtrips_with_weights_only(tmp_path):
+    import pickle
+
+    torch = pytest.importorskip("torch")
+    from torch.torch_version import TorchVersion
+
+    version = TorchVersion(str(torch.__version__))
+    assert isinstance(version, str) and type(version) is not str
+    raw = tmp_path / "uncanonical-library-version.pt"
+    torch.save({"profile": {"torch": version}}, raw)
+    with pytest.raises(pickle.UnpicklingError, match="TorchVersion"):
+        torch.load(raw, weights_only=True)
+    owner = _owner(
+        tmp_path, torch,
+        profile={"torch": version, "nested": {"libraries": [version]}, "native_tool_prompt": "single_call"},
+        base_identity={"manifest": {"sha256": "fixture-base"}, "revision_metadata": {"torch": version}},
+    )
+    assert type(owner.inference_profile["torch"]) is str
+    assert type(owner.inference_profile["nested"]["libraries"][0]) is str
+    assert type(owner.base_identity["revision_metadata"]["torch"]) is str
+    record = owner.save_checkpoint(tmp_path / "safe-checkpoint")
+    saved = torch.load(tmp_path / "safe-checkpoint" / "shared-state.pt", weights_only=True)
+    assert saved["inference_profile"] == owner.inference_profile
+    assert type(saved["inference_profile"]["torch"]) is str
+    assert record["serialized_reload_exact"] is True
