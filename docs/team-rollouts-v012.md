@@ -60,7 +60,7 @@ V 的未知是 JSON `null`，不能转换为数值 0 再报告成工作失败。
 
 ## b、q、v 和原始分母
 
-`support_weights.build_support(slots, window=..., member_ids=..., min_class_count=...)` 接收开始前固定的原始联合 slot 清单。M 是所有这些 slot 的数目，含采集失败、未知、无动作和不可训练记录。同一联合 rollout 不能按成员投影复制为多个样本；重复 ID、跨布局/协议/策略窗口、混用 Mapper/Validity 合同都被拒绝。
+`support_weights.build_support(slots, window=..., member_ids=..., min_class_count=...)` 接收开始前固定的原始联合 slot 清单。M 是其中实际进入采集的 slot 数目，含采集失败、未知、无动作和不可训练记录。完整执行的冻结清单可以直接提供 M；操作者中断后完全未启动的计划名额须另列，不是经验样本，不能构造成 unknown 占位来估计 b/v/yield。本轮正式物化 helper 要求已完成全部预声明采集，否则只归档已闭合/开放/未启动目录，不声称获得完整固定窗口。同一联合 rollout 不能按成员投影复制为多个样本；重复 ID、跨布局/协议/策略窗口、混用 Mapper/Validity 合同都被拒绝。
 
 对每个成员，E 为可训练且 V=true、可靠映射并达到预声明频数门槛的 slot；`n_by_class`、`n_positive`、`v=n_positive/M`、`b=n_by_class/n_positive` 都被物化。另存门槛前候选数、逐 slot 排除原因、基础 actor mask 和语义支持。没有正支持时 b 为空，单类时组合自由度为 0；仍保留基础分支，不能靠跨布局或老师数据补类。
 
