@@ -19,6 +19,8 @@ from pathlib import Path
 
 from proworksim.audit import code_identity
 from proworksim.member_views import member_view
+from proworksim.scenario_registry import situation_fingerprint, validate_registry
+from proworksim.team_rollout import validate_window
 from proworksim.storage import atomic_write, digest, json_bytes, read_json as read_stored_json
 
 VERSION = "multiturn-ppo-v0.12"
@@ -177,6 +179,106 @@ def token_ppo(torch, new_logp, old_logp, advantage, mask, *, composition=1.0, el
     }
 
 
+def collection_contract(spec):
+    """Bind four selection slots to a real frozen collection, not a cohort label."""
+
+    def pinned(name):
+        item = spec[name]
+        if not isinstance(item, dict) or set(item) != {"path", "sha256"}:
+            raise ValueError("Pinned collection reference requires path/sha256: " + name)
+        if sha_file(item["path"]) != item["sha256"]:
+            raise ValueError("Pinned collection evidence bytes changed: " + name)
+        return read_json(item["path"])
+
+    protocol = pinned("collection_protocol")
+    report = pinned("collection_report")
+    registry = pinned("situation_registry")
+    validate_registry(registry)
+    protocol_sha = spec["collection_protocol"]["sha256"]
+    if report.get("protocol_sha256") != protocol_sha:
+        raise ValueError("Collection report refers to another frozen protocol")
+    source = report.get("source_before")
+    if (
+        not isinstance(source, dict)
+        or source != report.get("source_after")
+        or source.get("code_dirty") is not False
+    ):
+        raise ValueError("Collection report requires an unchanged clean sampling source")
+    if protocol.get("situation_registry", {}).get("sha256") != spec["situation_registry"]["sha256"]:
+        raise ValueError("Situation registry differs from the frozen collection protocol")
+    fixed = protocol.get("fixed_training_slot_selection", {}).get("episode_names")
+    slot_ids = [slot["slot_id"] for slot in spec["slots"]]
+    if fixed != slot_ids or len(set(slot_ids)) != 4:
+        raise ValueError(
+            "Inventory must preserve the protocol's four fixed training slots and order"
+        )
+    declarations = protocol.get("episodes", [])
+    declared = {row["episode_name"]: row for row in declarations}
+    if len(declared) != len(declarations):
+        raise ValueError("Duplicate collection slot declaration")
+    cases = report.get("cases", [])
+    case_records = {row["episode_name"]: row for row in cases}
+    if len(case_records) != len(cases):
+        raise ValueError("Duplicate actual collection case")
+    situations = {row["scenario_id"]: row for row in registry["situations"]}
+    gamma = digest(
+        json_bytes(
+            {
+                "frozen_protocol": protocol_sha,
+                "runtime_source_tree": source["source_tree_sha256"],
+                "service_protocol": protocol["backends"]["qwen"],
+            }
+        )
+    )
+    expected = {}
+    for slot in spec["slots"]:
+        sid = slot["slot_id"]
+        declaration = declared.get(sid)
+        if (
+            not declaration
+            or declaration.get("repeat") != 1
+            or declaration.get("backend") != "qwen"
+            or declaration.get("target_roles") != MEMBERS
+        ):
+            raise ValueError(
+                "Each fixed slot must be declared Qwen repeat1 with all target members"
+            )
+        situation_id = declaration.get("situation_registry_id")
+        if situation_id not in situations:
+            raise ValueError("Training slot has no exact frozen situation declaration")
+        window = validate_window(slot["expected_window"])
+        if (
+            window["xi_id"] != situation_id
+            or window["xi_fingerprint"] != situation_fingerprint(situations[situation_id])
+            or window["gamma_fingerprint"] != gamma
+        ):
+            raise ValueError("Expected slot window differs from its actual collection/situation")
+        actual_case = case_records.get(sid)
+        if (
+            not actual_case
+            or actual_case.get("source_before") != source
+            or actual_case.get("source_after") != source
+            or not actual_case.get("episode_id")
+        ):
+            raise ValueError("Selected slot lacks a closed case from this frozen collection")
+        expected[sid] = {"window": window, "declaration": declaration, "case": actual_case}
+    if (
+        len({row["window"]["xi_id"] for row in expected.values()}) != 4
+        or len({row["window"]["window_id"] for row in expected.values()}) != 4
+    ):
+        raise ValueError("Keep four distinct situations and their independent D2 window identities")
+    return {
+        "source": source,
+        "gamma_fingerprint": gamma,
+        "expected_slots": expected,
+        "protocol_reference": reference(spec["collection_protocol"]["path"]),
+        "report_reference": reference(spec["collection_report"]["path"]),
+        "registry_reference": reference(spec["situation_registry"]["path"]),
+        "fixed_slot_ids": fixed,
+        "scope": "Common pinned protocol/report/source/Gamma, with independent exact-situation window IDs",
+    }
+
+
 def prepare_inventory(path):
     spec = read_json(path)
     if spec.get("version") != "multiturn-ppo-inventory-v0.12" or spec.get("member_ids") != MEMBERS:
@@ -184,6 +286,7 @@ def prepare_inventory(path):
     slots = spec.get("slots", [])
     if len(slots) != 4 or len({s["slot_id"] for s in slots}) != 4:
         raise ValueError("Exactly four predeclared Qwen repeat1 slots are required")
+    cohort = collection_contract(spec)
     expected = spec["expected_policy"]
     required = {
         "system_fingerprint",
@@ -204,6 +307,7 @@ def prepare_inventory(path):
         "gates": {},
         "errors": [],
         "learning_gain_measured": False,
+        "collection_cohort": cohort,
     }
     gate = spec["d0_gate"]
     gate_data = read_json(gate["path"])
@@ -270,6 +374,27 @@ def prepare_inventory(path):
                 != rollout["events"]
             ):
                 raise ValueError("TeamRollout events differ from fixed original episode interval")
+            expected_slot = cohort["expected_slots"][slot["slot_id"]]
+            if (
+                rollout["window"] != expected_slot["window"]
+                or actual_manifest["source_start"] != cohort["source"]
+                or actual_manifest.get("episode_id") != expected_slot["case"]["episode_id"]
+                or rollout.get("rollout_id") != actual_manifest.get("episode_id")
+                or rollout["window"]["team_policy_fingerprint"]
+                != digest(json_bytes(actual_manifest["policies"]))
+            ):
+                raise ValueError(
+                    "Actual rollout/window/policy/source does not match its frozen collection slot"
+                )
+            declared_scenario_sha = expected_slot["declaration"].get("expected_scenario_sha256")
+            if (
+                not declared_scenario_sha
+                or actual_manifest.get("scenario", {}).get("sha256") != declared_scenario_sha
+                or expected_slot["case"].get("scenario_sha256") != declared_scenario_sha
+            ):
+                raise ValueError(
+                    "Actual episode scenario differs from the declared collection slot"
+                )
             windows.append(rollout["window"])
             if sorted(rollout["members"]) != sorted(MEMBERS):
                 raise ValueError("Do not drop or add target members")
@@ -407,13 +532,9 @@ def prepare_inventory(path):
     result["gates"]["four_exact_situations_same_gamma_policy"] = (
         len(windows) == 4
         and len({w["xi_id"] for w in windows}) == 4
-        and len(
-            {
-                (w["gamma_fingerprint"], w["team_policy_fingerprint"], w["window_id"])
-                for w in windows
-            }
-        )
-        == 1
+        and len({w["window_id"] for w in windows}) == 4
+        and all(w["gamma_fingerprint"] == cohort["gamma_fingerprint"] for w in windows)
+        and len({(w["gamma_fingerprint"], w["team_policy_fingerprint"]) for w in windows}) == 1
     )
     result["gates"]["at_least_two_members_multiturn"] = len(multi) >= 2
     result["gates"]["credible_return_differences"] = (

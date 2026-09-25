@@ -11,24 +11,98 @@
 ```json
 {
   "version": "multiturn-ppo-inventory-v0.12",
-  "member_ids": ["provider", "implementer", "reviewer"],
+  "member_ids": [
+    "provider",
+    "implementer",
+    "reviewer"
+  ],
+  "collection_protocol": {
+    "path": "/绝对路径/examples/id-vtdo-v12/d1-efficient-r1-protocol.json",
+    "sha256": "实际原协议文件摘要"
+  },
+  "collection_report": {
+    "path": "/绝对路径/新16槽采样目录/report.json",
+    "sha256": "实际封闭批次报告摘要"
+  },
+  "situation_registry": {
+    "path": "/绝对路径/examples/id-vtdo-v12/situation-registry-efficient.json",
+    "sha256": "与协议指定registry相同的文件摘要"
+  },
   "slots": [
-    {"slot_id": "预先声明的槽位1", "team_rollout": ".../team-rollout.json", "team_rollout_sha256": "..."},
-    {"slot_id": "预先声明的槽位2", "team_rollout": ".../team-rollout.json", "team_rollout_sha256": "..."},
-    {"slot_id": "预先声明的槽位3", "team_rollout": ".../team-rollout.json", "team_rollout_sha256": "..."},
-    {"slot_id": "预先声明的槽位4", "team_rollout": ".../team-rollout.json", "team_rollout_sha256": "..."}
+    {
+      "slot_id": "d1e1-qwen-orders_a-split_a-1",
+      "team_rollout": "/绝对路径/D2物化目录/window-0/slot-实际序号/team-rollout.json",
+      "team_rollout_sha256": "实际文件摘要",
+      "expected_window": {
+        "window_id": "原D2情境窗口ID-0",
+        "xi_id": "decision-team-orders_a-split_a-base-public-structure",
+        "xi_fingerprint": "原登记情境指纹",
+        "gamma_fingerprint": "由同一协议+采样源+服务配置重算的共同指纹",
+        "team_policy_fingerprint": "实际manifest.policies的共同指纹"
+      }
+    },
+    {
+      "slot_id": "d1e1-qwen-orders_a-split_b-1",
+      "team_rollout": "/绝对路径/D2物化目录/window-1/slot-实际序号/team-rollout.json",
+      "team_rollout_sha256": "实际文件摘要",
+      "expected_window": {
+        "window_id": "原D2情境窗口ID-1",
+        "xi_id": "decision-team-orders_a-split_b-base-public-structure",
+        "xi_fingerprint": "原登记情境指纹",
+        "gamma_fingerprint": "由同一协议+采样源+服务配置重算的共同指纹",
+        "team_policy_fingerprint": "实际manifest.policies的共同指纹"
+      }
+    },
+    {
+      "slot_id": "d1e1-qwen-orders_b-split_a-1",
+      "team_rollout": "/绝对路径/D2物化目录/window-2/slot-实际序号/team-rollout.json",
+      "team_rollout_sha256": "实际文件摘要",
+      "expected_window": {
+        "window_id": "原D2情境窗口ID-2",
+        "xi_id": "decision-team-orders_b-split_a-base-public-structure",
+        "xi_fingerprint": "原登记情境指纹",
+        "gamma_fingerprint": "由同一协议+采样源+服务配置重算的共同指纹",
+        "team_policy_fingerprint": "实际manifest.policies的共同指纹"
+      }
+    },
+    {
+      "slot_id": "d1e1-qwen-orders_b-split_b-1",
+      "team_rollout": "/绝对路径/D2物化目录/window-3/slot-实际序号/team-rollout.json",
+      "team_rollout_sha256": "实际文件摘要",
+      "expected_window": {
+        "window_id": "原D2情境窗口ID-3",
+        "xi_id": "decision-team-orders_b-split_b-base-public-structure",
+        "xi_fingerprint": "原登记情境指纹",
+        "gamma_fingerprint": "由同一协议+采样源+服务配置重算的共同指纹",
+        "team_policy_fingerprint": "实际manifest.policies的共同指纹"
+      }
+    }
   ],
   "expected_policy": {
     "system_fingerprint": "实际只读base版本",
-    "inference_profile_sha256": "...",
-    "weight_manifest_sha256": "...",
-    "service_manifest_sha256": "..."
+    "inference_profile_sha256": "实际数值profile摘要",
+    "weight_manifest_sha256": "实际base权重manifest摘要",
+    "service_manifest_sha256": "实际服务manifest文件摘要"
   },
-  "service_manifest": ".../service.json",
-  "service_records": "实际本地服务ledger目录",
-  "d0_gate": {"path": ".../D0-report.json", "sha256": "...", "field_path": ["真实报告中的判定键"]}
+  "service_manifest": "/绝对路径/runs/qwen-service-v12-efficient/service.json",
+  "service_records": "/绝对路径/runs/qwen-service-v12-efficient",
+  "d0_gate": {
+    "path": "/绝对路径/runs/id-vtdo-v12-d0-gates.json",
+    "sha256": "原D0报告实际文件摘要",
+    "field_path": [
+      "backends",
+      "qwen",
+      "passed"
+    ]
+  }
 }
 ```
+
+清单中的四个槽名及顺序必须逐项等于新冻结协议的 `fixed_training_slot_selection.episode_names`；每项还必须在原 `episodes` 中明确为 Qwen、repeat=1、全三个目标成员。`collection_report` 绑定同一协议摘要，提供实际起止干净采样源码与选中 case 的 episode ID/场景摘要。`situation_registry` 必须与协议指定摘要相同，四项 ξ 指纹由原登记行重算。`expected_window` 必须逐字保持对应 D2 TeamRollout 的原五字段，不能重新编造窗口ID。
+
+**同一采集 cohort 不等于同一情境窗口。**四个 ξ 的 `window_id` 必须各自独立；共同 Γ 由 `digest(json_bytes({frozen_protocol: 协议SHA, runtime_source_tree: 实际采样source_tree_sha256, service_protocol: protocol.backends.qwen}))` 验证，团队政策指纹也必须一致并匹配每个原 manifest.policies。不存在只凭手填 cohort 字符串放行的入口。当前 D3 内部路径按工作目录解析，为避免与 D2 的相对路径规则混淆，构建这份清单时全部使用绝对路径。
+
+本轮 `d0_gate.field_path` 固定引用原报告的 `backends.qwen.passed=false`。新 attention 工程核验或新 Γ 采样不能改写这个门槛；本轮只作 prepare-only，不能更新参数。
 
 四个槽名在采样前固定；收集后把实际文件摘要纳入训练冻结。D0 是否通过必须从摘要匹配的实际报告取值，不能手填一个 `passed=true`。每条 TeamRollout 再核对原封闭 EpisodeManifest、起止干净源身份和经历区间 SHA256；每个成员的实际 response/request 再与原本地服务 ledger 对齐。输入与输出 IDs、输出 mask、原行为概率来自实际采样，不重新分词，也不以复算概率覆盖原记录。
 
@@ -97,3 +171,9 @@ CUDA_VISIBLE_DEVICES='' PYTHONPATH=src .train-venv/bin/python \
 它从含真实动量的共同 AdamW 状态出发，调用正式 `materialize_weights`，比较基础分支与 Q=B 分支的完整 loss、梯度、参数更新和 optimizer 状态；另验证 q/b 的基础加残余形式、失败残余权重 1、无自身动作零梯度、输入位置零目标梯度、critic 不随 q 变化、PPO ratio 与组成权重分离。报告保留实际小张量数值，不能把这些 CPU 检查当作真正 PPO 或学习收益。
 
 只有主运行者确认全部门槛并另行冻结后，才使用 `--execute-training --model 只读base目录`。输出必须是新的独立目录，不覆盖既有数据。门槛不满足时保留四槽完整分母和 `not_run_data_or_learning_signal_gate` 报告；此报告是本轮允许的真实结果，不通过补采、Teacher 替换或回到旧三条首决策绕过它。
+
+## 开发期 cohort 对接漏项及修订边界
+
+只读对接审查发现：D2 物化入口要求每个情境的 `window_id` 唯一，而早期 D3 检查错误地要求四项 `(gamma_fingerprint, team_policy_fingerprint, window_id)` 完全相同。因此四个合法、不同 ξ 的 D2 窗口也会被旧谓词判为不一致。这是开发期源代码合同的逻辑反例；没有用它执行真实训练或把任何真实模型标记为不合格，不应混入模型失败分母。
+
+窄修保留所有既有 D2/TeamRollout 字节，只在 D3 加入实际冻结协议、批次报告及情境登记的共同 cohort 证明，并让各 ξ 保持原独立 window_id。正控制确认四个独立窗口可以通过；负控制拒绝换入未声明 repeat、将原 repeat 改成2、换采样源以及仅手填相同 cohort 标签。原 D0=false 门槛、样本名单、PPO 数学、概率容差和无 GPU 执行边界均未改变。这些控制使用明确标记的离线合成夹具，不是对真实团队成功或训练资格的新增结论。

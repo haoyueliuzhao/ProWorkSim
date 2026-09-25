@@ -202,6 +202,99 @@ def inventory_fixture(tmp_path, rewards=(0.0, 1.0, 0.0, 1.0)):
             "field_path": ["synthetic_independent_gate"],
         },
     }
+    # A real-shaped pinned collection fixture, separate from the per-xi windows.
+    registry = {
+        "version": "situation-registry-v0.12",
+        "sources": {"fixture-source": {}},
+        "situations": [],
+    }
+    declarations, actual_cases = [], []
+    for index, slot in enumerate(slots):
+        case_root = Path(slot["team_rollout"]).parent
+        scenario_sha = write(case_root / "scenario.json", {"synthetic": index})
+        situation = {
+            "scenario_id": "xi-" + str(index),
+            "source_cluster_id": "fixture-source",
+            "world_family_id": "fixture-family",
+            "base_project_id": "project-" + str(index),
+            "information_layout_id": "layout-" + str(index),
+            "split": "development",
+            "generator_version": "fixture-generator",
+            "validator_version": "fixture-validator",
+            "template_family_id": "fixture-template",
+            "scenario_file": str(case_root / "scenario.json"),
+            "scenario_sha256": scenario_sha,
+        }
+        registry["situations"].append(situation)
+        declarations.append(
+            {
+                "episode_name": slot["slot_id"],
+                "repeat": 1,
+                "backend": "qwen",
+                "target_roles": ppo.MEMBERS,
+                "situation_registry_id": situation["scenario_id"],
+                "expected_scenario_sha256": scenario_sha,
+            }
+        )
+        actual_cases.append(
+            {
+                "episode_name": slot["slot_id"],
+                "episode_id": slot["slot_id"],
+                "source_before": source,
+                "source_after": source,
+                "scenario_sha256": scenario_sha,
+            }
+        )
+    registry_path = tmp_path / "registry.json"
+    registry_sha = write(registry_path, registry)
+    protocol = {
+        "fixed_training_slot_selection": {"episode_names": [slot["slot_id"] for slot in slots]},
+        "episodes": declarations,
+        "backends": {"qwen": {"backend_id": "local-qwen-http"}},
+        "situation_registry": {"path": str(registry_path), "sha256": registry_sha},
+    }
+    protocol_path = tmp_path / "collection-protocol.json"
+    protocol_sha = write(protocol_path, protocol)
+    report_path = tmp_path / "collection-report.json"
+    report_sha = write(
+        report_path,
+        {
+            "protocol_sha256": protocol_sha,
+            "source_before": source,
+            "source_after": source,
+            "cases": actual_cases,
+        },
+    )
+    gamma = digest(
+        json_bytes(
+            {
+                "frozen_protocol": protocol_sha,
+                "runtime_source_tree": source["source_tree_sha256"],
+                "service_protocol": protocol["backends"]["qwen"],
+            }
+        )
+    )
+    for index, slot in enumerate(slots):
+        rollout_path = Path(slot["team_rollout"])
+        rollout = read_json(rollout_path)
+        manifest = rollout["manifest"]
+        manifest["episode_id"] = slot["slot_id"]
+        manifest["scenario"] = {"sha256": declarations[index]["expected_scenario_sha256"]}
+        rollout["manifest_sha256"] = write(rollout_path.parent / "manifest.json", manifest)
+        rollout["window"] = {
+            "window_id": "independent-window-" + str(index),
+            "xi_id": registry["situations"][index]["scenario_id"],
+            "xi_fingerprint": ppo.situation_fingerprint(registry["situations"][index]),
+            "gamma_fingerprint": gamma,
+            "team_policy_fingerprint": digest(json_bytes(manifest["policies"])),
+        }
+        slot["expected_window"] = copy.deepcopy(rollout["window"])
+        slot["team_rollout_sha256"] = write(rollout_path, rollout)
+    inventory.update(
+        collection_protocol={"path": str(protocol_path), "sha256": protocol_sha},
+        collection_report={"path": str(report_path), "sha256": report_sha},
+        situation_registry={"path": str(registry_path), "sha256": registry_sha},
+    )
     path = tmp_path / "inventory.json"
     write(path, inventory)
     return path
@@ -309,3 +402,50 @@ def test_actual_torch_full_q_equals_b_update_identity():
     pytest.importorskip("torch")
     result = ppo.cpu_self_check()
     assert result["all_passed"] and not result["cuda_initialized"]
+
+
+def test_distinct_situation_windows_use_pinned_collection_not_one_fabricated_window(tmp_path):
+    prepared = ppo.prepare_inventory(inventory_fixture(tmp_path))
+    assert prepared["gates"]["four_exact_situations_same_gamma_policy"]
+    windows = [row["window"] for row in prepared["collection_cohort"]["expected_slots"].values()]
+    assert len({window["window_id"] for window in windows}) == 4
+    assert len({window["gamma_fingerprint"] for window in windows}) == 1
+
+
+def test_training_slot_cannot_be_replaced_by_undeclared_repeat(tmp_path):
+    path = inventory_fixture(tmp_path)
+    inventory = read_json(path)
+    inventory["slots"][0]["slot_id"] = "reward-picked-repeat2"
+    write(path, inventory)
+    with pytest.raises(ValueError, match="four fixed training slots"):
+        ppo.prepare_inventory(path)
+
+
+def test_same_handwritten_cohort_label_cannot_hide_other_sampling_source(tmp_path):
+    path = inventory_fixture(tmp_path)
+    inventory = read_json(path)
+    report_path = Path(inventory["collection_report"]["path"])
+    report = read_json(report_path)
+    report["source_before"]["source_tree_sha256"] = "other-frozen-source"
+    report["source_after"] = copy.deepcopy(report["source_before"])
+    inventory["collection_report"]["sha256"] = write(report_path, report)
+    inventory["cohort_label"] = "same-label-is-not-evidence"
+    write(path, inventory)
+    with pytest.raises(ValueError, match="actual collection/situation"):
+        ppo.prepare_inventory(path)
+
+
+def test_selected_repeat_must_be_one_even_if_names_and_cohort_label_match(tmp_path):
+    path = inventory_fixture(tmp_path)
+    inventory = read_json(path)
+    protocol_path = Path(inventory["collection_protocol"]["path"])
+    protocol = read_json(protocol_path)
+    protocol["episodes"][0]["repeat"] = 2
+    inventory["collection_protocol"]["sha256"] = write(protocol_path, protocol)
+    report_path = Path(inventory["collection_report"]["path"])
+    report = read_json(report_path)
+    report["protocol_sha256"] = inventory["collection_protocol"]["sha256"]
+    inventory["collection_report"]["sha256"] = write(report_path, report)
+    write(path, inventory)
+    with pytest.raises(ValueError, match="Qwen repeat1"):
+        ppo.prepare_inventory(path)
