@@ -315,12 +315,15 @@ class WorldCore(WorldRunner):
             paths.append(("clock",))
         return ActionFrame(str(tool), tuple(paths))
 
-    def _tool_project_action(self, actor, project_id, tool, arguments):
+    def _tool_project_action(self, actor, project_id, tool, arguments, interface_profile=None):
         self._project(
             actor,
             project_id,
-            active=tool not in {"read_object", "sheet_read", "read_messages", "end_episode", "inspect_submission"},
+            active=tool not in {"read_object", "read_alias", "read_version", "sheet_read", "read_messages", "end_episode", "inspect_submission"},
         )
+        if interface_profile is not None:
+            from .work_interface import validate_call
+            validate_call(self._tool_definitions(project_id), interface_profile, tool, arguments)
         return self._dispatch(actor, project_id, tool, arguments)
 
     def _tool_world_action(self, actor, tool, arguments):
@@ -333,6 +336,8 @@ class WorldCore(WorldRunner):
             "create_object",
             "write_object",
             "read_object",
+            "read_alias",
+            "read_version",
             "share",
             "publish",
             "start_episode",
@@ -366,7 +371,7 @@ class WorldCore(WorldRunner):
         if project_id is not None and "sql" in self.state["applications"]:
             names += ["sql_build", "sql_query"]
         if "files" not in self.state["applications"]:
-            names = [name for name in names if name not in {"read_object", "write_object"}]
+            names = [name for name in names if name not in {"read_object", "read_alias", "read_version", "write_object"}]
         definitions = []
         objects = {"data", "package", "updates", "reference"}
         arrays = {
@@ -494,6 +499,8 @@ class WorldCore(WorldRunner):
         if self.state.get("world_status") == "paused" and tool not in {
             "resume",
             "read_object",
+            "read_alias",
+            "read_version",
             "sheet_read",
             "read_messages",
             "end_episode",
@@ -725,6 +732,22 @@ class WorldCore(WorldRunner):
             "reference": self._record_read(actor, project_id, artifact, vid, work_id),
             "data": data,
         }
+
+    def _action_read_alias(self, actor, project_id, alias, work_id=None):
+        if not isinstance(alias, str) or not alias:
+            raise ValueError("A nonempty visible workspace alias is required")
+        result = self._action_read_object(actor, project_id, alias=alias, work_id=work_id)
+        result["reference"] = VersionRef.from_mapping(result["reference"]).to_dict()
+        return result
+
+    def _action_read_version(self, actor, project_id, reference, work_id=None):
+        if not isinstance(reference, dict) or set(reference) != {"object_id", "version_id"}:
+            raise ValueError("Reference requires exactly object_id and version_id")
+        ref = VersionRef.from_mapping(reference)
+        result = self._action_read_object(actor, project_id, object_id=ref.object_id,
+                                          version_id=ref.version_id, work_id=work_id)
+        result["reference"] = ref.to_dict()
+        return result
 
     def _action_sheet_read(
         self,

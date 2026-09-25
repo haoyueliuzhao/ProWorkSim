@@ -9,7 +9,7 @@ import math
 
 from .storage import digest, json_bytes
 
-MEMBER_VIEW_VERSION = "member-view-v0.12"
+MEMBER_VIEW_VERSION = "member-view-v0.13"
 
 
 def _tokens(response):
@@ -49,6 +49,49 @@ def _tokens(response):
     ):
         return None, ["token_usage_mismatch"]
     return copy.deepcopy(trace), []
+
+
+def _known_direct_context_stop(attempts, responses, events, call_id, metadata, policy, window):
+    if len(attempts) != 1 or responses:
+        return None
+    attempt = attempts[0]["payload"]
+    transport = attempt.get("response", {})
+    if not isinstance(transport, dict):
+        return None
+    body = transport.get("body", {})
+    if not isinstance(body, dict):
+        return None
+    config = policy.get("config", {}) if isinstance(policy, dict) else {}
+    identity = config.get("weight_identity", {})
+    if not isinstance(identity, dict):
+        return None
+    error = body.get("error", {})
+    if not isinstance(error, dict):
+        return None
+    lengths = [error.get(key) for key in ("prompt_tokens", "requested_output", "context_limit")]
+    if not (
+        attempt.get("status") == "backend_context_limit"
+        and transport.get("http_status") == 400
+        and body.get("transport_kind") == "resident_direct"
+        and body.get("generation_started") is False
+        and identity.get("version") == "shared-actor-identity-v0.13"
+        and body.get("actor_identity") == identity
+        and config.get("model_revision") == identity.get("policy_version")
+        and body.get("online_window_id") == window.get("window_id")
+        and error.get("code") == "context_length_exceeded"
+        and all(type(value) is int and value > 0 for value in lengths)
+        and lengths[0] + lengths[1] > lengths[2]
+        and digest(json_bytes(attempt.get("request"))) == metadata.get("request_sha256")
+        and any(
+            event["kind"] == "model_boundary_error"
+            and event["payload"].get("status") == "model_budget_exhausted"
+            and event["payload"].get("model_call_id") == call_id
+            and event["payload"].get("backend_error", {}).get("code") == "context_length_exceeded"
+            for event in events
+        )
+    ):
+        return None
+    return attempt
 
 
 def member_view(rollout, member_id):
@@ -117,7 +160,29 @@ def member_view(rollout, member_id):
             )
             if budget_stopped:
                 record.update(generation_status="not_started_budget_stop", actor_required=False)
-            record["diagnostics"].append("no_unique_successful_actual_completion")
+            direct_stop = _known_direct_context_stop(
+                attempts,
+                responses,
+                events,
+                call_id,
+                metadata,
+                record["policy_identity"],
+                rollout["window"],
+            )
+            if direct_stop is not None:
+                record.update(
+                    generation_status="not_started_direct_context_limit",
+                    actor_required=False,
+                    actual_input=copy.deepcopy(direct_stop["request"]),
+                    input_sha256=digest(json_bytes(direct_stop["request"])),
+                    non_generation_response=copy.deepcopy(direct_stop["response"]),
+                    non_generation_contract="resident-direct-context-stop-v0.13",
+                )
+                record["diagnostics"].append("known_direct_no_generation_context_limit")
+            else:
+                record["diagnostics"].append("no_unique_successful_actual_completion")
+            if call_id in repeated_calls:
+                record["diagnostics"].append("duplicate_model_call_identity")
             decisions.append(record)
             issues.extend(
                 {"call_id": call_id, "reason": reason} for reason in record["diagnostics"]
@@ -166,11 +231,13 @@ def member_view(rollout, member_id):
     complete = (
         bool(sampled)
         and not orphan_calls
+        and not repeated_calls
         and all(row["actor_trainable"] for row in decisions if row["actor_required"])
     )
     semantic_complete = (
         bool(sampled)
         and not orphan_calls
+        and not repeated_calls
         and all(row["semantic_recoverable"] for row in decisions if row["actor_required"])
     )
     return {

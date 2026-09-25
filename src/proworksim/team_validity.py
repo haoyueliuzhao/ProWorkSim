@@ -20,43 +20,25 @@ def _ref(value):
     return (a, v) if isinstance(a, str) and isinstance(v, str) else None
 
 
-def assess_team_validity(episode, *, members, independent_capture, spec, assessment_spec=None):
-    required = {
-        "spec_id",
-        "project_id",
-        "work_node",
-        "implementer",
-        "reviewer",
-        "required_handoff_routes",
-        "required_direct_reads",
-        "allow_rejected_actions",
-        "allow_repair",
-        "blocked_outcome",
-    }
-    if not isinstance(spec, dict) or set(spec) != required:
-        raise ValueError("Team validity specification must predeclare the finite evidence contract")
-    if spec["blocked_outcome"] != "unknown":
-        raise ValueError("This finite validator only declares unknown blocked outcomes")
-    root = Path(episode)
-    if root.name == "manifest.json":
-        root = root.parent
-    manifest = read_json(root / "manifest.json")
-    assessment = assess_historical_episode(root, **(assessment_spec or {}))
+def _record_permission_checks(
+    manifest,
+    state,
+    events,
+    members,
+    independent_capture,
+    manifest_ref,
+    *,
+    allow_rejected_actions,
+    allow_repair,
+):
     checks = []
+    start, end = manifest["experience"]["start"], manifest["experience"]["end"]
 
     def add(dimension, value, reason, evidence):
         checks.append(
             {"dimension": dimension, "value": value, "reason": reason, "evidence": evidence}
         )
 
-    manifest_ref = {"manifest_sha256": digest((root / "manifest.json").read_bytes())}
-    if assessment.get("assessment_execution", {}).get("status") != "complete":
-        add("record", None, "Historical evidence cannot be reliably evaluated", manifest_ref)
-        return work_validity(checks, spec_id=spec["spec_id"])
-    state = read_json(root / "end/control/state.json")
-    history = read_json(root / manifest["experience"]["path"])["events"]
-    start, end = manifest["experience"]["start"], manifest["experience"]["end"]
-    events = history[start:end]
     capture_ok = True if isinstance(independent_capture, dict) else None
     for member_id in members:
         actual = (
@@ -159,12 +141,16 @@ def assess_team_validity(episode, *, members, independent_capture, spec, assessm
             or commit.get("public_result") != response
         ):
             permission = False
+        if (
+            event["payload"]["action"] in {"read_alias", "read_version"}
+            and commit.get("receipt", {}).get("contract") != event["payload"]["action"]
+        ):
+            # v0.13 reads are actual core transitions, not public log aliases.
+            permission = False
         if response.get("ok") is False:
-            if not spec["allow_rejected_actions"] or commit.get("receipt", {}).get("apply_delta"):
+            if not allow_rejected_actions or commit.get("receipt", {}).get("apply_delta"):
                 permission = False
-    if not spec["allow_repair"] and any(
-        event["payload"]["action"] == "withdraw" for event in successful
-    ):
+    if not allow_repair and any(event["payload"]["action"] == "withdraw" for event in successful):
         permission = False
     add(
         "permission",
@@ -172,9 +158,120 @@ def assess_team_validity(episode, *, members, independent_capture, spec, assessm
         "Actual scoped world receipts agree; allowed refusals have no apply-phase business mutation",
         {"receipts": receipt_refs},
     )
+    return checks
+
+
+def assess_record_permission(
+    episode,
+    *,
+    members,
+    independent_capture,
+    spec_id,
+    allow_rejected_actions=True,
+    allow_repair=True,
+):
+    """Read only common evidence gates without imposing any task delivery scope."""
+    root = Path(episode)
+    if root.name == "manifest.json":
+        root = root.parent
+    manifest_ref = {"manifest_sha256": digest((root / "manifest.json").read_bytes())}
+    assessment = assess_historical_episode(root)
+    if assessment.get("assessment_execution", {}).get("status") != "complete":
+        return work_validity(
+            [
+                {
+                    "dimension": "record",
+                    "value": None,
+                    "reason": "Historical evidence cannot be reliably evaluated",
+                    "evidence": manifest_ref,
+                }
+            ],
+            spec_id=spec_id,
+        )
+    manifest = read_json(root / "manifest.json")
+    state = read_json(root / "end/control/state.json")
+    history = read_json(root / manifest["experience"]["path"])["events"]
+    events = history[manifest["experience"]["start"] : manifest["experience"]["end"]]
+    checks = _record_permission_checks(
+        manifest,
+        state,
+        events,
+        members,
+        independent_capture,
+        manifest_ref,
+        allow_rejected_actions=allow_rejected_actions,
+        allow_repair=allow_repair,
+    )
+    return work_validity(checks, spec_id=spec_id)
+
+
+def assess_team_validity(episode, *, members, independent_capture, spec, assessment_spec=None):
+    required = {
+        "spec_id",
+        "project_id",
+        "work_node",
+        "implementer",
+        "reviewer",
+        "required_handoff_routes",
+        "required_direct_reads",
+        "allow_rejected_actions",
+        "allow_repair",
+        "blocked_outcome",
+    }
+    if not isinstance(spec, dict) or set(spec) - {"read_operations"} != required:
+        raise ValueError("Team validity specification must predeclare the finite evidence contract")
+    read_operations = spec.get("read_operations", ["read_object"])
+    if (
+        not isinstance(read_operations, list)
+        or not read_operations
+        or len(read_operations) != len(set(read_operations))
+        or not set(read_operations) <= {"read_object", "read_alias", "read_version"}
+    ):
+        raise ValueError("Validity must declare supported actual read operations")
+    if spec["blocked_outcome"] != "unknown":
+        raise ValueError("This finite validator only declares unknown blocked outcomes")
+    root = Path(episode)
+    if root.name == "manifest.json":
+        root = root.parent
+    manifest = read_json(root / "manifest.json")
+    assessment = assess_historical_episode(root, **(assessment_spec or {}))
+    checks = []
+
+    def add(dimension, value, reason, evidence):
+        checks.append(
+            {"dimension": dimension, "value": value, "reason": reason, "evidence": evidence}
+        )
+
+    manifest_ref = {"manifest_sha256": digest((root / "manifest.json").read_bytes())}
+    if assessment.get("assessment_execution", {}).get("status") != "complete":
+        add("record", None, "Historical evidence cannot be reliably evaluated", manifest_ref)
+        return work_validity(checks, spec_id=spec["spec_id"])
+    state = read_json(root / "end/control/state.json")
+    history = read_json(root / manifest["experience"]["path"])["events"]
+    start, end = manifest["experience"]["start"], manifest["experience"]["end"]
+    events = history[start:end]
+    checks.extend(
+        _record_permission_checks(
+            manifest,
+            state,
+            events,
+            members,
+            independent_capture,
+            manifest_ref,
+            allow_rejected_actions=spec["allow_rejected_actions"],
+            allow_repair=spec["allow_repair"],
+        )
+    )
+    successful = [
+        event
+        for event in events
+        if event["kind"] == "tool_call"
+        and event.get("worker_id") in members
+        and event["payload"].get("response", {}).get("ok") is True
+    ]
     reads = []
     for event in successful:
-        if event["payload"]["action"] == "read_object":
+        if event["payload"]["action"] in read_operations:
             ref = _ref(event["payload"]["response"]["result"].get("reference"))
             if ref:
                 reads.append((event, ref))

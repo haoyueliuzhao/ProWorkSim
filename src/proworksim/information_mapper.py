@@ -19,7 +19,14 @@ def _reference(value):
     return (oid, vid) if isinstance(oid, str) and isinstance(vid, str) else None
 
 
-def information_graph(rollout):
+def information_graph(rollout, *, read_operations=("read_object",)):
+    if (
+        not isinstance(read_operations, (list, tuple))
+        or not read_operations
+        or len(read_operations) != len(set(read_operations))
+        or not set(read_operations) <= {"read_object", "read_alias", "read_version"}
+    ):
+        raise ValueError("Graph must declare supported actual read operations")
     nodes, edges, handoffs, requests, diagnostics = {}, [], {}, {}, []
     actual_messages, actual_requests = {}, {}
 
@@ -125,7 +132,9 @@ def information_graph(rollout):
             ref = _reference(result.get("reference"))
             if ref:
                 relation = (
-                    "observes_version" if payload["action"] == "read_object" else "produces_version"
+                    "observes_version"
+                    if payload["action"] in read_operations
+                    else "produces_version"
                 )
                 edge(version(ref), node_id, relation, {"strength": "actual_tool_result"})
             if payload["action"] in {"adopt", "adopt_version"}:
@@ -274,7 +283,14 @@ def information_graph(rollout):
                     {"strength": "observed_not_causal"},
                 )
     return {
-        "version": GRAPH_VERSION,
+        "version": GRAPH_VERSION
+        if list(read_operations) == ["read_object"]
+        else "information-graph-v0.13",
+        **(
+            {"read_operations": list(read_operations)}
+            if list(read_operations) != ["read_object"]
+            else {}
+        ),
         "rollout_id": rollout["rollout_id"],
         "nodes": list(nodes.values()),
         "edges": edges,
