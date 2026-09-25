@@ -43,7 +43,7 @@ transport 不访问世界、奖励、参考答案或策略规划。它只投影�
 - actor AdamW lr=1e-5，critic lr=1e-3，weight_decay=0，默认 beta=(0.9,0.999)、epsilon=1e-8；两者分别做梯度范数裁剪 1。critic value loss 是 0.5×平方误差，固定外系数 0.5；entropy/KL 系数固定为 0。
 - critic 的 30 维输入由新的版本化 `critic_features.past_features` 从该决策 **model_call started 之前** 的真实联合观察/动作前缀生成，状态包括实际 `in_progress`、`in_review`。critic 为 Linear(30,32)→Tanh→Linear(32,1)，最后层全零初始化，首窗预测严格为零。
 - 未学习过任何非零真实奖励且当窗全部可信奖励为零时，actor 明确零步；critic 也不会因初始随机噪声制造信号。同值正奖励允许真实更新。已有非零真实奖励学习历史后，零奖励相对已学习 baseline 的负优势仍是普通 MC 信号。恰好零优势/零梯度不执行 actor optimizer.step。
-- 默认温度 0.7，每响应最多 512 token，完整 input+output 上限 8192，不截断。FP32、单 batch、显式 repeatKV + 强制 efficient attention、matmul precision=high；保留实际库版本和运行 flags。
+- 默认温度 0.7，每响应最多 512 token，完整 input+output 上限 8192，不截断。FP32、单 batch、显式 repeatKV + 强制 efficient attention；模块默认 matmul precision=high，但本轮正式 JSON 明确冻结为 highest；保留实际库版本和运行 flags。
 - 行为 logp 来自真实 generate 采样 logits。更新前、实际梯度前向中分别用原完整 input/output ids 复算，容差固定 max=0.02 nat、mean=0.002 nat；越界整个窗口零步并停止在线 runner，不改原值、不放宽门槛。原始全序列 teacher forcing `use_cache=False`，仅物化输出预测位置 logits。
 - 模型所有 dropout 必须为零。生成与无梯度门槛使用 eval；梯度前向使用 train 以启动 HF 非重入 gradient checkpointing。此模式变化不引入 dropout。默认 host RSS 上限 64 GiB，在前向/反向间检查；不是外部 cgroup 硬限制，不保证一次内核分配不会先超限。
 

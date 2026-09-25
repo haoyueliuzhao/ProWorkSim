@@ -142,6 +142,23 @@ def test_missing_feedback_is_not_inferred_from_saved_response_and_sql_ok_is_sepa
     assert summary["rejection_followups"]["rows"][-1]["feedback"] == "no_next_generation"
 
 
+def test_list_tool_result_is_successful_and_followup_does_not_infer_sql_status():
+    events = history()
+    events[-1]["payload"].update(
+        action="read_messages",
+        arguments={},
+        response={"ok": True, "result": [{"message_id": "actual-message"}]},
+    )
+    summary = summarize_events(events)
+    assert summary["tools"]["read_messages"] == {"ok": 1}
+    assert summary["tool_returns"][-1]["sql_execution_status"] is None
+    followup = summary["rejection_followups"]["rows"][0]
+    assert followup["feedback"] == "present_in_actual_request"
+    assert followup["adjustment"] == "different_tool"
+    assert followup["next_response_ok"] is True
+    assert followup["next_sql_execution_status"] is None
+
+
 def test_closed_and_unstarted_slots_keep_original_reward_validity_and_probability_facts(tmp_path):
     root = tmp_path / "run"
     col = root / "online/window-0/collection"

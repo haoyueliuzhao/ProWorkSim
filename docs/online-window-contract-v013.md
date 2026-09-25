@@ -103,3 +103,18 @@ report = diagnose_window(declaration, [
 `closed_unassessed` 必须提供实际 episode 路径与 manifest SHA；检查其正式 `status=closed` 和冻结政策绑定。它保留在真实已闭合数量 `closed_joint_M` 中，不被改成未尝试、未闭合或 reward0。包含该类记录的 ξ 块不估 b/v，`support` 与 `Q_equals_B` 为 null；只保留基础分支的原始权重 1 与已知 actor mask，该未知 slot 的 mask 为 false。其他可信闭合样本仍由训练器独立判断，不因为组合支持未知而全被拒绝。
 
 额外 CPU 假 transport 集成测试见 `tests/test_online_collection_v013.py`：提前 done 的 provider 不占用 implementer/reviewer 的各自预算；真实准备事件在 episode 外；工具参数拒绝不使角色提前退休；读取后处理故障保留闭合事实和未知评价。这里的假 completion/token 是显式测试夹具，不是模型工作能力或学习效果的证据。
+
+
+## v0.13.1：record 检查传递真实窗口
+
+O0 的真实 legacy 上下文 400 暴露了一个接缝：原 record helper 为 `member_view` 构造 `window={}`，因此无法验证明确未生成响应的 `online_window_id`。完整 TeamRollout 本身可以正确恢复此前两次生成，而旧 V.record 被保守置 unknown，进而使基础准入排除整条 slot 的活动角色。该错误没有伪造成功或奖励；O0 是评价模式，没有更新参数。
+
+修订后 `export_online_rollout` 将已冻结的真实 window 显式传入 `assess_online_validity` 与 common record helper，并核对实际政策映射；测量标识升级为 `online-scoped-validity-v0.13.1`。没有绑定或绑定错误仍保持保守，不能从响应自己声称的 window 反推依据。
+
+独立只读复核见 `docs/experiments/v013-context-window-binding.json`：保留旧完整源模块与原 R/V/support，在新测量下 legacy 个例的 record 从 unknown 变 true、此前真实动作恢复基础 mask；其 R0、basis/delivery 失败与无重配支持不变。新接口 R.25 与 R1 个例的原结论保持一致。没有覆盖原始归档，也没有重跑模型或世界动作。CPU 采集器回归同时覆盖了该真实闭合路径。
+
+## v0.13.1 记录测量修订
+
+`assess_online_validity` 将调用方已经冻结的 window 传给公共 record 检查，验证 manifest 的实际 policy-map SHA；不从模型返回体猜窗口。这样，本地可信服务在生成前因上下文预算拒绝，且绑定 actor/窗口和真实预算结束齐全时，不会误判成丢失了必需生成。缺失或错误窗口仍保守返回unknown。有效性 spec_id升至online-scoped-validity-v0.13.1，原v0.13结果留存；R及工作业务事实没有随该修订变化。
+
+已闭合后评价失败仍单列closed_unassessed；其真实closed_joint_M保留，support及Q未知，不把它改成未尝试或0奖励。程序收到KeyboardInterrupt/SystemExit时保留当前真实计数并明确interrupted；未启动的下个窗口不得凑入经验分母。

@@ -2,11 +2,32 @@
 
 **面向 ID-VTDO 研究的信息不对称专业工作世界。** ProWorkSim 提供持续世界、局部工具与可核验联合经历；当前研究目标是利用信息依赖结构配置各成员的经验，检验更新后团队的工作能力。世界运行、参数更新和学习收益分别验证。
 
-[研究目标与理论设计 V1](docs/research/id-vtdo.md)是当前研究入口；[v0.12 实施与实验计划](docs/id-vtdo-v012-plan.md)围绕可用模型接口、三成员真实协作、联合/局部投影、支持诊断及基础多轮学习预检展开。D4–D5贡献调权与在线闭环按前置门槛另行冻结；不扩大旧144段评测或继续旧三条首决策训练。
+[研究目标与理论设计 V1](docs/research/id-vtdo.md)是研究入口；当前按[v0.13 计划](docs/online-v013-plan.md)推进共享模型直接交互、更新、再交互，ID-VTDO 支持随在线窗口诊断。基础 RL 不要求先取得完整成功或多类方法支持，不使用 SFT 主路线；贡献调权与强基线比较另按实际支持条件开展。
 
 WorldCore管理权限、版本、采用、工作义务和问题处理；工作人员决定业务动作；场景控制器执行预声明事件。机构接受、内容正确、未知、服务故障和训练奖励分别记录。
 
-## v0.12 当前预检结果
+## v0.13 在线工作与训练
+
+[实验报告](docs/experiments/online-v013.md)区分接口对照、开发故障、正式在线更新和冻结新事实评价，全部失败保留。本轮真实Qwen已完成两次共享actor/critic更新；初始与最终各8例评测的回报逐项相同（平均均0.3），尚无工作成果提升证据。[冻结协议](examples/online-work-v13/)包括四种等份额短任务、两轮基础RL、初始/最终模型的单岗位与团队评测。当前只有一个development来源家族，内部锁定事实不等于独立来源泛化。
+
+- [公开工作接口](docs/work-interface-v013.md)：按别名/确切版本读取拆分，完整公开schema，角色工具集合与可追溯观察压缩；真实拒绝不修答案。
+- [短任务及奖励](docs/online-work-v013.md)：交接、实现、复核、完整链，真实准备前缀排除于当前目标动作/奖励，按一次工作成果计分。
+- [共享在线训练器](docs/online-learning-v013.md)：单actor/LoRA/optimizer、独立critic，真实token概率核验，全成员同步更新、清KV；无信号明确零步。
+- [在线窗口合同](docs/online-window-contract-v013.md)：当前权重/情境/协议绑定，原始分母、未知与基础mask分开，无支持不阻断Q=B。
+
+实际训练使用独立.train-venv（Torch/Transformers/PEFT及项目openpyxl、固定duckdb1.5.5均需安装）。完整基座文件manifest校验、单卡FP32与数值profile按协议执行；本轮使用A100 80GB，其他显存配置尚未验证；运行前选择有容量的GPU，代码不会终止其他任务。以下输出目录必须不存在：
+
+```bash
+PYTHONPATH=src CUDA_VISIBLE_DEVICES=3 .train-venv/bin/python scripts/online_learning_v013.py \
+  --protocol examples/online-work-v13/o1-online.json \
+  --model /absolute/Qwen2.5-7B-Instruct \
+  --weight-manifest /absolute/qwen-weights.json \
+  --output runs/online-new
+```
+
+冻结评测改用`o2-evaluate.json`；不带restore使用初始actor，带`--restore-checkpoint runs/online-new/online/window-1/checkpoint`恢复完整最终共同状态，使用新的output。evaluate完全跳过学习前向/反向/概率复算。resident_direct为进程内真实模型计算，网络HTTP=0，原attempt字段名不代表HTTP。
+
+## v0.12 历史预检结果
 
 新增三名真实模型工作人员的手动信息交接、联合经历与完整成员投影、三值工作有效性、支持统计和多轮PPO准入。详见[实验报告](docs/experiments/id-vtdo-v012.md)和[冻结配置目录](examples/id-vtdo-v12/README.md)。
 
@@ -16,7 +37,7 @@ WorldCore管理权限、版本、采用、工作义务和问题处理；工作�
 - 原Qwen队列中断后，另冻新数值路径与公开合同，完成16条本地联合经历、952次实际响应，全部为可评零奖励。两批不合并，原失败不回填。
 - 完整多轮PPO配方与CPU的Q=B损失/梯度/优化器恒等核验已建立；本轮未执行真实模型更新，D4–D5贡献调权和学习收益未建立。
 
-以下单角色API示例保留原入口配置；当前三角色采集、只读物化与训练准入方式见上述v0.12目录及[模型接口](docs/model-interface-v012.md)、[联合经历合同](docs/team-rollouts-v012.md)、[多轮PPO合同](docs/multiturn-ppo-v012.md)。
+以下单角色API示例保留原入口配置；历史v0.12三角色采集、只读物化与训练准入方式见该目录及[模型接口](docs/model-interface-v012.md)、[联合经历合同](docs/team-rollouts-v012.md)、[多轮PPO合同](docs/multiturn-ppo-v012.md)。
 
 ## 安装与真实模型运行
 
@@ -77,7 +98,7 @@ v0.11阶段完成36个真实单模型开发episode，另单列原协议pilot、�
 .venv/bin/python -m ruff check src tests scripts
 ```
 
-Git保存协议与紧凑证据，完整世界、HTTP原始调用和检查点保留在服务器runs。当前仍是有限模板、一个公开虚构项目家族、单写者及完整行动边界；144次主批、完整多轮Agentic RL及三组学习收益对照尚未执行。
+Git保存协议与紧凑证据，完整世界、实际模型请求/响应和检查点保留在服务器runs。仍是有限模板、单一来源家族、单写者及完整行动边界；历史144次主批及正式ID-VTDO学习收益对照尚未执行。当前在线结果以v0.13报告为准。
 
 ## 历史与语义
 

@@ -133,13 +133,14 @@ def rejection_followups(events, generations):
             if len(next_calls) == 1:
                 nxt = next_calls[0]
                 np = nxt["payload"]
+                next_result = np.get("response", {}).get("result")
                 row.update(
                     next_tool=np["action"],
                     next_tool_sequence=nxt["sequence"],
                     next_response_ok=np.get("response", {}).get("ok"),
-                    next_sql_execution_status=np.get("response", {})
-                    .get("result", {})
-                    .get("execution_status"),
+                    next_sql_execution_status=next_result.get("execution_status")
+                    if isinstance(next_result, dict)
+                    else None,
                 )
                 row["adjustment"] = (
                     "different_tool"
@@ -290,7 +291,8 @@ def summarize_events(events, *, declared_transport=None, actor_identity=None):
         if status == "rejected":
             by_tool[tool]["rejection:" + str(code)] += 1
             by_member_tool[member][tool]["rejection:" + str(code)] += 1
-        execution = response.get("result", {}).get("execution_status")
+        result = response.get("result")
+        execution = result.get("execution_status") if isinstance(result, dict) else None
         if tool in {"sql_build", "sql_query"}:
             sql_status = execution or (
                 "pre_execution_rejected" if ok is False else "execution_status_unavailable"
