@@ -18,9 +18,9 @@ from .scenarios import ScenarioController
 from .staff_runtime import StaffRuntime
 from .storage import atomic_write, digest, json_bytes
 from .templates.online_work import build_online_case, case_spec
-from .work_interface import WorkInterface, INTERFACE_VERSION, LEGACY_INTERFACE
+from .work_interface import WorkInterface, INTERFACE_VERSION, LEGACY_INTERFACE, V14_INTERFACE
 
-VERSION = "online-collection-v0.13"
+VERSION = "online-collection-v0.14"
 MAPPER = "online-basis-handoff-v0.13"
 
 
@@ -100,14 +100,22 @@ def collect_window(owner, window_spec, output_dir):
         raise ValueError('Predeclare all actual online slots')
     atomic_write(output / 'window-spec.json', json_bytes(window_spec))
     interface = window_spec.get('interface', 'v13')
-    variant_id = INTERFACE_VERSION if interface == 'v13' else LEGACY_INTERFACE
+    variant_id = {'v13': INTERFACE_VERSION, 'legacy': LEGACY_INTERFACE, 'v14': V14_INTERFACE}[interface]
+    presentation = window_spec.get('presentation')
+    template = window_spec.get('template', 'online_work')
+    if template == 'learning_work':
+        from .templates.learning_work import case_spec as resolve_case, build_learning_case as build_case
+    elif template == 'online_work':
+        resolve_case, build_case = case_spec, build_online_case
+    else:
+        raise ValueError('Unknown frozen online work template')
     identity = owner.freeze_identity()
     prepared_rows, declaration_rows = [], []
     # Freeze every environment/policy binding before the first model opportunity.
     for index, row in enumerate(window_spec['slots']):
-        case = copy.deepcopy(row.get('case') or case_spec(row['case_id']))
+        case = copy.deepcopy(row.get('case') or resolve_case(row['case_id']))
         folder = output / ('slot-' + str(index))
-        prepared = build_online_case(case, folder)
+        prepared = build_case(case, folder)
         if prepared.deployment.status != 'ready':
             raise ValueError('Predeclared short scenario failed preparation')
         captured, interfaces, policies, ports = {}, {}, {}, {}
@@ -118,7 +126,8 @@ def collect_window(owner, window_spec, output_dir):
             policies[label] = policy
             role.update(policy='model', config=copy.deepcopy(policy.config))
             interface_port = WorkInterface(prepared.world.session(role['actor'], role['project']), label,
-                                           audit_dir=folder / 'public-projections' / label, variant=interface)
+                                           audit_dir=folder / 'public-projections' / label, variant=interface,
+                                           **({'presentation': presentation} if presentation is not None else {}))
             interfaces[label] = interface_port
             ports[label] = capture_port(interface_port, captured.setdefault(label, []))
         runtime = StaffRuntime(ports, policies, recorder=ExperienceRecorder())
@@ -126,7 +135,7 @@ def collect_window(owner, window_spec, output_dir):
                                 'initial_business_sha256': prepared.prefix['prepared_business_state_sha256']}
         spec_record = copy.deepcopy(prepared.scenario)
         spec_record['variation']['online_collection'] = {
-            'interface': variant_id, 'role_profile_binding': {label: interfaces[label].profile for label in interfaces},
+            'interface': variant_id, 'presentation': presentation, 'role_profile_binding': {label: interfaces[label].profile for label in interfaces},
             'deadline': 'per-role generation limit; fixed finite task horizon',
             'external_tick_per_sweep': window_spec.get('external_tick_per_sweep', 1),
         }
@@ -139,6 +148,7 @@ def collect_window(owner, window_spec, output_dir):
         prepared_rows.append((row, prepared, folder, runtime, captured, spec_record))
     declaration = declare_window(window_spec['window_id'], actor_identity=identity,
         gamma_identity={'collection_version': VERSION, 'interface_version': variant_id,
+                        'presentation': presentation, 'template': template,
                         'recipe': owner.recipe, 'external_tick_per_sweep': window_spec.get('external_tick_per_sweep', 1),
                         'fixed_slot_cases': [r['xi_fingerprint'] for r in declaration_rows],
                         'slot_sampling_seeds': {r['slot_id']: r['sampling_seed'] for r in window_spec['slots']},
@@ -162,7 +172,8 @@ def collect_window(owner, window_spec, output_dir):
             closed = True
             atomic_write(folder / 'public-capture.json', json_bytes(captured))
             atomic_write(folder / 'runtime.json', json_bytes(runtime.snapshot()))
-            members = {m: {'actor_id': m, 'origin': 'target_model'} for m in prepared.active_roles}
+            actors = {r['role_id']: r['actor'] for r in prepared.scenario['roles']}
+            members = {m: {'actor_id': actors[m], 'origin': 'target_model'} for m in prepared.active_roles}
             rollout = export_online_rollout(episode, window=expected_window(declaration, sid), members=members,
                                            independent_capture=captured, reward_spec=prepared.reward_spec)
             graph = information_graph(rollout, read_operations=('read_object', 'read_alias', 'read_version'))
@@ -186,7 +197,9 @@ def collect_window(owner, window_spec, output_dir):
             entries.append({'slot_id': sid, 'rollout': None, 'reward': None, 'active_members': list(prepared.active_roles)})
             summaries.append({'slot_id': sid, 'status': status, 'error': {'type': type(error).__name__, 'message': str(error)}})
         atomic_write(output / 'progress.json', json_bytes(summaries))
-        print(json_bytes({'window': window_spec['window_id'], 'slot': sid, 'reward': entries[-1].get('reward', {})}).decode(), flush=True)
+        print(json_bytes({'window': window_spec['window_id'], 'slot': sid,
+                          'reward': (entries[-1].get('reward') or {}).get('reward'),
+                          'status': summaries[-1].get('status', summaries[-1].get('boundary'))}).decode(), flush=True)
     support = diagnose_window(declaration, support_records)
     atomic_write(output / 'support.json', json_bytes(support))
     atomic_write(output / 'summary.json', json_bytes({'version': VERSION, 'actor_identity': identity,

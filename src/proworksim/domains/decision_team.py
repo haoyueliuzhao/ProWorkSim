@@ -35,6 +35,42 @@ def validate_check(spec):
     return result
 
 
+def expected_metrics(rows, customers, rules):
+    """Independent Python business evaluation, never SQL or a worker tool.
+
+    v0.14 makes all rule choices explicit in private business/audit evidence.
+    Missing optional fields preserve the archived v0.13 public contract.
+    """
+    factor = rules["amount_factor"]
+    if type(factor) is not int or factor <= 0:
+        raise ValueError("Basis factor must be a positive integer")
+    mode = rules.get("deduplication", "distinct_orders")
+    if mode not in {"distinct_orders", "transaction_rows"}:
+        raise ValueError("Unknown public order-count rule")
+    lower, upper = rules.get("order_min_inclusive"), rules.get("order_max_exclusive")
+    if (lower is not None and type(lower) is not int) or (
+        upper is not None and type(upper) is not int
+    ) or (lower is not None and upper is not None and lower >= upper):
+        raise ValueError("Order bounds must be an increasing half-open integer interval")
+    expected = []
+    for customer in customers:
+        eligible = [
+            row for row in rows
+            if row["customer_id"] == customer["customer_id"]
+            and row["period"] == rules["period"]
+            and row["status"] in rules["allowed_statuses"]
+            and (lower is None or row["order_id"] >= lower)
+            and (upper is None or row["order_id"] < upper)
+        ]
+        expected.append({
+            "customer_id": customer["customer_id"],
+            "revenue_cents": sum(row["amount"] * factor for row in eligible),
+            "order_count": len({row["order_id"] for row in eligible})
+            if mode == "distinct_orders" else len(eligible),
+        })
+    return expected
+
+
 def evaluate_check(spec, data, load_source):
     try:
         public = load_source("data")["tables"]
@@ -52,22 +88,9 @@ def evaluate_check(spec, data, load_source):
         statuses = {r["status"] for r in _records(basis["allowed_statuses"])}
         rows = _records(public["transactions"])
         customers = _records(public["customers"])
-        expected = []
-        for customer in customers:
-            eligible = [
-                r
-                for r in rows
-                if r["customer_id"] == customer["customer_id"]
-                and r["period"] == spec["period"]
-                and r["status"] in statuses
-            ]
-            expected.append(
-                {
-                    "customer_id": customer["customer_id"],
-                    "revenue_cents": sum(r["amount"] * factor for r in eligible),
-                    "order_count": len({r["order_id"] for r in eligible}),
-                }
-            )
+        expected = expected_metrics(rows, customers, {
+            **meta[0], "allowed_statuses": sorted(statuses)
+        })
         actual = data["tables"]
         passed = set(actual) == {"metrics"} and Counter(
             _canonical(r) for r in _records(actual["metrics"])

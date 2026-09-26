@@ -9,9 +9,10 @@ import copy
 import json
 from pathlib import Path
 
-from .domains.decision_team import evaluate_check
+from .domains.decision_team import evaluate_check, expected_metrics
 from .episode import assess_historical_episode
 from .evaluation import evaluate_submission
+from .presentations import response_matches_receipt
 from .storage import Store, digest, read_json
 from .templates.online_work import REWARD_VERSION, TERMS
 
@@ -30,7 +31,7 @@ def _rows(table):
 
 
 def _validate(spec):
-    if not isinstance(spec, dict) or spec.get("version") != REWARD_VERSION:
+    if not isinstance(spec, dict) or spec.get("version") not in {REWARD_VERSION, "online-work-reward-v0.14"}:
         raise ValueError("A frozen online reward specification is required")
     task = spec.get("task")
     if task not in TERMS or [(t["term_id"], t["weight"]) for t in spec["terms"]] != [
@@ -50,6 +51,7 @@ class _Evidence:
         self.state = read_json(root / "end/control/state.json")
         self.store = Store(root / "end")
         self.wid, self.pid = spec["work_id"], spec["project_id"]
+        self.basis_provider = spec.get("basis_provider", "provider")
         self.item = self.state["work_items"][self.wid]
         self.aliases = self.state["workspaces"][self.pid]
         self.events = read_json(root / self.manifest["experience"]["path"])["events"][
@@ -63,7 +65,7 @@ class _Evidence:
             if (
                 commit is None
                 or commit.get("bound_actor") != e.get("worker_id")
-                or commit.get("public_result") != response
+                or not response_matches_receipt(commit, response, action=e["payload"]["action"], arguments=e["payload"].get("arguments"))
                 or e.get("worker_id") not in spec["active_roles"]
             ):
                 raise ValueError("Current actor event differs from its actual world receipt")
@@ -191,7 +193,7 @@ class _Evidence:
 
     def handoff(self):
         for e in self.successful:
-            if e["worker_id"] != "provider" or e["payload"]["action"] != "handoff_information":
+            if e["worker_id"] != self.basis_provider or e["payload"]["action"] != "handoff_information":
                 continue
             hid = e["payload"]["response"]["result"].get("handoff_id")
             handoff = self.state["handoffs"].get(hid, {})
@@ -199,14 +201,14 @@ class _Evidence:
             if (
                 hid not in self.start.get("handoffs", {})
                 and handoff.get("route_id") == "basis"
-                and handoff.get("sender") == "provider"
+                and handoff.get("sender") == self.basis_provider
                 and handoff.get("recipients") == ["implementer"]
                 and handoff.get("work_item_id") == self.wid
                 and handoff.get("requirement_version") == self.item["requirement_version"]
                 and handoff.get("response_status") == "delivered"
                 and handoff.get("status") == "delivered"
                 and self.applicable_basis(reference)
-                and self.read_before("provider", reference, e["sequence"])
+                and self.read_before(self.basis_provider, reference, e["sequence"])
                 and any(
                     event.get("event_id") == handoff.get("event_id")
                     and event.get("outcome") == "applied"
@@ -359,18 +361,9 @@ class _Evidence:
         actual = _rows(result)[index]
         data = self.document(tuple(reads["data_reference"]))["tables"]
         audit = self.document(tuple(reads["audit_reference"]))
-        eligible = [
-            r
-            for r in _rows(data["transactions"])
-            if r["customer_id"] == actual.get("customer_id")
-            and r["period"] == audit["period"]
-            and r["status"] in audit["allowed_statuses"]
-        ]
-        expected = {
-            "customer_id": actual.get("customer_id"),
-            "revenue_cents": sum(r["amount"] * audit["amount_factor"] for r in eligible),
-            "order_count": len({r["order_id"] for r in eligible}),
-        }
+        expected = expected_metrics(
+            _rows(data["transactions"]), [{"customer_id": actual.get("customer_id")}], audit
+        )[0]
         mismatch = {name for name in expected if actual.get(name) != expected[name]}
         if len(locator) == 5:
             col = locator[4]
@@ -439,7 +432,7 @@ def assess_online_reward(episode, spec):
     if root.name == "manifest.json":
         root = root.parent
     result = {
-        "version": REWARD_VERSION,
+        "version": spec["version"],
         "reward_id": spec["reward_id"],
         "scope": spec["task"],
         "spec": spec,
@@ -489,7 +482,7 @@ def assess_online_reward(episode, spec):
             reads = [
                 e
                 for e in evidence.reads
-                if e["worker_id"] == "provider"
+                if e["worker_id"] == evidence.basis_provider
                 and evidence.applicable_basis(
                     _ref(e["payload"]["response"]["result"].get("reference"))
                 )
@@ -582,6 +575,72 @@ def assess_online_reward(episode, spec):
             requires_full_team_validity=False,
             interpretation="Scoped finite environment outcomes; not method-support eligibility or a full-team success claim for short fragments.",
         )
+        if spec["version"] == "online-work-reward-v0.14":
+            result["ledger"] = _reward_ledger(evidence, result)
     except (KeyError, OSError, TypeError, ValueError) as error:
         result["exclusions"].append({"type": type(error).__name__, "reason": str(error)})
+        result.update(eligible=False, reward=None, completed=False)
+        result.pop("ledger", None)
     return result
+
+
+def _reward_ledger(evidence, result):
+    """Only independently final-at-occurrence facts settle before the terminal.
+
+    A delivered immutable basis is an observed historical accomplishment, not
+    a prediction that later implementation/review will succeed. Revocable
+    adopted-input/build/submission/review terms settle at the actual terminal.
+    The final difference explicitly corrects any earlier paid fact that no
+    longer satisfies the frozen terminal contract; it can be negative.
+    """
+    terminal = max((event["sequence"] for event in evidence.events), default=0)
+    events = []
+    weights = {term["term_id"]: term["weight"] for term in evidence.spec["terms"]}
+    # Evaluate candidate early events from their own immutable documents and
+    # command receipts. Do not select them using terminal component success.
+    read = next((event for event in evidence.reads
+                 if event["worker_id"] == evidence.basis_provider
+                 and evidence.applicable_basis(_ref(event["payload"]["response"]["result"].get("reference")))), None)
+    if read and "read_applicable_basis" in weights:
+        events.append({"term_id": "read_applicable_basis", "sequence": read["sequence"],
+                       "amount": weights["read_applicable_basis"], "settlement": "event",
+                       "source": {"command_id": read["payload"]["response"]["command_id"]}})
+    if "deliver_applicable_basis" in weights:
+        for call in evidence.successful:
+            if call["worker_id"] != evidence.basis_provider or call["payload"]["action"] != "handoff_information":
+                continue
+            handoff_id = call["payload"]["response"]["result"].get("handoff_id")
+            handoff = evidence.state["handoffs"].get(handoff_id, {})
+            reference = _ref(handoff.get("reference"))
+            if (handoff_id in evidence.start.get("handoffs", {})
+                or handoff.get("route_id") != "basis" or handoff.get("sender") != evidence.basis_provider
+                or handoff.get("recipients") != ["implementer"] or handoff.get("work_item_id") != evidence.wid
+                or handoff.get("requirement_version") != evidence.start["work_items"][evidence.wid]["requirement_version"]
+                or handoff.get("response_status") != "delivered" or not evidence.applicable_basis(reference)
+                or not evidence.read_before(evidence.basis_provider, reference, call["sequence"])):
+                continue
+            delivered = next((event for event in evidence.events
+                              if event["kind"] == "environment_event"
+                              and event["payload"].get("event_id") == handoff.get("event_id")
+                              and event["payload"].get("outcome") == "applied"), None)
+            if delivered is not None:
+                events.append({"term_id": "deliver_applicable_basis", "sequence": delivered["sequence"],
+                               "amount": weights["deliver_applicable_basis"], "settlement": "event",
+                               "source": {"handoff_id": handoff_id, "event_id": handoff["event_id"],
+                                          "action_sequence": call["sequence"]}})
+                break
+    early = sum(event["amount"] for event in events)
+    remainder = round(result["reward"] - early, 10)
+    events.append({"term_id": "terminal_contract_reconciliation", "sequence": terminal,
+                   "amount": remainder, "settlement": "terminal",
+                   "source": {"episode_manifest_sha256": result["manifest_sha256"],
+                              "terminal_reward": result["reward"], "previously_paid": early,
+                              "components": copy.deepcopy(result["components"])}})
+    events.sort(key=lambda event: event["sequence"])
+    if abs(sum(event["amount"] for event in events) - result["reward"]) > 1e-10:
+        raise ValueError("Reward timeline does not reconcile to the frozen terminal contract")
+    return {"version": "online-reward-ledger-v0.14", "events": events,
+            "terminal_sequence": terminal, "total": result["reward"],
+            "intermediate_rule": "Only actual immutable applicable read and applied delivery settle early. Every other outcome settles at the real terminal.",
+            "revocation_rule": "Terminal reconciliation can be negative; it restores exact original terminal reward after all late invalidations. No repeated event earns additional credit.",
+            "changes_terminal_reward": False}

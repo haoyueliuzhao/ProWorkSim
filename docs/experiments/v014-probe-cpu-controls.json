@@ -1,0 +1,26 @@
+{
+  "version": "v014-probe-cpu-controls",
+  "scope": "Actual Torch CPU toy shared actor; no GPU/Qwen claim",
+  "result": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "reported_seconds": 3.98
+  },
+  "tests": [
+    "test_online_signals_v014.py::test_predeclared_online_probe_online_preserves_learner_rng_and_real_windows",
+    "test_online_signals_v014.py::test_invalid_predeclared_window_mode_fails_before_any_sampling",
+    "test_online_training_v13.py::test_evaluate_mode_collects_but_never_recomputes_or_updates",
+    "test_online_training_v13.py::test_runner_rejects_dropped_failure_slot"
+  ],
+  "runtime": "Project .train-venv Python 3.12 actual Torch; same existing pure-Python pytest harness paths as v014-training-cpu-controls.json; third-party plugin autoload disabled",
+  "observed_contracts": [
+    "three new actual toy generations in three distinct window IDs",
+    "two actor and two critic optimizer steps total",
+    "probe performs no learner forward or probability replay",
+    "actual actor, critic, both optimizers and CPU RNG fingerprints equal before/after probe; CUDA field is empty in this CPU run",
+    "only RNG restored; seen-window IDs remain intact",
+    "invalid per-window mode rejected before collection"
+  ],
+  "limitation": "CUDA RNG restore is implemented but not exercised by this CPU-only check"
+}

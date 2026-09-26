@@ -6,13 +6,19 @@ from pathlib import Path
 
 from .storage import atomic_write, digest, json_bytes
 from .tool_outcomes import ToolRejection
+from .presentations import PRESENTATIONS, PRESENTATION_VERSION, observation_projection, project_response
 
 INTERFACE_VERSION = "work-interface-v0.13"
+V14_INTERFACE = "work-interface-v0.14"
 LEGACY_INTERFACE = "work-interface-legacy-v0.12"
 PROFILES = {
     "provider": ("read_alias", "read_version", "read_messages", "request_information", "handoff_information", "wait"),
     "implementer": ("read_alias", "read_version", "read_messages", "request_information", "adopt", "write_object", "sql_build", "sql_query", "preflight_submission", "submit", "withdraw", "respond_issue", "wait"),
     "reviewer": ("read_alias", "read_version", "read_messages", "request_information", "handoff_information", "inspect_submission", "raise_issue", "approve", "decide_issue", "wait"),
+}
+V14_PROFILES = {
+    **PROFILES,
+    "implementer": PROFILES["implementer"] + ("inspect_submission",),
 }
 REFERENCE = {
     "type": "object",
@@ -42,27 +48,37 @@ DESCRIPTIONS = {
 }
 
 
-def profile_id(role):
+def profile_id(role, variant="v13"):
     if role not in PROFILES:
         raise ValueError("Unknown work-interface role profile")
-    return INTERFACE_VERSION + ":" + role
+    return (V14_INTERFACE if variant == "v14" else INTERFACE_VERSION) + ":" + role
 
 
 def tool_definitions(core_definitions, profile):
     prefix, _, role = profile.partition(":")
     if prefix == LEGACY_INTERFACE and role in PROFILES:
-        return copy.deepcopy([d for d in core_definitions if d["name"] not in {"read_alias", "read_version"}])
-    if prefix != INTERFACE_VERSION or role not in PROFILES:
+        result = copy.deepcopy([d for d in core_definitions if d["name"] not in {"read_alias", "read_version"}])
+        for definition in result:
+            if definition["name"] == "inspect_submission":
+                definition["parameters"]["properties"].pop("include_contract", None)
+        return result
+    if prefix not in {INTERFACE_VERSION, V14_INTERFACE} or role not in PROFILES:
         raise ValueError("Unknown frozen work interface")
     indexed = {d["name"]: d for d in core_definitions}
     result = []
-    for name in PROFILES[role]:
+    profiles = V14_PROFILES if prefix == V14_INTERFACE else PROFILES
+    for name in profiles[role]:
         if name not in indexed:
             continue
         definition = copy.deepcopy(indexed[name])
         definition["description"] = DESCRIPTIONS[name]
         parameters = definition["parameters"]
         props = parameters["properties"]
+        if name == "inspect_submission":
+            if prefix == INTERFACE_VERSION:
+                props.pop("include_contract", None)
+            else:
+                definition["description"] += " Set include_contract=true to retrieve the complete fixed contract and all original inspection metadata; default presentation may be compact."
         for key, value in props.items():
             value.pop("description", None)
             if value.get("type") == "string":
@@ -157,18 +173,24 @@ def validate_call(core_definitions, profile, name, arguments):
 class WorkInterface:
     """Host-bound port. Restrictions are checked inside the real world command."""
 
-    def __init__(self, session, role, *, audit_dir=None, variant="v13"):
+    def __init__(self, session, role, *, audit_dir=None, variant="v13", presentation="v13"):
         if session.project_id is None:
             raise ValueError("Work interface requires a bound project")
         self._session = session
-        self.profile = profile_id(role)
-        if variant not in {"v13", "legacy"}:
+        self.profile = profile_id(role, variant)
+        if variant not in {"v13", "v14", "legacy"}:
             raise ValueError("Unknown declared interface comparison variant")
         self.variant = variant
+        if presentation not in PRESENTATIONS:
+            raise ValueError("Unknown declared return presentation")
+        if presentation != "v13" and variant != "v14":
+            raise ValueError("The new presentation requires the declared v0.14 interface")
+        self.presentation = presentation
         if variant == "legacy":
             self.profile = LEGACY_INTERFACE + ":" + role
         self.audit_dir = Path(audit_dir) if audit_dir is not None else None
         self.projections = []
+        self.response_projections = []
 
     def tools(self):
         return tool_definitions(self._session.tools(), self.profile)
@@ -182,8 +204,13 @@ class WorkInterface:
             pid: {key: copy.deepcopy(project[key]) for key in ("status", "participants", "title", "description") if key in project}
             for pid, project in original.get("projects", {}).items()
         }
+        selected, presentation_reason = observation_projection(selected, self.presentation)
         record = {
-            "version": INTERFACE_VERSION, "profile": self.profile,
+            "version": V14_INTERFACE if self.variant == "v14" else INTERFACE_VERSION,
+            "presentation_version": PRESENTATION_VERSION, "presentation": self.presentation,
+            "presentation_reason": presentation_reason,
+            "selected_observation": copy.deepcopy(selected),
+            "raw_observation_sha256": digest(json_bytes(original)), "profile": self.profile,
             "raw_observation": original, "selected_observation_sha256": digest(json_bytes(selected)),
             "selection": {"projects": "retained exactly" if self.variant == "legacy" else ["status", "participants", "title", "description"], "all_other_top_level_fields": "retained exactly"},
             "original_bytes": len(json_bytes(original)), "selected_bytes": len(json_bytes(selected)),
@@ -195,8 +222,27 @@ class WorkInterface:
         return selected
 
     def call(self, action, request_key=None, **arguments):
-        return self._session._world.act(
+        original = self._session._world.act(
             self._session.actor_id, "project_action",
             {"project_id": self._session.project_id, "tool": action, "arguments": arguments, "interface_profile": self.profile},
             request_key=request_key,
         )
+
+        selected, reasons = project_response(
+            original, action=action, arguments=arguments, profile=self.profile,
+            project_id=self._session.project_id, presentation=self.presentation,
+        )
+        record = {
+            "version": PRESENTATION_VERSION, "presentation": self.presentation,
+            "profile": self.profile, "action": action, "arguments": copy.deepcopy(arguments),
+            "raw_response": original, "public_response": copy.deepcopy(selected),
+            "raw_response_sha256": digest(json_bytes(original)),
+            "public_response_sha256": digest(json_bytes(selected)),
+            "raw_bytes": len(json_bytes(original)), "public_bytes": len(json_bytes(selected)),
+            "reasons": reasons or ["Response retained exactly."],
+        }
+        self.response_projections.append(record)
+        if self.audit_dir is not None:
+            self.audit_dir.mkdir(parents=True, exist_ok=True)
+            atomic_write(self.audit_dir / ("call-" + str(len(self.response_projections)) + ".json"), json_bytes(record))
+        return selected

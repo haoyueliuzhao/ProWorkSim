@@ -400,7 +400,7 @@ class WorldCore(WorldRunner):
                     else "integer"
                     if key in {"ticks", "delay"}
                     else "boolean"
-                    if key in {"follow_updates", "available", "blocking"}
+                    if key in {"follow_updates", "available", "blocking", "include_contract"}
                     else "string"
                 )
                 properties[key] = {"type": typ}
@@ -1165,7 +1165,11 @@ class WorldCore(WorldRunner):
         item = self._work(actor, project_id, work_id)
         return withdraw_submission(self.state, actor, item["work_item_id"], submission_id, reason)
 
-    def _action_inspect_submission(self, actor, project_id, work_id, submission_id):
+    def _action_inspect_submission(self, actor, project_id, work_id, submission_id, include_contract=False):
+        # Presentation-only opt-in. The actual core receipt always retains the
+        # whole fixed submission; authorization and business state are unchanged.
+        if type(include_contract) is not bool:
+            raise ValueError("include_contract must be a boolean")
         item = self._work(actor, project_id, work_id, current=False)
         _, submission = submission_for(self.state, item["work_item_id"], submission_id)
         for aid, vid in submission["artifact_versions"].items():

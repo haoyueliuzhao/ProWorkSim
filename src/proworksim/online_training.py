@@ -17,10 +17,16 @@ from pathlib import Path
 
 from .local_model_service import SamplingTrace, completed_tokens, parse_generated, prepare_prompt
 from .member_views import member_view
+from .online_signals import (
+    GroupGradientCapture, decision_stage, joint_return, sampled_change, select_post_update_rows, summarize_signals,
+)
 from .storage import atomic_write, digest, json_bytes, read_json
 
-VERSION = "shared-online-ppo-v0.13"
+VERSION = "shared-online-ppo-v0.14"
 DEFAULT_RECIPE = {
+    "credit_assignment": "terminal_mc",
+    "diagnostic_max_groups": 32,
+    "post_update_max_decisions": 12,
     "actor_lr": 1e-5,
     "critic_lr": 1e-3,
     "clip": 0.2,
@@ -55,7 +61,12 @@ def recipe_config(overrides=None):
         if type(result[key]) is not int or result[key] <= 0:
             raise ValueError("Positive integer recipe value required: " + key)
     if result["gamma"] != 1 or result["epochs"] != 1:
-        raise ValueError("This recipe implements one full-window MC update, gamma=1")
+        raise ValueError("This recipe implements one full-window update, gamma=1")
+    if result["credit_assignment"] not in {"terminal_mc", "joint_reward_to_go"}:
+        raise ValueError("Unknown credit assignment recipe")
+    for key in ("diagnostic_max_groups", "post_update_max_decisions"):
+        if type(result[key]) is not int or result[key] < 0:
+            raise ValueError("Nonnegative diagnostic limit required: " + key)
     if result["critic_coefficient"] != 0.5 or result["entropy_coefficient"] != 0 or result["kl_coefficient"] != 0:
         raise ValueError("Critic/entropy/KL coefficients are fixed in this version")
     if result["lora"] != DEFAULT_RECIPE["lora"]:
@@ -209,9 +220,13 @@ def prepare_window(entries, actor_identity, window_id, recipe, feature_function=
                 features, provenance = feature_function(
                     rollout["events"], starts[0]["sequence"], member, recipe["members"]
                 )
+                target, credit = joint_return(reward, starts[0]["sequence"], recipe["credit_assignment"], rollout["events"])
+                work_id = reward.get("spec", {}).get("work_id")
                 own_rows.append({
                     "slot_id": entry["slot_id"], "member_id": member, "call_id": decision["call_id"],
-                    "reward": float(reward["reward"]), "tokens": trace,
+                    "reward": target, "terminal_reward": float(reward["reward"]), "credit": credit, "tokens": trace,
+                    "task": reward.get("scope", reward.get("spec", {}).get("task", "unspecified")),
+                    "stage": decision_stage(rollout["events"], starts[0]["sequence"], member, work_id),
                     "critic_features": features, "critic_provenance": provenance,
                     "actor_denominator": len(entries) * len(members) * view["own_action_tokens"],
                     "critic_denominator": len(entries) * len(members) * len(required),
@@ -557,6 +572,36 @@ class SharedActor:
             "used_window_ids": list(self.used_window_ids),
         }
 
+    def capture_evaluation_state(self):
+        """Snapshot learning fingerprints and RNG at an idle probe boundary."""
+        if self.phase != "idle" or self.busy:
+            raise ValueError("Evaluation snapshots require an idle window boundary")
+        state = self._state_bundle()
+        fields = ("actor", "critic", "actor_optimizer", "critic_optimizer", "policy_revision",
+                  "actor_steps", "critic_steps", "critic_has_nonzero_reward_history")
+        return {"learning": {key: tensor_tree_digest(state[key], self.torch) for key in fields},
+                "rng": {"cpu": state["rng_cpu"].clone(), "cuda": [value.clone() for value in state["rng_cuda"]]}}
+
+    def finish_evaluation_guard(self, snapshot):
+        """Restore only RNG; detect, rather than roll back, a changed learner."""
+        torch = self.torch
+        state = self._state_bundle()
+        after = {key: tensor_tree_digest(state[key], torch) for key in snapshot["learning"]}
+        observed_rng = {"cpu": state["rng_cpu"], "cuda": state["rng_cuda"]}
+        torch.set_rng_state(snapshot["rng"]["cpu"].cpu())
+        if self.device.startswith("cuda"):
+            torch.cuda.set_rng_state_all([value.cpu() for value in snapshot["rng"]["cuda"]])
+        restored = {"cpu": torch.get_rng_state(), "cuda": torch.cuda.get_rng_state_all()
+                    if self.device.startswith("cuda") else []}
+        before_rng = tensor_tree_digest(snapshot["rng"], torch)
+        return {"learning_before_sha256": snapshot["learning"], "learning_after_sha256": after,
+                "learning_unchanged": after == snapshot["learning"],
+                "rng_before_sha256": before_rng,
+                "rng_after_collection_sha256": tensor_tree_digest(observed_rng, torch),
+                "rng_after_restore_sha256": tensor_tree_digest(restored, torch),
+                "rng_restored_exactly": tensor_tree_digest(restored, torch) == before_rng,
+                "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."}
+
     def save_checkpoint(self, directory):
         """One common boundary checkpoint, including both persistent optimizers/RNG."""
         if self.busy or self.phase != "idle":
@@ -632,8 +677,11 @@ class SharedActor:
             "training_happened": False, "backward_decisions_completed": 0,
             "transport_kind": "resident_direct", "actual_network_http_calls": 0,
             "composition": "Q=B, all admitted actor targets have composition weight 1",
-            "advantage": "terminal credible reward minus frozen pre-update zero-initialized observed-history critic; no normalization",
+            "advantage": self.recipe["credit_assignment"] + " return minus frozen pre-update zero-initialized observed-history critic; no normalization",
+            "target_normalization_scope": "Member-token-average surrogate; no claim of exact unbiased equivalence to unnormalized episodic policy gradient",
         }
+
+        gradient_capture = None
 
         def save(stage):
             report["stage"] = stage
@@ -671,7 +719,7 @@ class SharedActor:
                 report["status"] = "zero_step_probability_mismatch"
                 return report
             if not all(math.isfinite(v) for v in advantages):
-                raise ValueError("Nonfinite true MC advantage")
+                raise ValueError("Nonfinite historical-return advantage")
             # No random/unsupported initial critic noise can create an actor update.
             zero_signal = not self.critic_has_nonzero_reward_history and all(r["reward"] == 0 for r in rows)
             if zero_signal and any(abs(value) > 1e-12 for value in values):
@@ -686,9 +734,12 @@ class SharedActor:
             self.critic_optimizer.zero_grad(set_to_none=True)
             self.model.train()  # All dropout zero; HF enables gradient checkpointing only in train mode.
             gradient_checks, losses = [], []
+            gradient_capture = GroupGradientCapture(self.actor_parameters, torch, self.recipe["diagnostic_max_groups"])
             for row, advantage in zip(rows, advantages):
                 self._resource_guard()
                 actor_loss_value, ratio_range = 0.0, None
+                clipped_tokens = outside_tokens = measured_tokens = 0
+                gradient_capture.select(row)
                 if actor_enabled:
                     probabilities = selected_logprobs(self.model, row["tokens"], torch, self.device)
                     check = probability_check(probabilities.detach().cpu().tolist(), row["tokens"]["behavior_logprobs"], self.recipe)
@@ -704,6 +755,12 @@ class SharedActor:
                     actor_loss = total / row["actor_denominator"]
                     if not torch.isfinite(actor_loss):
                         raise ValueError("Nonfinite actor loss")
+                    detached_ratio = ratio.detach()
+                    clipped_tokens = int(((detached_ratio > 1 + self.recipe["clip"]) & (advantage > 0)
+                                          | (detached_ratio < 1 - self.recipe["clip"]) & (advantage < 0)).sum())
+                    outside_tokens = int(((detached_ratio < 1 - self.recipe["clip"])
+                                          | (detached_ratio > 1 + self.recipe["clip"])).sum())
+                    measured_tokens = detached_ratio.numel()
                     actor_loss.backward()
                     actor_loss_value = float(actor_loss.detach())
                     ratio_range = [float(ratio.detach().min()), float(ratio.detach().max())]
@@ -716,12 +773,18 @@ class SharedActor:
                 losses.append({"call_id": row["call_id"], "slot_id": row["slot_id"],
                                "member_id": row["member_id"], "actor_loss": actor_loss_value,
                                "critic_loss": float(critic_loss.detach()), "ppo_ratio_range": ratio_range,
-                               "composition_weight": 1.0})
+                               "composition_weight": 1.0, "clipped_objective_tokens": clipped_tokens,
+                               "ratio_outside_interval_tokens": outside_tokens, "clipping_measured_tokens": measured_tokens})
                 report["backward_decisions_completed"] += 1
                 del value, critic_loss
                 save("backward")
             atomic_write(output / "gradient-probability-check.json", json_bytes(gradient_checks))
             atomic_write(output / "losses.json", json_bytes(losses))
+            signal = summarize_signals(rows, values, advantages, losses)
+            signal["gradient_capture"] = gradient_capture.finish()
+            gradient_capture = None
+            atomic_write(output / "signal-diagnostics.json", json_bytes(signal))
+            report["signal_diagnostics"] = reference(output / "signal-diagnostics.json")
             gradients = {"actor": {n: p.grad.detach().cpu().clone() for n, p in self.actor_parameters.items() if p.grad is not None},
                          "critic": {n: p.grad.detach().cpu().clone() for n, p in self.critic.named_parameters() if p.grad is not None}}
             torch.save(gradients, output / "gradients-before-clip.pt")
@@ -747,6 +810,25 @@ class SharedActor:
             report["changed_actor_elements"] = sum(int((after[k] != before[k]).sum()) for k in before)
             if report["actor_optimizer_steps"] and not report["changed_actor_elements"]:
                 raise ValueError("An optimizer step occurred but no actor parameter changed")
+            self.model.eval()
+            post_indices = select_post_update_rows(rows, self.recipe["post_update_max_decisions"])
+            post = {"selection": "First admitted decision per task/member/past-public-stage, in admission order; fixed cap",
+                    "maximum_decisions": self.recipe["post_update_max_decisions"], "decisions": [],
+                    "old_probability_source": "Pre-update full-sequence recomputation after behavior-agreement guard",
+                    "new_probability_source": "Post-update full-sequence recomputation at identical contexts and sampling temperature",
+                    "full_distribution_kl_computed": False,
+                    "before_actor_identity": report["before_actor_identity"], "after_actor_identity": self.freeze_identity()}
+            with torch.no_grad():
+                for index in post_indices:
+                    row = rows[index]
+                    self._resource_guard()
+                    current = selected_logprobs(self.model, row["tokens"], torch, self.device).cpu().tolist()
+                    post["decisions"].append({"call_id": row["call_id"], "task": row["task"],
+                                              "member_id": row["member_id"], "stage": row["stage"],
+                                              **sampled_change(checks[index]["recomputed_logprobs"], current, self.recipe["clip"])})
+            atomic_write(output / "post-update-sampled-policy.json", json_bytes(post))
+            report["post_update_sampled_policy"] = reference(output / "post-update-sampled-policy.json")
+            report["post_update_additional_actor_forwards"] = len(post_indices)
             report["status"] = "updated" if report["actor_optimizer_steps"] else "zero_step_zero_actor_advantage_or_gradient"
             report["actor_enabled_without_step"] = actor_enabled and not report["actor_optimizer_steps"]
             report["stage"] = "complete"
@@ -758,6 +840,9 @@ class SharedActor:
             report.update(status="window_update_error", error={"type": type(error).__name__, "message": str(error)})
             raise
         finally:
+            if gradient_capture is not None:
+                for handle in gradient_capture.handles:
+                    handle.remove()
             self.model.eval()
             self.clear_generation_cache()
             self.phase = "idle"
@@ -781,6 +866,8 @@ def run_online_windows(owner, protocol, output_dir, collector):
     windows = protocol["windows"]
     if not windows or len({w["window_id"] for w in windows}) != len(windows):
         raise ValueError("Unique predeclared online windows required")
+    if any(window.get("mode", mode) not in {"online", "evaluate"} for window in windows):
+        raise ValueError("Each window mode must be online or evaluate")
     atomic_write(output_dir / "protocol.json", json_bytes(protocol))
     report = {"version": VERSION, "protocol_sha256": digest(json_bytes(protocol)),
               "transport_kind": "resident_direct", "actual_network_http_calls": 0,
@@ -788,17 +875,29 @@ def run_online_windows(owner, protocol, output_dir, collector):
     try:
         owner.save_checkpoint(output_dir / "initial-checkpoint")
         for index, spec in enumerate(windows):
+            window_mode = spec.get("mode", mode)
+            probe_snapshot = owner.capture_evaluation_state() if window_mode == "evaluate" else None
             identity = owner.begin_window(spec["window_id"])
             directory = output_dir / ("window-" + str(index))
             directory.mkdir()
-            record = {"window_id": spec["window_id"], "before_actor_identity": identity, "status": "collecting"}
+            record = {"window_id": spec["window_id"], "mode": window_mode,
+                      "before_actor_identity": identity, "status": "collecting"}
             report["windows"].append(record)
             atomic_write(output_dir / "report.json", json_bytes(report))
-            entries = collector(owner, copy.deepcopy(spec), directory / "collection")
-            if [e["slot_id"] for e in entries] != [s["slot_id"] for s in spec["slots"]]:
-                raise ValueError("Collector changed the scheduled slot order or dropped a failure")
-            update = (owner.finish_evaluation(entries, directory / "evaluation")
-                      if mode == "evaluate" else owner.update_window(entries, directory / "update"))
+            try:
+                entries = collector(owner, copy.deepcopy(spec), directory / "collection")
+                if [e["slot_id"] for e in entries] != [s["slot_id"] for s in spec["slots"]]:
+                    raise ValueError("Collector changed the scheduled slot order or dropped a failure")
+                update = (owner.finish_evaluation(entries, directory / "evaluation")
+                          if window_mode == "evaluate" else owner.update_window(entries, directory / "update"))
+            finally:
+                if probe_snapshot is not None:
+                    record["evaluation_guard"] = owner.finish_evaluation_guard(probe_snapshot)
+                    atomic_write(directory / "evaluation-guard.json", json_bytes(record["evaluation_guard"]))
+                    atomic_write(output_dir / "report.json", json_bytes(report))
+            if probe_snapshot is not None and (not record["evaluation_guard"]["learning_unchanged"]
+                                               or not record["evaluation_guard"]["rng_restored_exactly"]):
+                raise ValueError("Evaluation probe changed learning state or failed to restore RNG")
             checkpoint = owner.save_checkpoint(directory / "checkpoint")
             record.update(status="complete", update=update, checkpoint=checkpoint,
                           after_actor_identity=owner.freeze_identity())

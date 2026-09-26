@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .episode import assess_historical_episode
 from .member_views import member_view
+from .presentations import response_matches_receipt
 from .storage import Store, digest, read_json
 from .team_rollout import work_validity
 
@@ -140,7 +141,10 @@ def _record_permission_checks(
         receipt_refs.append({"sequence": event["sequence"], "command_id": response["command_id"]})
         if (
             commit.get("bound_actor") != members[event["worker_id"]]["actor_id"]
-            or commit.get("public_result") != response
+            or not response_matches_receipt(
+                commit, response, action=event["payload"]["action"],
+                arguments=event["payload"].get("arguments"),
+            )
         ):
             permission = False
         if (
