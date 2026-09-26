@@ -27,3 +27,5 @@
 `tests/test_harness_sdk_v016.py` 使用明确的 CPU 确定性 transport 夹具，实际调用 SDK 会话、Agent、事件和 Executor。夹具检查角色私有性、单步暂停、真实错误反馈、权重刷新后的新调用、原包络不变、多调用拒绝、未授权工具拒绝、参数不自动修复，上下文完整配对、拒绝反馈后的下一机会恢复、连续格式错误停止，以及精确 JSON wait 控制。9 项控制全部通过；最初在只有 SDK 依赖的环境中收集测试时缺少项目 `openpyxl`，没有执行 SDK 控制，随后在包含项目依赖的独立 resident 副本中完成。日志和分项结果见 `docs/experiments/harness-v016-sdk-controls.json`；SDK wheel 内全部 295 个 Python 文件均与固定官方提交字节一致。夹具 token 是故意标明的哨兵，不能作为真实模型能力、训练数值准入或世界业务成功证据。真实世界和少量模型兼容检查另记。
 
 建议运行时显式设置 `LITELLM_LOCAL_MODEL_COST_MAP=true`，使用已安装的模型元数据，不触发 LiteLLM 元数据远程查询。真实生成不经过 LiteLLM 网络客户端，而是调用传入的 resident/API transport；没有新增外部模型服务。
+
+H0 首条真实校准暴露了 SDK `Observation.is_error` 未映射世界 `ok:false` 的表示缺陷。主树后继 `openhands-managed-worker-v0.16.1` 已仅修正该标记；`to_llm_content` 仍返回原 JSON，不加入默认错误前缀，针对实际后续请求的小控制通过。原冻结 `7914e05`、5次真实调用和评分保持不变。该版本变化应纳入 H1 的新 Γ。

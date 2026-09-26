@@ -32,7 +32,7 @@ from .model_policy import CONTROL_TOOLS, ModelPolicy, _strict_json, normalize_co
 from .staff_runtime import PolicyBoundaryError
 from .storage import digest, json_bytes
 
-HARNESS_VERSION = "openhands-managed-worker-v0.16"
+HARNESS_VERSION = "openhands-managed-worker-v0.16.1"
 SDK_VERSION = "1.49.6"
 SDK_COMMIT = "fcc102a697874d54a357e36004e02c95040dbdc0"
 SYSTEM = """You are an independently scheduled worker inside a managed professional world.
@@ -97,7 +97,8 @@ class _GatewayExecutor(ToolExecutor):
                 },
             )
         return GatewayObservation(
-            content=[TextContent(text=json.dumps(result, ensure_ascii=False, allow_nan=False))]
+            content=[TextContent(text=json.dumps(result, ensure_ascii=False, allow_nan=False))],
+            is_error=isinstance(result, dict) and result.get("ok") is False,
         )
 
 

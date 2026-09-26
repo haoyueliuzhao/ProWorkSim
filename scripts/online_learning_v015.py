@@ -6,7 +6,6 @@ import importlib.metadata
 from pathlib import Path
 
 from proworksim.audit import code_identity
-from proworksim.online_training import SharedActor, run_online_windows
 from proworksim.storage import atomic_write, json_bytes, read_json
 
 
@@ -22,6 +21,19 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     protocol = read_json(Path(args.protocol))
     runtime = protocol['runtime']
+    if args.restore_checkpoint and protocol.get('initialization', {}).get('restore_checkpoint_permitted') is False:
+        raise ValueError('This fixed-weight harness comparison requires a fresh public base; checkpoint restoration is forbidden')
+    from proworksim.harness_admission import validate_h1_launch
+    try:
+        admission = validate_h1_launch(protocol, model_path=args.model, weight_manifest=args.weight_manifest,
+                                       restore_checkpoint=args.restore_checkpoint)
+    except ValueError as error:
+        atomic_write(output / 'H1-admission.json', json_bytes({'status': 'rejected', 'reason': str(error),
+            'model_or_dependency_loading_started': False}))
+        raise
+    if admission['status'] != 'not_H1':
+        atomic_write(output / 'H1-admission.json', json_bytes(admission))
+    from proworksim.online_training import SharedActor, run_online_windows
     dependencies = {name: importlib.metadata.version(name) for name in ('duckdb', 'openpyxl', 'torch', 'transformers', 'peft')}
     if dependencies['duckdb'] != '1.5.5':
         raise ValueError('Use the same project-pinned DuckDB executor as the source contract')

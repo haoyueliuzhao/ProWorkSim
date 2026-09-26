@@ -78,6 +78,8 @@ def collect_window(owner, window_spec, output_dir):
             raise ValueError('Case responsibility budgets remain frozen in the independent catalog')
         folder = output/f'slot-{index}'
         prepared = build_harness_case(case, folder)
+        if row.get('public_task_override') and (window_spec['stage'] != 'H0_compatibility' or row.get('purpose') != 'public_interface_calibration_not_work_ability'):
+            raise ValueError('Only the declared H0 interface probe may override the public role task')
         if row.get('public_task_override'):
             for role in prepared.scenario['roles']:
                 role['config']['task'] = row['public_task_override']

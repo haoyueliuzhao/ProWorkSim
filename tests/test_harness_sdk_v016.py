@@ -108,6 +108,13 @@ def test_actual_sdk_one_decision_error_feedback_pause_roles_and_refresh(tmp_path
     a.step({"role_data": "private-A"}, {"run_id": "cpu", "opportunity_id": "3"})
     assert len(a_transport.requests) == len(actual) == 2
     assert "real fixture denial" in json.dumps(a_transport.requests[1])
+    actual_tool_message = next(
+        m for m in a_transport.requests[1]["messages"] if m["role"] == "tool"
+    )
+    assert json.loads(actual_tool_message["content"]) == {
+        "ok": False,
+        "error": "real fixture denial",
+    }
     assert "private-B" not in json.dumps(a_transport.requests)
     assert "private-A" not in json.dumps(b_transport.requests)
     assert actual[1][2]["weight_identity"] == {"step": 1, "policy_version": "fixture-policy-1"}
@@ -123,6 +130,8 @@ def test_actual_sdk_one_decision_error_feedback_pause_roles_and_refresh(tmp_path
     sdk_events = a.snapshot()["sdk_events"]
     assert sum(event["kind"] == "ActionEvent" for event in sdk_events) == 2
     assert sum(event["kind"] == "ObservationEvent" for event in sdk_events) == 2
+    observed_errors = [event for event in sdk_events if event["kind"] == "ObservationEvent"]
+    assert all(event["observation"]["is_error"] is True for event in observed_errors)
     assert {tool["function"]["name"] for tool in a_transport.requests[0]["tools"]} == {
         "write_note",
         "staff_wait",
