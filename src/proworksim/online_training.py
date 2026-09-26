@@ -314,7 +314,7 @@ class SharedActor:
 
     @classmethod
     def from_pretrained(cls, model_path, *, weight_manifest, output, recipe=None,
-                        attention="sdpa_explicit_kv", matmul_precision="high", startup_reserve_gib=0):
+                        attention="sdpa_explicit_kv", matmul_precision="highest", startup_reserve_gib=0):
         import torch
         import transformers
         import peft

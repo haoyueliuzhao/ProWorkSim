@@ -35,7 +35,7 @@ def main():
         owner = SharedActor.from_pretrained(
             args.model, weight_manifest=args.weight_manifest, output=output / "resident",
             recipe=protocol.get("recipe"), attention=protocol.get("attention", "sdpa_explicit_kv"),
-            matmul_precision=protocol.get("matmul_precision", "high"),
+            matmul_precision=protocol.get("matmul_precision", "highest"),
             startup_reserve_gib=args.startup_reserve_gib,
         )
         if args.restore_checkpoint:
