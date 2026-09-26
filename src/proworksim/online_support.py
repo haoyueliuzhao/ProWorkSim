@@ -358,6 +358,15 @@ def diagnose_window(declaration, records):
     }
 
 
+def assess_scoped_reward(episode, spec):
+    """Explicit source contract dispatch; original rewards are never relabelled."""
+    if spec.get("version") == "retail-work-reward-v0.15":
+        from .retail_rewards import assess_retail_reward
+        return assess_retail_reward(episode, spec)
+    from .online_rewards import assess_online_reward
+    return assess_online_reward(episode, spec)
+
+
 def assess_online_validity(
     episode, spec, *, independent_capture, members, reward_result=None, window=None
 ):
@@ -368,7 +377,6 @@ def assess_online_validity(
     """
     from pathlib import Path
 
-    from .online_rewards import assess_online_reward
     from .storage import read_json
     from .team_rollout import validate_window, work_validity
     from .team_validity import assess_record_permission
@@ -380,7 +388,7 @@ def assess_online_validity(
     frozen = manifest.get("scenario", {}).get("variation", {}).get("online_reward")
     if frozen != spec:
         raise ValueError("Online validity scope must be fixed before current actor actions")
-    reward = reward_result if reward_result is not None else assess_online_reward(root, spec)
+    reward = reward_result if reward_result is not None else assess_scoped_reward(root, spec)
     manifest_sha = digest((root / "manifest.json").read_bytes())
     if (
         reward.get("episode_id") != manifest["episode_id"]
@@ -431,10 +439,9 @@ def assess_online_validity(
 
 def export_online_rollout(episode, *, window, members, independent_capture, reward_spec):
     """Closed-episode bridge that preserves new reward/V and original experiences."""
-    from .online_rewards import assess_online_reward
     from .team_rollout import export_team_rollout
 
-    reward = assess_online_reward(episode, reward_spec)
+    reward = assess_scoped_reward(episode, reward_spec)
     validity = assess_online_validity(
         episode,
         reward_spec,

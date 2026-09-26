@@ -18,9 +18,9 @@ from openpyxl.utils.cell import coordinate_to_tuple
 from ..core.adoption import binding_key, require_version
 from ..evaluation import EvaluationInputError, combined_status
 from ..core.references import VersionRef
-from . import reconciliation, research_review, executable_project, decision_team
+from . import reconciliation, research_review, executable_project, decision_team, retail_work
 
-DOMAIN_CHECKS = {module.CHECK_KIND: module for module in (reconciliation, research_review, executable_project, decision_team)}
+DOMAIN_CHECKS = {module.CHECK_KIND: module for module in (reconciliation, research_review, executable_project, decision_team, retail_work)}
 
 
 _KINDS = {
@@ -363,7 +363,7 @@ def evaluate_submission(store, state, item, submission, *, _context=None):
                 if relevant_conflicts:
                     raise ValueError("Conflicting JSON fields: " + ", ".join(relevant_conflicts))
             if kind in DOMAIN_CHECKS:
-                if kind in {executable_project.CHECK_KIND, decision_team.CHECK_KIND}:
+                if kind in {executable_project.CHECK_KIND, decision_team.CHECK_KIND, retail_work.CHECK_KIND}:
                     executable_project.validate_execution_evidence(state, item, submission, selected, spec)
                 source_data, exact_sources = {}, []
                 for source_spec in spec["sources"]:

@@ -20,7 +20,7 @@ from .storage import atomic_write, digest, json_bytes
 from .templates.online_work import build_online_case, case_spec
 from .work_interface import WorkInterface, INTERFACE_VERSION, LEGACY_INTERFACE, V14_INTERFACE
 
-VERSION = "online-collection-v0.14"
+VERSION = "online-collection-v0.15"
 MAPPER = "online-basis-handoff-v0.13"
 
 
@@ -105,6 +105,8 @@ def collect_window(owner, window_spec, output_dir):
     template = window_spec.get('template', 'online_work')
     if template == 'learning_work':
         from .templates.learning_work import case_spec as resolve_case, build_learning_case as build_case
+    elif template == 'retail_work':
+        from .templates.retail_work import case_spec as resolve_case, build_retail_case as build_case
     elif template == 'online_work':
         resolve_case, build_case = case_spec, build_online_case
     else:

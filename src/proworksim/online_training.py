@@ -22,7 +22,7 @@ from .online_signals import (
 )
 from .storage import atomic_write, digest, json_bytes, read_json
 
-VERSION = "shared-online-ppo-v0.14"
+VERSION = "shared-online-ppo-v0.15"
 DEFAULT_RECIPE = {
     "credit_assignment": "terminal_mc",
     "diagnostic_max_groups": 32,
@@ -139,7 +139,7 @@ def selected_logprobs(model, trace, torch, device):
     ).logits[0, :-1].float() / trace["sampling_temperature"]
     if logits.shape[0] != count:
         raise ValueError("Output-only logits lost original token targets")
-    targets = torch.tensor(trace["output_ids"], dtype=torch.long, device=device)
+    targets = torch.tensor(trace["output_ids"], dtype=torch.long, device=logits.device)
     return logits.log_softmax(-1).gather(1, targets[:, None]).squeeze(1)
 
 
@@ -470,6 +470,18 @@ class SharedActor:
             raise RuntimeError("Predeclared host RSS resource guard exceeded")
         return {"rss_bytes": resident, "rss_peak_bytes": high}
 
+    def prepare_request(self, request):
+        """Architecture-specific native syntax; no world or task solver access."""
+        return prepare_prompt(request, self.tokenizer, self.inference_profile.get("native_tool_prompt", "single_call"))
+
+    def parse_response(self, raw, request):
+        """Default Qwen2.5 JSON tool format. New native formats override this."""
+        return parse_generated(raw)
+
+    def learning_logprobs(self, trace):
+        """Original complete output targets under the current shared actor."""
+        return selected_logprobs(self.model, trace, self.torch, self.device)
+
     def complete(self, request, *, timeout_seconds):
         if self.phase != "collecting" or self.busy:
             raise ValueError("Sampling and shared actor updates may not overlap")
@@ -487,7 +499,7 @@ class SharedActor:
                 raise ValueError("Request sampling temperature/output budget differs from frozen recipe")
             if request.get("stream") or any(key in request for key in ("top_p", "top_k", "logit_bias", "frequency_penalty", "presence_penalty")):
                 raise ValueError("Unsupported undeclared distribution transform")
-            rendered, messages, projection = prepare_prompt(request, self.tokenizer, self.inference_profile.get("native_tool_prompt", "single_call"))
+            rendered, messages, projection = self.prepare_request(request)
             ids = self.tokenizer(rendered, add_special_tokens=False)["input_ids"]
             if len(ids) + maximum > self.recipe["max_length"]:
                 raise DirectContextLimit("Full real prompt plus requested output exceeds context limit; no crop")
@@ -502,7 +514,8 @@ class SharedActor:
             self.model.eval()
             self._resource_guard()
             if self.device.startswith("cuda"):
-                torch.cuda.reset_peak_memory_stats()
+                for device_index in range(torch.cuda.device_count()):
+                    torch.cuda.reset_peak_memory_stats(device_index)
             trace = SamplingTrace(temperature)
             with torch.inference_mode():
                 generated = self.model.generate(
@@ -512,7 +525,7 @@ class SharedActor:
             probabilities = trace.finish(generated)
             tokens, finished = completed_tokens(generated[0, len(ids):].tolist(), self.model.generation_config.eos_token_id)
             raw = self.tokenizer.decode(tokens, skip_special_tokens=False)
-            message, parse_error = parse_generated(raw)
+            message, parse_error = self.parse_response(raw, request)
             body = {
                 "id": call_id, "object": "chat.completion", "created": int(time.time()),
                 "model": request["model"], "system_fingerprint": self._identity["policy_version"],
@@ -536,6 +549,7 @@ class SharedActor:
             }
             if self.device.startswith("cuda"):
                 body["service_record"]["peak_gpu_allocated_bytes"] = torch.cuda.max_memory_allocated()
+                body["service_record"]["peak_gpu_allocated_bytes_by_visible_device"] = {str(i): torch.cuda.max_memory_allocated(i) for i in range(torch.cuda.device_count())}
             status = 200
         except DirectContextLimit as error:
             body = {"error": {"code": "context_length_exceeded", "message": str(error),
@@ -704,7 +718,7 @@ class SharedActor:
             with torch.no_grad():
                 for row in rows:
                     self._resource_guard()
-                    probabilities = selected_logprobs(self.model, row["tokens"], torch, self.device)
+                    probabilities = self.learning_logprobs(row["tokens"])
                     check = probability_check(probabilities.cpu().tolist(), row["tokens"]["behavior_logprobs"], self.recipe)
                     checks.append({"call_id": row["call_id"], **check})
                     value = float(self.critic(torch.tensor(row["critic_features"], dtype=torch.float32, device=self.device)).squeeze())
@@ -741,7 +755,7 @@ class SharedActor:
                 clipped_tokens = outside_tokens = measured_tokens = 0
                 gradient_capture.select(row)
                 if actor_enabled:
-                    probabilities = selected_logprobs(self.model, row["tokens"], torch, self.device)
+                    probabilities = self.learning_logprobs(row["tokens"])
                     check = probability_check(probabilities.detach().cpu().tolist(), row["tokens"]["behavior_logprobs"], self.recipe)
                     gradient_checks.append({"call_id": row["call_id"], **check})
                     if not check["passed"]:
@@ -750,7 +764,7 @@ class SharedActor:
                         self.critic_optimizer.zero_grad(set_to_none=True)
                         report["status"] = "zero_step_gradient_probability_mismatch"
                         return report
-                    behavior = torch.tensor(row["tokens"]["behavior_logprobs"], device=self.device)
+                    behavior = torch.tensor(row["tokens"]["behavior_logprobs"], device=probabilities.device)
                     total, ratio = ppo_sum(torch, probabilities, behavior, advantage, self.recipe["clip"])
                     actor_loss = total / row["actor_denominator"]
                     if not torch.isfinite(actor_loss):
@@ -822,7 +836,7 @@ class SharedActor:
                 for index in post_indices:
                     row = rows[index]
                     self._resource_guard()
-                    current = selected_logprobs(self.model, row["tokens"], torch, self.device).cpu().tolist()
+                    current = self.learning_logprobs(row["tokens"]).cpu().tolist()
                     post["decisions"].append({"call_id": row["call_id"], "task": row["task"],
                                               "member_id": row["member_id"], "stage": row["stage"],
                                               **sampled_change(checks[index]["recomputed_logprobs"], current, self.recipe["clip"])})
