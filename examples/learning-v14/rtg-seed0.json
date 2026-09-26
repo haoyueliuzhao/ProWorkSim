@@ -1,0 +1,700 @@
+{
+  "version": "learning-formal-protocol-v0.14",
+  "mode": "online",
+  "condition": "rtg",
+  "replicate_index": 0,
+  "recipe": {
+    "credit_assignment": "joint_reward_to_go",
+    "diagnostic_max_groups": 32,
+    "post_update_max_decisions": 12,
+    "actor_lr": 1e-05,
+    "critic_lr": 0.001,
+    "clip": 0.2,
+    "gamma": 1.0,
+    "critic_coefficient": 0.5,
+    "entropy_coefficient": 0.0,
+    "kl_coefficient": 0.0,
+    "gradient_clip": 1.0,
+    "epochs": 1,
+    "temperature": 0.7,
+    "max_output_tokens": 512,
+    "max_length": 12288,
+    "logprob_max_atol": 0.02,
+    "logprob_mean_atol": 0.002,
+    "max_rss_bytes": 68719476736,
+    "seed": 2026092711,
+    "members": [
+      "provider",
+      "implementer",
+      "reviewer"
+    ],
+    "lora": {
+      "r": 8,
+      "alpha": 16,
+      "dropout": 0.0,
+      "target_modules": [
+        "q_proj",
+        "v_proj"
+      ]
+    }
+  },
+  "attention": "sdpa_explicit_kv",
+  "matmul_precision": "high",
+  "training_windows": 4,
+  "training_episode_count": 64,
+  "window_rotation": "facts f0/f1 alternate, four tasks each1/4, each exact case repeated4 under current actor; never pool policies/layouts",
+  "selection": "Fixed final checkpoint only; dev probes at0/2/4 cannot alter training. One common initial locked baseline per seed is collected in MC job and reused for the identical RTG initial actor; no learner state/RNG carryover from evaluations.",
+  "clipping_scope": "One update per fresh window; log measured clipping, no multiple-epoch robustness claim.",
+  "numerical_failure": "Existing strict gate stops this run, records incomplete future slots; no seed replacement or quota refill.",
+  "source_scope": "One development family; locked rules/facts/holders are within-family conditions, not independent sources.",
+  "windows": [
+    {
+      "window_id": "rtg-s0-dev-initial",
+      "mode": "evaluate",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-dev-initial-c0-r0",
+          "case_id": "development-v14-f0-handoff",
+          "sampling_seed": 2026800000
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c1-r0",
+          "case_id": "development-v14-f0-implement",
+          "sampling_seed": 2026800100
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c2-r0",
+          "case_id": "development-v14-f0-review",
+          "sampling_seed": 2026800200
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c3-r0",
+          "case_id": "development-v14-f0-chain",
+          "sampling_seed": 2026800300
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c4-r0",
+          "case_id": "development-v14-f1-handoff",
+          "sampling_seed": 2026800400
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c5-r0",
+          "case_id": "development-v14-f1-implement",
+          "sampling_seed": 2026800500
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c6-r0",
+          "case_id": "development-v14-f1-review",
+          "sampling_seed": 2026800600
+        },
+        {
+          "slot_id": "rtg-s0-dev-initial-c7-r0",
+          "case_id": "development-v14-f1-chain",
+          "sampling_seed": 2026800700
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-train-0",
+      "mode": "online",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-train-0-c0-r0",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026100000
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c0-r1",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026100001
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c0-r2",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026100002
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c0-r3",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026100003
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c1-r0",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026100100
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c1-r1",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026100101
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c1-r2",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026100102
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c1-r3",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026100103
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c2-r0",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026100200
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c2-r1",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026100201
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c2-r2",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026100202
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c2-r3",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026100203
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c3-r0",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026100300
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c3-r1",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026100301
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c3-r2",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026100302
+        },
+        {
+          "slot_id": "rtg-s0-train-0-c3-r3",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026100303
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-train-1",
+      "mode": "online",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-train-1-c0-r0",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026101000
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c0-r1",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026101001
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c0-r2",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026101002
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c0-r3",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026101003
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c1-r0",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026101100
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c1-r1",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026101101
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c1-r2",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026101102
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c1-r3",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026101103
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c2-r0",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026101200
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c2-r1",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026101201
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c2-r2",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026101202
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c2-r3",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026101203
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c3-r0",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026101300
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c3-r1",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026101301
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c3-r2",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026101302
+        },
+        {
+          "slot_id": "rtg-s0-train-1-c3-r3",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026101303
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-dev-2",
+      "mode": "evaluate",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-dev-2-c0-r0",
+          "case_id": "development-v14-f0-handoff",
+          "sampling_seed": 2026800000
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c1-r0",
+          "case_id": "development-v14-f0-implement",
+          "sampling_seed": 2026800100
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c2-r0",
+          "case_id": "development-v14-f0-review",
+          "sampling_seed": 2026800200
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c3-r0",
+          "case_id": "development-v14-f0-chain",
+          "sampling_seed": 2026800300
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c4-r0",
+          "case_id": "development-v14-f1-handoff",
+          "sampling_seed": 2026800400
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c5-r0",
+          "case_id": "development-v14-f1-implement",
+          "sampling_seed": 2026800500
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c6-r0",
+          "case_id": "development-v14-f1-review",
+          "sampling_seed": 2026800600
+        },
+        {
+          "slot_id": "rtg-s0-dev-2-c7-r0",
+          "case_id": "development-v14-f1-chain",
+          "sampling_seed": 2026800700
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-train-2",
+      "mode": "online",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-train-2-c0-r0",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026102000
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c0-r1",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026102001
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c0-r2",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026102002
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c0-r3",
+          "case_id": "train-v14-f0-handoff",
+          "sampling_seed": 2026102003
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c1-r0",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026102100
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c1-r1",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026102101
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c1-r2",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026102102
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c1-r3",
+          "case_id": "train-v14-f0-implement",
+          "sampling_seed": 2026102103
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c2-r0",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026102200
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c2-r1",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026102201
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c2-r2",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026102202
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c2-r3",
+          "case_id": "train-v14-f0-review",
+          "sampling_seed": 2026102203
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c3-r0",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026102300
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c3-r1",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026102301
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c3-r2",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026102302
+        },
+        {
+          "slot_id": "rtg-s0-train-2-c3-r3",
+          "case_id": "train-v14-f0-chain",
+          "sampling_seed": 2026102303
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-train-3",
+      "mode": "online",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-train-3-c0-r0",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026103000
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c0-r1",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026103001
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c0-r2",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026103002
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c0-r3",
+          "case_id": "train-v14-f1-handoff",
+          "sampling_seed": 2026103003
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c1-r0",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026103100
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c1-r1",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026103101
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c1-r2",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026103102
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c1-r3",
+          "case_id": "train-v14-f1-implement",
+          "sampling_seed": 2026103103
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c2-r0",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026103200
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c2-r1",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026103201
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c2-r2",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026103202
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c2-r3",
+          "case_id": "train-v14-f1-review",
+          "sampling_seed": 2026103203
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c3-r0",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026103300
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c3-r1",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026103301
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c3-r2",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026103302
+        },
+        {
+          "slot_id": "rtg-s0-train-3-c3-r3",
+          "case_id": "train-v14-f1-chain",
+          "sampling_seed": 2026103303
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-dev-4",
+      "mode": "evaluate",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-dev-4-c0-r0",
+          "case_id": "development-v14-f0-handoff",
+          "sampling_seed": 2026800000
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c1-r0",
+          "case_id": "development-v14-f0-implement",
+          "sampling_seed": 2026800100
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c2-r0",
+          "case_id": "development-v14-f0-review",
+          "sampling_seed": 2026800200
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c3-r0",
+          "case_id": "development-v14-f0-chain",
+          "sampling_seed": 2026800300
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c4-r0",
+          "case_id": "development-v14-f1-handoff",
+          "sampling_seed": 2026800400
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c5-r0",
+          "case_id": "development-v14-f1-implement",
+          "sampling_seed": 2026800500
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c6-r0",
+          "case_id": "development-v14-f1-review",
+          "sampling_seed": 2026800600
+        },
+        {
+          "slot_id": "rtg-s0-dev-4-c7-r0",
+          "case_id": "development-v14-f1-chain",
+          "sampling_seed": 2026800700
+        }
+      ]
+    },
+    {
+      "window_id": "rtg-s0-locked-final",
+      "mode": "evaluate",
+      "template": "learning_work",
+      "interface": "v14",
+      "presentation": "compact_v14",
+      "external_tick_per_sweep": 1,
+      "min_class_count": 2,
+      "slots": [
+        {
+          "slot_id": "rtg-s0-locked-final-c0-r0",
+          "case_id": "locked_facts-v14-f0-handoff",
+          "sampling_seed": 2026900000
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c1-r0",
+          "case_id": "locked_facts-v14-f0-implement",
+          "sampling_seed": 2026900100
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c2-r0",
+          "case_id": "locked_facts-v14-f0-review",
+          "sampling_seed": 2026900200
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c3-r0",
+          "case_id": "locked_facts-v14-f0-chain",
+          "sampling_seed": 2026900300
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c4-r0",
+          "case_id": "locked_facts-v14-f1-handoff",
+          "sampling_seed": 2026900400
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c5-r0",
+          "case_id": "locked_facts-v14-f1-implement",
+          "sampling_seed": 2026900500
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c6-r0",
+          "case_id": "locked_facts-v14-f1-review",
+          "sampling_seed": 2026900600
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c7-r0",
+          "case_id": "locked_facts-v14-f1-chain",
+          "sampling_seed": 2026900700
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c8-r0",
+          "case_id": "locked_information-v14-f0-handoff",
+          "sampling_seed": 2026900800
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c9-r0",
+          "case_id": "locked_information-v14-f0-implement",
+          "sampling_seed": 2026900900
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c10-r0",
+          "case_id": "locked_information-v14-f0-review",
+          "sampling_seed": 2026901000
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c11-r0",
+          "case_id": "locked_information-v14-f0-chain",
+          "sampling_seed": 2026901100
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c12-r0",
+          "case_id": "locked_information-v14-f1-handoff",
+          "sampling_seed": 2026901200
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c13-r0",
+          "case_id": "locked_information-v14-f1-implement",
+          "sampling_seed": 2026901300
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c14-r0",
+          "case_id": "locked_information-v14-f1-review",
+          "sampling_seed": 2026901400
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c15-r0",
+          "case_id": "locked_information-v14-f1-chain",
+          "sampling_seed": 2026901500
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c16-r0",
+          "case_id": "locked_rules-v14-f0-handoff",
+          "sampling_seed": 2026901600
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c17-r0",
+          "case_id": "locked_rules-v14-f0-implement",
+          "sampling_seed": 2026901700
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c18-r0",
+          "case_id": "locked_rules-v14-f0-review",
+          "sampling_seed": 2026901800
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c19-r0",
+          "case_id": "locked_rules-v14-f0-chain",
+          "sampling_seed": 2026901900
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c20-r0",
+          "case_id": "locked_rules-v14-f1-handoff",
+          "sampling_seed": 2026902000
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c21-r0",
+          "case_id": "locked_rules-v14-f1-implement",
+          "sampling_seed": 2026902100
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c22-r0",
+          "case_id": "locked_rules-v14-f1-review",
+          "sampling_seed": 2026902200
+        },
+        {
+          "slot_id": "rtg-s0-locked-final-c23-r0",
+          "case_id": "locked_rules-v14-f1-chain",
+          "sampling_seed": 2026902300
+        }
+      ]
+    }
+  ]
+}
