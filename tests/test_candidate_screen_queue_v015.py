@@ -198,3 +198,90 @@ def test_selected_venv_python_symlink_is_not_resolved_to_system_interpreter(tmp_
     normalized = normalize_config(cfg)
     assert normalized['python'] == str(executable)
     assert normalized['python'] != str(executable.resolve())
+
+
+def test_chatstop_preflight_replay_command_and_source_identity_are_frozen(tmp_path, monkeypatch):
+    import hashlib
+    import scripts.run_candidate_screen_v015 as module
+    cfg = config(tmp_path)
+    cfg['launcher'] = 'source/launcher.py'
+    source = tmp_path/'source'
+    for path in ('scripts/online_learning_v015.py', 'scripts/candidate_preflight_v0151.py',
+                 'src/proworksim/candidate_runtime_v015.py', 'src/proworksim/candidate_runtime_v0151.py', 'launcher.py'):
+        target = source/path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('# frozen fixture, never executed\n')
+    replay = tmp_path/'replay/actual-old-call.json'
+    save(replay, {'request': {'messages': []}, 'response': {'token_trace': {'input_ids': [1]}}})
+    for job in cfg['candidates']:
+        job['preflight_script'] = 'scripts/candidate_preflight_v0151.py'
+        job['replay_calls'] = [str(replay)] if job['name']=='qwen35-9b' else []
+        path = source/job['screen_protocol']
+        protocol = json.loads(path.read_text())
+        protocol['runtime']['kind'] = 'qwen_hybrid_chatstop'
+        profile_file = source/(job['name']+'-profile.json')
+        save(profile_file, protocol['runtime']['profile'])
+        protocol['runtime'].update(profile_source=profile_file.name,
+            profile_sha256=hashlib.sha256(profile_file.read_bytes()).hexdigest())
+        save(path, protocol)
+    normalized = normalize_config(cfg)
+    module.validate_protocols(normalized)
+    _, child = stage_commands(normalized, normalized['candidates'][0], 'preflight')
+    assert child[1] == str(source/'scripts/candidate_preflight_v0151.py')
+    assert child[-2:] == ['--replay-call', str(replay)]
+    _, larger = stage_commands(normalized, normalized['candidates'][1], 'preflight')
+    assert '--replay-call' not in larger
+    monkeypatch.setattr(module.subprocess, 'check_output', lambda command, **kwargs: 'fixture\n' if command[1]=='rev-parse' else '')
+    identity = module.source_identity(normalized)
+    assert str(source/'scripts/candidate_preflight_v0151.py') in identity['files']
+    assert str(source/'src/proworksim/candidate_runtime_v0151.py') in identity['files']
+    assert str(source/'qwen35-9b-profile.json') in identity['files']
+    assert identity['replay_inputs'][str(replay)] == hashlib.sha256(replay.read_bytes()).hexdigest()
+
+
+def test_chatstop_requires_uncropped_raw_eos_and_the_exact_declared_replay(tmp_path):
+    import hashlib
+    from scripts.run_candidate_screen_v015 import preflight_outcome
+    output = tmp_path/'s0'
+    source = tmp_path/'original-call.json'
+    save(source, {'request': {'messages': ['actual-original-fixture']}})
+    raw_path = output/'owner/calls/new.json'
+    trace = {'output_ids': [19, 248046], 'raw_output_ids': [19, 248046],
+             'behavior_logprobs': [-.1, -.2], 'raw_behavior_logprobs': [-.1, -.2]}
+    save(raw_path, {'status': 200, 'response': {'id': 'new-response', 'choices': [{}], 'token_trace': trace}})
+    report = {'inference_ready': True, 'training_ready': False, 'statuses': [200],
+              'requested_replay_calls': 1, 'replay_records': [{'source_call': {'path': str(source),
+                  'sha256': hashlib.sha256(source.read_bytes()).hexdigest()}, 'current_input_ids_equal_source': True,
+                  'http_status': 200, 'stop_check': {'passed': True}, 'new_response_id': 'new-response'}]}
+    save(output/'report.json', report)
+    job = {'preflight_script': 'candidate_preflight_v0151.py', 'replay_calls': [str(source)]}
+    before = raw_path.read_bytes()
+    outcome = preflight_outcome(output, 0, job=job)
+    assert outcome['inference_ready_for_screen'] and outcome['training_ready'] is False
+    assert raw_path.read_bytes() == before
+    # A cropped retained trace must not hide a real post-EOS token.
+    trace['raw_output_ids'].append(20)
+    trace['raw_behavior_logprobs'].append(-.3)
+    save(raw_path, {'status': 200, 'response': {'id': 'new-response', 'choices': [{}], 'token_trace': trace}})
+    assert preflight_outcome(output, 0, job=job)['inference_ready_for_screen'] is False
+    # Even good generations cannot stand in for an omitted selected replay.
+    trace['raw_output_ids'].pop()
+    trace['raw_behavior_logprobs'].pop()
+    save(raw_path, {'status': 200, 'response': {'id': 'new-response', 'choices': [{}], 'token_trace': trace}})
+    report['replay_records'] = []
+    save(output/'report.json', report)
+    assert preflight_outcome(output, 0, job=job)['original_prompt_replay_gate_passed'] is False
+
+
+def test_new_chatstop_protocols_keep_exact_cases_seeds_and_learning_budgets():
+    root = Path(__file__).resolve().parents[1]
+    for name in ('qwen35-9b', 'qwen38-27b'):
+        old = json.loads((root/f'examples/learning-v15/screen-{name}.json').read_text())
+        new = json.loads((root/f'examples/learning-v15/screen-chatstop-{name}.json').read_text())
+        old_slots = [{k:v for k,v in slot.items() if k!='slot_id'} for w in old['windows'] for slot in w['slots']]
+        new_slots = [{k:v for k,v in slot.items() if k!='slot_id'} for w in new['windows'] for slot in w['slots']]
+        assert old_slots == new_slots and len(new_slots)==36
+        assert old['recipe'] == new['recipe']
+        assert new['runtime']['kind'] == 'qwen_hybrid_chatstop'
+        assert new['runtime']['profile'] == json.loads((root/new['runtime']['profile_source']).read_text())
+        assert old['condition'] != new['condition']

@@ -31,8 +31,11 @@ def main():
     atomic_write(output / 'source-before.json', json_bytes(before))
     owner = None
     try:
-        if runtime['kind'] == 'qwen_hybrid':
-            from proworksim.candidate_runtime_v015 import CandidateActor
+        if runtime['kind'] in ('qwen_hybrid', 'qwen_hybrid_chatstop'):
+            if runtime['kind'] == 'qwen_hybrid_chatstop':
+                from proworksim.candidate_runtime_v0151 import CandidateActor
+            else:
+                from proworksim.candidate_runtime_v015 import CandidateActor
             owner = CandidateActor.from_candidate(args.model, manifest=args.weight_manifest,
                         profile=runtime['profile'], recipe=protocol['recipe'], output=output / 'resident')
         elif runtime['kind'] == 'qwen25_legacy':

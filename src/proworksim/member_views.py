@@ -24,6 +24,9 @@ def _tokens(response):
         ):
             return None, ["invalid_actual_" + name]
     n, m = len(trace["input_ids"]), len(trace["output_ids"])
+    if "raw_output_ids" in trace or "raw_behavior_logprobs" in trace:
+        if trace.get("raw_output_ids") != trace["output_ids"] or trace.get("raw_behavior_logprobs") != trace.get("behavior_logprobs"):
+            return None, ["actual_generated_suffix_was_cropped_or_changed"]
     if trace.get("input_mask") != [0] * n or trace.get("output_mask") != [1] * m:
         return None, ["actor_ownership_masks_invalid"]
     logs = trace.get("behavior_logprobs")

@@ -55,4 +55,25 @@ seccomp 拒绝 socket/network、clone/fork/exec、ptrace、跨进程内存、mou
 
 ## 来源和泛化解释
 
-Marshmallow 成为一个与构造 SQL、UCI 数据不同的软件来源。由于本轮用于环境开发和候选模型试跑，它属于开发来源，不能再当作从未接触的独立测试家族。源码可能存在于基础模型预训练中；本轮新需求减少简单复现旧补丁的捷径，但不能保证零污染。角色不可见的独立合同测试，不等于独立来源泛化或训练收益。
+Marshmallow 成为一个与构造 SQL、UCI 数据不同的软件来源。依据主计划在模型试跑前冻结的使用决定，它不进入候选模型筛选、不参与 UCI 参数更新或外层调权；本线 CPU 环境构建与修复也不作为模型示范。选定模型之后的共同初态和两条件最终态使用下述固定评价。它仍只有一个代码家族和一个模拟需求，不能由此证明广泛来源泛化。源码可能存在于基础模型预训练中；新需求减少简单复现旧补丁的捷径，但不能保证零污染。角色不可见的独立合同检查，也不自动等于学习收益。
+
+
+## 选定模型的软件初始/最终评价生成器
+
+`scripts/build_software_eval_v015.py` 只接受显式 `--selected-screen-protocol`，不选择候选、不读取筛选分数、不加载权重或启动 GPU。它复制选定协议的 runtime、模型接口、采样温度、上下文/输出预算和 LoRA 设置；共同初始化 seed 为 **2026092929**，与 N1 一致。诊断开关为 N1 的 0/0，初态 MC recipe 使用 terminal_mc。它不会恢复 N0 桥接或筛选所得 actor，初始节点声明从选定公开基座重新初始化。
+
+主计划已经声明每节点 3 个固定 seed，但未给出整数。本生成器在任何软件模型试跑前登记 **2026140000、2026140001、2026140002**，三个节点按同一顺序使用：`initial`、`mc-final`、`rtg-final`。每节点 3 条，总计 **9 条评价、0 条训练、0 次优化器更新**，共同初始 3 条只计一次。单条固定 18 次 implementer 机会，总上界 162 次；不随结果增加。唯一 `marshmallow-v15-strip-implement` 情境由已有软件入口固定，episode 列表只能包含 identity 和 sampling_seed，不提供任务覆写。
+
+业务条件、实际 runtime 与采样配置完全相同；episode identity 随节点变化，终态 actor 使用各条件预定最终权重。需要显式保留一个**检查点还原身份差异**：现有 SharedActor 严格比较完整 recipe，N1 RTG 最终检查点的 `credit_assignment` 为 joint_reward_to_go，因此 `rtg-final` 必须保留该字段，MC/initial 则为 terminal_mc。纯软件评价不使用这个字段计算回报或更新参数；它不是采样、预算或评分差异。生成器不会静默改写保存的检查点或放宽还原条件。
+
+输出为 `software-initial.json`、`software-mc-final.json`、`software-rtg-final.json` 和 `software-study.json`。三个 runner 协议都可交给现有 `scripts/software_model_v015.py`；初始禁止 `--restore-checkpoint`，两个最终节点必须绑定相应 **N1 完成后的预定最终检查点**。清单声明这些约束，实际启动方仍须遵守并记录还原来源；生成器不会凭一个路径声称检查点已存在或节点已测量。缺失初始或最终节点保持缺失，不用桥接、另一候选或开发最优 checkpoint 填补。
+
+```bash
+.venv/bin/python scripts/build_software_eval_v015.py \
+  --selected-screen-protocol <explicit-selected-screen-protocol.json> \
+  --output <new-frozen-software-protocol-directory>
+```
+
+软件 study manifest 保留节点、协议、计划 episode/seed、检查点绑定、输出目录和结果路径，供后续只读汇总使用。它明确 `uci_reporter_compatible=false`，不把软件结果硬塞进期待 UCI windows/rollout 的现有学习汇总器。软件汇总只能读取已有 report/result/episode/evaluation-guard，不能重新运行代码评分、加载模型或把未执行项补为零。
+
+必要 CPU fixture 核对三个节点共同 runtime/seed、N1 recipe 对应、桥接 seed 与初态分离、9 eval/0 train、0 step、18 次预算、唯一 episode ID 和输入对象未被修改；CLI 仅在临时目录输出 fixture 协议，不构成真实候选选定或模型运行。

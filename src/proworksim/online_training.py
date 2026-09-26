@@ -22,7 +22,7 @@ from .online_signals import (
 )
 from .storage import atomic_write, digest, json_bytes, read_json
 
-VERSION = "shared-online-ppo-v0.15"
+VERSION = "shared-online-ppo-v0.15.1"
 DEFAULT_RECIPE = {
     "credit_assignment": "terminal_mc",
     "diagnostic_max_groups": 32,
@@ -523,7 +523,12 @@ class SharedActor:
                     logits_processor=[trace], **options,
                 )
             probabilities = trace.finish(generated)
-            tokens, finished = completed_tokens(generated[0, len(ids):].tolist(), self.model.generation_config.eos_token_id)
+            raw_output_ids = generated[0, len(ids):].tolist()
+            ledger["raw_output_ids"] = raw_output_ids
+            ledger["raw_behavior_logprobs"] = probabilities[0][:len(raw_output_ids)]
+            tokens, finished = completed_tokens(raw_output_ids, self.model.generation_config.eos_token_id)
+            if len(tokens) != len(raw_output_ids):
+                raise ValueError("Single-sequence generation continued after a declared stop; no output cropping is allowed")
             raw = self.tokenizer.decode(tokens, skip_special_tokens=False)
             message, parse_error = self.parse_response(raw, request)
             body = {
@@ -534,10 +539,14 @@ class SharedActor:
                     ("tool_calls" if message.get("tool_calls") else "stop") if finished else "length", "logprobs": None}],
                 "usage": {"prompt_tokens": len(ids), "completion_tokens": len(tokens), "total_tokens": len(ids) + len(tokens)},
                 "raw_generated_text": raw, "protocol_parse_error": parse_error,
+                "generation_stop_check": {"raw_output_tokens": len(raw_output_ids), "retained_output_tokens": len(tokens),
+                                    "eos_token_ids": self.model.generation_config.eos_token_id,
+                                    "all_generated_tokens_retained": True},
                 "inference_profile": self.inference_profile,
                 "inference_profile_sha256": self.inference_profile_sha256,
                 "prompt_projection": projection,
                 "token_trace": {"input_ids": ids, "output_ids": tokens,
+                    "raw_output_ids": raw_output_ids, "raw_behavior_logprobs": probabilities[0][:len(raw_output_ids)],
                     "input_mask": [0] * len(ids), "output_mask": [1] * len(tokens),
                     "behavior_logprobs": probabilities[0][:len(tokens)],
                     "sampling_temperature": temperature, "sampling_top_p": 1.0, "sampling_top_k": 0,

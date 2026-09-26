@@ -15,7 +15,7 @@ import subprocess
 import sys
 import time
 
-VERSION = 'candidate-screen-queue-v0.15'
+VERSION = 'candidate-screen-queue-v0.15.1'
 INVENTORY = {'qwen35-9b': {'candidate': 'qwen3.5-9b', 'gpus': [0]},
              'qwen38-27b': {'candidate': 'qwen3.8-27b', 'gpus': [1, 2, 3]}}
 FINAL = {'complete', 'screen_incomplete', 'preflight_failed', 'download_timeout',
@@ -102,6 +102,11 @@ def normalize_config(raw):
         for key in ('download_manifest', 'model_path', 'weight_manifest', 'preflight_output', 'screen_output', 'preflight_launch', 'screen_launch'):
             job[key] = resolve(config['project'], job[key])
         job['screen_protocol'] = resolve(config['source'], job['screen_protocol'])
+        job['preflight_script'] = resolve(config['source'], job.get('preflight_script', 'scripts/candidate_preflight_v015.py'))
+        replay_calls = job.get('replay_calls', [])
+        if not isinstance(replay_calls, list) or len(replay_calls) > 2 or len(set(replay_calls)) != len(replay_calls):
+            raise ValueError('Declare at most two distinct replay source calls')
+        job['replay_calls'] = [resolve(config['project'], path) for path in replay_calls]
         if Path(job['weight_manifest']) != Path(job['model_path']) / 'proworksim-manifest.json':
             raise ValueError('Use the completed model directory weight manifest')
         for key in ('preflight_output', 'screen_output', 'preflight_launch', 'screen_launch'):
@@ -121,9 +126,20 @@ def source_identity(config):
     dirty = subprocess.check_output(['git', 'status', '--porcelain'], cwd=source, text=True).strip()
     if dirty:
         raise ValueError('Frozen source checkout must be clean')
-    paths = [Path(source)/'scripts/candidate_preflight_v015.py', Path(source)/'scripts/online_learning_v015.py', Path(config['launcher'])]
-    paths += [Path(j['screen_protocol']) for j in config['candidates']]
-    return {'commit': head, 'files': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
+    paths = {Path(source)/'scripts/online_learning_v015.py', Path(config['launcher']),
+             Path(source)/'src/proworksim/candidate_runtime_v015.py'}
+    replays = set()
+    for job in config['candidates']:
+        paths.update({Path(job['preflight_script']), Path(job['screen_protocol'])})
+        protocol = read(job['screen_protocol'])
+        runtime = protocol['runtime']
+        if runtime.get('kind') == 'qwen_hybrid_chatstop':
+            paths.add(Path(source)/'src/proworksim/candidate_runtime_v0151.py')
+        if runtime.get('profile_source'):
+            paths.add(Path(resolve(source, runtime['profile_source'])))
+        replays.update(Path(path) for path in job['replay_calls'])
+    return {'commit': head, 'files': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)},
+            'replay_inputs': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(replays)}}
 
 
 def validate_protocols(config):
@@ -136,7 +152,19 @@ def validate_protocols(config):
             raise ValueError('Each candidate has exactly 36 fixed S1 slots')
         if any(w.get('mode', protocol['mode']) != 'evaluate' for w in windows):
             raise ValueError('No online update window may enter screening')
-        profile = protocol['runtime']['profile']
+        runtime = protocol['runtime']
+        kind = runtime.get('kind', 'qwen_hybrid')
+        expected_script = {'qwen_hybrid': 'candidate_preflight_v015.py',
+                           'qwen_hybrid_chatstop': 'candidate_preflight_v0151.py'}.get(kind)
+        if expected_script is None or Path(job['preflight_script']) != Path(config['source'])/'scripts'/expected_script:
+            raise ValueError('Preflight script must match the declared frozen runtime')
+        if job['replay_calls'] and kind != 'qwen_hybrid_chatstop':
+            raise ValueError('Original preflight does not support request replay')
+        profile = runtime['profile']
+        if runtime.get('profile_source'):
+            profile_path = Path(resolve(config['source'], runtime['profile_source']))
+            if read(profile_path) != profile or hashlib.sha256(profile_path.read_bytes()).hexdigest() != runtime.get('profile_sha256'):
+                raise ValueError('Embedded profile differs from its frozen profile source')
         if any(profile.get(k) != job[k] for k in ('dtype', 'devices')) or profile.get('candidate_id') != job['candidate']:
             raise ValueError('S0 and S1 must use the same declared candidate/numeric profile')
 
@@ -144,10 +172,12 @@ def validate_protocols(config):
 def stage_commands(config, job, stage):
     source = Path(config['source'])
     if stage == 'preflight':
-        child = [config['python'], str(source/'scripts/candidate_preflight_v015.py'),
+        child = [config['python'], job['preflight_script'],
                  '--model-path', job['model_path'], '--manifest', job['weight_manifest'],
                  '--candidate', job['candidate'], '--devices', str(job['devices']), '--dtype', job['dtype'],
                  '--output', job['preflight_output']]
+        for path in job['replay_calls']:
+            child.extend(['--replay-call', path])
     else:
         child = [config['python'], str(source/'scripts/online_learning_v015.py'),
                  '--protocol', job['screen_protocol'], '--model', job['model_path'],
@@ -156,19 +186,45 @@ def stage_commands(config, job, stage):
     return wrapper, child
 
 
-def preflight_outcome(output, exit_code):
+def preflight_outcome(output, exit_code, *, job=None):
     output = Path(output)
     report = read(output/'report.json')
-    generations = []
+    generations, actual_stop_checks = [], []
     for path in sorted((output/'owner/calls').glob('*.json')):
         ledger = read(path) or {}
         body = ledger.get('response') or {}
         trace = body.get('token_trace') or {}
         if ledger.get('status') == 200 and body.get('choices') and isinstance(trace.get('output_ids'), list) and trace['output_ids']:
+            raw_ids = trace.get('raw_output_ids')
+            stops = [i for i, token in enumerate(raw_ids if isinstance(raw_ids, list) else []) if token in {248046, 248044}]
+            actual_stop_checks.append({
+                'response_id': body.get('id'),
+                'passed': isinstance(trace.get('raw_output_ids'), list) and bool(stops)
+                          and stops[0] == len(trace['raw_output_ids'])-1
+                          and trace['raw_output_ids'] == trace['output_ids']
+                          and isinstance(trace.get('raw_behavior_logprobs'), list)
+                          and trace['raw_behavior_logprobs'] == trace.get('behavior_logprobs')
+                          and len(trace['raw_behavior_logprobs']) == len(trace['raw_output_ids'])})
             generations.append({'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
                                 'response_id': body.get('id'), 'output_tokens': len(trace['output_ids'])})
     statuses = (report or {}).get('statuses', [])
     inference_ready = exit_code == 0 and (report or {}).get('inference_ready') is True and 200 in statuses and bool(generations)
+    chatstop = bool(job and Path(job['preflight_script']).name == 'candidate_preflight_v0151.py')
+    replay_gate, stop_gate = None, None
+    if chatstop:
+        stop_gate = bool(actual_stop_checks) and all(row['passed'] for row in actual_stop_checks)
+        records = (report or {}).get('replay_records') or []
+        wanted = job['replay_calls']
+        replay_gate = ((report or {}).get('requested_replay_calls') == len(wanted)
+                       and len(records) == len(wanted)
+                       and all(row.get('source_call', {}).get('path') == path
+                               and row.get('source_call', {}).get('sha256') == hashlib.sha256(Path(path).read_bytes()).hexdigest()
+                               and row.get('current_input_ids_equal_source') is True
+                               and row.get('http_status') == 200
+                               and row.get('stop_check', {}).get('passed') is True
+                               and row.get('new_response_id') in {g['response_id'] for g in generations}
+                               for row, path in zip(records, wanted)))
+        inference_ready = inference_ready and stop_gate and replay_gate
     checks = (report or {}).get('probability_checks') or []
     backward = (report or {}).get('backward') or {}
     numerical_ok = bool(checks) and all(c.get('passed') is True for c in checks)
@@ -180,6 +236,9 @@ def preflight_outcome(output, exit_code):
             'checkpoint_serialized_reload_exact': checkpoint_ok, 'exit_code': exit_code,
             'report_present': bool(report), 'reported_statuses': statuses, 'actual_generations': generations,
             'recorded_errors': (report or {}).get('errors'),
+            'chat_stop_gate_passed': stop_gate, 'actual_chat_stop_checks': actual_stop_checks if chatstop else None,
+            'original_prompt_replay_gate_passed': replay_gate,
+            'recorded_replay_records': (report or {}).get('replay_records') if chatstop else None,
             'scope': 'Inference readiness admits pure S1; training readiness is separate. This is not a work ability score.'}
 
 
@@ -346,7 +405,7 @@ class CandidateQueue:
             if state['preflight']['status'] != 'finished':
                 continue
             if 'outcome' not in state['preflight']:
-                outcome = preflight_outcome(job['preflight_output'], state['preflight']['exit_code'])
+                outcome = preflight_outcome(job['preflight_output'], state['preflight']['exit_code'], job=job)
                 state['preflight']['outcome'] = outcome
                 state['training_ready'] = outcome['training_ready']
             if not state['preflight']['outcome']['inference_ready_for_screen']:
