@@ -66,7 +66,13 @@ Marshmallow 成为一个与构造 SQL、UCI 数据不同的软件来源。依据
 
 业务条件、实际 runtime 与采样配置完全相同；episode identity 随节点变化，终态 actor 使用各条件预定最终权重。需要显式保留一个**检查点还原身份差异**：现有 SharedActor 严格比较完整 recipe，N1 RTG 最终检查点的 `credit_assignment` 为 joint_reward_to_go，因此 `rtg-final` 必须保留该字段，MC/initial 则为 terminal_mc。纯软件评价不使用这个字段计算回报或更新参数；它不是采样、预算或评分差异。生成器不会静默改写保存的检查点或放宽还原条件。
 
-输出为 `software-initial.json`、`software-mc-final.json`、`software-rtg-final.json` 和 `software-study.json`。三个 runner 协议都可交给现有 `scripts/software_model_v015.py`；初始禁止 `--restore-checkpoint`，两个最终节点必须绑定相应 **N1 完成后的预定最终检查点**。清单声明这些约束，实际启动方仍须遵守并记录还原来源；生成器不会凭一个路径声称检查点已存在或节点已测量。缺失初始或最终节点保持缺失，不用桥接、另一候选或开发最优 checkpoint 填补。
+输出为 `software-initial.json`、`software-mc-final.json`、`software-rtg-final.json` 和 `software-study.json`。三个 runner 协议交给 `scripts/software_model_v015.py`。**入口在任何模型或 tensor 载入前实际校核绑定**：初始节点拒绝所有 `--restore-checkpoint`；两个最终节点必须提供对应 **N1 完成后的预定最终检查点**。缺失或错误绑定写入 `report.json` 的 `rejected_binding` 状态，保持空 episode 列表，不创建 resident、不把未测量结果写为零。旧版无绑定的简化软件协议不再接受。
+
+具体校核从传入的原始 `online/window-N/checkpoint` 目录推导 N1 run 根目录，读取 `launch-protocol.json`、`online/protocol.json`、`online/report.json`、终点 `checkpoint.json` / `evaluation-guard.json` 和 `resident/owner.json`。launch 与 online 协议必须相同，来源必须是匹配 condition/candidate/runtime/recipe 的 pilot，声明 fresh initial，实际 resident 初始化 seed 为 2026092929，且 run 不得存在恢复外部权重的 `restored-checkpoint.json`。来源包含四个 16 例训练窗，最后一个计划节点必须是该条件的 final locked 评价；传入目录必须等于实际计划 `window-(len(windows)-1)/checkpoint`，不能选择较早或开发最优节点。
+
+整个 N1 report 必须 complete，协议 SHA 与实际 JSON 内容一致，逐窗口的 ID、mode、数量和完成状态与原计划吻合。终点评价 guard 必须同时证明学习态未变和 RNG 恢复。report 中的 checkpoint、末态 actor identity、actor/critic 步计数与真实 checkpoint 元数据一致，实际 base model 路径和 weight manifest 必须与 resident 元数据一致。入口以分块读取核对 `shared-state.pt` 的路径、长度和 SHA，不使用 `torch.load`；检查点、resident、report 的训练版本也须一致。N0 bridge、screen、另一候选、未完成 N1 或较早 checkpoint 因对应条件不成立而在模型载入前拒绝。
+
+同时重新核对软件协议的三个固定 sampling seeds、唯一既定 case、18 次岗位预算、3 eval/0 train/0 optimizer step、N1 初始 seed 和 condition recipe。通过后保存 `binding-validation.json`，包括真实证据路径/SHA和校核范围，再进入原权重载入与严格 `SharedActor.restore_checkpoint`。前置校核不反序列化 tensor，不证明 JSON 记录具有签名真实性，也不替代实际恢复阶段的 tensor/base/recipe/profile 检查；它约束的是当前可信宿主记录中的实验来源、完成性、具体终点和文件一致性。
 
 ```bash
 .venv/bin/python scripts/build_software_eval_v015.py \
@@ -77,3 +83,6 @@ Marshmallow 成为一个与构造 SQL、UCI 数据不同的软件来源。依据
 软件 study manifest 保留节点、协议、计划 episode/seed、检查点绑定、输出目录和结果路径，供后续只读汇总使用。它明确 `uci_reporter_compatible=false`，不把软件结果硬塞进期待 UCI windows/rollout 的现有学习汇总器。软件汇总只能读取已有 report/result/episode/evaluation-guard，不能重新运行代码评分、加载模型或把未执行项补为零。
 
 必要 CPU fixture 核对三个节点共同 runtime/seed、N1 recipe 对应、桥接 seed 与初态分离、9 eval/0 train、0 step、18 次预算、唯一 episode ID 和输入对象未被修改；CLI 仅在临时目录输出 fixture 协议，不构成真实候选选定或模型运行。
+
+
+载入前校核的必要 CPU fixture 使用明确不可被 Torch 载入的假 state 字节，仅建立真实目录与 JSON/哈希关系。它验证 initial、MC final、RTG final 三个合法绑定，并拒绝初始 restore、final 缺失 restore、交叉条件、screen/bridge 来源、恢复过外部权重的 N1、较早 checkpoint、未完成/缺窗/不一致身份或 guard、state 字节被改、以及改动 seed/预算/case/binding 的软件协议；实际 CLI 拒绝分支亦验证 resident 未创建。这不是原模型或学习过程的重演。

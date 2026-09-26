@@ -46,6 +46,14 @@ def main():
             raise ValueError('Unknown explicitly registered runtime; no silent fallback')
         if args.restore_checkpoint:
             atomic_write(output / 'restored-checkpoint.json', json_bytes(owner.restore_checkpoint(args.restore_checkpoint)))
+        if protocol.get('shared_initialization'):
+            if args.restore_checkpoint:
+                raise ValueError('N1 common initialization cannot restore a bridge or prior actor')
+            if __package__:
+                from .learning_initialization_v015 import synchronize_initialization
+            else:
+                from learning_initialization_v015 import synchronize_initialization
+            synchronize_initialization(owner, protocol['shared_initialization'], output)
         module, name = protocol.get('collector', 'proworksim.online_collection:collect_window').split(':', 1)
         collector = getattr(importlib.import_module(module), name)
         result = run_online_windows(owner, protocol, output / 'online', collector)

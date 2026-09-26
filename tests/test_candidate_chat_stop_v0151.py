@@ -7,7 +7,9 @@ from scripts.candidate_preflight_v0151 import run_preflight
 
 
 def body(ids):
-    return {'choices': [{'message': {'role': 'assistant', 'content': 'mock fixture'}}],
+    return {'generation_stop_check': {'raw_output_tokens': len(ids),
+            'retained_output_tokens': len(ids), 'eos_token_ids': [248046, 248044],
+            'all_generated_tokens_retained': True}, 'choices': [{'message': {'role': 'assistant', 'content': 'mock fixture'}}],
         'token_trace': {'input_ids': [1], 'output_ids': list(ids),
             'raw_output_ids': list(ids), 'behavior_logprobs': [-1.0]*len(ids),
             'raw_behavior_logprobs': [-1.0]*len(ids)}}
@@ -16,6 +18,9 @@ def body(ids):
 def test_first_native_terminator_must_end_actual_generation_not_just_crop():
     profile = candidate_profile('qwen3.5-9b')
     assert inspect_chat_stop(body([2, 248046]), profile)['passed']
+    wrong_effective = body([2, 248046])
+    wrong_effective['generation_stop_check']['eos_token_ids'] = [248044]
+    assert not inspect_chat_stop(wrong_effective, profile)['passed']
     crossed = body([2, 248046, 3, 248044])
     assert not inspect_chat_stop(crossed, profile)['passed']
     cropped = copy.deepcopy(crossed)

@@ -1,0 +1,152 @@
+{
+  "version": "model-acquisition-snapshot-v0.15",
+  "snapshot_unix": 1790436191.0536747,
+  "snapshot_utc": "2026-09-26T15:23:11.053675+00:00",
+  "snapshot_asia_shanghai": "2026-09-26T23:23:11.053675+08:00",
+  "scope": "Read-only acquisition snapshot while downloads and experiments continue. Asset SHA admission does not assert model work ability or training readiness.",
+  "checkpoint_identities": {
+    "qwen35_9b": {
+      "repo_id": "Qwen/Qwen3.5-9B",
+      "hf_revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+      "status": "complete",
+      "file_count": 16,
+      "actual_total_file_bytes": 19329393661,
+      "weight_shards": 4,
+      "weight_shards_full_sha_verified": 4,
+      "all_lfs_files_match_frozen_hf": true,
+      "manifest_path": "runs/v015-downloads/Qwen3.5-9B.json",
+      "manifest_sha256": "030031b27513e399360f26a8db31746e719bb15a3d2f4d68874c1dba3ccc60a6",
+      "archived_full_manifest": "docs/experiments/v015-qwen35-weights-manifest.json",
+      "verification_scope": "Actual full-file hashes were computed by the completed downloader and checked again by the model loader; this snapshot does not redundantly reread 19GB."
+    },
+    "qwen38_27b": {
+      "repo_id": "Qwen/Qwen3.8-27B",
+      "hf_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "status": "downloading",
+      "total_weight_bytes": 55563006776,
+      "range_sha_verified_bytes": 22131515576,
+      "remaining_weight_bytes": 33431491200,
+      "weight_shards": 18,
+      "weight_shards_full_sha_verified": 4,
+      "last_300_seconds_verified_bytes": 1975707232,
+      "recent_verified_MiB_per_second": 6.280604146321615,
+      "eta_hours_at_recent_rate": 1.410106494968785,
+      "eta_qualification": "Not a promise: 32MiB commits are batched; in-flight bytes excluded; rate fluctuates and full-file hashing/loading add time. A valid manifest remains required before actual candidate loading.",
+      "manifest_path": "runs/v015-downloads/Qwen3.8-27B.json",
+      "active_downloader_pid": 3149741,
+      "file_workers": 8,
+      "range_workers_per_file": 8,
+      "active_log": "runs/v015-downloads/Qwen3.8-27B-journal-64.log",
+      "complete_shards_evidence": "Final files exist with expected size and durable whole_file_sha256_verified matches frozen HF LFS SHA; no unverified part file counted."
+    }
+  },
+  "origins_and_probes": [
+    {
+      "origin": "Hugging Face canonical revisions",
+      "result": "Initial Xet and requests HTTP large-file paths encountered connection/TLS failures; preserved failed logs. This is not a claim that HF is unavailable.",
+      "evidence": [
+        "runs/v015-downloads/Qwen3.5-9B.log",
+        "runs/v015-downloads/Qwen3.8-27B.log",
+        "runs/v015-downloads/Qwen3.5-9B-http.log",
+        "runs/v015-downloads/Qwen3.8-27B-http.log"
+      ]
+    },
+    {
+      "origin": "hf-mirror.com model metadata API",
+      "result": "One early small metadata request raised SSLError; no checkpoint download from this origin.",
+      "evidence": "Initial tool transcript; no dedicated standalone probe artifact"
+    },
+    {
+      "origin": "Qwen official ModelScope.cn",
+      "result": "Active transport. LFS metadata must match frozen HF SHA and size; actual ranges journaled; each whole file must also match. 9B completed through this source.",
+      "evidence": [
+        "runs/v015-downloads/Qwen3.5-9B-modelscope-files.json",
+        "runs/v015-downloads/Qwen3.8-27B-modelscope-files.json",
+        "runs/v015-downloads/additional-mirror-probes.json"
+      ]
+    },
+    {
+      "origin": "ModelScope.cn without environment proxy",
+      "result": "One early 8MiB direct-route probe ended in ConnectionError after about108.65s; no usable throughput result.",
+      "evidence": "Initial tool transcript; no dedicated standalone probe artifact"
+    },
+    {
+      "origin": "ModelScope.cn direct CDN session",
+      "result": "Bounded16MiB probe obtained206 then ConnectionError; not a complete artifact.",
+      "evidence": "runs/v015-downloads/cdn-session-probe.json"
+    },
+    {
+      "origin": "ModelScope.ai with incorrect .cn revision",
+      "result": "Initial500 responses used the wrong regional revision and are invalid evidence of .ai availability. Superseded by own-metadata probes.",
+      "evidence": "runs/v015-downloads/additional-mirror-probes.json"
+    },
+    {
+      "origin": "ModelScope.ai own regional revisions",
+      "result": "Metadata succeeds and weight SHAs match frozen HF. 9B first1MiB completed206 in18.36s. 27B requests probe returned206 but body failed after79.85s; later curl completed1MiB in17.96s. No faster sustained source demonstrated.",
+      "evidence": [
+        "runs/v015-downloads/ai-correct-revision-probe.json",
+        "runs/v015-downloads/ai-probe-27b.json",
+        "runs/v015-downloads/ai-27b-curl-firstmb.log"
+      ]
+    },
+    {
+      "origin": "Hugging Face curl HTTP1.1 TLS1.2",
+      "result": "Later bounded27B first1MiB probe completed206 in18.61s, about56KB/s. Kept active.cn transport.",
+      "evidence": "runs/v015-downloads/hf-27b-tls12-firstmb.log"
+    },
+    {
+      "origin": "Existing local checkpoints/caches",
+      "result": "Only the existing complete Qwen2.5-7B was found in inspected locations; not an exhaustive search of every filesystem.",
+      "evidence": "runs/v015-downloads/existing-model-inventory.json"
+    }
+  ],
+  "process_transitions": [
+    {
+      "stage": "Initial HF Xet and HTTP retries",
+      "scope": "Only owned download processes stopped; failed logs retained; no model/GPU job terminated."
+    },
+    {
+      "stage": "9B priority",
+      "previous_27b_low_priority_pid": 3066228,
+      "result": "After9B complete, command identity checked, TERM then observed exit143; no simultaneous writers."
+    },
+    {
+      "stage": "Durable journal32 connections",
+      "previous_pid": 3118864,
+      "verified_bytes_at_switch": 9663676416,
+      "result": "Owned PID identity checked, TERM/exit143 before restart. Validated ranges resumed; old unjournaled partial bytes required retransmission."
+    },
+    {
+      "stage": "Current64 connections",
+      "pid": 3149741,
+      "frozen_downloader_source": "90f75f7",
+      "file_workers": 8,
+      "range_workers": 8,
+      "evidence": "runs/v015-downloads/27b-concurrency-change.json"
+    }
+  ],
+  "concurrency_decision": {
+    "decision": "Maintain64; no measured material aggregate benefit from further increase",
+    "bounded_probe_requests": 24,
+    "probe_successes": 23,
+    "probe_failures": 1,
+    "probe_retries": 0,
+    "failure": "ConnectionError after131072 bytes in one16-connection probe",
+    "baseline_all_host_rx_MiB_s": 4.843158708666242,
+    "additional8_all_host_rx_MiB_s": 4.931886629851359,
+    "additional16_all_host_rx_MiB_s": 4.99107917919061,
+    "qualification": "Nonstationary bounded transport observation, not causal proof. Main downloader intermediate retries are not logged, so its request failure rate is unknown.",
+    "evidence": "runs/v015-downloads/concurrency-probe.json"
+  },
+  "host_headroom_snapshot": {
+    "logical_cpus": 152,
+    "recent_cpu_idle_percent_approx": 99,
+    "recent_io_wait_percent_approx": 0,
+    "available_ram_GiB_approx": 974,
+    "available_disk_GiB_approx": 928,
+    "primary_nic_nominal_Mbit_s": 25000,
+    "observed_all_host_rx_MiB_s": 4.550182050867254,
+    "qualification": "Short host-wide samples, not exclusive attribution or proof of a specific remote bottleneck.",
+    "evidence": "runs/v015-downloads/network-headroom.json"
+  }
+}

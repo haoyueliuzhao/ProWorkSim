@@ -87,7 +87,12 @@ def inspect_chat_stop(body, profile):
     positions = [i for i, token in enumerate(raw or []) if token in stops]
     native_positions = [i for i, token in enumerate(raw or []) if token == declared["native_end_token_id"]]
     raw_valid = isinstance(raw, list) and bool(raw)
-    passed = (raw_valid and raw == retained and isinstance(raw_logps, list)
+    core = body.get("generation_stop_check", {}) if isinstance(body, dict) else {}
+    effective_ids_match = core.get("eos_token_ids") == stops
+    core_lengths_match = (raw_valid and core.get("raw_output_tokens") == len(raw)
+                          and core.get("retained_output_tokens") == len(raw)
+                          and core.get("all_generated_tokens_retained") is True)
+    passed = (effective_ids_match and core_lengths_match and raw_valid and raw == retained and isinstance(raw_logps, list)
               and raw_logps == retained_logps and len(raw_logps) == len(raw)
               and bool(positions) and positions[0] == len(raw)-1)
     return {"version": declared["version"], "passed": bool(passed),
@@ -97,6 +102,8 @@ def inspect_chat_stop(body, profile):
         "raw_ids_equal_retained": raw_valid and raw == retained,
         "raw_logps_equal_retained": isinstance(raw_logps, list) and raw_logps == retained_logps,
         "native_end_present": bool(native_positions),
+        "actual_generator_eos_ids_match_declared": effective_ids_match,
+        "core_raw_lengths_match": bool(core_lengths_match),
         "core_generation_stop_check": body.get("generation_stop_check") if isinstance(body, dict) else None,
         "scope": "Checks actual pre-trimming generation IDs; absence of observed EOS is not a passed calibration"}
 
