@@ -41,14 +41,16 @@ def _actor(identity):
     return copy.deepcopy(identity)
 
 
-def _policies(policies, active, identity):
+def _policies(policies, active, identity, *, harness=None):
     if not isinstance(policies, dict) or not set(active) <= set(policies):
         raise ValueError("Predeclare the actual policy map for every active target member")
+    expected_implementation = ('proworksim.harness_sdk.HarnessWorker' if harness == 'openhands_v16'
+                               else 'proworksim.model_policy.ModelPolicy')
     for member in active:
         policy = policies[member]
         config = policy.get("config", {})
         if (
-            policy.get("implementation") != "proworksim.model_policy.ModelPolicy"
+            policy.get("implementation") != expected_implementation
             or config.get("weight_identity") != identity
             or config.get("model_revision") != identity["policy_version"]
         ):
@@ -108,7 +110,7 @@ def declare_window(window_id, *, actor_identity, gamma_identity, slot_specs, min
         if row["slot_id"] in seen:
             raise ValueError("One declared joint slot cannot be duplicated")
         seen.add(row["slot_id"])
-        row["policies"] = _policies(row["policies"], active, identity)
+        row["policies"] = _policies(row["policies"], active, identity, harness=gamma_identity.get("harness"))
         row["window"] = {
             "window_id": window_id,
             "xi_id": row["xi_id"],

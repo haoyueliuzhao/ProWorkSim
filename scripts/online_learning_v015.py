@@ -44,6 +44,14 @@ def main():
                         attention=runtime['attention'], matmul_precision=runtime['matmul_precision'])
         else:
             raise ValueError('Unknown explicitly registered runtime; no silent fallback')
+        atomic_write(output / 'adapter-scope.json', json_bytes({
+            'scope': 'Actual trainable actor parameters; fixed base parameters are not updated',
+            'trainable_parameters': sum(p.numel() for p in owner.actor_parameters.values()),
+            'total_loaded_parameters': sum(p.numel() for p in owner.model.parameters()),
+            'modules': owner.inference_profile.get('actual_lora_modules'),
+            'tensors': {name: {'shape': list(p.shape), 'numel': p.numel(), 'dtype': str(p.dtype),
+                               'logical_device': str(p.device)} for name, p in owner.actor_parameters.items()},
+            'capacity_comparison': 'Equal LoRA rank across architectures does not imply equal trainable capacity.'}))
         if args.restore_checkpoint:
             atomic_write(output / 'restored-checkpoint.json', json_bytes(owner.restore_checkpoint(args.restore_checkpoint)))
         if protocol.get('shared_initialization'):

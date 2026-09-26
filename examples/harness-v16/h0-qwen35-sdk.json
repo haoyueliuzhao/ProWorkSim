@@ -1,0 +1,130 @@
+{
+  "version": "harness-study-v0.16",
+  "stage": "H0_compatibility",
+  "candidate_id": "qwen35-9b",
+  "condition": "openhands_v16",
+  "runtime": {
+    "kind": "qwen_hybrid_chatstop",
+    "profile": {
+      "version": "candidate-runtime-v0.15.1",
+      "candidate_id": "qwen3.5-9b",
+      "dtype": "float32",
+      "devices": 1,
+      "attention": "sdpa",
+      "matmul_precision": "highest",
+      "cudnn_allow_tf32": false,
+      "chat_template_kwargs": {
+        "enable_thinking": false,
+        "preserve_thinking": false
+      },
+      "max_context_tokens": 16384,
+      "max_output_tokens": 2048,
+      "temperature": 0.7,
+      "top_p": 1.0,
+      "top_k": 0,
+      "native_tool_prompt": "official_xml_single_call",
+      "lora_target_modules": [
+        "q_proj",
+        "v_proj"
+      ],
+      "lora_scope": "Full-attention projections only; DeltaNet is frozen",
+      "history_policy": "Full public messages supplied to official template; non-thinking requested; preserve_thinking=False",
+      "dtype_scope": "Base weights and LoRA; float32 selected-token normalization",
+      "chat_stop_contract": {
+        "version": "native-chat-stop-v0.15.1",
+        "native_end_token": "<|im_end|>",
+        "native_end_token_id": 248046,
+        "end_of_text_token": "<|endoftext|>",
+        "end_of_text_token_id": 248044,
+        "eos_token_ids": [
+          248046,
+          248044
+        ],
+        "source": "Registered official tokenizer EOS, token vocabulary and assistant chat-template terminator",
+        "forbid_tokens_after_first_declared_eos": true,
+        "require_raw_output_ids_equal_training_output_ids": true
+      }
+    },
+    "profile_source": "examples/candidates-v15-chatstop/qwen3.5-9b-fp32.json",
+    "profile_sha256": "350b3e7203a8750a099b5d4cdbbe69693fad5b12a62bae399de14e510c26697b"
+  },
+  "recipe": {
+    "credit_assignment": "terminal_mc",
+    "diagnostic_max_groups": 0,
+    "post_update_max_decisions": 0,
+    "actor_lr": 1e-05,
+    "critic_lr": 0.001,
+    "clip": 0.2,
+    "gamma": 1.0,
+    "critic_coefficient": 0.5,
+    "entropy_coefficient": 0.0,
+    "kl_coefficient": 0.0,
+    "gradient_clip": 1.0,
+    "epochs": 1,
+    "temperature": 0.7,
+    "max_output_tokens": 2048,
+    "max_length": 16384,
+    "logprob_max_atol": 0.02,
+    "logprob_mean_atol": 0.002,
+    "max_rss_bytes": 206158430208,
+    "seed": 2026093011,
+    "members": [
+      "provider",
+      "implementer",
+      "reviewer"
+    ],
+    "lora": {
+      "r": 8,
+      "alpha": 16,
+      "dropout": 0.0,
+      "target_modules": [
+        "q_proj",
+        "v_proj"
+      ]
+    }
+  },
+  "mode": "evaluate",
+  "budget_scope": "12 real-source development situations x 3 repetitions; 36 fixed slots, no outcome-dependent extension",
+  "windows": [
+    {
+      "window_id": "h0-sdk-qwen35-9b",
+      "mode": "evaluate",
+      "stage": "H0_compatibility",
+      "harness": "openhands_v16",
+      "slots": [
+        {
+          "slot_id": "h0-public-interface",
+          "case_id": "uci-harness-f0-implement",
+          "sampling_seed": 2026093021,
+          "purpose": "public_interface_calibration_not_work_ability",
+          "public_task_override": "This is an openly declared interface compatibility probe, not a customer-metrics completion test. First request read_alias for alias __harness_missing__ in TEAM::build so that you can observe the real error. Then read the actual code alias, use work_replace_text to change only config.description to a brief note that you inspected it, preserving all SQL. Supply the actual reference and choose dependencies explicitly (none are needed for this descriptive note). Store a private work_note describing the observed error and correction. Stop with staff_done. Do not submit or claim customer metrics are correct. No correct SQL or business values are supplied."
+        },
+        {
+          "slot_id": "h0-real-implementation",
+          "case_id": "uci-harness-f1-implement",
+          "sampling_seed": 2026093022,
+          "purpose": "finite_development_work_not_harness_comparison"
+        },
+        {
+          "slot_id": "h0-real-pair",
+          "case_id": "uci-harness-f4-pair",
+          "sampling_seed": 2026093023,
+          "purpose": "finite_two_role_development_work_not_harness_comparison"
+        }
+      ]
+    }
+  ],
+  "experiment_id": "screen-chatstop-qwen35-9b",
+  "paired_original_protocol": "examples/learning-v15/screen-qwen35-9b.json",
+  "change_scope": "Native generator EOS contract only; original 36 UCI cases, sampling seeds, recipe and budgets retained. New run, not repair/resume of old trajectories.",
+  "collector": "proworksim.harness_collection:collect_window",
+  "harness_identity": {
+    "condition": "openhands_v16",
+    "sdk_version": "1.49.6",
+    "upstream_commit": "fcc102a697874d54a357e36004e02c95040dbdc0",
+    "context_selection": "latest_observation_last4_tool_rounds",
+    "message_projection": "Original SDK user block boundaries tracked; archived original assistant messages restored by exact tool_call_id before real backend input. Full SDK events and original backend tokens retained. No summary model.",
+    "learning": false,
+    "selection_scope": "9B is an available compatibility probe, not a selected main model"
+  }
+}

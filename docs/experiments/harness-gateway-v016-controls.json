@@ -1,0 +1,100 @@
+{
+  "version": "harness-world-gateway-controls-v0.16",
+  "actual_world": true,
+  "model_execution": false,
+  "sdk_execution": false,
+  "scope": "Actual entity-disjoint UCI development worlds through HarnessPort; SDKStaffRuntime uses explicitly fake workers. Genuine SDK Conversation/Executor controls are separate.",
+  "source_before": {
+    "src/proworksim/harness_port.py": "80446f6e3f38da80f5a95c181cc41323e02586fd476e9adf9adb0e5095897714",
+    "src/proworksim/harness_runtime.py": "98cf7d524d2d18be5a43e3f3b20d6dafd42fd3a0a5ad4dc347f463dc0a2930b8",
+    "tests/test_harness_gateway_v016.py": "7cb58ab7a63505733fd1be26507bedcaa4ff56c4947c697e3b7984d0a4129d64"
+  },
+  "source_after": {
+    "src/proworksim/harness_port.py": "80446f6e3f38da80f5a95c181cc41323e02586fd476e9adf9adb0e5095897714",
+    "src/proworksim/harness_runtime.py": "98cf7d524d2d18be5a43e3f3b20d6dafd42fd3a0a5ad4dc347f463dc0a2930b8",
+    "tests/test_harness_gateway_v016.py": "7cb58ab7a63505733fd1be26507bedcaa4ff56c4947c697e3b7984d0a4129d64"
+  },
+  "controls": [
+    {
+      "name": "private_memory_does_not_create_world_facts",
+      "passed": true,
+      "business_state_unchanged": true,
+      "world_calls": 0,
+      "private_calls": 2
+    },
+    {
+      "name": "role_local_history_requires_real_observation",
+      "passed": true,
+      "provider_real_reads": 1,
+      "recall_additional_world_reads": 0,
+      "recipient_received_provider_history": false
+    },
+    {
+      "name": "exact_edit_has_one_real_write_and_explicit_lineage",
+      "passed": true,
+      "new_version": "v2",
+      "actual_write_calls": 1,
+      "dependency_count": 1,
+      "automatic_dependencies_added": 0,
+      "actual_command_id": "command:7df96760cba74998668808cda63e87937adcb54ee34acc5b30c0188fdaf46c93",
+      "explicit_work_id_preserved": true
+    },
+    {
+      "name": "unread_wrong_alias_and_stale_base_fail_closed",
+      "passed": true,
+      "actual_write_calls": 1,
+      "explicit_empty_dependencies_preserved": true
+    },
+    {
+      "name": "intervening_world_edit_invalidates_old_harness_base",
+      "passed": true,
+      "external_version_preserved": "v2",
+      "harness_write_calls": 0,
+      "fresh_metadata_not_claimed_as_model_input": true
+    },
+    {
+      "name": "provider_read_access_never_grants_edit_rights",
+      "passed": true,
+      "actual_write_calls": 0
+    },
+    {
+      "name": "fake_worker_runtime_single_execution_and_role_local_pause",
+      "passed": true,
+      "real_sdk_or_model": false,
+      "world_tool_calls": 1,
+      "second_execution_rejected": true,
+      "other_role_cancelled": false,
+      "rejection_is_environment_error_not_business_zero": true,
+      "canonical_public_events_equal_base_capture": true
+    }
+  ],
+  "passed_controls": 7,
+  "world_or_assets_modified_by_private_memory": false,
+  "preliminary_control_attempts": [
+    {
+      "passed": 4,
+      "total": 6,
+      "evidence": "/tmp/harness-gateway-v016-initial.json",
+      "issues": [
+        "Test helper key argument collided with work_note key (fixture only)",
+        "Runtime emit incorrectly called setdefault on actual tools list before fake worker execution"
+      ]
+    },
+    {
+      "passed": 5,
+      "total": 6,
+      "evidence": "/tmp/harness-gateway-v016-second.json",
+      "issues": [
+        "Runtime actual tools-list integration error persisted; helper fixed"
+      ]
+    },
+    {
+      "passed": 6,
+      "total": 7,
+      "evidence": "/tmp/harness-gateway-v016-third.json",
+      "issues": [
+        "Test expected old policy_error label for deliberately repeated SDK execution; corrected runtime classifies it environment_error and retains first effect"
+      ]
+    }
+  ]
+}
