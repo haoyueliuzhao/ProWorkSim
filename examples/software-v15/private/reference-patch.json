@@ -1,0 +1,12 @@
+[
+  {
+    "path": "src/marshmallow/fields.py",
+    "old": "class String(Field[str]):\n    \"\"\"A string field.\n\n    :param kwargs: The same keyword arguments that :class:`Field` receives.\n    \"\"\"\n\n    #: Default error messages.\n    default_error_messages = {\n        \"invalid\": \"Not a valid string.\",\n        \"invalid_utf8\": \"Not a valid utf-8 string.\",\n    }\n\n    def _serialize(self, value, attr, obj, **kwargs) -> str | None:\n        if value is None:\n            return None\n        return utils.ensure_text_type(value)\n\n    def _deserialize(self, value, attr, data, **kwargs) -> str:\n        if not isinstance(value, (str, bytes)):\n            raise self.make_error(\"invalid\")\n        try:\n            return utils.ensure_text_type(value)\n        except UnicodeDecodeError as error:\n            raise self.make_error(\"invalid_utf8\") from error\n",
+    "new": "class String(Field[str]):\n    \"\"\"A string field.\n\n    :param strip_whitespace: Remove leading and trailing whitespace when loading.\n        Defaults to False. Serialization is unchanged.\n    :param kwargs: The same keyword arguments that :class:`Field` receives.\n    \"\"\"\n\n    #: Default error messages.\n    default_error_messages = {\n        \"invalid\": \"Not a valid string.\",\n        \"invalid_utf8\": \"Not a valid utf-8 string.\",\n    }\n\n    def __init__(self, *, strip_whitespace: bool = False, **kwargs):\n        super().__init__(**kwargs)\n        self.strip_whitespace = strip_whitespace\n\n    def _serialize(self, value, attr, obj, **kwargs) -> str | None:\n        if value is None:\n            return None\n        return utils.ensure_text_type(value)\n\n    def _deserialize(self, value, attr, data, **kwargs) -> str:\n        if not isinstance(value, (str, bytes)):\n            raise self.make_error(\"invalid\")\n        try:\n            text = utils.ensure_text_type(value)\n            return text.strip() if self.strip_whitespace else text\n        except UnicodeDecodeError as error:\n            raise self.make_error(\"invalid_utf8\") from error\n"
+  },
+  {
+    "path": "consumer.py",
+    "old": "sku = fields.String(required=True)",
+    "new": "sku = fields.String(required=True, strip_whitespace=True)"
+  }
+]

@@ -1,0 +1,656 @@
+{
+  "version": "software-parent-private-fixture-v0.15",
+  "groups": [
+    "import_origin",
+    "legacy_default_false",
+    "unicode_and_interior",
+    "utf8_bytes",
+    "invalid_utf8",
+    "invalid_types",
+    "none",
+    "validation_order",
+    "dump",
+    "consumer",
+    "schema_and_signature",
+    "subclass"
+  ],
+  "cases": [
+    {
+      "case_id": "api-00",
+      "group": "import_origin",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "metadata"
+      },
+      "expected": {
+        "kind": "return",
+        "value": "src/marshmallow/fields.py"
+      },
+      "select": [
+        "module_path"
+      ],
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-01",
+      "group": "legacy_default_false",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {},
+        "value": "  Keep\t "
+      },
+      "expected": {
+        "kind": "return",
+        "value": "  Keep\t "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-02",
+      "group": "legacy_default_false",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": false
+        },
+        "value": "  Keep\t "
+      },
+      "expected": {
+        "kind": "return",
+        "value": "  Keep\t "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-03",
+      "group": "legacy_default_false",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {},
+        "value": " inside x "
+      },
+      "expected": {
+        "kind": "return",
+        "value": " inside x "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-04",
+      "group": "legacy_default_false",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": false
+        },
+        "value": " inside x "
+      },
+      "expected": {
+        "kind": "return",
+        "value": " inside x "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-05",
+      "group": "legacy_default_false",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {},
+        "value": {
+          "__bytes_hex__": "204120"
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": " A "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-06",
+      "group": "legacy_default_false",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": false
+        },
+        "value": {
+          "__bytes_hex__": "204120"
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": " A "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-07",
+      "group": "unicode_and_interior",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": "  A  B\t\n"
+      },
+      "expected": {
+        "kind": "return",
+        "value": "A  B"
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-08",
+      "group": "unicode_and_interior",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": "\t\n",
+        "field": "Str"
+      },
+      "expected": {
+        "kind": "return",
+        "value": ""
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-09",
+      "group": "utf8_bytes",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": {
+          "__bytes_hex__": "2020c3a909"
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": "é"
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-10",
+      "group": "invalid_utf8",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": {
+          "__bytes_hex__": "ff"
+        }
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError",
+        "messages": [
+          "Not a valid utf-8 string."
+        ]
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-11",
+      "group": "invalid_types",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": 0
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError",
+        "messages": [
+          "Not a valid string."
+        ]
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-12",
+      "group": "invalid_types",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": false
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError",
+        "messages": [
+          "Not a valid string."
+        ]
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-13",
+      "group": "invalid_types",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": []
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError",
+        "messages": [
+          "Not a valid string."
+        ]
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-14",
+      "group": "invalid_types",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": {}
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError",
+        "messages": [
+          "Not a valid string."
+        ]
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-15",
+      "group": "none",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true,
+          "allow_none": true
+        },
+        "value": null
+      },
+      "expected": {
+        "kind": "return",
+        "value": null
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-16",
+      "group": "none",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": null
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError",
+        "messages": [
+          "Field may not be null."
+        ]
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-17",
+      "group": "validation_order",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": "  ab  ",
+        "length": {
+          "min": 2,
+          "max": 3
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": "ab"
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-18",
+      "group": "validation_order",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": "  a  ",
+        "length": {
+          "min": 2,
+          "max": 3
+        }
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "marshmallow.exceptions.ValidationError"
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-19",
+      "group": "dump",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "serialize",
+        "kwargs": {
+          "strip_whitespace": true
+        },
+        "value": "  A  "
+      },
+      "expected": {
+        "kind": "return",
+        "value": "  A  "
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-20",
+      "group": "consumer",
+      "locator": [
+        "files",
+        "consumer.py"
+      ],
+      "request": {
+        "op": "consumer_load",
+        "value": {
+          "sku": "\nSKU-X\t",
+          "description": " untouched "
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "sku": "SKU-X",
+          "description": " untouched "
+        }
+      },
+      "symbol": "InventorySchema"
+    },
+    {
+      "case_id": "api-21",
+      "group": "consumer",
+      "locator": [
+        "files",
+        "consumer.py"
+      ],
+      "request": {
+        "op": "consumer_load",
+        "value": {
+          "sku": " Q  R ",
+          "description": " untouched "
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "sku": "Q  R",
+          "description": " untouched "
+        }
+      },
+      "symbol": "InventorySchema"
+    },
+    {
+      "case_id": "api-22",
+      "group": "consumer",
+      "locator": [
+        "files",
+        "consumer.py"
+      ],
+      "request": {
+        "op": "consumer_dump",
+        "value": {
+          "sku": " A ",
+          "description": " B "
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "sku": " A ",
+          "description": " B "
+        }
+      },
+      "symbol": "InventorySchema"
+    },
+    {
+      "case_id": "api-23",
+      "group": "schema_and_signature",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "schema_load",
+        "field_kwargs": {
+          "strip_whitespace": true,
+          "required": true,
+          "data_key": "Code"
+        },
+        "value": {
+          "Code": " X "
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "code": "X"
+        }
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-24",
+      "group": "schema_and_signature",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "schema_load",
+        "field_kwargs": {
+          "strip_whitespace": true,
+          "required": true,
+          "data_key": "Code"
+        },
+        "value": {},
+        "partial": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {}
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-25",
+      "group": "schema_and_signature",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "nested_load",
+        "field_kwargs": {
+          "strip_whitespace": true,
+          "required": true,
+          "data_key": "Code"
+        },
+        "value": {
+          "packet": {
+            "Code": " N "
+          }
+        }
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "packet": {
+            "code": "N"
+          }
+        }
+      },
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-26",
+      "group": "schema_and_signature",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "metadata"
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "kind": "KEYWORD_ONLY",
+          "default": false
+        }
+      },
+      "select": [
+        "parameter"
+      ],
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-27",
+      "group": "schema_and_signature",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "metadata"
+      },
+      "expected": {
+        "kind": "return",
+        "value": "strip_whitespace"
+      },
+      "select": [
+        "docstring"
+      ],
+      "comparison": "contains",
+      "symbol": "String"
+    },
+    {
+      "case_id": "api-28",
+      "group": "subclass",
+      "locator": [
+        "files",
+        "src/marshmallow/fields.py"
+      ],
+      "request": {
+        "op": "deserialize",
+        "field": "Email",
+        "value": "a@example.com"
+      },
+      "expected": {
+        "kind": "return",
+        "value": "a@example.com"
+      },
+      "symbol": "String"
+    }
+  ]
+}
