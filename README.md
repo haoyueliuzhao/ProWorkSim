@@ -2,11 +2,36 @@
 
 **面向 ID-VTDO 研究的信息不对称专业工作世界。** ProWorkSim 提供持续世界、局部工具与可核验联合经历；当前研究目标是利用信息依赖结构配置各成员的经验，检验更新后团队的工作能力。世界运行、参数更新和学习收益分别验证。
 
-[研究目标与理论设计 V1](docs/research/id-vtdo.md)是研究入口；当前按[v0.13 计划](docs/online-v013-plan.md)推进共享模型直接交互、更新、再交互，ID-VTDO 支持随在线窗口诊断。基础 RL 不要求先取得完整成功或多类方法支持，不使用 SFT 主路线；贡献调权与强基线比较另按实际支持条件开展。
+[研究目标与理论设计 V1](docs/research/id-vtdo.md)是研究入口；当前按[v0.14 计划](docs/learning-v014-plan.md)研究实际工作信号、固定预算在线学习与条件迁移，ID-VTDO 支持随在线窗口诊断。基础 RL 不要求先取得完整成功或多类方法支持，不使用 SFT 主路线；贡献调权与强基线比较另按实际支持条件开展。
 
 WorldCore管理权限、版本、采用、工作义务和问题处理；工作人员决定业务动作；场景控制器执行预声明事件。机构接受、内容正确、未知、服务故障和训练奖励分别记录。
 
-## v0.13 在线工作与训练
+## v0.14 工作学习与数值修订
+
+[实验报告](docs/experiments/learning-v014.md)记录了新的显式事实/持有者/规则任务、工具返回与上下文对照、分组真梯度诊断，以及同终局合同的 MC/联合 RTG。E0 六例在12k下消除了当组上下文停点，业务回报仍未改变；局部返回压缩没有减少总体token消耗。
+
+正式两条件各3seed原计划744例，实际闭合264例；六个运行均在预设概率门停止，actor/critic各完成3次更新，480例未启动。最终评价缺失，**尚不能判断工作学习收益或MC/RTG优劣**。旧失败不填零或补采，当前多方法支持与单岗位交接分别报告。
+
+[数值修订](docs/learning-v014-numeric-repair.md)复现了六个失败点，并验证完整FP32显著减小这些缓存/整序列概率差。新入口默认 `matmul_precision=highest`；显式high旧协议及历史冻结结果保留。新精度四例容量已完成，行为/反向各41项核验通过；该结果与原正式失败对照分开，不将数值稳定性当作学习收益。当前仍只有一个构造SQL来源家族。
+
+- [工作任务与显式因子](docs/design/learning-work-v014.md)
+- [公开呈现与确切检索](docs/design/work-presentation-v014.md)
+- [时间信用、实际梯度与评价保护](docs/online-credit-v014.md)
+- [冻结协议](examples/learning-v14/)
+
+新精度有限运行示例（输出目录必须不存在）：
+
+```bash
+PYTHONPATH=src CUDA_VISIBLE_DEVICES=0 .train-venv/bin/python scripts/online_learning_v013.py \
+  --protocol examples/learning-v14/capacity-highest12.json \
+  --model /absolute/Qwen2.5-7B-Instruct \
+  --weight-manifest /absolute/qwen-weights.json \
+  --output runs/learning-capacity-new
+```
+
+## v0.13 历史在线工作与训练
+
+严格复现历史结果应使用报告中的冻结提交；当前入口对未指定精度的新协议默认使用highest，不能把当前重新运行视作原数值协议。
 
 [实验报告](docs/experiments/online-v013.md)区分接口对照、开发故障、正式在线更新和冻结新事实评价，全部失败保留。本轮真实Qwen已完成两次共享actor/critic更新；初始与最终各8例评测的回报逐项相同（平均均0.3），尚无工作成果提升证据。[冻结协议](examples/online-work-v13/)包括四种等份额短任务、两轮基础RL、初始/最终模型的单岗位与团队评测。当前只有一个development来源家族，内部锁定事实不等于独立来源泛化。
 

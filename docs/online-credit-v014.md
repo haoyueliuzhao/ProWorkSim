@@ -85,3 +85,23 @@ actor 仍使用每窗固定槽位数 × 活动成员数 × 该成员本轮全部
 测量窗只进行真实新世界交互和 `finish_evaluation`，不执行 learner 概率重放、critic 前向或反向。进入测量前记录实际 actor、critic、两个 optimizer、policy revision、actor / critic 更新计数及 critic 非零回报历史的指纹，并保存 Torch CPU / CUDA RNG。测量结束或异常退出时只恢复 RNG，保留真实 window ID、交互、日志与缓存清理计数。任何学习张量或更新计数改变均构成运行错误，不通过回滚张量掩盖。每窗 `evaluation-guard.json` 保存进入 / 离开时的学习指纹，以及采样后和恢复后的 RNG 指纹。
 
 新增定向实际 Torch CPU 检查共 4 项通过：online → evaluate → online 的 toy 运行确有三次新采样、两次 actor / critic 更新，测量窗零更新；第三窗开始时 actor、critic、optimizer 与 RNG 均与进入测量前逐字节相同，三个真实 window ID 全部保留。另覆盖非法逐窗模式、原有全 evaluate 无学习合同及丢失计划槽位拒绝。本 CPU 检查中的 CUDA RNG 列表为空；GPU RNG 恢复路径已实现，此处没有声称完成 GPU 验证。这批只验证受影响的运行器，不重复全部训练或旧完整回归。证据见 [v014-probe-cpu-controls.json](experiments/v014-probe-cpu-controls.json)。
+
+## 正式多窗信号汇总
+
+独立脚本 `scripts/learning_signal_summary_v014.py` 只读取实际保存的记录，不导入模型、环境或优化器。例：
+
+```bash
+.venv/bin/python scripts/learning_signal_summary_v014.py \
+  --study runs/learning-v014-study-supervisor/scheduler.json \
+  --project . --output /tmp/learning-signals-final.json
+```
+
+也可将冻结的 `study.json` 传给 `--study`，用 `--source` 指定冻结协议目录。输出路径必须不存在；可对运行中的作业生成独立快照，未开始的窗口与未保存的测量仍标为未知。六个作业按各自协议列出计划训练窗；评价窗只作为排除清单保留，绝不进入训练信号 rows。
+
+每一行保留 condition、训练 seed、window、实际 actor identity、task、member 与已保存的公共阶段；阶段不从事后结果重新猜测。输出优势正负零分布、输出 token、actor / critic 项、实际组梯度、反向 clipping、行为 / 梯度两类数值门，以及实际 optimizer 步数。缺失组梯度、诊断上限遗漏和无 post 样本均为 `unknown`，不补零；“零优势”与“实测零梯度”仍分别保存。各窗口的组成权重仅逐窗列出实际取值，不跨不同 θ 平均 `b` 或支持统计。
+
+归一信息区分：原始输出 token 占比、原有固定成员 token surrogate 中的项质量、`||g_group|| / ||g_total||`，以及 `dot(g_group,g_total) / ||g_total||²`。范数比不是可加份额；后一项是同次更新的有符号对齐份额，可为负或超过 1，不是对工作改进的因果贡献。零总梯度时相关比值为未定义，不制造份额。
+
+**Post 的 `old_logprobs` 是更新前完整前向的重新计算值，不是最初 KV cache 采样保存的 logps。**两者的差异已由独立 behavior gate 记录。Post 的新值也是同上下文、同温度的完整前向；对这些有界选择的输出 token 求出的 logratio / k3 是条件概率变化代理。不能称为 full KL，也不宣称它是无偏 KL：选择受固定组上限约束，状态和 token 来自旧策略，旧值本身是经过误差门核对的重算概率，而不是重新从它采样。未被 post 上限选中的组不能从其他组填入概率变化。
+
+两项纯保存记录 fixture 验证：评价窗即使出现伪造训练诊断也不被读取；不同 θ 的正负信号不混合；缺组 / 缺 post / 未开始保持未知；固定选择与数值失败如实保留；阶段与 admission 不一致会拒绝汇总。没有调用模型或业务世界。首次对正在运行的六个正式作业只读快照成功列出 24 个计划训练窗，其中尚未出现的训练测量均为未知；该快照不是完成实验成绩。
