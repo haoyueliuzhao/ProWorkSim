@@ -12,6 +12,7 @@ import sys
 from .storage import digest, json_bytes, read_json
 
 VERSION = 'h1-launch-admission-v0.16'
+VERSION_017 = 'h1-launch-admission-v0.17'
 NEW = {'qwen35-9b', 'qwen38-27b'}
 ALL = NEW | {'qwen25-7b'}
 SOURCE_FILES = ('scripts/online_learning_v015.py', 'scripts/build_harness_study_v016.py',
@@ -68,16 +69,18 @@ def validate_h1_launch(protocol, *, model_path, weight_manifest, restore_checkpo
                        source_identity=None, source_root=None):
     """Return immutable admission evidence; non-H1 protocols retain old behavior."""
     gate = protocol.get('launch_gate', {})
-    h1 = (protocol.get('stage') == 'H1_development' or gate.get('version') == VERSION
+    revised = gate.get('version') == VERSION_017
+    version = VERSION_017 if revised else VERSION
+    h1 = (protocol.get('stage') == 'H1_development' or gate.get('version') in (VERSION, VERSION_017)
           or any(w.get('stage') == 'H1_development' for w in protocol.get('windows', [])))
     if not h1:
         return {'status': 'not_H1', 'original_execution_contract_unchanged': True}
-    require(gate.get('version') == VERSION and gate.get('state') == 'admitted',
+    require(gate.get('version') == version and gate.get('state') == 'admitted',
             'planning-only H1 protocol is not executable; global admission is absent')
     require(not restore_checkpoint, 'H1 must start from the fresh public base, never restore a checkpoint')
     path = checked_ref(gate.get('admission'))
     admission = read_json(path)
-    require(admission.get('version') == VERSION and admission.get('status') == 'admitted', 'formal admission is not complete')
+    require(admission.get('version') == version and admission.get('status') == 'admitted', 'formal admission is not complete')
     require(set(admission.get('protocol_body_sha256', {})) == NEW, 'this gate requires both H1 model arms; single-model downgrade needs a protocol revision')
     candidate = protocol.get('candidate_id')
     require(candidate in NEW and admission['protocol_body_sha256'][candidate] == body_hash(protocol), 'H1 protocol body differs from admitted recipe/budgets')
@@ -88,7 +91,8 @@ def validate_h1_launch(protocol, *, model_path, weight_manifest, restore_checkpo
     require(source_identity.get('code_dirty') is False and source_identity.get('code_commit')
             and source_identity == admission.get('source_identity'), 'current source is dirty or differs from final admitted source')
     files = admission.get('source_files', {})
-    require(set(files) == set(SOURCE_FILES) and all(digest((root / name).read_bytes()) == expected for name, expected in files.items()),
+    expected_files = set(SOURCE_FILES) | ({'scripts/build_harness_study_v017.py', 'src/proworksim/candidate_runtime_v017.py'} if revised else set())
+    require(set(files) == expected_files and all(digest((root / name).read_bytes()) == expected for name, expected in files.items()),
             'runner/harness/builder file differs from admitted source')
     expected_harness = protocol.get('harness_identity', {}).get('openhands_v16')
     require(isinstance(expected_harness, dict) and expected_harness == admission.get('harness_identity'), 'final harness version/SDK/context identity differs')
@@ -103,9 +107,15 @@ def validate_h1_launch(protocol, *, model_path, weight_manifest, restore_checkpo
     supervisor = read_json(checked_ref(admission.get('original_s1_supervisor')))
     require(len(report.get('runs', [])) == 3 and {r.get('candidate_id') for r in report['runs']} == ALL,
             'complete original three-arm S1 report required')
+    if revised:
+        require(admission.get('original_s1_completion_rule') == 'all_attempts_closed_unknown_scores_preserved',
+                'v0.17 requires its explicit closure revision; never fill unknown rewards')
     for run in report['runs']:
         counts = run.get('progress', {}).get('counts', {})
-        require(run.get('runner_status') == 'complete' and counts.get('planned') == counts.get('closed_known') == 36,
+        known, unknown = counts.get('closed_known', 0), counts.get('closed_unknown', 0)
+        require(run.get('runner_status') == 'complete' and counts.get('planned') == 36
+                and type(known) is int and type(unknown) is int and known + unknown == 36
+                and (revised or unknown == 0),
                 'all original S1 arms must close before either H1 arm starts')
         actual = read_json(Path(run['root']) / 'online/report.json')
         require(actual.get('status') == 'complete', 'original S1 runner still running or stopped incompletely')
@@ -117,9 +127,26 @@ def validate_h1_launch(protocol, *, model_path, weight_manifest, restore_checkpo
     for name in sorted(NEW):
         source_protocol = Path(jobs[name]['screen_protocol'])
         screen = read_json(source_protocol)
-        builder.validate_original_s1(screen, source_protocol, report)
-        planned = builder.build_protocol(screen)
+        builder.validate_original_s1(screen, source_protocol, report, allow_closed_unknown=revised)
+        if revised:
+            from scripts.build_harness_study_v017 import build_protocol
+            planned = build_protocol(screen)
+        else:
+            planned = builder.build_protocol(screen)
         require(body_hash(planned) == admission['protocol_body_sha256'][name], 'H1 fixed paired plan differs from original candidate runtime/recipe')
+    if revised:
+        capacity = admission.get('capacity', {})
+        require(set(capacity) == NEW, 'both revised placements require a bounded actual capacity report')
+        for name, evidence in capacity.items():
+            measured = read_json(checked_ref(evidence))
+            expected_devices = 2 if name == 'qwen35-9b' else 4
+            require(measured.get('status') == 'passed' and measured.get('http_status') == 200
+                    and measured.get('source_unchanged') is True and measured.get('devices') == expected_devices
+                    and measured.get('optimizer_steps') == 0 and measured.get('world_actions') == 0
+                    and measured.get('source_before') == source_identity
+                    and measured.get('profile', {}).get('candidate_id') == jobs[name]['candidate']
+                    and measured.get('actor_identity', {}).get('base_manifest_sha256') == admission.get('weight_manifests', {}).get(name, {}).get('sha256'),
+                    'revised inference placement lacks its bounded measured capacity')
     expected_manifest = checked_ref(admission.get('weight_manifests', {}).get(candidate))
     original_manifest = checked_ref(selection.ref(jobs[candidate]['weight_manifest']))
     require(Path(weight_manifest).resolve() == expected_manifest == original_manifest
@@ -166,8 +193,9 @@ def validate_h1_launch(protocol, *, model_path, weight_manifest, restore_checkpo
                 'post-H0 harness changes need explicit limitation and targeted CPU evidence')
         for evidence in h0['targeted_cpu_evidence']:
             checked_ref(evidence)
-    return {'version': VERSION, 'status': 'admitted', 'admission': copy.deepcopy(gate['admission']),
-            'original_s1_all_three_arms_complete': True, 'new_candidate_training_readiness': readiness,
+    return {'version': version, 'status': 'admitted', 'admission': copy.deepcopy(gate['admission']),
+            'original_s1_all_three_arms_complete': True,
+            'original_unknown_scores_preserved': {r['candidate_id']: r['progress']['counts'].get('closed_unknown', 0) for r in report['runs']}, 'new_candidate_training_readiness': readiness,
             'H0_scope': h0['scope'], 'fresh_model': str(Path(model_path).resolve()),
             'weight_manifest': copy.deepcopy(admission['weight_manifests'][candidate]),
             'source_identity': source_identity, 'no_model_or_tensor_loaded_by_gate': True}

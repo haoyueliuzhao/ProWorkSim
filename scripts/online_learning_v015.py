@@ -43,8 +43,10 @@ def main():
     atomic_write(output / 'source-before.json', json_bytes(before))
     owner = None
     try:
-        if runtime['kind'] in ('qwen_hybrid', 'qwen_hybrid_chatstop'):
-            if runtime['kind'] == 'qwen_hybrid_chatstop':
+        if runtime['kind'] in ('qwen_hybrid', 'qwen_hybrid_chatstop', 'qwen_hybrid_diagnostics'):
+            if runtime['kind'] == 'qwen_hybrid_diagnostics':
+                from proworksim.candidate_runtime_v017 import CandidateActor
+            elif runtime['kind'] == 'qwen_hybrid_chatstop':
                 from proworksim.candidate_runtime_v0151 import CandidateActor
             else:
                 from proworksim.candidate_runtime_v015 import CandidateActor

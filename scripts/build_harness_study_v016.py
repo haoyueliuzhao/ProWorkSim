@@ -102,7 +102,7 @@ def build_protocol(screen):
     return protocol
 
 
-def validate_original_s1(screen, screen_path, study_report):
+def validate_original_s1(screen, screen_path, study_report, *, allow_closed_unknown=False):
     """Read-only, bounded validation of original saved completion/profile evidence.
 
     This is not a new candidate ranking or a minimum business-score threshold.
@@ -130,9 +130,12 @@ def validate_original_s1(screen, screen_path, study_report):
             and all(owner.get('inference_profile', {}).get(k) == v for k, v in screen['runtime']['profile'].items()),
             'Original owner/profile/recipe differs from registered source protocol')
     counts = run.get('progress', {}).get('counts', {})
-    require(counts.get('planned') == counts.get('distinct_planned_or_measured') == counts.get('closed_known') == 36
-            and all(counts.get(k) == 0 for k in ('closed_unknown', 'open', 'interrupted_open', 'not_started')),
-            'All 36 original S1 measurements must be closed and known; missing is not zero')
+    known, unknown = counts.get('closed_known', 0), counts.get('closed_unknown', 0)
+    require(counts.get('planned') == counts.get('distinct_planned_or_measured') == 36
+            and type(known) is int and type(unknown) is int and known + unknown == 36
+            and all(counts.get(k) == 0 for k in ('open', 'interrupted_open', 'not_started'))
+            and (allow_closed_unknown or unknown == 0),
+            'All 36 original S1 measurements must be closed; unknown scores require an explicit new-protocol revision')
     require(not run.get('unknown_step_windows') and not run.get('issues')
             and run.get('observed_optimizer_step_increments') == {'actor': 0, 'critic': 0},
             'Original S1 has unknown steps, integration issues or actual updates')
@@ -142,6 +145,7 @@ def validate_original_s1(screen, screen_path, study_report):
         validate_guard(window)
     # Preserve measured weaknesses rather than use any score as an entry gate.
     return {'status': 'original_completed_S1_profile_bound',
+            'unknown_scores_preserved': unknown, 'closed_unknown_admission_revision': allow_closed_unknown,
             'protocol_ref': source_ref, 'run_root': str(root.resolve()),
             'original_progress': copy.deepcopy(run['progress']),
             'original_task_fact_summaries': copy.deepcopy(run.get('task_fact_summaries', [])),
