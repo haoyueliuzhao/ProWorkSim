@@ -227,3 +227,75 @@ def test_terminal_accounting_preserves_partial_n_and_known_e_zero(tmp_path):
     assert result['E']['known'] == 1 and result['E']['rows'][0]['reward'] == 0
     assert result['E']['started'] == 1 and result['E']['planned'] == 6
     assert result['gpu_seconds'] == 5 and result['training_started'] is False
+
+
+def test_summary_frozen_policy_guards_do_not_erase_known_business_results(tmp_path):
+    from scripts.summarize_ne_v021 import summarize
+
+    supervisor.write(tmp_path / 'state.json', {
+        'status': 'closed', 'source': SOURCE,
+        'jobs': {'E': {'attempted': True, 'status': 'complete', 'elapsed_gpu_seconds': 1}},
+    })
+    good_guard = {'learning_unchanged': True, 'rng_restored_exactly': True}
+    report = {
+        'status': 'complete', 'planned_episodes': 6, 'actor_steps': 0, 'critic_steps': 0,
+        'initial_actor_identity': {'actor': 'fixed'}, 'final_actor_identity': {'actor': 'fixed'},
+        'final_identity_matches_initial': True, 'source_unchanged': True,
+        'source_before': SOURCE, 'source_after': SOURCE,
+        'rows': [
+            {'case_id': 'valid', 'status': 'closed', 'evaluation_guard': good_guard,
+             'assessment': {'eligible': True, 'reward': 1, 'completed': True}},
+            {'case_id': 'changed-state', 'status': 'closed',
+             'evaluation_guard': {**good_guard, 'learning_unchanged': False},
+             'assessment': {'eligible': True, 'reward': 1, 'completed': True}},
+            {'case_id': 'interrupted-after-assessment', 'status': 'interrupted_or_unassessed',
+             'evaluation_guard': good_guard,
+             'assessment': {'eligible': True, 'reward': 0, 'completed': False}},
+        ],
+    }
+    supervisor.write(tmp_path / 'E/report.json', report)
+    summary = summarize(tmp_path)['E']
+    assert summary['known'] == 3 and summary['complete_responsibilities'] == 2
+    assert summary['frozen_policy_evidence_valid_count'] == summary['frozen_policy_known'] == 1
+    assert summary['frozen_policy_complete_responsibilities'] == 1
+    assert [r['frozen_policy_evidence_valid'] for r in summary['rows']] == [True, False, False]
+    assert summary['final_actor_identity'] == {'actor': 'fixed'}
+    assert summary['source_after'] == SOURCE and summary['actor_steps'] == 0
+    report['final_identity_matches_initial'] = False
+    supervisor.write(tmp_path / 'E/report.json', report)
+    summary = summarize(tmp_path)['E']
+    assert summary['known'] == 3 and summary['rows'][2]['reward'] == 0
+    assert summary['frozen_policy_evidence_valid_count'] == summary['frozen_policy_known'] == 0
+    assert summary['global_frozen_policy_evidence_valid'] is False
+
+
+def test_summary_separate_cli_output_preserves_original_and_live_qualification_unknown(tmp_path, monkeypatch):
+    from scripts import summarize_ne_v021 as reporting
+
+    run_dir = tmp_path / 'frozen-run'
+    out = tmp_path / 'reporting-review'
+    supervisor.write(run_dir / 'state.json', {
+        'status': 'running_E', 'source': SOURCE,
+        'jobs': {'E': {'attempted': True, 'status': 'running'}},
+    })
+    supervisor.write(run_dir / 'E/report.json', {
+        'status': 'evaluating', 'planned_episodes': 6, 'actor_steps': 0, 'critic_steps': 0,
+        'final_identity_matches_initial': True, 'source_unchanged': True,
+        'rows': [{'case_id': 'closed-before-line-end', 'status': 'closed',
+                  'evaluation_guard': {'learning_unchanged': True, 'rng_restored_exactly': True},
+                  'assessment': {'eligible': True, 'reward': 1, 'completed': True}}],
+    })
+    original_json, original_markdown = b'{"original":"frozen-reporter"}\n', b'original summary\n'
+    (run_dir / 'summary.json').write_bytes(original_json)
+    (run_dir / 'summary.md').write_bytes(original_markdown)
+    monkeypatch.setattr(sys, 'argv', ['reporting', '--run', str(run_dir), '--output', str(out)])
+    reporting.main()
+    summary = read_json(out / 'summary.json')['E']
+    assert summary['known'] == summary['complete_responsibilities'] == 1
+    assert summary['global_frozen_policy_evidence_valid'] is None
+    assert summary['rows'][0]['frozen_policy_evidence_valid'] is None
+    assert summary['frozen_policy_evidence_valid_count'] == 0
+    assert summary['frozen_policy_evidence_unknown_count'] == 1
+    assert (run_dir / 'summary.json').read_bytes() == original_json
+    assert (run_dir / 'summary.md').read_bytes() == original_markdown
+    assert '未知' in (out / 'summary.md').read_text()
