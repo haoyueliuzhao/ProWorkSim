@@ -709,7 +709,7 @@ class SharedActor:
             raise ValueError("Reloaded actor identity differs from exact saved tensors")
         return record
 
-    def update_window(self, entries, output, *, feature_function=None, update_actor=True):
+    def update_window(self, entries, output, *, feature_function=None, update_actor=True, post_update_selector=None):
         """One complete-window PPO accumulation; no old D0 or reward-diversity gate."""
         if self.sampling_only:
             raise ValueError("Readonly sampling replicas cannot update")
@@ -745,6 +745,21 @@ class SharedActor:
             prepared = prepare_window(entries, self.freeze_identity(), self.window_id, self.recipe, feature_function)
             atomic_write(output / "admission.json", json_bytes(prepared))
             rows = prepared["decisions"]
+            # Freeze the diagnostic contexts before any optimizer step. A custom
+            # selector changes only measured contexts, never loss/admission rows.
+            selector = post_update_selector or select_post_update_rows
+            post_indices = selector(rows, self.recipe["post_update_max_decisions"])
+            if (not isinstance(post_indices, list) or len(post_indices) > self.recipe["post_update_max_decisions"]
+                    or any(type(i) is not int or not 0 <= i < len(rows) for i in post_indices)
+                    or len(set(post_indices)) != len(post_indices)):
+                raise ValueError("Post-update selector must return unique bounded original decision indices")
+            selection = {"selector": selector.__module__ + "." + selector.__qualname__,
+                         "description": selector.__doc__, "selected_indices": post_indices,
+                         "selected_calls": [{"slot_id": rows[i]["slot_id"], "task": rows[i]["task"],
+                                             "member_id": rows[i]["member_id"], "call_id": rows[i]["call_id"]}
+                                            for i in post_indices],
+                         "frozen_before_optimizer_step": True}
+            atomic_write(output / "post-update-selection.json", json_bytes(selection))
             report.update(admitted_decisions=len(rows), scheduled_slots=len(entries),
                           admitted_output_tokens=sum(len(r["tokens"]["output_ids"]) for r in rows))
             torch.save(self._state_bundle(), output / "shared-before.pt")
@@ -863,8 +878,8 @@ class SharedActor:
             if report["actor_optimizer_steps"] and not report["changed_actor_elements"]:
                 raise ValueError("An optimizer step occurred but no actor parameter changed")
             self.model.eval()
-            post_indices = select_post_update_rows(rows, self.recipe["post_update_max_decisions"])
-            post = {"selection": "First admitted decision per task/member/past-public-stage, in admission order; fixed cap",
+            post = {"selection": selection,
+                    "same_parameter_probability_gate": False,
                     "maximum_decisions": self.recipe["post_update_max_decisions"], "decisions": [],
                     "old_probability_source": "Pre-update full-sequence recomputation after behavior-agreement guard",
                     "new_probability_source": "Post-update full-sequence recomputation at identical contexts and sampling temperature",

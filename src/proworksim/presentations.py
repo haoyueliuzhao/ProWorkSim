@@ -106,11 +106,11 @@ def response_matches_receipt(commit, public, *, action, arguments=None):
     if marker.get("version") != PRESENTATION_VERSION or marker.get("variant") != "compact_v14":
         return False
     # Runtime import avoids the public interface/presentation import cycle.
-    from .work_interface import V14_INTERFACE, V14_PROFILES
+    from .work_interface import V14_INTERFACE, V14_PROFILES, V23_MAINTENANCE_INTERFACE
     profile = marker.get("profile")
-    if profile not in {V14_INTERFACE + ":" + role for role in V14_PROFILES}:
-        return False
-    if action not in V14_PROFILES[profile.split(":")[-1]]:
+    allowed_profiles = {V14_INTERFACE + ":" + role: actions for role, actions in V14_PROFILES.items()}
+    allowed_profiles[V23_MAINTENANCE_INTERFACE + ":implementer"] = V14_PROFILES["implementer"] + ("adopt_version",)
+    if profile not in allowed_profiles or action not in allowed_profiles[profile]:
         return False
     if commit.get("receipt", {}).get("contract") != action:
         return False

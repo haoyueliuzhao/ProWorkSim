@@ -10,6 +10,7 @@ from .presentations import PRESENTATIONS, PRESENTATION_VERSION, observation_proj
 
 INTERFACE_VERSION = "work-interface-v0.13"
 V14_INTERFACE = "work-interface-v0.14"
+V23_MAINTENANCE_INTERFACE = "work-interface-v0.23-maintenance"
 LEGACY_INTERFACE = "work-interface-legacy-v0.12"
 PROFILES = {
     "provider": ("read_alias", "read_version", "read_messages", "request_information", "handoff_information", "wait"),
@@ -32,6 +33,7 @@ DESCRIPTIONS = {
     "read_messages": "Read actual messages addressed to this role, including requests and deliveries.",
     "request_information": "Ask a declared route provider for information for this work. Only a real provider decision can answer a manual route.",
     "handoff_information": "Choose evidence you actually read and send it through your manual route. Copy its exact reference. Omit request_id for proactive delivery, or provide the real request_id to reply. No adoption or approval is created.",
+    "adopt_version": "Explicitly move this existing non-fixed input adoption to a version you actually read. Supply the exact work_id, alias and version_id. This never edits the policy, builds a result or submits it. Fixed adoptions cannot advance.",
     "adopt": "Bind an exact readable reference to a work input name. alias is the input name used later by sql_build, not an object ID. Reading and adopting are separate.",
     "write_object": "Write a new version of the chosen local JSON alias. Explicit dependencies are exact source references; no source is selected or added automatically. A SQL project has models[{name,sql}], tests[{name,sql}], config{exports}.",
     "sql_build": "Execute the chosen SQL project using exact work adoptions named in input_aliases; write its real result/error to output_alias. SELECT/CTE only; no files/network/extensions. This is not a correctness judgment.",
@@ -51,7 +53,7 @@ DESCRIPTIONS = {
 def profile_id(role, variant="v13"):
     if role not in PROFILES:
         raise ValueError("Unknown work-interface role profile")
-    return (V14_INTERFACE if variant == "v14" else INTERFACE_VERSION) + ":" + role
+    return (V23_MAINTENANCE_INTERFACE if variant == "v23_maintenance" else V14_INTERFACE if variant == "v14" else INTERFACE_VERSION) + ":" + role
 
 
 def tool_definitions(core_definitions, profile):
@@ -62,11 +64,13 @@ def tool_definitions(core_definitions, profile):
             if definition["name"] == "inspect_submission":
                 definition["parameters"]["properties"].pop("include_contract", None)
         return result
-    if prefix not in {INTERFACE_VERSION, V14_INTERFACE} or role not in PROFILES:
+    if prefix not in {INTERFACE_VERSION, V14_INTERFACE, V23_MAINTENANCE_INTERFACE} or role not in PROFILES:
         raise ValueError("Unknown frozen work interface")
     indexed = {d["name"]: d for d in core_definitions}
     result = []
-    profiles = V14_PROFILES if prefix == V14_INTERFACE else PROFILES
+    profiles = V14_PROFILES if prefix in {V14_INTERFACE, V23_MAINTENANCE_INTERFACE} else PROFILES
+    if prefix == V23_MAINTENANCE_INTERFACE:
+        profiles = {**profiles, "implementer": profiles["implementer"] + ("adopt_version",)}
     for name in profiles[role]:
         if name not in indexed:
             continue
@@ -97,6 +101,9 @@ def tool_definitions(core_definitions, profile):
             props.pop("object_id", None)
             if "alias" not in parameters["required"]:
                 parameters["required"].append("alias")
+        if name == "adopt_version":
+            if "work_id" not in parameters["required"]:
+                parameters["required"].append("work_id")
         if name == "adopt":
             props["policy"]["enum"] = ["fixed", "current_published", "current_applicable"]
         if name == "handoff_information":
@@ -178,12 +185,12 @@ class WorkInterface:
             raise ValueError("Work interface requires a bound project")
         self._session = session
         self.profile = profile_id(role, variant)
-        if variant not in {"v13", "v14", "legacy"}:
+        if variant not in {"v13", "v14", "legacy", "v23_maintenance"}:
             raise ValueError("Unknown declared interface comparison variant")
         self.variant = variant
         if presentation not in PRESENTATIONS:
             raise ValueError("Unknown declared return presentation")
-        if presentation != "v13" and variant != "v14":
+        if presentation != "v13" and variant not in {"v14", "v23_maintenance"}:
             raise ValueError("The new presentation requires the declared v0.14 interface")
         self.presentation = presentation
         if variant == "legacy":
@@ -206,7 +213,7 @@ class WorkInterface:
         }
         selected, presentation_reason = observation_projection(selected, self.presentation)
         record = {
-            "version": V14_INTERFACE if self.variant == "v14" else INTERFACE_VERSION,
+            "version": V23_MAINTENANCE_INTERFACE if self.variant == "v23_maintenance" else V14_INTERFACE if self.variant == "v14" else INTERFACE_VERSION,
             "presentation_version": PRESENTATION_VERSION, "presentation": self.presentation,
             "presentation_reason": presentation_reason,
             "selected_observation": copy.deepcopy(selected),
