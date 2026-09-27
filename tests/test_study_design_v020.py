@@ -30,6 +30,8 @@ def test_transitive_source_alias_and_ancestor_cannot_cross_purposes():
 
 
 def test_missing_provenance_is_unresolved_not_independent_source():
+    with pytest.raises(ValueError, match="nonempty"):
+        source_partition_audit([])
     row = {'asset_id': 'new-name', 'purpose': 'locked_evaluation'}
     assert source_partition_audit([row])['unresolved_assets'] == ['new-name']
     with pytest.raises(ValueError):

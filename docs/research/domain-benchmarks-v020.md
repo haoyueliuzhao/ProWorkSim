@@ -25,9 +25,9 @@
 
 实际取得300条公共记录，不仅查看数据卡计数。`sol_sql`、`test_cases`字段虽然存在，但均为空数组；不能把字段存在当作已拿到答案/测试。26是这些公共记录引用的数据库数量，不是本轮下载或执行了26库。数据卡为CC BY-SA 4.0，公共jsonl的上游split名为dev，本项目没有因此默认把它用于训练。[固定官方数据卡](https://huggingface.co/datasets/birdsql/mini-interact/blob/088b3787303e69129e395a9f712902670339ef72/README.md)
 
-当前Mini只验证SQLite SELECT、知识歧义与首阶段澄清，没有把后续查询或CRUD能力算入覆盖。它由BIRD-Interact/LiveSQLBench的上游任务派生，后续须追踪祖先任务，不能与相关训练材料按新ID简单划分。完整GT/测试应按官方取得流程处理；本轮未发送索取邮件，也没有调用模拟用户。[官方Mini范围](https://github.com/bird-bench/BIRD-Interact/blob/451fe2c3518ee1cf908d8139e2913483bd519381/mini_interact/README.md)
+上游当前Mini设计仅覆盖SQLite SELECT、知识歧义与首阶段澄清，没有把后续查询或CRUD能力算入覆盖。它由BIRD-Interact/LiveSQLBench的上游任务派生，后续须追踪祖先任务，不能与相关训练材料按新ID简单划分。完整GT/测试应按官方取得流程处理；本轮未发送索取邮件，也没有调用模拟用户。[官方Mini范围](https://github.com/bird-bench/BIRD-Interact/blob/451fe2c3518ee1cf908d8139e2913483bd519381/mini_interact/README.md)
 
-原生a-Interact位于`mini_interact/knowledge_based/mini_interact_agent`，使用固定用户模拟器及交互预算，未来仅替换目标工作模型。公开记录里的masked SQL知识、参考答案和测试需按原角色投影留在host/模拟用户侧，不能整行塞给目标模型。当前还缺完整评分资产、冻结伙伴配置/额度和原生目标模型适配，成绩保持null。[官方原生入口](https://github.com/bird-bench/BIRD-Interact/blob/451fe2c3518ee1cf908d8139e2913483bd519381/mini_interact/knowledge_based/mini_interact_agent/README.md)
+原生a-Interact位于`mini_interact/knowledge_based/mini_interact_agent`，原生入口使用用户模拟器；本研究后续须冻结其配置与交互预算，再仅替换目标工作模型。公开记录里的masked SQL知识、参考答案和测试需按原角色投影留在host/模拟用户侧，不能整行塞给目标模型。当前还缺完整评分资产、冻结伙伴配置/额度和原生目标模型适配，成绩保持null。[官方原生入口](https://github.com/bird-bench/BIRD-Interact/blob/451fe2c3518ee1cf908d8139e2913483bd519381/mini_interact/knowledge_based/mini_interact_agent/README.md)
 
 ## Co-Gym：共享分析和语义评价单列
 

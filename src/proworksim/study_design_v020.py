@@ -17,6 +17,8 @@ def source_partition_audit(records):
     Missing lineage remains unresolved. A public benchmark split is not an
     independent-source certificate. Caller must supply concrete asset evidence.
     """
+    if not records:
+        raise ValueError("A nonempty provenance inventory is required")
     by_id = {}
     for row in records:
         key = row.get("asset_id")
