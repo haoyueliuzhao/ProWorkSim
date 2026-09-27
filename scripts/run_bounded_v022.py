@@ -4,6 +4,7 @@ Each line has its own frozen source and budget. The caps add to exactly two
 GPU hours, including loading, with no repeat attempts or successor search.
 """
 import argparse
+import json
 import os
 from pathlib import Path
 import signal
@@ -38,18 +39,8 @@ def validate(plan):
     if name == 'B1':
         if plan.get('allow_parameter_updates') is not True:
             raise ValueError('Bridge update authorization absent')
-        n = read_json(checked(plan['N1_qualification']))
-        w = read_json(checked(plan['W1_qualification']))
-        if (n.get('qualification_passed') is not True or w.get('status') != 'complete'
-                or w.get('final_identity_matches_initial') is not True or w.get('source_unchanged') is not True
-                or w.get('actor_steps') != 0 or w.get('critic_steps') != 0):
-            raise ValueError('Bridge requires completed N1 and trusted frozen W1')
-        if any(r.get('status') != 'closed' or not r.get('assessment', {}).get('eligible')
-               or r.get('evaluation_guard', {}).get('learning_unchanged') is not True
-               or r.get('evaluation_guard', {}).get('rng_restored_exactly') is not True for r in w.get('rows', [])):
-            raise ValueError('All paired frozen records must remain trustworthy')
-        if len(w.get('rows', [])) != 12:
-            raise ValueError('Bridge cannot fill an incomplete W1')
+        from proworksim.bridge_admission_v022 import validate_bridge_qualification
+        validate_bridge_qualification(plan)
     return name
 
 
@@ -176,10 +167,9 @@ def run(plan, plan_path, run_root, preferred=None):
                     if memory >= LIMITS['gpu_process_memory_mib']:
                         reason = 'gpu_memory_limit'
                     with (out / 'resources.jsonl').open('a') as file:
-                        from proworksim.storage import json_bytes
-                        file.write(json_bytes({'sample': sample, 'task': task, 'rss_bytes': own,
+                        file.write(json.dumps({'sample': sample, 'task': task, 'rss_bytes': own,
                             'all_lines_rss_bytes': all_rss, 'artifact_bytes': artifacts,
-                            'own_gpu_memory_mib': memory}).decode() + '\n')
+                            'own_gpu_memory_mib': memory}, ensure_ascii=False, separators=(',', ':')) + '\n')
                     if reason:
                         break
                     time.sleep(2)

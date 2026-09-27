@@ -44,8 +44,11 @@ def _actor(identity):
 def _policies(policies, active, identity, *, harness=None):
     if not isinstance(policies, dict) or not set(active) <= set(policies):
         raise ValueError("Predeclare the actual policy map for every active target member")
-    expected_implementation = ('proworksim.harness_sdk.HarnessWorker' if harness == 'openhands_v16'
-                               else 'proworksim.model_policy.ModelPolicy')
+    expected_implementation = {
+        'openhands_v16': 'proworksim.harness_sdk.HarnessWorker',
+        'native_v22_original_history': 'proworksim.work_view_v022.OriginalHistoryModelPolicy',
+        'native_v22_compact_work': 'proworksim.work_view_v022.CompactWorkModelPolicy',
+    }.get(harness, 'proworksim.model_policy.ModelPolicy')
     for member in active:
         policy = policies[member]
         config = policy.get("config", {})

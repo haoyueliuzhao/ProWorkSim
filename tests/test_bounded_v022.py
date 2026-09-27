@@ -17,33 +17,21 @@ def plan(tmp_path, name):
             'allow_parameter_updates': name == 'B1'}
 
 
-def test_w1_starts_independently_but_bridge_requires_actual_frozen_guards(tmp_path):
-    # A failed/absent N1 must not gate the independent W1 work measurement.
+def test_w1_starts_independently_but_bridge_requires_separate_exact_qualification(tmp_path, monkeypatch):
+    from proworksim import bridge_admission_v022 as admission
+
     assert bounded.validate(plan(tmp_path, 'W1')) == 'W1'
     value = plan(tmp_path, 'B1')
-    n, w = tmp_path / 'n.json', tmp_path / 'w.json'
-    n.write_text(json.dumps({'qualification_passed': False}))
-    w.write_text(json.dumps({'status': 'complete', 'final_identity_matches_initial': True,
-                            'source_unchanged': True, 'actor_steps': 0, 'critic_steps': 0,
-                            'rows': []}))
-    value.update(N1_qualification=bounded.reference(n), W1_qualification=bounded.reference(w))
-    with pytest.raises(ValueError, match='completed N1'):
+    calls = []
+    def rejected(value):
+        calls.append(value)
+        raise ValueError('N1 and token projection not qualified')
+    monkeypatch.setattr(admission, 'validate_bridge_qualification', rejected)
+    with pytest.raises(ValueError, match='token projection'):
         bounded.validate(value)
-    n.write_text(json.dumps({'qualification_passed': True}))
-    value['N1_qualification'] = bounded.reference(n)
-    with pytest.raises(ValueError, match='incomplete W1'):
-        bounded.validate(value)
-    record = json.loads(w.read_text())
-    record['rows'] = [{'status': 'closed', 'assessment': {'eligible': True},
-                       'evaluation_guard': {'learning_unchanged': True, 'rng_restored_exactly': True}} for _ in range(12)]
-    w.write_text(json.dumps(record))
-    value['W1_qualification'] = bounded.reference(w)
+    assert calls == [value]
+    monkeypatch.setattr(admission, 'validate_bridge_qualification', lambda value: {'passed': True})
     assert bounded.validate(value) == 'B1'
-    record['rows'][8]['evaluation_guard']['learning_unchanged'] = False
-    w.write_text(json.dumps(record))
-    value['W1_qualification'] = bounded.reference(w)
-    with pytest.raises(ValueError, match='trustworthy'):
-        bounded.validate(value)
 
 
 def test_closed_launch_is_never_restarted_and_frozen_plan_change_is_rejected(tmp_path, monkeypatch):
