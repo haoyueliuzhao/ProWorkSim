@@ -8,7 +8,7 @@
 
 不再增加模型型号、精度组合或大型框架。条件具备后，尽快进入一次**真实工作—参数更新—新策略再次工作**的有界实验，而不是继续将前向诊断本身作为研究终点。
 
-**:chatgpt-content-reference{index="18"}[下载完整审计与后续方案](sandbox:/mnt/data/ProWorkSim_v021_audit/AUDIT_AND_NEXT_PLAN.md)**  
+**:chatgpt-content-reference{index="18"}[下载完整审计与后续方案](sandbox:/mnt/data/ProWorkSim_v021_audit/AUDIT_AND_NEXT_PLAN.md)**
 **:chatgpt-content-reference{index="19"}[下载核验包：梯度依赖示例、计数复核与方案](sandbox:/mnt/data/ProWorkSim_v021_audit_and_next_plan.zip)**
 
 ---
@@ -135,7 +135,7 @@ mismatch路线可以参考成熟训练系统对rollout、old learner和current l
 
 - target必须是固定提交中的**result对象**；
 - locator必须具有 `['tables','metrics','rows',行索引]` 或其列索引扩展；
-- 必须显式包含已读取的data与audit精确引用。 
+- 必须显式包含已读取的data与audit精确引用。
 
 其中，**缺data证据是已经公开要求下的模型遗漏**；特定result定位语法没有充分公开，则是接口／测量合同缺口。两者不能互相抵消。
 
@@ -191,7 +191,7 @@ mismatch路线可以参考成熟训练系统对rollout、old learner和current l
 
 **D2部分内容检查未执行。**引号导致shell `eval`失败，原错误被压制，表面上容易被解释为数据仍有缺失。
 
-**缺expected会缩小分母并放行。**原D2脚本只有在输出与expected都存在时才进入内容检查；缺expected时，执行、文件存在和attestation仍可形成3/3。原始脚本的控制流与报告一致。 
+**缺expected会缩小分母并放行。**原D2脚本只有在输出与expected都存在时才进入内容检查；缺expected时，执行、文件存在和attestation仍可形成3/3。原始脚本的控制流与报告一致。
 
 这些结论只覆盖所审任务，不证明整个TeamBench都不可用。但是，**当前不能再把“官方benchmark”当成评分已经可信的理由。**
 

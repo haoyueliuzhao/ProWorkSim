@@ -216,18 +216,26 @@ def _mapping(task, completed, facts):
 
 
 def assess_episode(episode_path, spec=None):
-    """Assess a closed immutable episode; no current world, oracle tool or model."""
+    """The v0.21 public entry stays bound to its original frozen contract."""
+    return _assess_episode(episode_path, spec, resolve_case=case_spec,
+                           make_reward_spec=reward_spec, report_version=REWARD_VERSION,
+                           mapper_version=MAPPER_VERSION, map_method=_mapping)
+
+
+def _assess_episode(episode_path, spec, *, resolve_case, make_reward_spec,
+                    report_version, mapper_version, map_method):
+    """Shared fixed-history mechanics; callers explicitly bind their own catalog."""
     root = Path(episode_path)
     if root.name == 'manifest.json':
         root = root.parent
-    report = {'version': REWARD_VERSION, 'eligible': False, 'reward': None, 'completed': False,
+    report = {'version': report_version, 'eligible': False, 'reward': None, 'completed': False,
               'components': [], 'work_components': {}, 'record_trust': 'unknown',
               'independent_assessability': 'unknown', 'exclusions': [], 'preparation_credited': False,
-              'mapper': {'version': MAPPER_VERSION, 'class_id': None, 'eligible': False}}
+              'mapper': {'version': mapper_version, 'class_id': None, 'eligible': False}}
     try:
         manifest = read_json(root / 'manifest.json')
-        case = case_spec(manifest['scenario']['variation']['online_case']['case_id'])
-        expected = reward_spec(case)
+        case = resolve_case(manifest['scenario']['variation']['online_case']['case_id'])
+        expected = make_reward_spec(case)
         declared = manifest['scenario']['variation']['online_reward']
         if manifest['status'] != 'closed' or declared != expected or (spec is not None and spec != expected):
             raise ValueError('Closed episode must bind its frozen collaboration contract')
@@ -319,7 +327,7 @@ def assess_episode(episode_path, spec=None):
         completed = all(c['achieved'] for c in components)
         report.update(eligible=True, independent_assessability='known', components=components,
                       reward=round(sum(c['score'] for c in components), 10), completed=completed,
-                      facts=facts, mapper=_mapping(task, completed, facts),
+                      facts=facts, mapper=map_method(task, completed, facts),
                       work_components={'business_product': bool(fixed), 'full_responsibility': completed},
                       episode_manifest_sha256=digest((root / 'manifest.json').read_bytes()),
                       current_actor_tool_calls=len(e.calls), training_projection_available=False)
