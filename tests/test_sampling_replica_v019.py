@@ -11,6 +11,7 @@ from proworksim.storage import json_bytes, read_json
 def replica_fixture(tmp_path, monkeypatch):
     torch = pytest.importorskip("torch")
     from proworksim.candidate_runtime_v019 import CandidateActor, candidate_profile
+    from proworksim.candidate_runtime_v0151 import candidate_profile as numeric_loader_profile
     from proworksim.online_training import reference
     import proworksim.sampling_replica_v019 as replicas
 
@@ -60,8 +61,14 @@ def replica_fixture(tmp_path, monkeypatch):
             return "fixture " + str(ids)
 
     def construct(cls, output, profile, recipe=None):
+        # The real inherited numeric 15.1 loader strips the newer diagnostics
+        # profile before constructing cls. Passing profile19 directly hid that gap.
+        numeric = numeric_loader_profile(
+            profile["candidate_id"], dtype=profile["dtype"], devices=profile["devices"]
+        )
+        assert "parser_contract" not in numeric
         return cls(TinyActor(), Tokenizer(), output=output, base_identity=base_identity,
-                   inference_profile=profile,
+                   inference_profile=numeric,
                    recipe=recipe or {"max_length": profile["max_context_tokens"],
                                      "max_output_tokens": profile["max_output_tokens"]},
                    device="cpu", torch_module=torch)
@@ -159,6 +166,7 @@ def test_official_tiny_qwen_constructor_registers_full_attention_and_mask_withou
     from transformers.masking_utils import ALL_MASK_ATTENTION_FUNCTIONS
     from peft import LoraConfig, get_peft_model
     from proworksim.candidate_runtime_v019 import CandidateActor, candidate_profile
+    from proworksim.candidate_runtime_v0151 import candidate_profile as numeric_loader_profile
     from proworksim.local_model_service import sdpa_explicit_kv_attention_forward
 
     config = Qwen3_5TextConfig(
@@ -183,7 +191,7 @@ def test_official_tiny_qwen_constructor_registers_full_attention_and_mask_withou
     owner = CandidateActor(
         network, object(), output=tmp_path / "actual-tiny-constructor",
         base_identity={"manifest": {"sha256": "random-tiny-no-candidate-base"}},
-        inference_profile=candidate_profile("qwen3.5-9b", devices=1),
+        inference_profile=numeric_loader_profile("qwen3.5-9b", devices=1),
         device="cpu", torch_module=torch,
     )
     assert network.config._attn_implementation == "sdpa_explicit_kv"
@@ -195,4 +203,18 @@ def test_official_tiny_qwen_constructor_registers_full_attention_and_mask_withou
     assert owner.inference_profile["sdpa_backend_policy"] == "efficient_only_no_fallback"
     assert owner.inference_profile["matmul_precision"] == "high"
     assert owner.prefix_cache.matmul_precision == "high"
+    expected = candidate_profile("qwen3.5-9b", devices=1)
+    assert all(owner.inference_profile.get(key) == value for key, value in expected.items())
     assert all(p.device.type == "cpu" for p in network.parameters())
+
+
+def test_numeric_loader_shape_restores_every_declared_factory_field(replica_fixture):
+    from proworksim.candidate_runtime_v019 import candidate_profile
+    from proworksim.candidate_runtime_v017 import PARSER_CONTRACT
+
+    owner = replica_fixture.parent
+    expected = candidate_profile("qwen3.5-9b", devices=2)
+    assert all(owner.inference_profile.get(key) == value for key, value in expected.items())
+    assert owner.inference_profile["parser_contract"] == PARSER_CONTRACT
+    assert owner.inference_profile["parser_contract"] is not PARSER_CONTRACT
+    assert replica_fixture.module._runtime_profile(owner.inference_profile) == expected

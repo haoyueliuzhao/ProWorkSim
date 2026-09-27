@@ -79,3 +79,23 @@ prefix配置与matmul精度进入实际profile和actor identity。每个调用�
 新的性能对照明确命名为 **FP32/highest＋efficient（无prefix）** 对 **FP32/high＋efficient＋prefix2048**。两臂均先修复注意力内存路径，隔离精度/缓存的耗时；不能把前者误称原H1执行器。已确认OOM的旧Math长backward不再重复，候选仍在原3请求、2048输出上限、原容差下执行全输入重算和每条真实backward。旧失败不删除，不用降低长度来准入。
 
 同时观测到其他项目实际占用GPU0/1/6/7，原“27B双副本等待全部8卡”会增加资源等待。新阶段在首个模型采样前显式冻结replicas=1或2、每进程devices和物理卡组；migration、pilot及初末评价保持一致，采样后没有自动升降级。1副本沿用串行collector，不能宣称并行加速；仅2副本才要求该配置对应的真实two_replica门。其余数值、backward与吞吐门均保留，物理组和资源竞争单独记录，不终止其他项目。
+
+在27B优化采样前另作两卡容量声明，依据是已修复的dense注意力内存路径，不是由9B结果认定27B可训练。将等待原H1释放物理2、3，在两张80GiB上执行同3固定请求/2048输出上限/真实backward。只有实际通过才将devices=2写入准入和正式阶段；若通过，物理4、5可作为第二个相同副本，形成四卡并行。该配置与原27B四卡H1分列。
+
+## 原H1的实际终态与资源恢复
+
+原H1两个模型都已实际退出0，48/48评分已知。按原冻结排序选择 `qwen38-27b + openhands_v16`；该臂完整实现/复核数2/8、团队完整数0/4。27B native宏均值更高，原规则优先完整岗位责任而非最大均值，不能把实际选择解释成所有指标领先。5次NOT误拒只在27B native发生，原分母/奖励不变；token长度记录缺口保留。完整[终态与证据](harness-v019-original-H1.md)单独归档。
+
+H1释放GPU后，另一项目立刻接管新空闲卡。未干预这些进程；先前9B新efficient控制在同卡竞争下的长backward OOM保留（另进程45.26GiB，本进程33.43GiB，再申请692MiB而仅余567.38MiB）。这既不是新内核独占容量失败证据，也不能写成已通过。其观察原件在 `runs/throughput-v019-efficient/qwen35-9b-probe-observation.json`。
+
+用户随后明确回复已空出四张卡。启动前实际核对物理2、3、4、5均free81154MiB：27B两卡容量候选在2、3启动，9B同源同清单在4、5重新测量，原失败及成本保留、不覆盖；这是更换明确资源条件的性能控制，不替换任何业务样本。两者均使用干净执行源 `56e7068`，loader使用原基座manifest；逐15秒资源、实际进程开始/退出均由原启动器保存。
+
+## 元数据缺口的最小修复与数值证据复用边界
+
+真实owner记录暴露了一个CPU夹具未覆盖的构造路径：底层numeric15.1 loader移除了parser_contract，而candidate19构造器绕过v17构造器后未补回。实际parse_response与每次prompt_projection一直使用原v17解析合同，数值生成和反向不受影响；但严格只读副本导出会因实际profile缺字段拒绝。此前测试直接传完整19 profile掩盖了这个缺口。
+
+修复仅在candidate19导入现有PARSER_CONTRACT，并deepcopy到实际profile。新的定向夹具从numeric15.1的真实字段形状进入构造器，核对全部声明字段，prefix/replica共9项通过；没有放宽副本身份校验。
+
+不为这一描述元数据补齐重复已完成的三条长反向。新的数值证据复用检查要求旧/新源均干净、src文件清单相同、除candidate19外所有src字节完全相同；AST仅允许新增这一个既有常量import和一个profile.update的parser_contract关键字，归一化后整个candidate源码必须完全一致。任何生成、模型加载、精度、attention、prefix、学习、参数或其他src变化都拒绝复用。原报告继续绑定56e7068，不改成新源报告。
+
+新源仍须实际完成双进程模型加载、参数身份、原token概率重算和零更新控制。新源下的实际fresh actor identity用于正式准入，并与旧数值控制的真实adapter/base/policy字段逐项比较；只允许profile描述哈希发生这项已声明变化。该边界明确写入最终gate的numerical_source_review，不能作为一般跨源码结果兼容机制。

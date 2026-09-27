@@ -39,3 +39,9 @@
 b370控制在旧Math-GQA基线长请求backward OOM；优化臂未执行，失败不冒称新profile失败。小GPU控制已支持GQA的FP32 Math分配解释，candidate19改用已存在的explicit-KV efficient-only全注意力和配套SDPA mask；DeltaNet与软件依赖不变。新baseline明确为已修复内存路径的highest/efficient/no-prefix，不重复已知旧Math OOM，新candidate为high/efficient/prefix；原2048输出上限和概率门保持。
 
 资源已实际变化：其他项目占GPU0/1/6/7。新协议显式固定采样副本数1或2及卡组；1使用串行采集，只不要求two_replica这一不适用项，其余4门均要通过；2保留全部5门。同一migration→fresh pilot内不可在采样后切换。实际fresh初态绑定到新placement测得的adapter identity，是否等于旧H1另记事实，不凭同seed推断。
+
+### 27B优化采样前声明的两卡容量分支
+
+在原H1仍未结束、27B优化请求尚未开始时，进一步声明一个2卡容量候选：原Math-GQA大矩阵消除后，约100GiB的FP32文本基座分两卡，加上原完整输入checkpoint激活，可能能容纳于两张80GiB卡。**这只是资源假设，不是容量已通过。**原3条固定请求/原2048上限和每条真实backward不变，先等H1释放物理2、3且各free≥78000MiB，再从新冻结56e7068源执行一次27B devices=2控制，另命名efficient-2gpu-probe；不覆盖原4卡H1或b370失败。
+
+若原数值/反向门通过，才可用物理2、3与4、5两组建立27B双副本；若2卡失败，保留完整失败，不裁短输入或自行重试，届时根据实际原因明确另一个尚未采业务样本的配置边界。采样过程不动态增减GPU。此方案可避免把其他项目占用的0、1、6、7强行纳入资源门。

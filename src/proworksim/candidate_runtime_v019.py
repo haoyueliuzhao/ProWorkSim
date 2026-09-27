@@ -3,6 +3,7 @@
 import copy
 
 from .candidate_runtime_v017 import CandidateActor as PreviousActor
+from .candidate_runtime_v017 import PARSER_CONTRACT
 from .candidate_runtime_v017 import candidate_profile as previous_profile
 from .online_training import SharedActor
 from .prefix_cache_v019 import ExactPrefixCache
@@ -48,6 +49,7 @@ class CandidateActor(PreviousActor):
         profile.update(numerical)
         profile.update(
             version=VERSION,
+            parser_contract=copy.deepcopy(PARSER_CONTRACT),
             attention="sdpa_explicit_kv",
             custom_attention_patch=True,
             matmul_precision="high",

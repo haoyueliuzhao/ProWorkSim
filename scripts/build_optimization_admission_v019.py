@@ -26,10 +26,11 @@ def mappings(rows):
     return result
 
 
-def assess(probe, parallel, profile, source, *, replicas=2):
+def assess(probe, parallel, profile, source, *, replicas=2, numerical_source=None):
     if replicas not in (1, 2):
         raise ValueError("Explicit one or two replicas required")
     parallel = parallel or {}
+    numerical_source = numerical_source or source
     variants = {v["name"]: v for v in probe.get("variants", [])}
     old = variants.get("fp32-highest-efficient-baseline", {})
     new = variants.get("fp32-high-prefix2048", {})
@@ -37,7 +38,7 @@ def assess(probe, parallel, profile, source, *, replicas=2):
     warm = [r for r in rows if r.get("repeat") == 1]
     original_warm = [r for r in old.get("calls", []) if r.get("repeat") == 1]
     source_ok = bool(
-        probe.get("source_before") == probe.get("source_after") == source
+        probe.get("source_before") == probe.get("source_after") == numerical_source
         and (
             replicas == 1 or parallel.get("source_before") == parallel.get("source_after") == source
         )
@@ -172,12 +173,26 @@ def main():
     p.add_argument("--replicas", type=int, choices=(1, 2), required=True)
     p.add_argument("--manifest", action="append", required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument(
+        "--numerical-source-root",
+        type=Path,
+        help="Only the explicitly verified missing-parser-metadata repair can reuse prior numeric evidence",
+    )
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError("New gate output required")
     source = code_identity()
     if source["code_dirty"] is not False:
         raise ValueError("Freeze the execution source before formal admission")
+    review = None
+    numerical_source = source
+    if a.numerical_source_root is not None:
+        from scripts.optimization_source_review_v019 import verify_metadata_only_transition
+
+        review = verify_metadata_only_transition(
+            a.numerical_source_root, Path(__file__).resolve().parents[1]
+        )
+        numerical_source = review["numerical_source"]
     probes, parallels, manifests = map(mappings, (a.probe, a.parallel, a.manifest))
     if (
         set(probes) != set(manifests)
@@ -190,6 +205,7 @@ def main():
         "execution_source_commit": source["code_commit"],
         "sampling_replicas": a.replicas,
         "source_identity": source,
+        "numerical_source_review": review,
         "candidates": {},
     }
     for key, path in probes.items():
@@ -206,11 +222,26 @@ def main():
         initial = probe.get("fresh_initial_actor_identity")
         if not isinstance(initial, dict) or not initial.get("adapter_sha256"):
             raise ValueError("Actual fresh initial actor identity missing")
-        checks, summary = assess(probe, parallel, profile, source, replicas=a.replicas)
+        checks, summary = assess(
+            probe, parallel, profile, source, replicas=a.replicas, numerical_source=numerical_source
+        )
+        numeric_initial = initial
+        if parallel is not None:
+            initial = parallel.get("actor_identity")
+            if not isinstance(initial, dict) or any(
+                initial.get(k) != numeric_initial.get(k)
+                for k in ("adapter_sha256", "base_manifest_sha256", "policy_version")
+            ):
+                raise ValueError(
+                    "Current-source sampler differs from actual numerical probe parameters"
+                )
+        if initial.get("base_manifest_sha256") != digest(manifests[key].read_bytes()):
+            raise ValueError("Actual measured weights differ from declared admission manifest")
         required = {k: v for k, v in checks.items() if k != "two_replica" or a.replicas == 2}
         result["candidates"][key] = {
             "passed": all(required.values()),
             "initial_actor_identity": initial,
+            "numerical_probe_initial_actor_identity": numeric_initial,
             "runtime_profile": profile,
             "weight_manifest_sha256": digest(manifests[key].read_bytes()),
             "checks": {

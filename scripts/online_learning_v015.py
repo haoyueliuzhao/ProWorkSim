@@ -72,7 +72,7 @@ def main():
             raise ValueError('Unknown explicitly registered runtime; no silent fallback')
         if h2_admission['status'] != 'not_H2' and h2_admission.get('expected_initial_adapter_sha256'):
             if owner.freeze_identity()['adapter_sha256'] != h2_admission['expected_initial_adapter_sha256']:
-                raise ValueError('Fresh H2 adapter differs from selected H1 shared initial actor')
+                raise ValueError('Fresh H2 adapter differs from its bound actual initial actor')
         atomic_write(output / 'adapter-scope.json', json_bytes({
             'scope': 'Actual trainable actor parameters; fixed base parameters are not updated',
             'trainable_parameters': sum(p.numel() for p in owner.actor_parameters.values()),
