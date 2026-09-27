@@ -8,6 +8,8 @@ WorldCore管理权限、版本、采用、工作义务和问题处理；工作�
 
 ## v0.19 执行吞吐优化（GPU 后续实验已暂停）
 
+[本轮正式实验报告](docs/experiments/round-v019-final.md)汇总审计修订、原H1终态、两候选完整请求控制、失败与成本，并明确暂停后未完成事项；[机器记录](docs/experiments/round-v019-final.json)保留派生数值及原证据SHA。
+
 [优化计划](docs/throughput-v019-plan.md)保留原业务预算、概率门和唯一共享学习器，新增显式 FP32/high 执行配置、精确 token 前缀缓存及独立世界双副本采集。副本只加载真实当前 actor 快照，不构造 critic/optimizer；整个窗口闭合并核验后才允许父进程更新。原 H1 不切换配置，尚未开始的 v0.18 后继等待进程已实际停止。
 
 开发阶段9B两条真实请求的64输出诊断中，high使延迟约从10.8/17.1秒降到4.8/7.0秒；长请求进一步暴露旧Math-GQA的反向内存问题，新candidate已改用项目既有explicit-KV efficient-only路径。原数值门保留，真实长输出/反向与相应副本数的验收仍分别记录，不能将局部通过称为完整容量或学习收益。见[优化实验](docs/experiments/throughput-v019.md)。

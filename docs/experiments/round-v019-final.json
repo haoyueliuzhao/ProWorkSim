@@ -1,0 +1,1275 @@
+{
+  "version": "v018-v019-retrospective-experiment-report-1",
+  "generated_at": "2026-09-27T14:11:07.631659+08:00",
+  "report_only_not_launch_admission": true,
+  "current_status": "paused_by_user_before_two_replica_and_downstream_deployment",
+  "scope": "Read-only accounting of prior audit controls, original H1, and v019 numerical/performance controls. No model inference, rescoring, training, or scheduling was performed to prepare this report.",
+  "inventory": {
+    "path": "/data1/zhuxinrui/projects/ProWorkSim/examples/throughput-v19/probe-inventory.json",
+    "sha256": "0cd090bcf3e7c582fd1a46b29f38d0a3843c09a102e7e386205703cf91b0bc2b",
+    "bytes": 3616
+  },
+  "successful_probes": [
+    {
+      "candidate": "qwen35-9b",
+      "report": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen35-9b-efficient-gpu45-probe/report.json",
+        "sha256": "08c9cf768ab30e1fab5a23de77df60c5020da827be5badbbe59cf56746bb39a1",
+        "bytes": 48157
+      },
+      "launch": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-efficient-gpu45-probe.launch.json",
+        "sha256": "4c4a9b3854d03892c5c2019b1c99d7718cd9b1b8eddecc27f94aac04e6e89153",
+        "bytes": 1430
+      },
+      "source": {
+        "code_commit": "56e7068816df39e949da85ef1ceece4feeb6028e",
+        "code_dirty": false,
+        "source_tree_sha256": "6e54ff53ab59fd85ba8c59cba0e33f05e7635adecbad2696a5d2fa42753f6998"
+      },
+      "runtime_profile": {
+        "version": "candidate-runtime-v0.19",
+        "candidate_id": "qwen3.5-9b",
+        "dtype": "float32",
+        "devices": 2,
+        "attention": "sdpa_explicit_kv",
+        "matmul_precision": "high",
+        "cudnn_allow_tf32": false,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        },
+        "max_context_tokens": 16384,
+        "max_output_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 1.0,
+        "top_k": 0,
+        "native_tool_prompt": "official_xml_single_call",
+        "lora_target_modules": [
+          "q_proj",
+          "v_proj"
+        ],
+        "lora_scope": "Full-attention projections only; DeltaNet is frozen",
+        "history_policy": "Full public messages supplied to official template; non-thinking requested; preserve_thinking=False",
+        "dtype_scope": "Base weights and LoRA; float32 selected-token normalization",
+        "chat_stop_contract": {
+          "version": "native-chat-stop-v0.15.1",
+          "native_end_token": "<|im_end|>",
+          "native_end_token_id": 248046,
+          "end_of_text_token": "<|endoftext|>",
+          "end_of_text_token_id": 248044,
+          "eos_token_ids": [
+            248046,
+            248044
+          ],
+          "source": "Registered official tokenizer EOS, token vocabulary and assistant chat-template terminator",
+          "forbid_tokens_after_first_declared_eos": true,
+          "require_raw_output_ids_equal_training_output_ids": true
+        },
+        "parser_contract": {
+          "version": "public-format-diagnostics-v0.17",
+          "parser": "qwen_native_xml_v017",
+          "validation": "Original native parser acceptance; diagnostics use supplied public parameter types without changing later world/SDK validation",
+          "failure_fields": [
+            "stage",
+            "field_path",
+            "schema_path",
+            "expected_type",
+            "observed_type",
+            "position"
+          ]
+        },
+        "prefix_cache": {
+          "version": "exact-token-prefix-v0.19",
+          "prefix_tokens": 2048,
+          "max_entries": 8,
+          "identity_scope": "Exact actor identity and exact full cached token prefix; no cross-policy reuse",
+          "learning": "Full original input replay with original probability tolerances; no cached training graph"
+        }
+      },
+      "initial_actor_identity": {
+        "version": "shared-actor-identity-v0.13",
+        "policy_version": "online-actor-0:d61d66ce877acdc5a2c83b13768dc901ad5d55af19b449ee997c6ddd85e26bee",
+        "adapter_sha256": "d61d66ce877acdc5a2c83b13768dc901ad5d55af19b449ee997c6ddd85e26bee",
+        "base_manifest_sha256": "030031b27513e399360f26a8db31746e719bb15a3d2f4d68874c1dba3ccc60a6",
+        "inference_profile_sha256": "c9d8117b635aaec9a068e6acefe83343e6d87592f4715af8f27b0afabf3b9750"
+      },
+      "status": "complete",
+      "output_cap": 2048,
+      "generation_calls": 12,
+      "world_actions": 0,
+      "optimizer_steps": 0,
+      "rows": [
+        {
+          "purpose": "median_prompt",
+          "request": {
+            "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen35-9b/resident/calls/resident_c082fa22df634f5d8632b4a98ef8a923.json",
+            "sha256": "48d42d745db440d20633305045fd698dcdb564e61a00be2a8c24215863b34ef8",
+            "bytes": 323766
+          },
+          "usage": {
+            "prompt_tokens": 8473,
+            "completion_tokens": 173,
+            "total_tokens": 8646
+          },
+          "baseline_cold_seconds": 16.02732515335083,
+          "baseline_warm_seconds": 15.613787099719048,
+          "optimized_cold_seconds": 10.069624702911824,
+          "optimized_warm_seconds": 9.657526308204979,
+          "same_sampled_outputs_in_measured_conditions": true,
+          "warm_generation_speedup": 1.6167480782789754,
+          "probability_check": {
+            "max_abs": 0.009759664535522461,
+            "mean_abs": 0.00023557478561997414,
+            "passed": true,
+            "max_atol": 0.02,
+            "mean_atol": 0.002,
+            "seconds": 1.7650953698903322
+          },
+          "backward_check": {
+            "seconds": 19.13890441460535,
+            "max_abs": 0.009759664535522461,
+            "mean_abs": 0.00023557478561997414,
+            "original_probability_passed": true,
+            "finite": true,
+            "nonzero_elements": 589824,
+            "optimizer_steps": 0
+          },
+          "prefix_cache_hit": true,
+          "prefix_tokens": 2048,
+          "fixed_work_baseline": {
+            "token_sha256": "5f1ee440160c0b3e0cd77ae8e59e390f87991c8e3fa373b8e8b77d03db78c01a",
+            "input_tokens": 8473,
+            "output_tokens": 173,
+            "seconds": 7.568009831942618,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          },
+          "fixed_work_optimized": {
+            "token_sha256": "5f1ee440160c0b3e0cd77ae8e59e390f87991c8e3fa373b8e8b77d03db78c01a",
+            "input_tokens": 8473,
+            "output_tokens": 173,
+            "seconds": 1.7654029941186309,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          }
+        },
+        {
+          "purpose": "longest_observed_prompt",
+          "request": {
+            "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen35-9b/resident/calls/resident_00b818dbf4a44c33b503933119f922f1.json",
+            "sha256": "9b7edf0c94f9da986e52f444e0c3a42fd02f09ae48afbdd54446784e96e1fd7b",
+            "bytes": 639977
+          },
+          "usage": {
+            "prompt_tokens": 14303,
+            "completion_tokens": 437,
+            "total_tokens": 14740
+          },
+          "baseline_cold_seconds": 37.662507641129196,
+          "baseline_warm_seconds": 37.599763326812536,
+          "optimized_cold_seconds": 28.794623689260334,
+          "optimized_warm_seconds": 28.390792477875948,
+          "same_sampled_outputs_in_measured_conditions": true,
+          "warm_generation_speedup": 1.3243646987350863,
+          "probability_check": {
+            "max_abs": 0.010117053985595703,
+            "mean_abs": 0.00021020160056650639,
+            "passed": true,
+            "max_atol": 0.02,
+            "mean_atol": 0.002,
+            "seconds": 3.530871205031872
+          },
+          "backward_check": {
+            "seconds": 48.880425843875855,
+            "max_abs": 0.010117053985595703,
+            "mean_abs": 0.00021020160056650639,
+            "original_probability_passed": true,
+            "finite": true,
+            "nonzero_elements": 589824,
+            "optimizer_steps": 0
+          },
+          "prefix_cache_hit": true,
+          "prefix_tokens": 2048,
+          "fixed_work_baseline": {
+            "token_sha256": "d4277523deac06d4f14afaaed060f0b0075de426501b8e1effec21f9d7954680",
+            "input_tokens": 14303,
+            "output_tokens": 437,
+            "seconds": 13.10489724110812,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          },
+          "fixed_work_optimized": {
+            "token_sha256": "d4277523deac06d4f14afaaed060f0b0075de426501b8e1effec21f9d7954680",
+            "input_tokens": 14303,
+            "output_tokens": 437,
+            "seconds": 3.5302022309042513,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          }
+        },
+        {
+          "purpose": "largest_observed_output",
+          "request": {
+            "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen35-9b/resident/calls/resident_91b9fbdf76fd4e599bf8af96e8cbb8e6.json",
+            "sha256": "e53c6e0a28a5bf757c766a7cac3eedfe53b72fd4bb64de5c3f9f23d62af97f48",
+            "bytes": 504581
+          },
+          "usage": {
+            "prompt_tokens": 7868,
+            "completion_tokens": 760,
+            "total_tokens": 8628
+          },
+          "baseline_cold_seconds": 42.58363021304831,
+          "baseline_warm_seconds": 42.65821320191026,
+          "optimized_cold_seconds": 37.840091683901846,
+          "optimized_warm_seconds": 37.394493171945214,
+          "same_sampled_outputs_in_measured_conditions": true,
+          "warm_generation_speedup": 1.140761903250345,
+          "probability_check": {
+            "max_abs": 0.015211522579193115,
+            "mean_abs": 0.0003578040050342679,
+            "passed": true,
+            "max_atol": 0.02,
+            "mean_atol": 0.002,
+            "seconds": 1.7730324729345739
+          },
+          "backward_check": {
+            "seconds": 18.80034422315657,
+            "max_abs": 0.015211522579193115,
+            "mean_abs": 0.0003578040050342679,
+            "original_probability_passed": true,
+            "finite": true,
+            "nonzero_elements": 589824,
+            "optimizer_steps": 0
+          },
+          "prefix_cache_hit": true,
+          "prefix_tokens": 2048,
+          "fixed_work_baseline": {
+            "token_sha256": "7c9df9e3a7b8d68526b5a91bf2eecfc6c31b755a7b2c34a798d1a71bcf766d3d",
+            "input_tokens": 7868,
+            "output_tokens": 760,
+            "seconds": 7.474671958945692,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          },
+          "fixed_work_optimized": {
+            "token_sha256": "7c9df9e3a7b8d68526b5a91bf2eecfc6c31b755a7b2c34a798d1a71bcf766d3d",
+            "input_tokens": 7868,
+            "output_tokens": 760,
+            "seconds": 1.7730802590958774,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          }
+        }
+      ],
+      "resources": {
+        "reference": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-efficient-gpu45-probe.resources.jsonl",
+          "sha256": "0c479de4dfa3c9d2ab5eff47d7323cf4498c3c9fc66478b9f752140a7dcd1a87",
+          "bytes": 99394
+        },
+        "samples": 35,
+        "query_failures": 0,
+        "sampled_device_used_peak_mib": {
+          "4": 38911.0,
+          "5": 37425.0
+        },
+        "sampled_own_process_peak_mib": {
+          "4": 38902.0,
+          "5": 37416.0
+        },
+        "observed_other_processes_on_assigned_gpus": [],
+        "scope": "15-second observations are sampled maxima, not allocator exact peaks or proof of no competition between samples."
+      },
+      "weight_lower_bound": {
+        "loading": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen35-9b-efficient-gpu45-probe/resident-model-loading.json",
+          "sha256": "0786c0fb9625c7c7a7a23f7fe2c74050f1ffae6b4437c75476446e8b65fc9ca3",
+          "bytes": 17096
+        },
+        "owner": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen35-9b-efficient-gpu45-probe/resident/owner.json",
+          "sha256": "82b0e82e9df332ee0922c794a4cf0abb3ec0642089ff9c2b2a672b29f82c98f9",
+          "bytes": 8959
+        },
+        "actual_model_parameter_count": 8953803264,
+        "actual_dtype": "float32",
+        "base_weight_bytes_float32": 35815213056,
+        "base_weight_gib_float32": 33.35551643371582,
+        "scope": "Base parameter count only; excludes adapter/cache/activation/gradient/optimizer storage."
+      },
+      "actual_software": {
+        "torch": "2.6.0+cu124",
+        "transformers": "5.17.0",
+        "peft": "0.18.1",
+        "cuda_matmul_allow_tf32": true,
+        "actual_float32_matmul_precision": "high",
+        "actual_cudnn_allow_tf32": false,
+        "checkpoint_scope": "Official text backbone and LM head; unused vision/MTP excluded"
+      },
+      "aggregate": {
+        "all_six_generation_baseline_seconds": 192.14522663597018,
+        "all_six_generation_optimized_seconds": 152.14715203410015,
+        "all_six_generation_speedup": 1.2628907216935972,
+        "all_six_generation_time_reduction_fraction": 0.2081658509146762,
+        "three_warm_generation_baseline_seconds": 95.87176362844184,
+        "three_warm_generation_optimized_seconds": 75.44281195802614,
+        "three_warm_generation_speedup": 1.2707872511669063,
+        "fixed_work_replay_baseline_seconds": 28.14757903199643,
+        "fixed_work_replay_optimized_seconds": 7.06868548411876,
+        "fixed_work_replay_speedup": 3.9820103886692504,
+        "actual_optimized_backward_count": 3,
+        "optimized_backward_total_seconds": 86.81967448163778,
+        "max_probability_difference_among_three_requests": 0.015211522579193115,
+        "max_request_mean_probability_difference": 0.0003578040050342679,
+        "scope": "Ratios of summed intervals, not averages of per-request ratios. No baseline backward ratio, statistical confidence interval, episode speedup, parallel speedup, or learning benefit estimated."
+      }
+    },
+    {
+      "candidate": "qwen38-27b",
+      "report": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen38-27b-efficient-2gpu-probe/report.json",
+        "sha256": "e3a0c57f37479901279c9be60c6b9a333dc9cf26585cf031cafc4987ac1f06e6",
+        "bytes": 52246
+      },
+      "launch": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen38-27b-efficient-2gpu-probe.launch.json",
+        "sha256": "f1e5c0469231c38b9950f33a2c1267e76370e77dc5f86572ed46e1022d0f9752",
+        "bytes": 1436
+      },
+      "source": {
+        "code_commit": "56e7068816df39e949da85ef1ceece4feeb6028e",
+        "code_dirty": false,
+        "source_tree_sha256": "6e54ff53ab59fd85ba8c59cba0e33f05e7635adecbad2696a5d2fa42753f6998"
+      },
+      "runtime_profile": {
+        "version": "candidate-runtime-v0.19",
+        "candidate_id": "qwen3.8-27b",
+        "dtype": "float32",
+        "devices": 2,
+        "attention": "sdpa_explicit_kv",
+        "matmul_precision": "high",
+        "cudnn_allow_tf32": false,
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "preserve_thinking": false
+        },
+        "max_context_tokens": 16384,
+        "max_output_tokens": 2048,
+        "temperature": 0.7,
+        "top_p": 1.0,
+        "top_k": 0,
+        "native_tool_prompt": "official_xml_single_call",
+        "lora_target_modules": [
+          "q_proj",
+          "v_proj"
+        ],
+        "lora_scope": "Full-attention projections only; DeltaNet is frozen",
+        "history_policy": "Full public messages supplied to official template; non-thinking requested; preserve_thinking=False",
+        "dtype_scope": "Base weights and LoRA; float32 selected-token normalization",
+        "chat_stop_contract": {
+          "version": "native-chat-stop-v0.15.1",
+          "native_end_token": "<|im_end|>",
+          "native_end_token_id": 248046,
+          "end_of_text_token": "<|endoftext|>",
+          "end_of_text_token_id": 248044,
+          "eos_token_ids": [
+            248046,
+            248044
+          ],
+          "source": "Registered official tokenizer EOS, token vocabulary and assistant chat-template terminator",
+          "forbid_tokens_after_first_declared_eos": true,
+          "require_raw_output_ids_equal_training_output_ids": true
+        },
+        "parser_contract": {
+          "version": "public-format-diagnostics-v0.17",
+          "parser": "qwen_native_xml_v017",
+          "validation": "Original native parser acceptance; diagnostics use supplied public parameter types without changing later world/SDK validation",
+          "failure_fields": [
+            "stage",
+            "field_path",
+            "schema_path",
+            "expected_type",
+            "observed_type",
+            "position"
+          ]
+        },
+        "prefix_cache": {
+          "version": "exact-token-prefix-v0.19",
+          "prefix_tokens": 2048,
+          "max_entries": 8,
+          "identity_scope": "Exact actor identity and exact full cached token prefix; no cross-policy reuse",
+          "learning": "Full original input replay with original probability tolerances; no cached training graph"
+        }
+      },
+      "initial_actor_identity": {
+        "version": "shared-actor-identity-v0.13",
+        "policy_version": "online-actor-0:fb191c2caf355e99ca91f6fa2c9134eb0bb97eee1de3b0939a9694e0f77b17dd",
+        "adapter_sha256": "fb191c2caf355e99ca91f6fa2c9134eb0bb97eee1de3b0939a9694e0f77b17dd",
+        "base_manifest_sha256": "bbfeec7922f9e2bba258518df9b63a15978570c348838f55902a506829ac2050",
+        "inference_profile_sha256": "08955c1c33619e1c99eabb3545f7a988e0e8af7d3bd2a947ddf32aa2c03bb85a"
+      },
+      "status": "complete",
+      "output_cap": 2048,
+      "generation_calls": 12,
+      "world_actions": 0,
+      "optimizer_steps": 0,
+      "rows": [
+        {
+          "purpose": "median_prompt",
+          "request": {
+            "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen38-27b/resident/calls/resident_adb278cc9b0541ac9e9d21a301fb49ea.json",
+            "sha256": "41a10e25e67626dd5e501df66ff0db6ce2cd6b2991f5404adc3a067dca7c5995",
+            "bytes": 344207
+          },
+          "usage": {
+            "prompt_tokens": 8624,
+            "completion_tokens": 75,
+            "total_tokens": 8699
+          },
+          "baseline_cold_seconds": 34.15803887369111,
+          "baseline_warm_seconds": 33.744612257927656,
+          "optimized_cold_seconds": 14.458841381128877,
+          "optimized_warm_seconds": 13.23371533676982,
+          "same_sampled_outputs_in_measured_conditions": true,
+          "warm_generation_speedup": 2.5498970923281385,
+          "probability_check": {
+            "max_abs": 0.00016900338232517242,
+            "mean_abs": 5.512995812750887e-06,
+            "passed": true,
+            "max_atol": 0.02,
+            "mean_atol": 0.002,
+            "seconds": 5.5462381090037525
+          },
+          "backward_check": {
+            "seconds": 56.697117233183235,
+            "max_abs": 0.00016900338232517242,
+            "mean_abs": 5.512995812750887e-06,
+            "original_probability_passed": true,
+            "finite": true,
+            "nonzero_elements": 1703936,
+            "optimizer_steps": 0
+          },
+          "prefix_cache_hit": true,
+          "prefix_tokens": 2048,
+          "fixed_work_baseline": {
+            "token_sha256": "8ca8996a270fa037b1c6888c36e52ae77dc17d7f0a86148034235e6427343929",
+            "input_tokens": 8624,
+            "output_tokens": 75,
+            "seconds": 25.45007482962683,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          },
+          "fixed_work_optimized": {
+            "token_sha256": "8ca8996a270fa037b1c6888c36e52ae77dc17d7f0a86148034235e6427343929",
+            "input_tokens": 8624,
+            "output_tokens": 75,
+            "seconds": 5.590574498288333,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          }
+        },
+        {
+          "purpose": "longest_observed_prompt",
+          "request": {
+            "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen38-27b/resident/calls/resident_c7a0d1e1c4c94099a4bf7fac56221394.json",
+            "sha256": "f594145fc23c9e4b93cd1281ee4650147ed20824910b1f03dd6783b1b40f00cb",
+            "bytes": 462155
+          },
+          "usage": {
+            "prompt_tokens": 12778,
+            "completion_tokens": 499,
+            "total_tokens": 13277
+          },
+          "baseline_cold_seconds": 103.15270269475877,
+          "baseline_warm_seconds": 103.10320428200066,
+          "optimized_cold_seconds": 75.485533607658,
+          "optimized_warm_seconds": 74.23667443264276,
+          "same_sampled_outputs_in_measured_conditions": true,
+          "warm_generation_speedup": 1.3888445983063182,
+          "probability_check": {
+            "max_abs": 0.001758188009262085,
+            "mean_abs": 2.434106863802299e-05,
+            "passed": true,
+            "max_atol": 0.02,
+            "mean_atol": 0.002,
+            "seconds": 9.285324986092746
+          },
+          "backward_check": {
+            "seconds": 120.32549963472411,
+            "max_abs": 0.001758188009262085,
+            "mean_abs": 2.434106863802299e-05,
+            "original_probability_passed": true,
+            "finite": true,
+            "nonzero_elements": 1703936,
+            "optimizer_steps": 0
+          },
+          "prefix_cache_hit": true,
+          "prefix_tokens": 2048,
+          "fixed_work_baseline": {
+            "token_sha256": "0f46ad351198f9ca6672fe4f18da51731f2899ca46fd8fb218e1ddc38995372a",
+            "input_tokens": 12778,
+            "output_tokens": 499,
+            "seconds": 39.40355440415442,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          },
+          "fixed_work_optimized": {
+            "token_sha256": "0f46ad351198f9ca6672fe4f18da51731f2899ca46fd8fb218e1ddc38995372a",
+            "input_tokens": 12778,
+            "output_tokens": 499,
+            "seconds": 9.34079557703808,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          }
+        },
+        {
+          "purpose": "largest_observed_output",
+          "request": {
+            "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen38-27b/resident/calls/resident_ce8aaaedf96b444ea0338b83e401675e.json",
+            "sha256": "24d2b98a9ceefae5907bc4e7abb031def5911568bcfdefec5dc502979f651c39",
+            "bytes": 470178
+          },
+          "usage": {
+            "prompt_tokens": 10645,
+            "completion_tokens": 81,
+            "total_tokens": 10726
+          },
+          "baseline_cold_seconds": 41.2705502724275,
+          "baseline_warm_seconds": 41.244191844016314,
+          "optimized_cold_seconds": 17.708935451693833,
+          "optimized_warm_seconds": 16.458317910786718,
+          "same_sampled_outputs_in_measured_conditions": true,
+          "warm_generation_speedup": 2.5059785615749366,
+          "probability_check": {
+            "max_abs": 0.006048679351806641,
+            "mean_abs": 0.00041099058580584824,
+            "passed": true,
+            "max_atol": 0.02,
+            "mean_atol": 0.002,
+            "seconds": 7.045916716102511
+          },
+          "backward_check": {
+            "seconds": 81.9333169660531,
+            "max_abs": 0.006048679351806641,
+            "mean_abs": 0.00041099058580584824,
+            "original_probability_passed": true,
+            "finite": true,
+            "nonzero_elements": 1703936,
+            "optimizer_steps": 0
+          },
+          "prefix_cache_hit": true,
+          "prefix_tokens": 2048,
+          "fixed_work_baseline": {
+            "token_sha256": "59d554d4e5dc368d55c00330406185a104a5d86932704f3202da537b23f0e30e",
+            "input_tokens": 10645,
+            "output_tokens": 81,
+            "seconds": 31.60011827200651,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          },
+          "fixed_work_optimized": {
+            "token_sha256": "59d554d4e5dc368d55c00330406185a104a5d86932704f3202da537b23f0e30e",
+            "input_tokens": 10645,
+            "output_tokens": 81,
+            "seconds": 7.068292047828436,
+            "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability"
+          }
+        }
+      ],
+      "resources": {
+        "reference": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen38-27b-efficient-2gpu-probe.resources.jsonl",
+          "sha256": "645d6a5b60858cf34843dcd8d16a9f67cf73a015a434c890e7f6638aeea99dcf",
+          "bytes": 193040
+        },
+        "samples": 70,
+        "query_failures": 0,
+        "sampled_device_used_peak_mib": {
+          "2": 78023.0,
+          "3": 76825.0
+        },
+        "sampled_own_process_peak_mib": {
+          "2": 78014.0,
+          "3": 76816.0
+        },
+        "observed_other_processes_on_assigned_gpus": [],
+        "scope": "15-second observations are sampled maxima, not allocator exact peaks or proof of no competition between samples."
+      },
+      "weight_lower_bound": {
+        "loading": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen38-27b-efficient-2gpu-probe/resident-model-loading.json",
+          "sha256": "bb13dd4e8a3e4454c12c20c399ae656cc9be414e5040cf5cf493b248d88ed9e7",
+          "bytes": 17930
+        },
+        "owner": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen38-27b-efficient-2gpu-probe/resident/owner.json",
+          "sha256": "bafea58397000f965a8a8e5678ef6d28444ef74cc3d6f3d4ae41718f41ec9d0d",
+          "bytes": 10804
+        },
+        "actual_model_parameter_count": 26895998464,
+        "actual_dtype": "float32",
+        "base_weight_bytes_float32": 107583993856,
+        "base_weight_gib_float32": 100.19540214538574,
+        "scope": "Base parameter count only; excludes adapter/cache/activation/gradient/optimizer storage."
+      },
+      "actual_software": {
+        "torch": "2.6.0+cu124",
+        "transformers": "5.17.0",
+        "peft": "0.18.1",
+        "cuda_matmul_allow_tf32": true,
+        "actual_float32_matmul_precision": "high",
+        "actual_cudnn_allow_tf32": false,
+        "checkpoint_scope": "Official text backbone and LM head; unused vision/MTP excluded"
+      },
+      "aggregate": {
+        "all_six_generation_baseline_seconds": 356.673300224822,
+        "all_six_generation_optimized_seconds": 211.58201812068,
+        "all_six_generation_speedup": 1.685744863353115,
+        "all_six_generation_time_reduction_fraction": 0.40679042140997534,
+        "three_warm_generation_baseline_seconds": 178.09200838394463,
+        "three_warm_generation_optimized_seconds": 103.9287076801993,
+        "three_warm_generation_speedup": 1.713597834122545,
+        "fixed_work_replay_baseline_seconds": 96.45374750578776,
+        "fixed_work_replay_optimized_seconds": 21.99966212315485,
+        "fixed_work_replay_speedup": 4.384328584949916,
+        "actual_optimized_backward_count": 3,
+        "optimized_backward_total_seconds": 258.95593383396044,
+        "max_probability_difference_among_three_requests": 0.006048679351806641,
+        "max_request_mean_probability_difference": 0.00041099058580584824,
+        "scope": "Ratios of summed intervals, not averages of per-request ratios. No baseline backward ratio, statistical confidence interval, episode speedup, parallel speedup, or learning benefit estimated."
+      }
+    }
+  ],
+  "formal_probe_launches": [
+    {
+      "name": "qwen35-9b-probe",
+      "launch": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-probe.launch.json",
+        "sha256": "7602d257123fd3ac4066839c75b8b2c82cefa5f85f247cfda6e96c7bdb3f174f",
+        "bytes": 1395
+      },
+      "source_root": "/data1/zhuxinrui/projects/ProWorkSim/runs/frozen-v019",
+      "started_local": "2026-09-27T12:30:18.384394+08:00",
+      "ended_local": "2026-09-27T12:35:23.238762+08:00",
+      "elapsed_seconds": 304.85436964035034,
+      "assigned_gpus": "0,1",
+      "exit_code": 1,
+      "resources": {
+        "reference": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-probe.resources.jsonl",
+          "sha256": "b85737de3235a2e3c32f03c391f44c959bbf64b040350f2774c5182573aecd51",
+          "bytes": 62680
+        },
+        "samples": 21,
+        "query_failures": 0,
+        "sampled_device_used_peak_mib": {
+          "0": 80097.0,
+          "1": 74585.0
+        },
+        "sampled_own_process_peak_mib": {
+          "0": 76810.0,
+          "1": 74576.0
+        },
+        "observed_other_processes_on_assigned_gpus": [
+          {
+            "gpu": 0,
+            "pid": 3777401,
+            "name": "/data1/zhuxinrui/projects/Data-Synthesis/trusted_data_synthesis/.venv/bin/python"
+          },
+          {
+            "gpu": 1,
+            "pid": 3777402,
+            "name": "/data1/zhuxinrui/projects/Data-Synthesis/trusted_data_synthesis/.venv/bin/python"
+          }
+        ],
+        "scope": "15-second observations are sampled maxima, not allocator exact peaks or proof of no competition between samples."
+      },
+      "allocated_device_hours": 0.16936353868908352,
+      "probe_report": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-admission/qwen35-9b-probe/report.json",
+        "sha256": "c6dbef3f5ca015ae09d11c7abcb60467cb3ceb9febbd01bf7b4740e956b5c287",
+        "bytes": 12044
+      },
+      "resident_response_ledger_count": 4,
+      "persisted_completed_diagnostic_backwards": 1
+    },
+    {
+      "name": "qwen35-9b-efficient-probe",
+      "launch": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-efficient-probe.launch.json",
+        "sha256": "d4df6caf560ce3b0090725de2d81113d932e4e07b0ceebaaa4ade79248363686",
+        "bytes": 1414
+      },
+      "source_root": "/data1/zhuxinrui/projects/ProWorkSim/runs/frozen-v019-efficient",
+      "started_local": "2026-09-27T12:50:56.412929+08:00",
+      "ended_local": "2026-09-27T13:05:56.307311+08:00",
+      "elapsed_seconds": 899.8943831920624,
+      "assigned_gpus": "0,1",
+      "exit_code": 1,
+      "resources": {
+        "reference": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-efficient-probe.resources.jsonl",
+          "sha256": "526e3e20085b952ec2696fdb3246fb119be2803e97cc755cec855f9cb5ab87f5",
+          "bytes": 188457
+        },
+        "samples": 60,
+        "query_failures": 0,
+        "sampled_device_used_peak_mib": {
+          "0": 79456.0,
+          "1": 78569.0
+        },
+        "sampled_own_process_peak_mib": {
+          "0": 31138.0,
+          "1": 28722.0
+        },
+        "observed_other_processes_on_assigned_gpus": [
+          {
+            "gpu": 0,
+            "pid": 3850668,
+            "name": "/data1/zhuxinrui/projects/Data-Synthesis/trusted_data_synthesis/.venv/bin/python"
+          },
+          {
+            "gpu": 0,
+            "pid": 3962841,
+            "name": "/data1/zhuxinrui/projects/Data-Synthesis/trusted_data_synthesis/.venv/bin/python"
+          },
+          {
+            "gpu": 1,
+            "pid": 3850671,
+            "name": "/data1/zhuxinrui/projects/Data-Synthesis/trusted_data_synthesis/.venv/bin/python"
+          }
+        ],
+        "scope": "15-second observations are sampled maxima, not allocator exact peaks or proof of no competition between samples."
+      },
+      "allocated_device_hours": 0.4999413239955902,
+      "probe_report": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen35-9b-probe/report.json",
+        "sha256": "4624c4d31ee861da629ed8b301de2778ac7b67b2baef4c9b0842caa14d29e4b5",
+        "bytes": 36871
+      },
+      "resident_response_ledger_count": 10,
+      "persisted_completed_diagnostic_backwards": 1
+    },
+    {
+      "name": "qwen35-9b-efficient-gpu45-probe",
+      "launch": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-efficient-gpu45-probe.launch.json",
+        "sha256": "4c4a9b3854d03892c5c2019b1c99d7718cd9b1b8eddecc27f94aac04e6e89153",
+        "bytes": 1430
+      },
+      "source_root": "/data1/zhuxinrui/projects/ProWorkSim/runs/frozen-v019-efficient",
+      "started_local": "2026-09-27T13:17:19.090450+08:00",
+      "ended_local": "2026-09-27T13:25:57.707303+08:00",
+      "elapsed_seconds": 518.6168539524078,
+      "assigned_gpus": "4,5",
+      "exit_code": 0,
+      "resources": {
+        "reference": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen35-9b-efficient-gpu45-probe.resources.jsonl",
+          "sha256": "0c479de4dfa3c9d2ab5eff47d7323cf4498c3c9fc66478b9f752140a7dcd1a87",
+          "bytes": 99394
+        },
+        "samples": 35,
+        "query_failures": 0,
+        "sampled_device_used_peak_mib": {
+          "4": 38911.0,
+          "5": 37425.0
+        },
+        "sampled_own_process_peak_mib": {
+          "4": 38902.0,
+          "5": 37416.0
+        },
+        "observed_other_processes_on_assigned_gpus": [],
+        "scope": "15-second observations are sampled maxima, not allocator exact peaks or proof of no competition between samples."
+      },
+      "allocated_device_hours": 0.28812047441800437,
+      "probe_report": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen35-9b-efficient-gpu45-probe/report.json",
+        "sha256": "08c9cf768ab30e1fab5a23de77df60c5020da827be5badbbe59cf56746bb39a1",
+        "bytes": 48157
+      },
+      "resident_response_ledger_count": 12,
+      "persisted_completed_diagnostic_backwards": 3
+    },
+    {
+      "name": "qwen38-27b-efficient-2gpu-probe",
+      "launch": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen38-27b-efficient-2gpu-probe.launch.json",
+        "sha256": "f1e5c0469231c38b9950f33a2c1267e76370e77dc5f86572ed46e1022d0f9752",
+        "bytes": 1436
+      },
+      "source_root": "/data1/zhuxinrui/projects/ProWorkSim/runs/frozen-v019-efficient",
+      "started_local": "2026-09-27T13:17:24.207704+08:00",
+      "ended_local": "2026-09-27T13:34:56.978596+08:00",
+      "elapsed_seconds": 1052.7708928585052,
+      "assigned_gpus": "2,3",
+      "exit_code": 0,
+      "resources": {
+        "reference": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-launch/qwen38-27b-efficient-2gpu-probe.resources.jsonl",
+          "sha256": "645d6a5b60858cf34843dcd8d16a9f67cf73a015a434c890e7f6638aeea99dcf",
+          "bytes": 193040
+        },
+        "samples": 70,
+        "query_failures": 0,
+        "sampled_device_used_peak_mib": {
+          "2": 78023.0,
+          "3": 76825.0
+        },
+        "sampled_own_process_peak_mib": {
+          "2": 78014.0,
+          "3": 76816.0
+        },
+        "observed_other_processes_on_assigned_gpus": [],
+        "scope": "15-second observations are sampled maxima, not allocator exact peaks or proof of no competition between samples."
+      },
+      "allocated_device_hours": 0.5848727182547251,
+      "probe_report": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen38-27b-efficient-2gpu-probe/report.json",
+        "sha256": "e3a0c57f37479901279c9be60c6b9a333dc9cf26585cf031cafc4987ac1f06e6",
+        "bytes": 52246
+      },
+      "resident_response_ledger_count": 12,
+      "persisted_completed_diagnostic_backwards": 3
+    }
+  ],
+  "formal_probe_allocated_device_hours": 1.5422980553574033,
+  "formal_probe_cost_scope": "Four declared full-model probe processes only, including their loading and diagnosis. Does not include H1, early development controls, kernel microcontrols, CPU work or resource waits; not full-round cost.",
+  "original_H1": {
+    "reference": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/harness-v019-original-H1.json",
+      "sha256": "241c85811a7ddcb79b55bc296af2312e70fe7f35af8f27245151b48241049fb0",
+      "bytes": 83112
+    },
+    "original_report": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v019-original-H1/report.json",
+      "sha256": "c1281dfd48e2c23b9cce2a6d9fa565733f83a6a3b4d2ba3443bfee971d327253",
+      "bytes": 596356
+    },
+    "original_selection": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v019-original-H1/selection.json",
+      "sha256": "ad4f2b56a4682380d6b9e8401af835cfb46bfe16d2efecd6469ec17d2f76ba60",
+      "bytes": 14457
+    },
+    "selected_candidate": "qwen38-27b",
+    "selected_harness": "openhands_v16",
+    "arms": [
+      {
+        "candidate_id": "qwen35-9b",
+        "harness": "native_v15",
+        "metrics": {
+          "planned": 12,
+          "states": {
+            "closed_known": 12
+          },
+          "known": 12,
+          "observed_reward_sum": 3.2,
+          "observed_complete_count": 1,
+          "raw_mean": 0.26666666666666666,
+          "completion_rate": 0.08333333333333333,
+          "task_means": {
+            "implement": 0.4,
+            "review": 0.25,
+            "pair": 0.2,
+            "chain": 0.1
+          },
+          "task_counts": {
+            "implement": 4,
+            "review": 4,
+            "pair": 2,
+            "chain": 2
+          },
+          "task_macro_mean": 0.23750000000000002,
+          "missing_rule": "Means/rates withheld when any declared constituent is unknown or unstarted; no zero imputation."
+        },
+        "executor_boolean_false_rejection_exposure": {
+          "planned_episodes": 12,
+          "episodes_with_available_records": 12,
+          "episodes_without_available_records": 0,
+          "confirmed_affected_episodes": 0,
+          "confirmed_rejection_calls": 0,
+          "episodes_with_unconfirmed_rejections": 0,
+          "unconfirmed_rejection_calls": 0,
+          "denominator_or_reward_changed": false
+        },
+        "eligibility_checks": {
+          "twelve_declared_slots": true,
+          "all_twelve_known": true,
+          "all_records_valid": true,
+          "all_evaluation_guards": true,
+          "all_actual_actor_identities_match_fresh_initial": true,
+          "zero_actual_updates": true,
+          "unchanged_clean_source": true,
+          "launch_and_protocol_bound": true,
+          "all_slot_resources_measured": true
+        },
+        "eligible": true,
+        "ineligible_reasons": [],
+        "complete_implement_review": 1,
+        "complete_pair_chain": 0,
+        "allocated_device_seconds": 8622.623507022858,
+        "measured_partial_device_seconds": 8622.623507022858,
+        "role_final_status_counts": {
+          "model_budget_exhausted": 14,
+          "model_format_error": 4
+        },
+        "measured_work_diagnostics": {
+          "all_model_attempts": 159,
+          "input_tokens": null,
+          "output_tokens": null,
+          "auxiliary_opportunities": 0,
+          "auxiliary_output_tokens": 0,
+          "staff_done_count": 0,
+          "actual_build_count": 8,
+          "attempts_missing_original_token_counts": 5,
+          "measured_input_tokens": 1341169,
+          "measured_output_tokens": 57293,
+          "unknown_episode_counts_by_counter": {
+            "all_model_attempts": 0,
+            "input_tokens": 5,
+            "output_tokens": 5,
+            "auxiliary_opportunities": 0,
+            "auxiliary_output_tokens": 0,
+            "staff_done_count": 0,
+            "actual_build_count": 0,
+            "attempts_missing_original_token_counts": 0,
+            "measured_input_tokens": 0,
+            "measured_output_tokens": 0
+          },
+          "correct_fixed_submission_episodes": 1,
+          "correct_review_decision_episodes": 0,
+          "saved_correct_build_episodes": 1,
+          "confirmed_exposure_then_terminal_completion_episodes": 0
+        }
+      },
+      {
+        "candidate_id": "qwen35-9b",
+        "harness": "openhands_v16",
+        "metrics": {
+          "planned": 12,
+          "states": {
+            "closed_known": 12
+          },
+          "known": 12,
+          "observed_reward_sum": 2.6,
+          "observed_complete_count": 1,
+          "raw_mean": 0.21666666666666667,
+          "completion_rate": 0.08333333333333333,
+          "task_means": {
+            "implement": 0.4,
+            "review": 0.25,
+            "pair": 0.0,
+            "chain": 0.0
+          },
+          "task_counts": {
+            "implement": 4,
+            "review": 4,
+            "pair": 2,
+            "chain": 2
+          },
+          "task_macro_mean": 0.1625,
+          "missing_rule": "Means/rates withheld when any declared constituent is unknown or unstarted; no zero imputation."
+        },
+        "executor_boolean_false_rejection_exposure": {
+          "planned_episodes": 12,
+          "episodes_with_available_records": 12,
+          "episodes_without_available_records": 0,
+          "confirmed_affected_episodes": 0,
+          "confirmed_rejection_calls": 0,
+          "episodes_with_unconfirmed_rejections": 0,
+          "unconfirmed_rejection_calls": 0,
+          "denominator_or_reward_changed": false
+        },
+        "eligibility_checks": {
+          "twelve_declared_slots": true,
+          "all_twelve_known": true,
+          "all_records_valid": true,
+          "all_evaluation_guards": true,
+          "all_actual_actor_identities_match_fresh_initial": true,
+          "zero_actual_updates": true,
+          "unchanged_clean_source": true,
+          "launch_and_protocol_bound": true,
+          "all_slot_resources_measured": true
+        },
+        "eligible": true,
+        "ineligible_reasons": [],
+        "complete_implement_review": 1,
+        "complete_pair_chain": 0,
+        "allocated_device_seconds": 8155.001242160797,
+        "measured_partial_device_seconds": 8155.001242160797,
+        "role_final_status_counts": {
+          "model_format_error": 8,
+          "model_budget_exhausted": 9,
+          "completed": 1
+        },
+        "measured_work_diagnostics": {
+          "all_model_attempts": 154,
+          "input_tokens": 1261453,
+          "output_tokens": 54931,
+          "auxiliary_opportunities": 0,
+          "auxiliary_output_tokens": 0,
+          "staff_done_count": 1,
+          "actual_build_count": 2,
+          "attempts_missing_original_token_counts": 0,
+          "measured_input_tokens": 1261453,
+          "measured_output_tokens": 54931,
+          "unknown_episode_counts_by_counter": {
+            "all_model_attempts": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "auxiliary_opportunities": 0,
+            "auxiliary_output_tokens": 0,
+            "staff_done_count": 0,
+            "actual_build_count": 0,
+            "attempts_missing_original_token_counts": 0,
+            "measured_input_tokens": 0,
+            "measured_output_tokens": 0
+          },
+          "correct_fixed_submission_episodes": 1,
+          "correct_review_decision_episodes": 0,
+          "saved_correct_build_episodes": 1,
+          "confirmed_exposure_then_terminal_completion_episodes": 0
+        }
+      },
+      {
+        "candidate_id": "qwen38-27b",
+        "harness": "native_v15",
+        "metrics": {
+          "planned": 12,
+          "states": {
+            "closed_known": 12
+          },
+          "known": 12,
+          "observed_reward_sum": 3.7,
+          "observed_complete_count": 1,
+          "raw_mean": 0.30833333333333335,
+          "completion_rate": 0.08333333333333333,
+          "task_means": {
+            "implement": 0.2,
+            "review": 0.25,
+            "pair": 0.75,
+            "chain": 0.2
+          },
+          "task_counts": {
+            "implement": 4,
+            "review": 4,
+            "pair": 2,
+            "chain": 2
+          },
+          "task_macro_mean": 0.35,
+          "missing_rule": "Means/rates withheld when any declared constituent is unknown or unstarted; no zero imputation."
+        },
+        "executor_boolean_false_rejection_exposure": {
+          "planned_episodes": 12,
+          "episodes_with_available_records": 12,
+          "episodes_without_available_records": 0,
+          "confirmed_affected_episodes": 5,
+          "confirmed_rejection_calls": 5,
+          "episodes_with_unconfirmed_rejections": 0,
+          "unconfirmed_rejection_calls": 0,
+          "denominator_or_reward_changed": false
+        },
+        "eligibility_checks": {
+          "twelve_declared_slots": true,
+          "all_twelve_known": true,
+          "all_records_valid": true,
+          "all_evaluation_guards": true,
+          "all_actual_actor_identities_match_fresh_initial": true,
+          "zero_actual_updates": true,
+          "unchanged_clean_source": true,
+          "launch_and_protocol_bound": true,
+          "all_slot_resources_measured": true
+        },
+        "eligible": true,
+        "ineligible_reasons": [],
+        "complete_implement_review": 0,
+        "complete_pair_chain": 1,
+        "allocated_device_seconds": 28155.88037967682,
+        "measured_partial_device_seconds": 28155.88037967682,
+        "role_final_status_counts": {
+          "model_budget_exhausted": 12,
+          "completed": 6
+        },
+        "measured_work_diagnostics": {
+          "all_model_attempts": 168,
+          "input_tokens": null,
+          "output_tokens": null,
+          "auxiliary_opportunities": 0,
+          "auxiliary_output_tokens": 0,
+          "staff_done_count": 6,
+          "actual_build_count": 14,
+          "attempts_missing_original_token_counts": 1,
+          "measured_input_tokens": 1409911,
+          "measured_output_tokens": 22635,
+          "unknown_episode_counts_by_counter": {
+            "all_model_attempts": 0,
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "auxiliary_opportunities": 0,
+            "auxiliary_output_tokens": 0,
+            "staff_done_count": 0,
+            "actual_build_count": 0,
+            "attempts_missing_original_token_counts": 0,
+            "measured_input_tokens": 0,
+            "measured_output_tokens": 0
+          },
+          "correct_fixed_submission_episodes": 1,
+          "correct_review_decision_episodes": 0,
+          "saved_correct_build_episodes": 2,
+          "confirmed_exposure_then_terminal_completion_episodes": 0
+        }
+      },
+      {
+        "candidate_id": "qwen38-27b",
+        "harness": "openhands_v16",
+        "metrics": {
+          "planned": 12,
+          "states": {
+            "closed_known": 12
+          },
+          "known": 12,
+          "observed_reward_sum": 3.4,
+          "observed_complete_count": 2,
+          "raw_mean": 0.2833333333333333,
+          "completion_rate": 0.16666666666666666,
+          "task_means": {
+            "implement": 0.6,
+            "review": 0.25,
+            "pair": 0.0,
+            "chain": 0.0
+          },
+          "task_counts": {
+            "implement": 4,
+            "review": 4,
+            "pair": 2,
+            "chain": 2
+          },
+          "task_macro_mean": 0.2125,
+          "missing_rule": "Means/rates withheld when any declared constituent is unknown or unstarted; no zero imputation."
+        },
+        "executor_boolean_false_rejection_exposure": {
+          "planned_episodes": 12,
+          "episodes_with_available_records": 12,
+          "episodes_without_available_records": 0,
+          "confirmed_affected_episodes": 0,
+          "confirmed_rejection_calls": 0,
+          "episodes_with_unconfirmed_rejections": 0,
+          "unconfirmed_rejection_calls": 0,
+          "denominator_or_reward_changed": false
+        },
+        "eligibility_checks": {
+          "twelve_declared_slots": true,
+          "all_twelve_known": true,
+          "all_records_valid": true,
+          "all_evaluation_guards": true,
+          "all_actual_actor_identities_match_fresh_initial": true,
+          "zero_actual_updates": true,
+          "unchanged_clean_source": true,
+          "launch_and_protocol_bound": true,
+          "all_slot_resources_measured": true
+        },
+        "eligible": true,
+        "ineligible_reasons": [],
+        "complete_implement_review": 2,
+        "complete_pair_chain": 0,
+        "allocated_device_seconds": 25960.452340126038,
+        "measured_partial_device_seconds": 25960.452340126038,
+        "role_final_status_counts": {
+          "completed": 5,
+          "model_budget_exhausted": 13
+        },
+        "measured_work_diagnostics": {
+          "all_model_attempts": 166,
+          "input_tokens": 1343219,
+          "output_tokens": 20326,
+          "auxiliary_opportunities": 5,
+          "auxiliary_output_tokens": 504,
+          "staff_done_count": 5,
+          "actual_build_count": 7,
+          "attempts_missing_original_token_counts": 0,
+          "measured_input_tokens": 1343219,
+          "measured_output_tokens": 20326,
+          "unknown_episode_counts_by_counter": {
+            "all_model_attempts": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "auxiliary_opportunities": 0,
+            "auxiliary_output_tokens": 0,
+            "staff_done_count": 0,
+            "actual_build_count": 0,
+            "attempts_missing_original_token_counts": 0,
+            "measured_input_tokens": 0,
+            "measured_output_tokens": 0
+          },
+          "correct_fixed_submission_episodes": 2,
+          "correct_review_decision_episodes": 0,
+          "saved_correct_build_episodes": 2,
+          "confirmed_exposure_then_terminal_completion_episodes": 0
+        }
+      }
+    ],
+    "known_episodes": 48,
+    "planned_episodes": 48,
+    "actual_optimizer_steps": 0,
+    "whole_process_allocated_device_hours": 19.861211785872776
+  },
+  "evidence": {
+    "old_math_oom": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-admission/qwen35-9b-probe-observation.json",
+      "sha256": "5a4b1b4abe3e2fa5356e3468b99dee6482366700355ff8b26ed69db7cd011382",
+      "bytes": 17096
+    },
+    "competition_oom": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/throughput-v019-efficient/qwen35-9b-probe-observation.json",
+      "sha256": "ae7d5f5af3c2ef531a201bb3c601bf5969aa2b1eeb9077e19679f18ff3d11173",
+      "bytes": 53763
+    },
+    "metadata_only_source_review": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/v019-numerical-source-review.json",
+      "sha256": "9335ce1a82f34cee53c4d9beee89dcae5661483a54f751d8a0932dfc1be50780",
+      "bytes": 1124
+    },
+    "v018_validation": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/harness-v018-validation.json",
+      "sha256": "1195d952a9acd05ad356573e8be70b3a9ed919e436265d18a8224671f0f42842",
+      "bytes": 1645
+    },
+    "v019_validation": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/throughput-v019-validation.json",
+      "sha256": "8b58aafe0680077fb35835186020b410ebd89d952edd1fac8b1d10cfe92ddaf7",
+      "bytes": 2900
+    },
+    "withdrawal": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/throughput-v019-withdrawal.json",
+      "sha256": "6ced167407787f815396dd49de5cbfa41cf263cf113f18825fac14213adb7605",
+      "bytes": 1514
+    },
+    "sql_controls": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/sql-not-boundary-v018.json",
+      "sha256": "5c3429af5e213176072132806e7f121f462b3b32d76a02869cf6ded4e047b51c",
+      "bytes": 15101
+    },
+    "project_controls": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/retail-projects-v018-controls.json",
+      "sha256": "8684fff10d772c1bdbf74edea920ba5f22499a9b245d48985cf01ee136bf98d6",
+      "bytes": 44460
+    },
+    "balanced_review_controls": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/retail-balanced-v018-controls.json",
+      "sha256": "0ddf5cd450ec195476df377f7e25f4059e2c872c698a1fca185394feb8e57a90",
+      "bytes": 30944
+    },
+    "density_start_controls": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/docs/experiments/retail-density-v018-start-controls.json",
+      "sha256": "12128f4a31551041565cc0f539971a138e0f41006feafb64c743c1a804729595",
+      "bytes": 720
+    }
+  },
+  "not_executed": {
+    "actual_two_replica_probe": true,
+    "final_optimization_admission": true,
+    "migration_8": true,
+    "fresh_pilot_118": true,
+    "four_project_evaluation_4": true,
+    "support_density_16": true,
+    "automatic_replacement_model": true
+  },
+  "formal_probe_record_accounting": {
+    "actual_generation_responses": 38,
+    "persisted_completed_diagnostic_backwards": 8,
+    "backward_attempts_terminated_by_oom": 2,
+    "optimizer_steps": 0,
+    "scope": "Includes failed diagnostic processes and successful controls; not training steps or world episodes. Failed attempts do not receive invented numerical statistics."
+  }
+}
