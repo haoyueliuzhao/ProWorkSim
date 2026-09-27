@@ -82,3 +82,11 @@ PYTHONPATH=src .venv/bin/python -m scripts.retail_balanced_experiment_v018 --hel
 唯一一次集成全库检查：**993 passed、29 skipped**，pytest 192.06 秒；Ruff 和 diff whitespace 检查通过。[验证记录](harness-v018-validation.json)给出环境、日志/JUnit 引用和跳过边界。SDK 控制在独立已安装 SDK 的 resident 环境执行；默认 Python 环境的跳过不冒充这些路径通过。各窄控制与全库存在重叠，不相加成独立实验数。
 
 冻结部署与真实模型后续结果在本报告末尾追加。尚无本轮 MC/RTG 比较、独立来源泛化、修复环境完整四臂排名或 ID-VTDO 配置收益结论。
+
+## 实际冻结部署（2026-09-27 11:23，UTC+8）
+
+修订执行源已提交为 `ca8dd756ee712338f05b3f5704e83c9a10324dbd`，独立 clean worktree 为 `runs/frozen-v018`。复用后继的新进程 PID3702577 已实际启动，状态为 `waiting_actual_H1_end`、jobs 仍空；这与已停止的旧 PID3605218 分开。原 H1 两个 launch 记录仍未出现 end/exit，原源码不变。[部署快照](harness-v018-deployment-snapshot.json)保存新进程完整命令、源、配置、状态、hash 和旧阶段停止证据。
+
+持久状态在 `runs/harness-v018-continuation/state.json`，最终 H1 报告/选择将在其 `H1/` 中生成；迁移与四项目实际输出分别为 `migration/`、`projects/`，准入通过后的 fresh pilot 为 `pilot/`。每个实际 launch 单独保留资源竞争、PID、开始/结束和退出码。新主协议预算为 8＋118＋4；16 例支持密度只生成规划，不在此后继中启动。
+
+此部署时点尚无新阶段真实模型 episode、更新或学习结果。真实 CPU/SDK 控制已执行；H1 收口及后继模型工作仍在运行链路中，不将等待进程部署写成模型实验已完成。
