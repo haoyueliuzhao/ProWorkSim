@@ -32,6 +32,10 @@ def replica_fixture(tmp_path, monkeypatch):
             self.config.get_text_config = lambda: self.config
             self.generation_config = SimpleNamespace(eos_token_id=99)
 
+        def set_attn_implementation(self, value):
+            # This is an explicit constructor fixture, not an attention kernel.
+            self.config._attn_implementation = value
+
         def gradient_checkpointing_enable(self, **kwargs):
             self.checkpoint_kwargs = kwargs
 
@@ -143,3 +147,52 @@ def test_replica_checks_metadata_and_adapter_bytes_before_loader(replica_fixture
     with pytest.raises(ValueError):
         f.module.load_replica(f.snapshot, f.root / "replica")
     assert not f.called and not (f.root / "replica").exists()
+
+
+def test_official_tiny_qwen_constructor_registers_full_attention_and_mask_without_forward(tmp_path):
+    torch = pytest.importorskip("torch")
+    transformers = pytest.importorskip("transformers")
+    if transformers.__version__ != "5.17.0":
+        pytest.skip("Installed official Transformers 5.17.0 constructor control")
+    from transformers import Qwen3_5ForCausalLM, Qwen3_5TextConfig
+    from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+    from transformers.masking_utils import ALL_MASK_ATTENTION_FUNCTIONS
+    from peft import LoraConfig, get_peft_model
+    from proworksim.candidate_runtime_v019 import CandidateActor, candidate_profile
+    from proworksim.local_model_service import sdpa_explicit_kv_attention_forward
+
+    config = Qwen3_5TextConfig(
+        vocab_size=128, hidden_size=64, intermediate_size=128, num_hidden_layers=4,
+        num_attention_heads=4, num_key_value_heads=2, head_dim=16,
+        linear_key_head_dim=16, linear_value_head_dim=16,
+        linear_num_key_heads=2, linear_num_value_heads=2,
+        layer_types=["linear_attention"] * 3 + ["full_attention"],
+        rope_parameters={"rope_type": "default", "rope_theta": 10000,
+                         "partial_rotary_factor": 0.5, "mrope_section": [1, 1, 2],
+                         "mrope_interleaved": True},
+        pad_token_id=0, eos_token_id=127,
+    )
+    config._attn_implementation = "sdpa"
+    with torch.device("cpu"):
+        base = Qwen3_5ForCausalLM(config).float()
+        network = get_peft_model(base, LoraConfig(
+            r=8, lora_alpha=16, lora_dropout=0, target_modules=["q_proj", "v_proj"],
+            bias="none", task_type="CAUSAL_LM",
+        ))
+    layer_classes = [type(layer) for layer in base.model.layers]
+    owner = CandidateActor(
+        network, object(), output=tmp_path / "actual-tiny-constructor",
+        base_identity={"manifest": {"sha256": "random-tiny-no-candidate-base"}},
+        inference_profile=candidate_profile("qwen3.5-9b", devices=1),
+        device="cpu", torch_module=torch,
+    )
+    assert network.config._attn_implementation == "sdpa_explicit_kv"
+    assert base.model.layers[3].self_attn.config._attn_implementation == "sdpa_explicit_kv"
+    assert [type(layer) for layer in base.model.layers] == layer_classes
+    assert base.config.layer_types == ["linear_attention"] * 3 + ["full_attention"]
+    assert ALL_ATTENTION_FUNCTIONS["sdpa_explicit_kv"] is sdpa_explicit_kv_attention_forward
+    assert ALL_MASK_ATTENTION_FUNCTIONS["sdpa_explicit_kv"] is ALL_MASK_ATTENTION_FUNCTIONS["sdpa"]
+    assert owner.inference_profile["sdpa_backend_policy"] == "efficient_only_no_fallback"
+    assert owner.inference_profile["matmul_precision"] == "high"
+    assert owner.prefix_cache.matmul_precision == "high"
+    assert all(p.device.type == "cpu" for p in network.parameters())

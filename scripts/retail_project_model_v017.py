@@ -42,7 +42,7 @@ def checked(reference_, *, label):
 
 def validate_binding(selection_path, *, model, weight_manifest, harness, candidate=None,
                      protocol_path=None, runtime_profile=None, placement_reason=None,
-                     optimization_admission=None):
+                     optimization_admission=None, optimization_replicas=2, optimized_devices=None):
     """Metadata only: never instantiate Torch, a model, a world or an evaluator."""
     selection_path = Path(selection_path).resolve()
     document = read_json(selection_path)
@@ -121,10 +121,16 @@ def validate_binding(selection_path, *, model, weight_manifest, harness, candida
         from proworksim.candidate_runtime_v019 import candidate_profile
         from proworksim.harness_learning_admission import validate_optimization_admission
 
-        effective = candidate_profile(profile['candidate_id'], dtype=profile['dtype'], devices=profile['devices'])
+        effective = candidate_profile(profile['candidate_id'], dtype=profile['dtype'],
+                                      devices=profile['devices'] if optimized_devices is None else optimized_devices)
         optimization = validate_optimization_admission(
             reference(optimization_admission), candidate_id=selected['candidate_id'],
-            runtime_profile=effective, weight_manifest=weight_manifest)
+            runtime_profile=effective, weight_manifest=weight_manifest, replicas=optimization_replicas)
+        placement = {'reason': 'Explicit gate-bound optimized device count; no runtime resource adaptation',
+                     'original_devices': profile['devices'], 'effective_devices': effective['devices'],
+                     'optimization_admission': reference(optimization_admission)}
+    else:
+        require(optimized_devices is None, 'Optimized devices require actual optimization admission')
     return {'version': VERSION, 'passed': True, 'selected_candidate': selected['candidate_id'], 'selected_harness': harness,
             'selection_input': reference(selection_path), 'source_report': reference(report_path), 'selected': selected,
             'original_protocol': reference(original_protocol_path), 'original_protocol_body': original,
@@ -205,6 +211,9 @@ def main(argv=None):
     parser.add_argument('--runtime-profile', help='Optional explicit profile changing only device-count placement')
     parser.add_argument('--placement-reason')
     parser.add_argument('--optimization-admission', help='Actual v0.19 candidate-specific numerical/performance admission')
+    parser.add_argument('--optimization-replicas', type=int, choices=(1, 2), default=2,
+                        help='Sampler layout certified by the optimization report; projects themselves remain serial')
+    parser.add_argument('--devices', type=int, help='Explicit gate-bound devices, otherwise original H1 placement')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     output = args.output.resolve()
@@ -221,7 +230,8 @@ def main(argv=None):
         binding = validate_binding(args.selection, model=args.model, weight_manifest=args.weight_manifest,
             harness=args.harness, candidate=args.candidate, protocol_path=args.protocol,
             runtime_profile=args.runtime_profile, placement_reason=args.placement_reason,
-            optimization_admission=args.optimization_admission)
+            optimization_admission=args.optimization_admission, optimization_replicas=args.optimization_replicas,
+            optimized_devices=args.devices)
         atomic_write(output / 'binding-validation.json', json_bytes(binding))
         atomic_write(output / 'effective-profile.json', json_bytes(binding['profile']))
         status = 'loading'
@@ -238,7 +248,11 @@ def main(argv=None):
                                                recipe=binding['recipe'], output=output / 'resident')
         identity = owner.freeze_identity()
         actor_same = identity.get('adapter_sha256') == binding['H1_initial_actor_identity'].get('adapter_sha256')
-        require(binding['placement_revision'] is not None or actor_same, 'Fresh adapter differs from selected H1 initial actor under identical placement')
+        if binding['optimization'] is not None:
+            require(identity.get('adapter_sha256') == binding['optimization']['initial_actor_identity']['adapter_sha256'],
+                    'Fresh optimized adapter differs from its actual benchmarked initial identity')
+        else:
+            require(binding['placement_revision'] is not None or actor_same, 'Fresh adapter differs from selected H1 initial actor under identical placement')
         atomic_write(output / 'initial-identity-comparison.json', json_bytes({'same_adapter_parameters_as_H1': actor_same,
             'H1_initial': binding['H1_initial_actor_identity'], 'actual_initial': identity,
             'explicit_placement_revision': binding['placement_revision']}))

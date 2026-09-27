@@ -15,7 +15,7 @@ from proworksim.storage import json_bytes, read_json
 from scripts.build_harness_learning_v018 import build_protocols as previous_protocols
 from scripts.build_harness_learning_v019 import build_protocols, optimized_profile, support_protocol
 from scripts.build_harness_study_v016 import ref
-from scripts.continue_harness_v017 import make_jobs, release_projects_after_learning
+from scripts.continue_harness_v017 import execution_lanes, make_jobs, release_projects_after_learning
 from scripts.retail_project_model_v017 import validate_binding
 from test_candidate_selection_v015 import guard
 from test_retail_project_model_v017 import fixture as selected_fixture
@@ -29,14 +29,18 @@ def save(path, value):
     return ref(path)
 
 
-def actual_gate_fixture(tmp_path, h1, manifest, monkeypatch):
+def actual_gate_fixture(tmp_path, h1, manifest, monkeypatch, *, replicas=2, devices=None):
     # These are artificial saved metadata, never an actual performance admission.
     monkeypatch.setattr("proworksim.audit.code_identity", lambda: copy.deepcopy(SOURCE))
     evidence = save(tmp_path / "gate-evidence.json", {"fixture_only": True})
-    candidate = {"passed": True, "runtime_profile": optimized_profile(h1),
+    candidate = {"passed": True, "runtime_profile": optimized_profile(h1, devices),
+                 "initial_actor_identity": {"policy_version": "fixture-optimized",
+                                            "adapter_sha256": "optimized-initial",
+                                            "base_manifest_sha256": ref(manifest)["sha256"]},
                  "weight_manifest_sha256": ref(manifest)["sha256"],
                  "checks": {k: {"passed": True, "evidence": evidence} for k in OPTIMIZATION_CHECKS}}
     report = {"version": OPTIMIZATION_VERSION, "execution_source_commit": SOURCE["code_commit"],
+              "sampling_replicas": replicas,
               "candidates": {h1["candidate_id"]: candidate}}
     path = tmp_path / "optimization.json"
     save(path, report)
@@ -125,7 +129,10 @@ def test_h2_cannot_bypass_optimization_or_start_unmeasured_pilot(tmp_path, monke
     path, _ = actual_gate_fixture(tmp_path, h1, manifest, monkeypatch)
     migration, pilot = build_protocols(h1, "native_v15", selection, ref(path))
     kwargs = {"model_path": manifest.parent, "weight_manifest": manifest}
-    assert validate_h2_launch(migration, **kwargs)["optimization"]["status"] == "admitted"
+    admission = validate_h2_launch(migration, **kwargs)
+    assert admission["optimization"]["status"] == "admitted"
+    assert admission["expected_initial_adapter_sha256"] == "optimized-initial"
+    assert admission["old_H1_adapter_matches"] is False
     with pytest.raises(ValueError, match="fresh after migration"):
         validate_h2_launch(migration, **kwargs, restore_checkpoint="old")
     with pytest.raises(ValueError, match="waits for an actual"):
@@ -190,3 +197,42 @@ def test_replica_resources_are_checked_together_and_projects_wait_for_learning(t
     assert release_projects_after_learning(jobs) is True
     assert projects["status"] == "waiting_resources"
     assert projects["learning_terminal_before_project_launch"]["pilot"] == "failed_or_incomplete"
+
+
+def test_serial_and_changed_devices_are_predeclared_and_do_not_require_two_replica_gate(tmp_path, monkeypatch):
+    h1, manifest, selection, choice = h2_fixture(tmp_path)
+    path, gate = actual_gate_fixture(tmp_path, h1, manifest, monkeypatch, replicas=1, devices=1)
+    del gate["candidates"][h1["candidate_id"]]["checks"]["two_replica"]
+    save(path, gate)
+    migration, pilot = build_protocols(h1, "native_v15", selection, ref(path), replicas=1, optimized_devices=1)
+    kwargs = {"model_path": manifest.parent, "weight_manifest": manifest}
+    admission = validate_h2_launch(migration, **kwargs)
+    assert admission["expected_initial_adapter_sha256"] == "optimized-initial"
+    assert admission["old_H1_adapter_matches"] is False
+    assert "two_replica" not in admission["optimization"]["checks"]
+    for protocol in (migration, pilot):
+        assert protocol["runtime"]["profile"]["devices"] == 1
+        assert protocol["sampling_replicas"] == 1
+        assert protocol["collector"] == "proworksim.harness_collection:collect_window"
+        assert "parallel_collection" not in protocol
+        assert all(w["sampling_replicas"] == 1 for w in protocol["windows"])
+    altered = copy.deepcopy(migration)
+    altered["sampling_replicas"] = 2
+    with pytest.raises(ValueError, match="replica layout differs"):
+        validate_h2_launch(altered, **kwargs)
+    altered = copy.deepcopy(migration)
+    altered["runtime"]["profile"]["devices"] = 2
+    with pytest.raises(ValueError, match="profile differs"):
+        validate_h2_launch(altered, **kwargs)
+    config = {"python": "fixture-python", "source": str(tmp_path), "optimization_admission": ref(path),
+              "sampling_replicas": 1, "optimized_devices": 1, "learning_gpus": [3]}
+    jobs, _, _ = make_jobs(config, choice, Path(selection["path"]), tmp_path / "new-output")
+    assert jobs["migration"]["required_gpus"] == [3]
+    assert not jobs["migration"]["replica_gpus"]
+    assert jobs["projects"]["gpus"] == [3]
+    assert jobs["projects"]["status"] == "blocked_on_learning"
+    assert execution_lanes(4, 1, "2,3,4,5") == {"learning": [2,3,4,5], "replica": [], "projects": [2,3,4,5]}
+    assert execution_lanes(2, 2, "2,3", "4,5")["replica"] == [4,5]
+    for args in [(4, 1, "2,3", None), (2, 2, "2,3", "3,4"), (2, 1, "2,3", "4,5")]:
+        with pytest.raises(ValueError):
+            execution_lanes(*args)

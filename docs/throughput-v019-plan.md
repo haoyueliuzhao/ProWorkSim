@@ -33,3 +33,9 @@
 新的正式后继必须读取 `harness-optimization-admission-v0.19` 实测报告，严格绑定clean执行源提交、候选/基座manifest、完整runtime profile，并要求prefix概率、全输入概率、backward、真实双副本和吞吐5项证据通过。每项原证据文件均绑定hash。没有报告或某候选不通过就停止，不能静默回退、改门或切换候选。正式迁移和每个学习决定仍继续执行原概率门。
 
 部署前做新增边界的必要CPU/实际GPU核验，再冻结源；H1完成后按原排序选择，选择不读性能试验业务成绩。代码实现、性能控制、真实模型工作和学习收益分别报告。
+
+## 首次冻结后、尚未业务采样前的修订
+
+b370控制在旧Math-GQA基线长请求backward OOM；优化臂未执行，失败不冒称新profile失败。小GPU控制已支持GQA的FP32 Math分配解释，candidate19改用已存在的explicit-KV efficient-only全注意力和配套SDPA mask；DeltaNet与软件依赖不变。新baseline明确为已修复内存路径的highest/efficient/no-prefix，不重复已知旧Math OOM，新candidate为high/efficient/prefix；原2048输出上限和概率门保持。
+
+资源已实际变化：其他项目占GPU0/1/6/7。新协议显式固定采样副本数1或2及卡组；1使用串行采集，只不要求two_replica这一不适用项，其余4门均要通过；2保留全部5门。同一migration→fresh pilot内不可在采样后切换。实际fresh初态绑定到新placement测得的adapter identity，是否等于旧H1另记事实，不凭同seed推断。

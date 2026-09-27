@@ -26,16 +26,21 @@ def mappings(rows):
     return result
 
 
-def assess(probe, parallel, profile, source):
+def assess(probe, parallel, profile, source, *, replicas=2):
+    if replicas not in (1, 2):
+        raise ValueError("Explicit one or two replicas required")
+    parallel = parallel or {}
     variants = {v["name"]: v for v in probe.get("variants", [])}
-    old = variants.get("fp32-highest-baseline", {})
+    old = variants.get("fp32-highest-efficient-baseline", {})
     new = variants.get("fp32-high-prefix2048", {})
     rows = new.get("calls", [])
     warm = [r for r in rows if r.get("repeat") == 1]
     original_warm = [r for r in old.get("calls", []) if r.get("repeat") == 1]
     source_ok = bool(
         probe.get("source_before") == probe.get("source_after") == source
-        and parallel.get("source_before") == parallel.get("source_after") == source
+        and (
+            replicas == 1 or parallel.get("source_before") == parallel.get("source_after") == source
+        )
     )
     complete = bool(
         source_ok
@@ -124,11 +129,16 @@ def assess(probe, parallel, profile, source):
     )
     timing = bool(
         complete
-        and replica
         and fixed_work
         and replay_ratio > 1
-        and parallel.get("generation_speedup", 0) > 1
-        and parallel.get("actual_process_overlap_seconds", 0) > 0
+        and (
+            replicas == 1
+            or (
+                replica
+                and parallel.get("generation_speedup", 0) > 1
+                and parallel.get("actual_process_overlap_seconds", 0) > 0
+            )
+        )
     )
     return {
         "prefix_probability": bool(
@@ -158,7 +168,8 @@ def assess(probe, parallel, profile, source):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--probe", action="append", required=True)
-    p.add_argument("--parallel", action="append", required=True)
+    p.add_argument("--parallel", action="append", default=[])
+    p.add_argument("--replicas", type=int, choices=(1, 2), required=True)
     p.add_argument("--manifest", action="append", required=True)
     p.add_argument("--output", type=Path, required=True)
     a = p.parse_args()
@@ -168,23 +179,38 @@ def main():
     if source["code_dirty"] is not False:
         raise ValueError("Freeze the execution source before formal admission")
     probes, parallels, manifests = map(mappings, (a.probe, a.parallel, a.manifest))
-    if not set(probes) == set(parallels) == set(manifests):
+    if (
+        set(probes) != set(manifests)
+        or (a.replicas == 2 and set(parallels) != set(probes))
+        or not set(parallels) <= set(probes)
+    ):
         raise ValueError("Candidate artifact inventories differ")
     result = {
         "version": "harness-optimization-admission-v0.19",
         "execution_source_commit": source["code_commit"],
+        "sampling_replicas": a.replicas,
         "source_identity": source,
         "candidates": {},
     }
     for key, path in probes.items():
-        name, devices = CANDIDATES[key]
-        profile = candidate_profile(name, devices=devices)
-        probe, parallel = read_json(path), read_json(parallels[key])
-        if probe.get("candidate") != name or parallel.get("candidate") != name:
-            raise ValueError("Actual measured candidate differs")
-        checks, summary = assess(probe, parallel, profile, source)
+        name, _ = CANDIDATES[key]
+        probe = read_json(path)
+        parallel = read_json(parallels[key]) if key in parallels else None
+        profile = candidate_profile(name, devices=probe["runtime_profile"]["devices"])
+        if (
+            probe.get("candidate") != name
+            or probe.get("runtime_profile") != profile
+            or (parallel is not None and parallel.get("candidate") != name)
+        ):
+            raise ValueError("Actual measured candidate/runtime differs")
+        initial = probe.get("fresh_initial_actor_identity")
+        if not isinstance(initial, dict) or not initial.get("adapter_sha256"):
+            raise ValueError("Actual fresh initial actor identity missing")
+        checks, summary = assess(probe, parallel, profile, source, replicas=a.replicas)
+        required = {k: v for k, v in checks.items() if k != "two_replica" or a.replicas == 2}
         result["candidates"][key] = {
-            "passed": all(checks.values()),
+            "passed": all(required.values()),
+            "initial_actor_identity": initial,
             "runtime_profile": profile,
             "weight_manifest_sha256": digest(manifests[key].read_bytes()),
             "checks": {
@@ -192,9 +218,9 @@ def main():
                     "passed": v,
                     "evidence": reference(parallels[key] if k == "two_replica" else path),
                 }
-                for k, v in checks.items()
+                for k, v in required.items()
             },
-            "additional_parallel_evidence": reference(parallels[key]),
+            "additional_parallel_evidence": reference(parallels[key]) if key in parallels else None,
             "measured_summary": summary,
         }
     atomic_write(a.output, json_bytes(result))

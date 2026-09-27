@@ -28,12 +28,16 @@ OPTIMIZATION_CHECKS = (
 )
 
 
-def validate_optimization_admission(reference, *, candidate_id, runtime_profile, weight_manifest):
+def validate_optimization_admission(reference, *, candidate_id, runtime_profile, weight_manifest,
+                                    replicas=2):
     """Metadata-only actual numerical/performance gate; never read work scores."""
     from .audit import code_identity
     from .candidate_runtime_v019 import candidate_profile
 
+    require(type(replicas) is int and replicas in (1, 2), "Declare one or two sampling replicas")
     report = read_json(checked_ref(reference))
+    require(report.get("sampling_replicas") == replicas,
+            "Optimization benchmark replica layout differs from the predeclared execution")
     require(report.get("version") == OPTIMIZATION_VERSION,
             "Actual v0.19 optimization admission report required")
     source = code_identity()
@@ -55,10 +59,16 @@ def validate_optimization_admission(reference, *, candidate_id, runtime_profile,
     manifest = Path(weight_manifest)
     require(manifest.is_file() and candidate.get("weight_manifest_sha256") == digest(manifest.read_bytes()),
             "Optimization benchmark base weights differ from selected H1 manifest")
+    initial = candidate.get("initial_actor_identity")
+    require(isinstance(initial, dict) and initial.get("adapter_sha256")
+            and initial.get("base_manifest_sha256") == candidate["weight_manifest_sha256"],
+            "Optimization gate lacks actual fresh initial actor/weight identity")
     checks = candidate.get("checks")
     require(isinstance(checks, dict), "Actual optimization evidence checks absent")
     evidence = {}
     for name in OPTIMIZATION_CHECKS:
+        if name == "two_replica" and replicas == 1:
+            continue
         check = checks.get(name)
         require(isinstance(check, dict) and check.get("passed") is True,
                 "Actual optimization check did not pass: " + name)
@@ -68,6 +78,7 @@ def validate_optimization_admission(reference, *, candidate_id, runtime_profile,
             "candidate_id": candidate_id, "optimization_admission": copy.deepcopy(reference),
             "execution_source_commit": source["code_commit"],
             "runtime_profile": copy.deepcopy(expected), "checks": evidence,
+            "sampling_replicas": replicas, "initial_actor_identity": copy.deepcopy(initial),
             "scope": "Actual fixed-input numerical, backward, replica and throughput evidence; no work-grade-based replacement."}
 
 
@@ -139,8 +150,11 @@ def validate_h2_launch(protocol, *, model_path, weight_manifest, restore_checkpo
     if optimized:
         optimization = validate_optimization_admission(
             protocol.get("optimization_admission"), candidate_id=choice["candidate_id"],
-            runtime_profile=protocol["runtime"]["profile"], weight_manifest=weight_manifest)
-        extra["optimization_admission"] = protocol["optimization_admission"]
+            runtime_profile=protocol["runtime"]["profile"], weight_manifest=weight_manifest,
+            replicas=protocol.get("sampling_replicas"))
+        extra.update(optimization_admission=protocol["optimization_admission"],
+                     replicas=protocol["sampling_replicas"],
+                     optimized_devices=protocol["runtime"]["profile"]["devices"])
     migration, pilot = _builder(revised, optimized).build_protocols(
         h1, choice["harness"], protocol["selection"], **extra
     )
@@ -164,6 +178,9 @@ def validate_h2_launch(protocol, *, model_path, weight_manifest, restore_checkpo
     }
     if optimization is not None:
         record["optimization"] = optimization
+        actual_initial = optimization["initial_actor_identity"]["adapter_sha256"]
+        record["old_H1_adapter_matches"] = record["expected_initial_adapter_sha256"] == actual_initial
+        record["expected_initial_adapter_sha256"] = actual_initial
     if protocol.get("experiment_id") == "h2-pilot-" + suffix:
         gate = protocol.get("launch_gate", {})
         require(
@@ -276,7 +293,9 @@ def validate_support_launch(protocol, *, model_path, weight_manifest, restore_ch
     selection = read_json(checked_ref(protocol.get("selection")))
     choice = selection.get("selected") or {}
     h1 = read_json(checked_ref(choice.get("protocol_ref")))
-    extra = {"optimization_admission": protocol.get("optimization_admission")} if optimized else {}
+    extra = {"optimization_admission": protocol.get("optimization_admission"),
+             "replicas": pilot["sampling_replicas"],
+             "optimized_devices": pilot["runtime"]["profile"]["devices"]} if optimized else {}
     expected = _builder(True, optimized).support_protocol(
         h1, choice["harness"], protocol["selection"], **extra)
     if optimized:

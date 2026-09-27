@@ -199,17 +199,24 @@ def migration_allows_admission(job):
     )
 
 
-def config_for(project, source, output, optimization_admission):
+def config_for(project, source, output, optimization_admission, *, replicas=2, devices=None,
+               learning_gpus=None, replica_gpus=None):
     project, source, output = map(lambda p: Path(p).resolve(), (project, source, output))
     if source != Path(__file__).resolve().parents[1]:
         raise ValueError("Execute this script from the declared frozen source tree")
     commit = assert_source(source)
     from proworksim.harness_learning_admission import OPTIMIZATION_VERSION
 
+    if type(replicas) is not int or replicas not in (1, 2) or (devices is not None and (type(devices) is not int or devices < 1)):
+        raise ValueError("Explicit fixed sampler count and positive device count required")
+    learning_gpus, replica_gpus = gpu_list(learning_gpus), gpu_list(replica_gpus)
+    if devices is not None:
+        execution_lanes(devices, replicas, learning_gpus, replica_gpus)
     optimization_ref = ref(optimization_admission)
     optimization = read(checked(optimization_ref))
     if (not isinstance(optimization, dict) or optimization.get("version") != OPTIMIZATION_VERSION
             or optimization.get("execution_source_commit") != commit
+            or optimization.get("sampling_replicas") != replicas
             or not isinstance(optimization.get("candidates"), dict)):
         raise ValueError("Actual optimization admission must bind this frozen source before continuation")
     launcher = project / "runs/v015-launch/launcher.py"
@@ -244,7 +251,11 @@ def config_for(project, source, output, optimization_admission):
         "poll_seconds": POLL_SECONDS,
         "resource_wait_seconds": RESOURCE_WAIT_SECONDS,
         "minimum_free_mib_per_gpu": MIN_FREE_MIB,
-        "lanes": OPTIMIZED_LANES,
+        "lanes": "Explicit GPU groups if supplied; otherwise consecutive original-width groups. Fixed before any migration slot.",
+        "sampling_replicas": replicas,
+        "optimized_devices": devices,
+        "learning_gpus": learning_gpus,
+        "replica_gpus": replica_gpus,
         "optimization_admission": optimization_ref,
         "resource_basis": "Actual long-request 9B peak about46GiB/device and27B maximum71.84GiB plus declared headroom. Not training/backward capacity certification.",
         "stage_revision": "Original H1 remains frozen; v0.19 binds measured prefix/replica execution to unchanged v0.18 work budgets. Learning and four-project evaluation use the same parent lane serially; no extra queue layer.",
@@ -283,6 +294,33 @@ def command_step(config, state, label, command, output):
     return result.returncode
 
 
+def gpu_list(value):
+    if value is None:
+        return None
+    values = [int(item.strip()) for item in value.split(",")] if isinstance(value, str) else list(value)
+    if not values or any(type(i) is not int or i < 0 for i in values) or len(set(values)) != len(values):
+        raise ValueError("Declare a nonempty unique physical GPU list")
+    return values
+
+
+def execution_lanes(devices, replicas, learning_gpus=None, replica_gpus=None):
+    if type(devices) is not int or devices < 1 or type(replicas) is not int or replicas not in (1, 2):
+        raise ValueError("Declare positive devices and one or two sampling replicas")
+    parent = gpu_list(learning_gpus) or list(range(devices))
+    child = gpu_list(replica_gpus)
+    if len(parent) != devices:
+        raise ValueError("Learning GPU count differs from the benchmarked devices")
+    if replicas == 1:
+        if child is not None:
+            raise ValueError("Single-replica execution cannot declare an unused second GPU group")
+        child = []
+    else:
+        child = child or list(range(devices, 2 * devices))
+        if len(child) != devices or set(parent) & set(child):
+            raise ValueError("Replica GPUs must be equally sized and disjoint")
+    return {"learning": parent, "replica": child, "projects": list(parent)}
+
+
 def make_jobs(config, selected, selection_path, output):
     h1_root = Path(selected["run_root"])
     owner = read(h1_root / "resident/owner.json")
@@ -290,9 +328,13 @@ def make_jobs(config, selected, selection_path, output):
     model, manifest = str(Path(base["path"]).resolve()), str(checked(base["manifest"]))
     candidate = selected["candidate_id"]
     optimized = bool(config.get("optimization_admission"))
-    lanes = (OPTIMIZED_LANES if optimized else LANES)[candidate]
     protocol = read(checked(selected["protocol_ref"]))
-    if protocol["runtime"]["profile"]["devices"] != len(lanes["learning"]):
+    devices = config.get("optimized_devices")
+    if devices is None:
+        devices = protocol["runtime"]["profile"]["devices"]
+    replicas_count = config.get("sampling_replicas", 2)
+    lanes = execution_lanes(devices, replicas_count, config.get("learning_gpus"), config.get("replica_gpus")) if optimized else LANES[candidate]
+    if not optimized and protocol["runtime"]["profile"]["devices"] != len(lanes["learning"]):
         raise ValueError(
             "Selected device placement differs from the predeclared continuation lanes"
         )
@@ -337,7 +379,8 @@ def make_jobs(config, selected, selection_path, output):
                 str(directory),
             ]
         if optimized and name == "projects":
-            command += ["--optimization-admission", str(checked(config["optimization_admission"]))]
+            command += ["--optimization-admission", str(checked(config["optimization_admission"])),
+                        "--optimization-replicas", str(replicas_count), "--devices", str(devices)]
         waiting = name == "migration" or (name == "projects" and not optimized)
         replicas = lanes.get("replica", []) if name != "projects" else []
         jobs[name] = {
@@ -544,7 +587,10 @@ def run(config, state, output):
         "--output",
         str(output / "plans"),
     ]
-    command += ["--optimization-admission", str(checked(config["optimization_admission"]))]
+    command += ["--optimization-admission", str(checked(config["optimization_admission"])),
+                "--replicas", str(config["sampling_replicas"])]
+    if config.get("optimized_devices") is not None:
+        command += ["--devices", str(config["optimized_devices"])]
     if command_step(config, state, "build-plans", command, output):
         state["status"] = "stopped_plan_construction_failure"
         return 1
@@ -659,10 +705,16 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--optimization-admission", type=Path, required=True,
                         help="Actual frozen-source v0.19 numerical/performance gate; selected failed candidate stops")
+    parser.add_argument("--replicas", type=int, choices=(1, 2), required=True)
+    parser.add_argument("--devices", type=int, help="Benchmarked devices per sampler; default is original selected H1 count")
+    parser.add_argument("--learning-gpus", help="Explicit comma-separated physical parent GPUs")
+    parser.add_argument("--replica-gpus", help="Explicit equally sized disjoint group, only for replicas=2")
     args = parser.parse_args(argv)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    config = config_for(args.project, args.source, output, args.optimization_admission)
+    config = config_for(args.project, args.source, output, args.optimization_admission,
+                        replicas=args.replicas, devices=args.devices,
+                        learning_gpus=args.learning_gpus, replica_gpus=args.replica_gpus)
     (output / "tmp").mkdir()
     write(output / "config.json", config)
     state = {

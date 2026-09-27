@@ -21,7 +21,12 @@ def candidate_profile(candidate_id, *, dtype="float32", devices=1):
     profile = previous_profile(candidate_id, dtype=dtype, devices=devices)
     if dtype != "float32":
         raise ValueError("This throughput profile retains the original FP32 path")
-    profile.update(version=VERSION, matmul_precision="high", prefix_cache=copy.deepcopy(PREFIX))
+    profile.update(
+        version=VERSION,
+        attention="sdpa_explicit_kv",
+        matmul_precision="high",
+        prefix_cache=copy.deepcopy(PREFIX),
+    )
     return profile
 
 
@@ -29,11 +34,22 @@ class CandidateActor(PreviousActor):
     def __init__(self, *args, inference_profile, **kwargs):
         import torch
 
-        torch.set_float32_matmul_precision("high")
+        from .local_model_service import configure_attention_runtime
+
         torch.backends.cudnn.allow_tf32 = False
+        numerical = configure_attention_runtime("sdpa_explicit_kv", "high")
+        network = args[0] if args else kwargs["model"]
+        network.set_attn_implementation("sdpa_explicit_kv")
+        if network.config._attn_implementation != "sdpa_explicit_kv":
+            raise ValueError(
+                "Optimized full attention did not install its explicit efficient backend"
+            )
         profile = copy.deepcopy(inference_profile)
+        profile.update(numerical)
         profile.update(
             version=VERSION,
+            attention="sdpa_explicit_kv",
+            custom_attention_patch=True,
             matmul_precision="high",
             actual_float32_matmul_precision=torch.get_float32_matmul_precision(),
             cuda_matmul_allow_tf32=torch.backends.cuda.matmul.allow_tf32,

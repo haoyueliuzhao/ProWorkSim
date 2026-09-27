@@ -45,7 +45,10 @@ def main():
         },
     )
     initial_profile = copy.deepcopy(owner.inference_profile)
-    variants = [("fp32-highest-baseline", "highest", 0), ("fp32-high-prefix2048", "high", 2048)]
+    variants = [
+        ("fp32-highest-efficient-baseline", "highest", 0),
+        ("fp32-high-prefix2048", "high", 2048),
+    ]
     if a.include_high_diagnostic:
         variants += [
             ("fp32-highest-prefix2048", "highest", 2048),
@@ -58,8 +61,11 @@ def main():
         "max_output_override": a.max_output,
         "world_actions": 0,
         "optimizer_steps": 0,
+        "fresh_initial_actor_identity": owner.freeze_identity(),
+        "runtime_profile": candidate_profile(a.candidate, devices=a.devices),
         "source_before": source_before,
         "sampling_seed_base": 202609271900,
+        "baseline_definition": "FP32/highest WITH the same explicit-KV efficient attention repair, no prefix. Original Math-GQA baseline long backward OOM retained separately in b37059e; it is not rerun or relabeled here.",
         "scope": "Diagnostic resampling of fixed public original requests; not an episode, capacity certification, old reward repair or learning gain. High is an explicit separate numerical candidate and cannot be deployed without original gates.",
         "variants": [],
     }
@@ -67,10 +73,17 @@ def main():
     baseline_traces = {}
     for name, precision, prefix in variants:
         torch.set_float32_matmul_precision(precision)
+        attention = "sdpa_explicit_kv"
+        owner.model.set_attn_implementation(attention)
         owner.prefix_cache.clear()
         owner.inference_profile = {
             **copy.deepcopy(initial_profile),
             "diagnostic_execution_variant": name,
+            "attention": attention,
+            "custom_attention_patch": attention == "sdpa_explicit_kv",
+            "sdpa_backend_policy": "efficient_only_no_fallback"
+            if attention == "sdpa_explicit_kv"
+            else "installed_library_default",
             "matmul_precision": precision,
             "actual_float32_matmul_precision": torch.get_float32_matmul_precision(),
             "cuda_matmul_allow_tf32": torch.backends.cuda.matmul.allow_tf32,
@@ -122,7 +135,7 @@ def main():
                     atomic_write(a.output / "report.json", json_bytes(report))
                     continue
                 trace = response["body"]["token_trace"]
-                if name == "fp32-highest-baseline":
+                if name == "fp32-highest-efficient-baseline":
                     baseline_outputs[i] = trace["output_ids"]
                 row["same_output_as_highest_baseline"] = trace[
                     "output_ids"
@@ -144,7 +157,7 @@ def main():
                         "seconds": time.perf_counter() - t,
                     }
                     del replay, actual, behavior, difference
-                    if name == "fp32-highest-baseline":
+                    if name == "fp32-highest-efficient-baseline":
                         baseline_traces[i] = copy.deepcopy(trace)
                         reference_seconds = row["behavior_check"]["seconds"]
                     else:
@@ -168,7 +181,15 @@ def main():
                         "scope": "Same baseline actual input/output sequence; extra diagnostic forward only, not a replacement behavior probability",
                     }
                     # One actual full-input backward for each variant, no optimizer step.
-                    if (i == 0 or a.backward_all) and row["behavior_check"]["passed"]:
+                    if name == "fp32-highest-efficient-baseline":
+                        row["backward_not_repeated"] = (
+                            "Backward is measured only for the optimized candidate. This new efficient/highest control has no backward-capacity claim; the separate original Math-GQA backward OOM in b37059e is retained, not relabeled."
+                        )
+                    if (
+                        name != "fp32-highest-efficient-baseline"
+                        and (i == 0 or a.backward_all)
+                        and row["behavior_check"]["passed"]
+                    ):
                         owner.prefix_cache.clear()
                         owner.model.train()
                         owner.actor_optimizer.zero_grad(set_to_none=True)

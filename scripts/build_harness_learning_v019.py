@@ -24,37 +24,44 @@ PARALLEL = {
 }
 
 
-def optimized_profile(h1):
+def optimized_profile(h1, optimized_devices=None):
     original = h1["runtime"]["profile"]
     return candidate_profile(
-        original["candidate_id"], dtype=original["dtype"], devices=original["devices"]
+        original["candidate_id"], dtype=original["dtype"],
+        devices=original["devices"] if optimized_devices is None else optimized_devices
     )
 
 
-def _stage(protocol, h1, admission, *, parallel):
+def _stage(protocol, h1, admission, *, parallel, replicas=2, optimized_devices=None):
+    if type(replicas) is not int or replicas not in (1, 2):
+        raise ValueError("Declare one or two sampling replicas before any migration work")
     result = copy.deepcopy(protocol)
     result.update(
         version=VERSION,
         stage="H2_v019" if parallel else "ID_support_v019",
         experiment_id=protocol["experiment_id"].replace("v018", "v019"),
-        runtime={"kind": "qwen_hybrid_optimized", "profile": optimized_profile(h1)},
+        runtime={"kind": "qwen_hybrid_optimized", "profile": optimized_profile(h1, optimized_devices)},
+        sampling_replicas=replicas if parallel else 1,
         optimization_admission=copy.deepcopy(admission),
         numeric_gate="Explicit optimized runtime profile; unchanged full-original-input max logprob tolerance .02 / mean .002. No profile fallback or outcome-driven tolerance change.",
-        collector="proworksim.harness_parallel_v019:collect_window" if parallel
+        collector="proworksim.harness_parallel_v019:collect_window" if parallel and replicas == 2
         else "proworksim.harness_collection:collect_window",
         execution_revision={
-            "scope": "New Gamma: exact-prefix inference and two immutable current-policy sampling replicas. Original worlds, slots, seeds, budgets, rewards and probability tolerances are unchanged.",
+            "scope": f"New Gamma: explicit optimized profile and {replicas if parallel else 1} fixed current-policy sampling process(es). Original worlds, slots, seeds, budgets, rewards and probability tolerances are unchanged.",
             "learning": "One parent actor/critic/optimizer; original full-input probability replay, one update only after complete window. No replica optimizer or asynchronous policy updates.",
-            "resources": "Each replica uses the original selected model placement; projects run after learning ends on the parent lane. No simultaneous project allocation.",
+            "resources": "Every sampler uses the explicitly benchmarked device count; it cannot change after sampling starts. Projects run after learning ends on the parent lane.",
             "support": "Separate final-current-policy density remains serial, sixteen fixed slots in one window, zero updates and no O4.",
         },
     )
-    if parallel:
+    if not parallel:
+        result["pilot_sampling_replicas"] = replicas
+    if parallel and replicas == 2:
         result["parallel_collection"] = copy.deepcopy(PARALLEL)
     for window in result["windows"]:
         window["window_id"] = window["window_id"].replace("v018", "v019")
         window["stage"] = window["stage"].replace("v018", "v019")
-        if parallel:
+        window["sampling_replicas"] = replicas if parallel else 1
+        if parallel and replicas == 2:
             window["parallel_collection"] = copy.deepcopy(PARALLEL)
     gate = result.get("launch_gate")
     if gate:
@@ -62,16 +69,20 @@ def _stage(protocol, h1, admission, *, parallel):
     return result
 
 
-def build_protocols(h1, harness, selection_ref, optimization_admission):
+def build_protocols(h1, harness, selection_ref, optimization_admission, *, replicas=2,
+                    optimized_devices=None):
     return tuple(
-        _stage(p, h1, optimization_admission, parallel=True)
+        _stage(p, h1, optimization_admission, parallel=True, replicas=replicas,
+               optimized_devices=optimized_devices)
         for p in previous_protocols(h1, harness, selection_ref)
     )
 
 
-def support_protocol(h1, harness, selection_ref, optimization_admission):
+def support_protocol(h1, harness, selection_ref, optimization_admission, *, replicas=2,
+                     optimized_devices=None):
     return _stage(
-        previous_support(h1, harness, selection_ref), h1, optimization_admission, parallel=False
+        previous_support(h1, harness, selection_ref), h1, optimization_admission, parallel=False,
+        replicas=replicas, optimized_devices=optimized_devices
     )
 
 
@@ -81,6 +92,8 @@ def main(argv=None):
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--optimization-admission", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--replicas", type=int, choices=(1, 2), required=True)
+    parser.add_argument("--devices", type=int, help="Explicit benchmarked devices per sampler; default keeps the H1 count")
     parser.add_argument("--completed-pilot", type=Path)
     args = parser.parse_args(argv)
     if args.output.exists():
@@ -96,12 +109,14 @@ def main(argv=None):
             "Protocol is not the original actually selected H1 launch")
     h1 = read_json(args.protocol)
     admission = ref(args.optimization_admission)
-    migration, pilot = build_protocols(h1, choice["harness"], ref(args.selection), admission)
+    migration, pilot = build_protocols(h1, choice["harness"], ref(args.selection), admission,
+                                       replicas=args.replicas, optimized_devices=args.devices)
     owner = read_json(Path(choice["run_root"]) / "resident/owner.json")
     base = owner["base_identity"]
     validate_h2_launch(migration, model_path=base["path"],
                        weight_manifest=checked_ref(base["manifest"]))
-    density = support_protocol(h1, choice["harness"], ref(args.selection), admission)
+    density = support_protocol(h1, choice["harness"], ref(args.selection), admission,
+                               replicas=args.replicas, optimized_devices=args.devices)
     if args.completed_pilot is not None:
         root = args.completed_pilot.resolve()
         density["launch_gate"] = {
@@ -117,7 +132,8 @@ def main(argv=None):
         (args.output / (name + ".json")).write_bytes(json_bytes(body))
     print(json_bytes({"status": "generated_not_started", "migration": 8, "pilot": 118,
                       "later_support_density": 16, "auto_O4": False,
-                      "optimization_admission": admission}).decode())
+                      "optimization_admission": admission, "sampling_replicas": args.replicas,
+                      "devices_per_sampler": migration["runtime"]["profile"]["devices"]}).decode())
 
 
 if __name__ == "__main__":

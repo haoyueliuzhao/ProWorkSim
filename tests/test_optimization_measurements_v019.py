@@ -55,7 +55,7 @@ def measured():
         "requests": [{}, {}, {}],
         "max_output_override": 2048,
         "variants": [
-            {"name": "fp32-highest-baseline", "status": "complete", "calls": base},
+            {"name": "fp32-highest-efficient-baseline", "status": "complete", "calls": base},
             {"name": "fp32-high-prefix2048", "status": "complete", "calls": opt},
         ],
     }
@@ -106,3 +106,12 @@ def test_short_output_or_failed_original_gate_cannot_admit_production():
     inputs = measured()
     inputs[1]["replica_finished"]["has_optimizer"] = True
     assert assess(*inputs)[0]["two_replica"] is False
+
+
+def test_serial_stage_does_not_claim_or_require_second_sampler():
+    probe, _, profile, source = measured()
+    checks, summary = assess(probe, None, profile, source, replicas=1)
+    assert checks["throughput"] is True
+    assert checks["two_replica"] is False
+    assert summary["two_process_generation_speedup"] is None
+    assert assess(probe, None, profile, source, replicas=2)[0]["throughput"] is False
