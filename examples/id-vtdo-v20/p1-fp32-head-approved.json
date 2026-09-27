@@ -1,0 +1,221 @@
+{
+  "version": "single-resident-p1-v0.20",
+  "purpose": "interface_development",
+  "candidate": "qwen35-9b",
+  "execution_profile": "v0.20.1",
+  "prior_attempt_ref": {
+    "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v020-p1-9b/launch.json",
+    "sha256": "98f09364cc4c00e25d9be394661bf55a00d63a3315c12629cbbbe0d89df5b297"
+  },
+  "prior_elapsed_gpu_seconds": 46.31456899642944,
+  "remaining_gpu_seconds": 3553.6854310035706,
+  "prior_output_bytes": 417242,
+  "model": "/data1/zhuxinrui/projects/ProWorkSim/runs/assets/models/Qwen3.5-9B-c20223623576",
+  "manifest": {
+    "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/assets/models/Qwen3.5-9B-c20223623576/proworksim-manifest.json",
+    "sha256": "030031b27513e399360f26a8db31746e719bb15a3d2f4d68874c1dba3ccc60a6"
+  },
+  "authorization": "User explicitly resumed this bounded single-GPU P1 on 2026-09-27; no P2 or successor authorization.",
+  "limits": {
+    "gpu_count": 1,
+    "gpu_seconds": 3600,
+    "task_seconds": 900,
+    "host_rss_bytes": 68719476736,
+    "output_bytes": 5368709120,
+    "model_api_calls": 0,
+    "minimum_free_gpu_mib": 40960,
+    "gpu_process_memory_limit_mib": 40960
+  },
+  "allowed_gpus_in_priority_order": [
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "runtime_profile": {
+    "version": "candidate-runtime-v0.20.1",
+    "candidate_id": "qwen3.5-9b",
+    "dtype": "bfloat16",
+    "devices": 1,
+    "attention": "sdpa_bf16_explicit_kv_v020",
+    "matmul_precision": "highest",
+    "cudnn_allow_tf32": false,
+    "chat_template_kwargs": {
+      "enable_thinking": false,
+      "preserve_thinking": false
+    },
+    "max_context_tokens": 16384,
+    "max_output_tokens": 2048,
+    "temperature": 0.7,
+    "top_p": 1.0,
+    "top_k": 0,
+    "native_tool_prompt": "official_xml_single_call",
+    "lora_target_modules": [
+      "q_proj",
+      "v_proj"
+    ],
+    "lora_scope": "Full-attention projections only; DeltaNet is frozen",
+    "history_policy": "Full public messages supplied to official template; non-thinking requested; preserve_thinking=False",
+    "dtype_scope": "Frozen text backbone BF16; frozen untied LM head FP32, with hidden states promoted BEFORE its matrix multiplication and FP32 output. Trainable LoRA and its matmuls FP32; PEFT projection results return to BF16. Sampling and full-input selected-token normalization FP32. Official DeltaNet/RMSNorm/rotary FP32 intermediates retained.",
+    "chat_stop_contract": {
+      "version": "native-chat-stop-v0.15.1",
+      "native_end_token": "<|im_end|>",
+      "native_end_token_id": 248046,
+      "end_of_text_token": "<|endoftext|>",
+      "end_of_text_token_id": 248044,
+      "eos_token_ids": [
+        248046,
+        248044
+      ],
+      "source": "Registered official tokenizer EOS, token vocabulary and assistant chat-template terminator",
+      "forbid_tokens_after_first_declared_eos": true,
+      "require_raw_output_ids_equal_training_output_ids": true
+    },
+    "parser_contract": {
+      "version": "public-format-diagnostics-v0.17",
+      "parser": "qwen_native_xml_v017",
+      "validation": "Original native parser acceptance; diagnostics use supplied public parameter types without changing later world/SDK validation",
+      "failure_fields": [
+        "stage",
+        "field_path",
+        "schema_path",
+        "expected_type",
+        "observed_type",
+        "position"
+      ]
+    },
+    "base_storage_dtype": "bfloat16_backbone_float32_lm_head",
+    "adapter_storage_dtype": "float32",
+    "adapter_compute_dtype": "float32",
+    "attention_qkv_dtype": "bfloat16",
+    "normalization_dtype": "float32",
+    "critic_dtype": "float32",
+    "autocast": false,
+    "prefix_cache": {
+      "enabled": false
+    },
+    "sampling": {
+      "resident_instances": 1,
+      "replicas": 0,
+      "role_scheduling": "sequential"
+    },
+    "probability_gate": {
+      "logprob_max_atol": 0.02,
+      "logprob_mean_atol": 0.002
+    },
+    "backbone_storage_dtype": "bfloat16",
+    "lm_head_storage_dtype": "float32",
+    "lm_head_input_dtype": "float32",
+    "lm_head_output_dtype": "float32",
+    "lm_head_trainable": false,
+    "lm_head_contract": "Untied bias-free Linear; actual FP32 weight and pre-projection input; output remains FP32"
+  },
+  "recipe": {
+    "seed": 2026093041,
+    "max_length": 16384,
+    "max_output_tokens": 2048,
+    "max_rss_bytes": 68719476736,
+    "diagnostic_max_groups": 0,
+    "post_update_max_decisions": 0
+  },
+  "numerical_requests": [
+    {
+      "request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen35-9b/resident/calls/resident_c082fa22df634f5d8632b4a98ef8a923.json",
+        "sha256": "48d42d745db440d20633305045fd698dcdb564e61a00be2a8c24215863b34ef8"
+      },
+      "purpose": "median_prompt",
+      "seed": 202609274000
+    },
+    {
+      "request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen35-9b/resident/calls/resident_00b818dbf4a44c33b503933119f922f1.json",
+        "sha256": "9b7edf0c94f9da986e52f444e0c3a42fd02f09ae48afbdd54446784e96e1fd7b"
+      },
+      "purpose": "longest_observed_prompt",
+      "seed": 202609274001
+    },
+    {
+      "request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/harness-v017-h1-qwen35-9b/resident/calls/resident_91b9fbdf76fd4e599bf8af96e8cbb8e6.json",
+        "sha256": "e53c6e0a28a5bf757c766a7cac3eedfe53b72fd4bb64de5c3f9f23d62af97f48"
+      },
+      "purpose": "largest_observed_output",
+      "seed": 202609274002
+    }
+  ],
+  "work_window": {
+    "window_id": "v020-p1-work",
+    "mode": "evaluate",
+    "stage": "P1_v020",
+    "template": "retail_balanced",
+    "harness": "native_v15",
+    "interface": "v14",
+    "presentation": "compact_v14",
+    "external_tick_per_sweep": 1,
+    "min_class_count": 2,
+    "slots": [
+      {
+        "slot_id": "v020-p1-0-implement",
+        "case_id": "retail-v18-43f0802bf0ad3ea8",
+        "task": "implement",
+        "pool": "development",
+        "family": "uci-online-retail-352",
+        "repeat": 0,
+        "sampling_seed": 202609274100,
+        "role_decision_limits": {
+          "implementer": 10
+        },
+        "purpose": "interface_development_not_locked_evaluation"
+      },
+      {
+        "slot_id": "v020-p1-1-review",
+        "case_id": "retail-v18-98c2e7513858aecb",
+        "task": "review",
+        "pool": "development",
+        "family": "uci-online-retail-352",
+        "repeat": 0,
+        "sampling_seed": 202609274101,
+        "role_decision_limits": {
+          "reviewer": 9
+        },
+        "purpose": "interface_development_not_locked_evaluation"
+      },
+      {
+        "slot_id": "v020-p1-2-pair",
+        "case_id": "retail-v18-f5c5569bae776873",
+        "task": "pair",
+        "pool": "development",
+        "family": "uci-online-retail-352",
+        "repeat": 0,
+        "sampling_seed": 202609274102,
+        "role_decision_limits": {
+          "provider": 6,
+          "implementer": 12
+        },
+        "purpose": "interface_development_not_locked_evaluation"
+      },
+      {
+        "slot_id": "v020-p1-3-chain",
+        "case_id": "retail-v18-370a02970464071c",
+        "task": "chain",
+        "pool": "development",
+        "family": "uci-online-retail-352",
+        "repeat": 0,
+        "sampling_seed": 202609274103,
+        "role_decision_limits": {
+          "provider": 6,
+          "implementer": 12,
+          "reviewer": 15
+        },
+        "purpose": "interface_development_not_locked_evaluation"
+      }
+    ]
+  },
+  "optimizer_steps": 0,
+  "resident_instances": 1,
+  "sampling_replicas": 0,
+  "automatic_successors": [],
+  "scope": "Current-policy sampling and diagnostic backward plus actual local-information work. Borrow old public prompts only, never old outputs/probabilities or rewards. Not optimizer-step capacity, learning gain, P2 source admission, or ID-VTDO support."
+}

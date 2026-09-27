@@ -7,6 +7,7 @@ The watchdog only signals its own child process group, never another project.
 import argparse
 import copy
 import importlib.metadata
+import math
 import os
 from pathlib import Path
 import signal
@@ -42,9 +43,46 @@ def write(path, value):
     atomic_write(Path(path), json_bytes(value))
 
 
-def build_plan(model, manifest, inventory):
-    from proworksim.candidate_runtime_v020 import candidate_profile
+def execution_class(execution_profile):
+    if execution_profile == "v0.20":
+        from proworksim.candidate_runtime_v020 import CandidateActor
+    elif execution_profile == "v0.20.1":
+        from proworksim.candidate_runtime_v0201 import CandidateActor
+    else:
+        raise ValueError("Only the two explicitly declared P1 numerical profiles are permitted")
+    return CandidateActor
+
+
+def prior_budget(execution_profile, prior_attempt_ref):
+    if execution_profile == "v0.20":
+        if prior_attempt_ref is not None:
+            raise ValueError("Initial P1 has no prior execution")
+        return 0.0, 0
+    if execution_profile != "v0.20.1" or prior_attempt_ref is None:
+        raise ValueError("The sole follow-up requires the closed original P1 launch reference")
+    path = checked(prior_attempt_ref)
+    launch = read_json(path)
+    report = read_json(path.parent / "report.json")
+    prior_plan = read_json(checked(report["plan"]))
+    elapsed = launch.get("elapsed_seconds")
+    if (launch.get("version") != VERSION or launch.get("status") != "stopped"
+            or launch.get("exit_code") != 2 or launch.get("downstream_started") is not False
+            or launch.get("limits") != LIMITS or launch.get("ended_at") is None
+            or type(elapsed) not in (int, float) or not math.isfinite(elapsed) or not 0 < elapsed < LIMITS["gpu_seconds"]
+            or prior_plan["runtime_profile"].get("version") != "candidate-runtime-v0.20"
+            or report.get("status") != "stopped_numeric_gate" or report.get("source_unchanged") is not True
+            or report.get("actor_steps") != 0 or report.get("critic_steps") != 0
+            or report.get("work_episodes_started") != 0):
+        raise ValueError("Prior attempt is not the closed original zero-update P1 numeric failure")
+    size = sum(p.stat().st_size for p in path.parent.rglob("*") if p.is_file())
+    return elapsed, size
+
+
+def build_plan(model, manifest, inventory, *, execution_profile="v0.20", prior_attempt_ref=None):
     from proworksim.templates.retail_balanced import resolve
+
+    candidate_profile = execution_class(execution_profile).profile_factory
+    prior_seconds, prior_bytes = prior_budget(execution_profile, prior_attempt_ref)
 
     slots = []
     for i, (task, fact, quality) in enumerate((
@@ -58,6 +96,9 @@ def build_plan(model, manifest, inventory):
                       "role_decision_limits": copy.deepcopy(case["role_decision_limits"]),
                       "purpose": "interface_development_not_locked_evaluation"})
     return {"version": VERSION, "purpose": "interface_development", "candidate": "qwen35-9b",
+            "execution_profile": execution_profile, "prior_attempt_ref": copy.deepcopy(prior_attempt_ref),
+            "prior_elapsed_gpu_seconds": prior_seconds, "remaining_gpu_seconds": LIMITS["gpu_seconds"] - prior_seconds,
+            "prior_output_bytes": prior_bytes,
             "model": str(Path(model).resolve()), "manifest": ref(manifest),
             "authorization": "User explicitly resumed this bounded single-GPU P1 on 2026-09-27; no P2 or successor authorization.",
             "limits": copy.deepcopy(LIMITS), "allowed_gpus_in_priority_order": list(ALLOWED_GPUS),
@@ -77,7 +118,7 @@ def build_plan(model, manifest, inventory):
 
 
 def validate_plan(plan):
-    from proworksim.candidate_runtime_v020 import candidate_profile
+    candidate_profile = execution_class(plan.get("execution_profile")).profile_factory
     if (plan.get("version") != VERSION or plan.get("limits") != LIMITS
             or plan.get("candidate") != "qwen35-9b" or plan.get("optimizer_steps") != 0
             or plan.get("resident_instances") != 1 or plan.get("sampling_replicas") != 0
@@ -86,7 +127,8 @@ def validate_plan(plan):
             or plan.get("runtime_profile") != candidate_profile("qwen3.5-9b", devices=1)):
         raise ValueError("P1 declaration differs from the authorized fixed experiment")
     inventory = read_json(PROBE_INVENTORY)
-    expected = build_plan(plan["model"], checked(plan["manifest"]), inventory)
+    expected = build_plan(plan["model"], checked(plan["manifest"]), inventory,
+                          execution_profile=plan["execution_profile"], prior_attempt_ref=plan.get("prior_attempt_ref"))
     if expected != plan or len(plan["numerical_requests"]) != 3:
         raise ValueError("P1 cases, seeds, recipe or responsibilities changed")
     for row in plan["numerical_requests"]:
@@ -131,6 +173,9 @@ def numerical(owner, plan, out):
         row["learning_forward_calls_attempted"] = 1
         with torch.no_grad():
             probs = owner.learning_logprobs(trace)
+        row["recomputed_logprobs_dtype"] = str(probs.dtype)
+        if hasattr(owner, "execution_diagnostics"):
+            row["recompute_execution"] = owner.execution_diagnostics()
         row["probability"] = probability_check(probs.detach().cpu().tolist(), trace["behavior_logprobs"], owner.recipe)
         del probs
         write(out / "numerical.json", {"status": "running", "rows": rows, "optimizer_steps": 0})
@@ -143,6 +188,9 @@ def numerical(owner, plan, out):
         probs = owner.learning_logprobs(trace)
         check = probability_check(probs.detach().cpu().tolist(), trace["behavior_logprobs"], owner.recipe)
         row["gradient_probability"] = check
+        row["gradient_logprobs_dtype"] = str(probs.dtype)
+        if hasattr(owner, "execution_diagnostics"):
+            row["gradient_forward_execution"] = owner.execution_diagnostics()
         if not check["passed"]:
             del probs
             break
@@ -191,7 +239,7 @@ def child(plan, out):
         raise ValueError("Freeze the clean source before P1")
     if os.environ.get("CUDA_VISIBLE_DEVICES") not in {str(i) for i in ALLOWED_GPUS}:
         raise ValueError("Exactly one physical GPU required")
-    from proworksim.candidate_runtime_v020 import CandidateActor
+    CandidateActor = execution_class(plan["execution_profile"])
     from proworksim.harness_collection import collect_window
     from proworksim.online_training import run_online_windows
 
@@ -281,7 +329,10 @@ def parent(plan, out):
     started = time.time()
     command = [sys.executable, "-m", "scripts.p1_v020", "--child", "--plan", str(out / "plan.json"), "--output", str(out)]
     state = {"version": VERSION, "status": "launch_intent", "started_at": started, "gpu": gpu,
-             "source": source, "command": command, "limits": LIMITS, "before_resources": cards}
+             "source": source, "command": command, "limits": LIMITS, "before_resources": cards,
+             "execution_profile": plan["execution_profile"], "prior_attempt_ref": plan["prior_attempt_ref"],
+             "prior_elapsed_gpu_seconds": plan["prior_elapsed_gpu_seconds"],
+             "remaining_gpu_seconds": plan["remaining_gpu_seconds"]}
     write(out / "launch.json", state)
     with (out / "model.log").open("x") as log:
         process = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT,
@@ -297,8 +348,8 @@ def parent(plan, out):
                     rss = int(Path(f"/proc/{process.pid}/statm").read_text().split()[1]) * os.sysconf("SC_PAGE_SIZE")
                 except FileNotFoundError:
                     rss = 0
-                size = sum(p.stat().st_size for p in out.rglob("*") if p.is_file())
-                if now - started >= LIMITS["gpu_seconds"]:
+                size = sum(p.stat().st_size for p in out.rglob("*") if p.is_file()) + plan["prior_output_bytes"]
+                if now - started >= plan["remaining_gpu_seconds"]:
                     reason = "total_gpu_time_limit"
                 elif now - task["started_at"] >= LIMITS["task_seconds"]:
                     reason = "single_task_time_limit"
@@ -336,6 +387,7 @@ def parent(plan, out):
             code = process.wait()
             state.update(status="complete" if code == 0 else "stopped", exit_code=code,
                          ended_at=time.time(), limit_reason=reason, elapsed_seconds=time.time()-started,
+                         cumulative_gpu_seconds=plan["prior_elapsed_gpu_seconds"] + time.time() - started,
                          no_retry=True, downstream_started=False)
             write(out / "launch.json", state)
     return code

@@ -62,19 +62,24 @@ def bf16_attention_forward(module, query, key, value, attention_mask, **kwargs):
     )
 
 
-def inspect_parameter_storage(model, torch):
+def inspect_parameter_storage(model, torch, *, frozen_fp32_names=()):
     """Validate every actual parameter; record buffers separately, without casting."""
     counts = {"base": {"tensors": 0, "elements": 0, "bytes": 0},
               "adapter": {"tensors": 0, "elements": 0, "bytes": 0}}
+    frozen_fp32_names = set(frozen_fp32_names)
+    if frozen_fp32_names:
+        counts["lm_head"] = {"tensors": 0, "elements": 0, "bytes": 0}
+    if not frozen_fp32_names.issubset(dict(model.named_parameters())):
+        raise ValueError("Declared frozen FP32 parameters are absent")
     layout, devices = [], set()
     for name, parameter in model.named_parameters():
         adapter = "lora_" in name
-        expected = torch.float32 if adapter else torch.bfloat16
+        expected = torch.float32 if adapter or name in frozen_fp32_names else torch.bfloat16
         if parameter.dtype != expected or parameter.requires_grad != adapter:
             raise ValueError("Actual parameter storage/trainability violates v0.20: " + name)
         if parameter.device.type == "meta":
             raise ValueError("Unmaterialized base/adapter parameter: " + name)
-        bucket = counts["adapter" if adapter else "base"]
+        bucket = counts["adapter" if adapter else "lm_head" if name in frozen_fp32_names else "base"]
         bucket["tensors"] += 1
         bucket["elements"] += parameter.numel()
         bucket["bytes"] += parameter.numel() * parameter.element_size()
@@ -90,7 +95,8 @@ def inspect_parameter_storage(model, torch):
         buffers[key]["tensors"] += 1
         buffers[key]["elements"] += buffer.numel()
         buffers[key]["bytes"] += buffer.numel() * buffer.element_size()
-    return {"base_dtype": "bfloat16", "adapter_dtype": "float32", "counts": counts,
+    return {"base_dtype": "bfloat16_backbone_float32_lm_head" if frozen_fp32_names else "bfloat16",
+            "adapter_dtype": "float32", "counts": counts,
             "parameter_layout_sha256": digest(json_bytes(layout)), "devices": sorted(devices),
             "buffers_by_dtype": buffers,
             "scope": "Actual tensor storage only; excludes cache, activations, gradients, optimizer and allocator overhead"}
@@ -117,6 +123,13 @@ class Float32SamplingProcessor:
 
 
 class CandidateActor(PreviousActor):
+    runtime_version = VERSION
+    profile_factory = staticmethod(candidate_profile)
+    storage_inspector = staticmethod(inspect_parameter_storage)
+
+    def prepare_model(self, network, torch):
+        """Versioned subclasses may prepare an explicitly declared storage partition."""
+
     def __init__(self, *args, inference_profile, **kwargs):
         import torch
         from transformers.masking_utils import ALL_MASK_ATTENTION_FUNCTIONS, AttentionMaskInterface
@@ -130,7 +143,7 @@ class CandidateActor(PreviousActor):
         if torch.get_default_dtype() != torch.float32:
             raise ValueError("FP32 default required for the declared critic and optimizer construction")
         profile = copy.deepcopy(inference_profile)
-        declared = candidate_profile(profile["candidate_id"], dtype=profile["dtype"],
+        declared = self.profile_factory(profile["candidate_id"], dtype=profile["dtype"],
                                      devices=profile["devices"])
         recipe = recipe_config(kwargs.get("recipe"))
         if any(recipe[key] != value for key, value in PROBABILITY_GATE.items()):
@@ -140,7 +153,8 @@ class CandidateActor(PreviousActor):
                 or recipe["temperature"] != declared["temperature"]):
             raise ValueError("Recipe differs from declared candidate interface budget")
         network = args[0] if args else kwargs["model"]
-        actual = inspect_parameter_storage(network, torch)
+        self.prepare_model(network, torch)
+        actual = self.storage_inspector(network, torch)
         device = kwargs.get("device", "cuda")
         if device.startswith("cuda"):
             actual_devices = {p.device.index for p in network.parameters()}
@@ -172,7 +186,7 @@ class CandidateActor(PreviousActor):
     def from_candidate(cls, model_path, *, manifest, profile, output, recipe=None):
         import torch
 
-        expected = candidate_profile(profile["candidate_id"], dtype=profile["dtype"],
+        expected = cls.profile_factory(profile["candidate_id"], dtype=profile["dtype"],
                                      devices=profile["devices"])
         if profile != expected:
             raise ValueError("Undeclared v0.20 execution profile change")
@@ -193,7 +207,7 @@ class CandidateActor(PreviousActor):
             raise ValueError("Actual FP32 matmul precision differs from v0.20 declaration")
         if self.model.config._attn_implementation != ATTENTION:
             raise ValueError("Actual attention adapter changed")
-        current = inspect_parameter_storage(self.model, self.torch)
+        current = self.storage_inspector(self.model, self.torch)
         if current != self.inference_profile["actual_parameter_storage"]:
             raise ValueError("Actual parameter storage changed after declaration")
 
@@ -205,9 +219,9 @@ class CandidateActor(PreviousActor):
             logits_processor=[processor], **options,
         )
         return generated, {
-            "version": VERSION, "resident_instances": 1, "sampling_replicas": 0,
+            "version": self.runtime_version, "resident_instances": 1, "sampling_replicas": 0,
             "cache_scope": "Fresh per-request generation KV only; no prefix cache or cross-role reuse",
-            "base_storage_dtype": "bfloat16", "adapter_storage_dtype": "float32",
+            "base_storage_dtype": self.inference_profile["base_storage_dtype"], "adapter_storage_dtype": "float32",
             "sampling_normalization_dtype": "float32",
             "sampler_input_score_dtypes": sorted(processor.observed_input_dtypes),
             "normalization_calls": processor.calls,

@@ -61,7 +61,8 @@ def test_failed_numeric_gate_never_collects_business_or_runs_successor(plan, tmp
     owner = SimpleNamespace(actor_steps=0, critic_steps=0)
     calls = []
     monkeypatch.setattr(candidate, "CandidateActor", SimpleNamespace(
-        from_candidate=lambda *args, **kwargs: calls.append("fixture_loader") or owner))
+        from_candidate=lambda *args, **kwargs: calls.append("fixture_loader") or owner,
+        profile_factory=candidate.CandidateActor.profile_factory))
     monkeypatch.setattr(p1, "numerical", lambda *args: calls.append("numeric_failure") or False)
     monkeypatch.setattr(p1.importlib.metadata, "version", lambda name: "1.5.5")
     def forbidden(*args, **kwargs):
@@ -188,3 +189,33 @@ def test_owned_child_escalation_is_bounded_and_exited_child_is_untouched(monkeyp
     process.exited = True
     p1.stop_owned_child(process)
     assert len(signals) == 2
+
+
+def test_explicit_head_followup_binds_closed_prior_and_subtracts_actual_time(plan, tmp_path):
+    prior = tmp_path / "closed-prior"
+    prior.mkdir()
+    p1.write(prior / "plan.json", plan)
+    p1.write(prior / "report.json", {"plan": p1.ref(prior / "plan.json"),
+        "status": "stopped_numeric_gate", "source_unchanged": True,
+        "actor_steps": 0, "critic_steps": 0, "work_episodes_started": 0})
+    elapsed = 46.31456899642944
+    p1.write(prior / "launch.json", {"version": p1.VERSION, "status": "stopped", "exit_code": 2,
+        "downstream_started": False, "limits": p1.LIMITS, "elapsed_seconds": elapsed,
+        "ended_at": 100})
+    inventory = read_json(p1.PROBE_INVENTORY)
+    followup = p1.build_plan(plan["model"], plan["manifest"]["path"], inventory,
+        execution_profile="v0.20.1", prior_attempt_ref=p1.ref(prior / "launch.json"))
+    p1.validate_plan(followup)
+    assert followup["remaining_gpu_seconds"] == 3600 - elapsed
+    assert followup["prior_output_bytes"] > 0
+    assert followup["runtime_profile"]["lm_head_storage_dtype"] == "float32"
+    assert followup["work_window"] == plan["work_window"]
+    assert followup["numerical_requests"] == plan["numerical_requests"]
+    altered = copy.deepcopy(followup)
+    altered["remaining_gpu_seconds"] = 3600
+    with pytest.raises(ValueError):
+        p1.validate_plan(altered)
+    with pytest.raises(ValueError, match="closed original"):
+        p1.build_plan(plan["model"], plan["manifest"]["path"], inventory, execution_profile="v0.20.1")
+    with pytest.raises(ValueError, match="two explicitly"):
+        p1.build_plan(plan["model"], plan["manifest"]["path"], inventory, execution_profile="v0.20.2")
