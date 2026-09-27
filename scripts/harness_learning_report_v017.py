@@ -121,7 +121,7 @@ def lightweight_advantages(admission, update, decisions, slot_rows):
 def build_report(run):
     run = Path(run).resolve()
     protocol = read(run / "launch-protocol.json")
-    if not protocol or protocol.get("stage") not in {"H2", "H2_v018", "ID_support_v018"}:
+    if not protocol or protocol.get("stage") not in {"H2", "H2_v018", "ID_support_v018", "H2_v019", "ID_support_v019"}:
         raise ValueError("An actual declared H2 run is required")
     online = read(run / "online/report.json", {})
     records = {w["window_id"]: w for w in online.get("windows", [])}
@@ -193,6 +193,7 @@ def build_report(run):
                     rows, protocol.get("primary_evaluation", {}).get("task_weights")
                 ),
                 "rows": rows,
+                "parallel_execution": summary.get("parallel_execution"),
                 "before_actor_identity": record.get("before_actor_identity"),
                 "after_actor_identity": record.get("after_actor_identity"),
                 "evaluation_guard": record.get("evaluation_guard"),
@@ -222,6 +223,7 @@ def build_report(run):
                 "target_input_rule": "Original input_ids/output_ids from current-window member completions; tool and colleague content is input-only.",
                 "references": {
                     "collection": reference(folder / "collection/summary.json"),
+                    "parallel_execution": reference(folder / "collection/parallel/report.json"),
                     "update": reference(folder / "update/report.json"),
                     "actor_admission": reference(folder / "update/admission.json"),
                     "behavior_checks": reference(folder / "update/behavior-probability-check.json"),

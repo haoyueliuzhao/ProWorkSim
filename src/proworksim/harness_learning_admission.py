@@ -9,35 +9,85 @@ from .harness_admission import checked_ref, require, _guard
 from .storage import digest, json_bytes, read_json
 
 
-def _builder(revised=False):
+def _builder(revised=False, optimized=False):
     root = str(Path(__file__).resolve().parents[2])
     added = root not in sys.path
     if added:
         sys.path.insert(0, root)
     try:
-        return importlib.import_module(
-            "scripts.build_harness_learning_v018"
-            if revised
-            else "scripts.build_harness_learning_v017"
-        )
+        name = "v019" if optimized else "v018" if revised else "v017"
+        return importlib.import_module("scripts.build_harness_learning_" + name)
     finally:
         if added:
             sys.path.remove(root)
 
 
+OPTIMIZATION_VERSION = "harness-optimization-admission-v0.19"
+OPTIMIZATION_CHECKS = (
+    "prefix_probability", "full_recompute_probability", "backward", "two_replica", "throughput"
+)
+
+
+def validate_optimization_admission(reference, *, candidate_id, runtime_profile, weight_manifest):
+    """Metadata-only actual numerical/performance gate; never read work scores."""
+    from .audit import code_identity
+    from .candidate_runtime_v019 import candidate_profile
+
+    report = read_json(checked_ref(reference))
+    require(report.get("version") == OPTIMIZATION_VERSION,
+            "Actual v0.19 optimization admission report required")
+    source = code_identity()
+    require(source.get("code_dirty") is False and source.get("code_commit")
+            and report.get("execution_source_commit") == source["code_commit"],
+            "Optimization gate must bind this clean frozen execution source")
+    candidates = report.get("candidates")
+    require(isinstance(candidates, dict), "Optimization candidates absent")
+    candidate = candidates.get(candidate_id)
+    require(isinstance(candidate, dict) and candidate.get("passed") is True,
+            "Selected candidate has not passed actual optimization gates; no profile fallback")
+    names = {"qwen35-9b": "qwen3.5-9b", "qwen38-27b": "qwen3.8-27b"}
+    require(candidate_id in names and isinstance(runtime_profile, dict),
+            "Unknown optimized candidate/profile")
+    expected = candidate_profile(names[candidate_id], dtype="float32",
+                                 devices=runtime_profile.get("devices"))
+    require(runtime_profile == expected and candidate.get("runtime_profile") == expected,
+            "Optimization gate/runtime profile differs from declared FP32 optimized prefix execution")
+    manifest = Path(weight_manifest)
+    require(manifest.is_file() and candidate.get("weight_manifest_sha256") == digest(manifest.read_bytes()),
+            "Optimization benchmark base weights differ from selected H1 manifest")
+    checks = candidate.get("checks")
+    require(isinstance(checks, dict), "Actual optimization evidence checks absent")
+    evidence = {}
+    for name in OPTIMIZATION_CHECKS:
+        check = checks.get(name)
+        require(isinstance(check, dict) and check.get("passed") is True,
+                "Actual optimization check did not pass: " + name)
+        checked_ref(check.get("evidence"))
+        evidence[name] = copy.deepcopy(check["evidence"])
+    return {"status": "admitted", "version": OPTIMIZATION_VERSION,
+            "candidate_id": candidate_id, "optimization_admission": copy.deepcopy(reference),
+            "execution_source_commit": source["code_commit"],
+            "runtime_profile": copy.deepcopy(expected), "checks": evidence,
+            "scope": "Actual fixed-input numerical, backward, replica and throughput evidence; no work-grade-based replacement."}
+
+
 def validate_h2_launch(protocol, *, model_path, weight_manifest, restore_checkpoint=None):
-    if protocol.get("stage") == "ID_support_v018":
+    optimized = protocol.get("stage") in {"H2_v019", "ID_support_v019"}
+    if optimized or protocol.get("runtime", {}).get("kind") == "qwen_hybrid_optimized":
+        require(optimized and protocol.get("runtime", {}).get("kind") == "qwen_hybrid_optimized",
+                "Optimized runtime requires the explicitly gated v0.19 stage")
+    if protocol.get("stage") in {"ID_support_v018", "ID_support_v019"}:
         return validate_support_launch(
             protocol,
             model_path=model_path,
             weight_manifest=weight_manifest,
             restore_checkpoint=restore_checkpoint,
         )
-    if protocol.get("stage") not in {"H2", "H2_v018"}:
+    if protocol.get("stage") not in {"H2", "H2_v018", "H2_v019"}:
         return {"status": "not_H2"}
-    revised = protocol.get("stage") == "H2_v018"
-    suffix = "v018" if revised else "v017"
-    gate_version = "h2-admission-v0.18" if revised else "h2-admission-v0.17"
+    revised = protocol.get("stage") in {"H2_v018", "H2_v019"}
+    suffix = "v019" if optimized else "v018" if revised else "v017"
+    gate_version = "h2-admission-" + {"v019": "v0.19", "v018": "v0.18", "v017": "v0.17"}[suffix]
     require(
         not restore_checkpoint,
         "H2 starts fresh after migration; checkpoint restoration is forbidden",
@@ -84,8 +134,15 @@ def validate_h2_launch(protocol, *, model_path, weight_manifest, restore_checkpo
         and Path(weight_manifest).resolve() == checked_ref(base["manifest"]),
         "H2 base weights differ from selected model",
     )
-    migration, pilot = _builder(revised).build_protocols(
-        h1, choice["harness"], protocol["selection"]
+    optimization = None
+    extra = {}
+    if optimized:
+        optimization = validate_optimization_admission(
+            protocol.get("optimization_admission"), candidate_id=choice["candidate_id"],
+            runtime_profile=protocol["runtime"]["profile"], weight_manifest=weight_manifest)
+        extra["optimization_admission"] = protocol["optimization_admission"]
+    migration, pilot = _builder(revised, optimized).build_protocols(
+        h1, choice["harness"], protocol["selection"], **extra
     )
     candidate = copy.deepcopy(protocol)
     candidate.pop("launch_gate", None)
@@ -105,6 +162,8 @@ def validate_h2_launch(protocol, *, model_path, weight_manifest, restore_checkpo
             "adapter_sha256"
         ),
     }
+    if optimization is not None:
+        record["optimization"] = optimization
     if protocol.get("experiment_id") == "h2-pilot-" + suffix:
         gate = protocol.get("launch_gate", {})
         require(
@@ -175,17 +234,19 @@ def validate_h2_launch(protocol, *, model_path, weight_manifest, restore_checkpo
 
 
 def validate_support_launch(protocol, *, model_path, weight_manifest, restore_checkpoint):
+    optimized = protocol.get("stage") == "ID_support_v019"
+    suffix = "v019" if optimized else "v018"
     gate = protocol.get("launch_gate", {})
     require(
-        gate.get("version") == "id-support-density-v0.18" and gate.get("state") == "admitted",
+        gate.get("version") == ("id-support-density-v0.19" if optimized else "id-support-density-v0.18") and gate.get("state") == "admitted",
         "Support density waits for a completed pilot and its fixed final checkpoint; planning alone cannot launch",
     )
     report_path = checked_ref(gate.get("pilot_report"))
     root = report_path.parent.parent
     report, pilot = read_json(report_path), read_json(root / "launch-protocol.json")
     require(
-        pilot.get("stage") == "H2_v018"
-        and pilot.get("experiment_id") == "h2-pilot-v018"
+        pilot.get("stage") == "H2_" + suffix
+        and pilot.get("experiment_id") == "h2-pilot-" + suffix
         and report.get("status") == "complete"
         and len(report.get("windows", [])) == len(pilot.get("windows", [])) == 6,
         "Support diagnosis requires the completed predeclared pilot, not an intermediate/best checkpoint",
@@ -215,7 +276,12 @@ def validate_support_launch(protocol, *, model_path, weight_manifest, restore_ch
     selection = read_json(checked_ref(protocol.get("selection")))
     choice = selection.get("selected") or {}
     h1 = read_json(checked_ref(choice.get("protocol_ref")))
-    expected = _builder(True).support_protocol(h1, choice["harness"], protocol["selection"])
+    extra = {"optimization_admission": protocol.get("optimization_admission")} if optimized else {}
+    expected = _builder(True, optimized).support_protocol(
+        h1, choice["harness"], protocol["selection"], **extra)
+    if optimized:
+        require(protocol.get("optimization_admission") == pilot.get("optimization_admission"),
+                "Support optimization evidence differs from completed pilot")
     actual = copy.deepcopy(protocol)
     actual.pop("launch_gate", None)
     expected.pop("launch_gate", None)
@@ -227,7 +293,7 @@ def validate_support_launch(protocol, *, model_path, weight_manifest, restore_ch
     )
     return {
         "status": "admitted",
-        "stage": "ID_support_v018",
+        "stage": "ID_support_" + suffix,
         "pilot_report": gate["pilot_report"],
         "fixed_final_actor_identity": checkpoint["actor_identity"],
         "expected_optimizer_updates": 0,

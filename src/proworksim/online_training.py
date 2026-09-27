@@ -261,10 +261,13 @@ class SharedActor:
     """Exactly one resident LoRA actor and actor optimizer across all roles/windows."""
 
     def __init__(self, model, tokenizer, *, output, base_identity, inference_profile,
-                 recipe=None, device="cuda", torch_module=None, require_lora=True):
+                 recipe=None, device="cuda", torch_module=None, require_lora=True, sampling_only=False):
         if torch_module is None:
             import torch as torch_module
         self.torch, self.model, self.tokenizer = torch_module, model, tokenizer
+        if type(sampling_only) is not bool:
+            raise ValueError("sampling_only must be an explicit boolean")
+        self.sampling_only = sampling_only
         torch = self.torch
         self.output = Path(output)
         self.output.mkdir(parents=True, exist_ok=False)
@@ -281,18 +284,23 @@ class SharedActor:
             raise ValueError("Only one declared trainable LoRA actor is supported")
         if any(isinstance(m, torch.nn.Dropout) and m.p != 0 for m in model.modules()) or getattr(model.config, "attention_dropout", 0) != 0:
             raise ValueError("Sampling and replay require zero base/adapter dropout")
-        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        if not sampling_only:
+            self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+            if hasattr(self.model, "enable_input_require_grads"):
+                self.model.enable_input_require_grads()
+        else:
+            for parameter in self.model.parameters():
+                parameter.requires_grad_(False)
         self.model.config.use_cache = False
-        if hasattr(self.model, "enable_input_require_grads"):
-            self.model.enable_input_require_grads()
         self.model.eval()
-        width = len(self.recipe["members"]) * 10
-        self.critic = torch.nn.Sequential(torch.nn.Linear(width, 32), torch.nn.Tanh(), torch.nn.Linear(32, 1)).to(device)
-        # A random baseline must not manufacture the first policy-learning signal.
-        torch.nn.init.zeros_(self.critic[-1].weight)
-        torch.nn.init.zeros_(self.critic[-1].bias)
-        self.actor_optimizer = torch.optim.AdamW(list(self.actor_parameters.values()), lr=self.recipe["actor_lr"], weight_decay=0)
-        self.critic_optimizer = torch.optim.AdamW(self.critic.parameters(), lr=self.recipe["critic_lr"], weight_decay=0)
+        if not sampling_only:
+            width = len(self.recipe["members"]) * 10
+            self.critic = torch.nn.Sequential(torch.nn.Linear(width, 32), torch.nn.Tanh(), torch.nn.Linear(32, 1)).to(device)
+            # A random baseline must not manufacture the first policy-learning signal.
+            torch.nn.init.zeros_(self.critic[-1].weight)
+            torch.nn.init.zeros_(self.critic[-1].bias)
+            self.actor_optimizer = torch.optim.AdamW(list(self.actor_parameters.values()), lr=self.recipe["actor_lr"], weight_decay=0)
+            self.critic_optimizer = torch.optim.AdamW(self.critic.parameters(), lr=self.recipe["critic_lr"], weight_decay=0)
         self.actor_steps = self.critic_steps = self.policy_revision = 0
         self.critic_has_nonzero_reward_history = False
         self.window_id = None
@@ -305,11 +313,12 @@ class SharedActor:
             "version": VERSION, "base_identity": self.base_identity,
             "inference_profile": self.inference_profile,
             "recipe": self.recipe, "initial_actor_identity": self._identity,
-            "actor_optimizer_ownership": "one shared optimizer, reused across all windows",
+            "sampling_only": sampling_only,
+            "actor_optimizer_ownership": "none; readonly sampling replica" if sampling_only else "one shared optimizer, reused across all windows",
             "transport_kind": "resident_direct", "actual_network_http_calls": 0,
             "base_generation_config": (self.model.generation_config.to_dict()
                 if hasattr(self.model.generation_config, "to_dict") else vars(self.model.generation_config)),
-            "critic_initialization": "seeded hidden layer; exactly zero final layer/output",
+            "critic_initialization": "not constructed" if sampling_only else "seeded hidden layer; exactly zero final layer/output",
         }))
 
     @classmethod
@@ -386,6 +395,11 @@ class SharedActor:
 
     def freeze_identity(self):
         return copy.deepcopy(self._identity)
+
+    def export_sampling_snapshot(self, directory):
+        """Export only current LoRA tensors for a fixed-window readonly sampler."""
+        from .sampling_replica_v019 import export_sampling_snapshot
+        return export_sampling_snapshot(self, directory)
 
     @property
     def transport(self):
@@ -480,7 +494,16 @@ class SharedActor:
 
     def learning_logprobs(self, trace):
         """Original complete output targets under the current shared actor."""
+        if self.sampling_only:
+            raise ValueError("Readonly sampling replicas cannot execute learner forwards")
         return selected_logprobs(self.model, trace, self.torch, self.device)
+
+    def _generate_tokens(self, inputs, trace, options):
+        """Runtime-specific execution; full original inputs and sampling stay owned here."""
+        return self.model.generate(
+            input_ids=inputs, attention_mask=self.torch.ones_like(inputs),
+            logits_processor=[trace], **options,
+        ), {}
 
     def complete(self, request, *, timeout_seconds):
         if self.phase != "collecting" or self.busy:
@@ -518,10 +541,7 @@ class SharedActor:
                     torch.cuda.reset_peak_memory_stats(device_index)
             trace = SamplingTrace(temperature)
             with torch.inference_mode():
-                generated = self.model.generate(
-                    input_ids=inputs, attention_mask=torch.ones_like(inputs),
-                    logits_processor=[trace], **options,
-                )
+                generated, execution_metadata = self._generate_tokens(inputs, trace, options)
             probabilities = trace.finish(generated)
             raw_output_ids = generated[0, len(ids):].tolist()
             ledger["raw_output_ids"] = raw_output_ids
@@ -553,7 +573,8 @@ class SharedActor:
                     "source": "actual generation token IDs and sampling logits, not retokenized text"},
                 "effective_generation": options,
                 "service_record": {"transport_kind": "resident_direct", "actual_network_http_calls": 0, "batch_size": 1, "batch_row_index": 0, "prefix_width": len(ids),
-                    "cache_scope": "fresh per request; cleared before and after each generation/update",
+                    "cache_scope": execution_metadata.get("cache_scope", "fresh per request; cleared before and after each generation/update"),
+                    "execution_optimization": execution_metadata,
                     "seconds": time.monotonic() - started, "resource": self._resource_guard()},
             }
             if self.device.startswith("cuda"):
@@ -578,6 +599,8 @@ class SharedActor:
                 "response_headers": {"x-transport": "resident-direct"}, "response_redactions": []}
 
     def _state_bundle(self):
+        if self.sampling_only:
+            raise ValueError("Readonly sampling replicas have no learner state")
         torch = self.torch
         return {
             "version": VERSION, "recipe": copy.deepcopy(self.recipe),
@@ -627,6 +650,8 @@ class SharedActor:
 
     def save_checkpoint(self, directory):
         """One common boundary checkpoint, including both persistent optimizers/RNG."""
+        if self.sampling_only:
+            raise ValueError("Readonly sampling replicas cannot save learner checkpoints")
         if self.busy or self.phase != "idle":
             raise ValueError("Shared checkpoints require a complete window boundary")
         directory = Path(directory)
@@ -650,6 +675,8 @@ class SharedActor:
         return summary
 
     def restore_checkpoint(self, directory):
+        if self.sampling_only:
+            raise ValueError("Readonly sampling replicas cannot restore learner checkpoints")
         if self.busy or self.phase != "idle":
             raise ValueError("Restore requires an idle learner")
         directory = Path(directory)
@@ -684,6 +711,8 @@ class SharedActor:
 
     def update_window(self, entries, output, *, feature_function=None, update_actor=True):
         """One complete-window PPO accumulation; no old D0 or reward-diversity gate."""
+        if self.sampling_only:
+            raise ValueError("Readonly sampling replicas cannot update")
         if self.phase != "collecting" or self.busy:
             raise ValueError("Update follows a finished collection with no active model calls")
         torch = self.torch

@@ -61,13 +61,9 @@ def _runtime(owner, prepared, folder, harness):
     return runtime, captured, interfaces
 
 
-def collect_window(owner, window_spec, output_dir):
-    output = Path(output_dir)
-    output.mkdir(parents=True, exist_ok=False)
-    atomic_write(output/'window-spec.json', json_bytes(window_spec))
+def prepare_slot(owner, window_spec, row, index, output):
+    """Prepare one globally numbered world without sampling or acting."""
     harness = window_spec['harness']
-    if not window_spec.get('slots'):
-        raise ValueError('Predeclare the finite collection slots')
     template = window_spec.get('template', 'retail_harness')
     if template == 'retail_balanced':
         from .templates.retail_balanced import case_spec as resolve_case, build_balanced_case as build_case
@@ -77,96 +73,139 @@ def collect_window(owner, window_spec, output_dir):
         resolve_case, build_case = case_spec, build_harness_case
     else:
         raise ValueError('Unknown declared harness world template')
-    identity = owner.freeze_identity()
-    prepared_rows, specs = [], []
-    for index, row in enumerate(window_spec['slots']):
-        case = resolve_case(row['case_id'])
-        if window_spec.get('mode') == 'online' and (template not in {'retail_work', 'retail_balanced'} or case['pool'] != 'train'):
-            raise ValueError('Direct H2 updates use only the declared training pool, never H0/H1 development or locked facts')
-        if row.get('pool', case['pool']) != case['pool']:
-            raise ValueError('Declared usage pool differs from actual case')
-        # Public compatibility instructions/limits are frozen in H0, never
-        # applied as hidden help to H1 or copied into the old study.
-        if row.get('role_decision_limits') and row['role_decision_limits'] != case['role_decision_limits']:
-            raise ValueError('Case responsibility budgets remain frozen in the independent catalog')
-        folder = output/f'slot-{index}'
-        prepared = build_case(case, folder)
-        if row.get('public_task_override') and (window_spec['stage'] != 'H0_compatibility' or row.get('purpose') != 'public_interface_calibration_not_work_ability'):
-            raise ValueError('Only the declared H0 interface probe may override the public role task')
-        if row.get('public_task_override'):
-            for role in prepared.scenario['roles']:
-                role['config']['task'] = row['public_task_override']
-        runtime, captured, interfaces = _runtime(owner, prepared, folder, harness)
-        scenario = copy.deepcopy(prepared.scenario)
-        scenario['variation']['harness'] = {'version': VERSION, 'condition': harness,
-            'stage': window_spec['stage'], 'purpose': row.get('purpose', 'development_work'),
-            'interface': 'v14', 'presentation': 'compact_v14',
-            'profile_bindings': {k: v.profile for k, v in interfaces.items()}}
-        scenario['variation']['online_collection'] = {'interface': 'work-interface-v0.14', 'presentation': 'compact_v14',
-            'role_profile_binding': {k: v.profile for k, v in interfaces.items()},
-            'external_tick_per_sweep': 1, 'harness': harness}
-        initial = {'case': prepared.case, 'reward_spec': prepared.reward_spec,
-                   'initial_business_sha256': prepared.prefix['prepared_business_state_sha256']}
-        specs.append({'slot_id': row['slot_id'], 'xi_id': case['case_id'],
-                      'xi_fingerprint': digest(json_bytes(initial)), 'active_members': list(prepared.active_roles),
-                      'policies': runtime.policy_identities, 'mapping_spec_id': MAPPER})
-        atomic_write(folder/'model-scenario.json', json_bytes(scenario))
-        prepared_rows.append((row, prepared, folder, runtime, captured, scenario))
-    declaration = declare_window(window_spec['window_id'], actor_identity=identity,
-        gamma_identity={'collection_version': VERSION, 'harness': harness, 'template': template, 'source': code_identity(),
-            'recipe': owner.recipe, 'fixed_slot_cases': [s['xi_fingerprint'] for s in specs],
-            'slot_sampling_seeds': {r['slot_id']: r['sampling_seed'] for r in window_spec['slots']},
-            'context_projection': 'latest_observation_last4_tool_rounds' if harness == 'openhands_v16' else 'latest_observation',
-            'external_tick_per_sweep': 1, 'transport_kind': 'resident_direct'},
-        slot_specs=specs, min_class_count=2)
-    atomic_write(output/'declaration.json', json_bytes(declaration))
-    entries, records, summaries = [], [], []
-    for row, prepared, folder, runtime, captured, scenario in prepared_rows:
-        sid, started = row['slot_id'], time.time()
-        owner.reseed(row['sampling_seed'], label=sid)
-        episode = folder/'episode'
-        begin_episode(prepared.world, episode, experience=runtime.recorder.snapshot(), work_nodes=['TEAM::build'],
-                      work_ids=[], scenario=scenario, policies=runtime.policy_identities)
-        closed = False
-        try:
-            boundary = run_fragment(prepared, runtime, external_tick_per_sweep=1)
-            finish_episode(prepared.world, episode, experience=runtime.recorder.snapshot(), termination=boundary)
-            closed = True
-            atomic_write(folder/'public-capture.json', json_bytes(captured))
-            atomic_write(folder/'runtime.json', json_bytes(runtime.snapshot()))
-            members = {r['role_id']: {'actor_id': r['actor'], 'origin': 'target_model'} for r in prepared.scenario['roles']}
-            rollout = export_online_rollout(episode, window=expected_window(declaration, sid), members=members,
-                independent_capture=captured, reward_spec=prepared.reward_spec)
-            graph = information_graph(rollout, read_operations=('read_object', 'read_alias', 'read_version'))
-            mapping = map_joint_method(graph, route_id='basis', spec_id=MAPPER)
-            atomic_write(folder/'team-rollout.json', json_bytes(rollout))
-            atomic_write(folder/'mapping.json', json_bytes(mapping))
-            atomic_write(folder/'information-graph.json', json_bytes(graph))
-            entries.append({'slot_id': sid, 'rollout': rollout, 'reward': rollout['reward_eligibility'],
-                            'active_members': list(prepared.active_roles)})
-            records.append({'slot_id': sid, 'status': 'closed', 'rollout': rollout, 'mapping': mapping})
-            summaries.append({'slot_id': sid, 'case_id': prepared.case['case_id'], 'harness': harness,
-                'purpose': row.get('purpose', 'development_work'), 'boundary': boundary,
-                'reward': rollout['reward_eligibility'], 'work_validity': rollout['work_validity'],
-                'started_at': started, 'ended_at': time.time()})
-        except Exception as error:
-            detail = {'type': type(error).__name__, 'message': str(error), 'closed': closed, 'runtime': runtime.snapshot()}
-            atomic_write(folder/'interruption.json', json_bytes(detail))
-            atomic_write(folder/'public-capture.json', json_bytes(captured))
-            entries.append({'slot_id': sid, 'rollout': None, 'reward': None, 'active_members': list(prepared.active_roles)})
-            records.append({'slot_id': sid, 'status': 'closed_unassessed' if closed else 'interrupted'})
-            summaries.append({'slot_id': sid, 'status': 'closed_unassessed' if closed else 'interrupted',
-                              'error': {k: detail[k] for k in ('type', 'message')}})
-        finally:
-            if harness == 'openhands_v16':
-                for worker in runtime.policies.values():
-                    worker.close()
-        atomic_write(output/'progress.json', json_bytes(summaries))
-        print(json_bytes({'slot': sid, 'harness': harness,
-              'reward': (entries[-1].get('reward') or {}).get('reward'),
-              'status': summaries[-1].get('status', 'closed')}).decode(), flush=True)
+    case = resolve_case(row['case_id'])
+    if window_spec.get('mode') == 'online' and (template not in {'retail_work', 'retail_balanced'} or case['pool'] != 'train'):
+        raise ValueError('Direct H2 updates use only the declared training pool, never H0/H1 development or locked facts')
+    if row.get('pool', case['pool']) != case['pool']:
+        raise ValueError('Declared usage pool differs from actual case')
+    # Public compatibility instructions/limits are frozen in H0, never
+    # applied as hidden help to H1 or copied into the old study.
+    if row.get('role_decision_limits') and row['role_decision_limits'] != case['role_decision_limits']:
+        raise ValueError('Case responsibility budgets remain frozen in the independent catalog')
+    folder = output/f'slot-{index}'
+    prepared = build_case(case, folder)
+    if row.get('public_task_override') and (window_spec['stage'] != 'H0_compatibility' or row.get('purpose') != 'public_interface_calibration_not_work_ability'):
+        raise ValueError('Only the declared H0 interface probe may override the public role task')
+    if row.get('public_task_override'):
+        for role in prepared.scenario['roles']:
+            role['config']['task'] = row['public_task_override']
+    runtime, captured, interfaces = _runtime(owner, prepared, folder, harness)
+    scenario = copy.deepcopy(prepared.scenario)
+    scenario['variation']['harness'] = {'version': VERSION, 'condition': harness,
+        'stage': window_spec['stage'], 'purpose': row.get('purpose', 'development_work'),
+        'interface': 'v14', 'presentation': 'compact_v14',
+        'profile_bindings': {k: v.profile for k, v in interfaces.items()}}
+    scenario['variation']['online_collection'] = {'interface': 'work-interface-v0.14', 'presentation': 'compact_v14',
+        'role_profile_binding': {k: v.profile for k, v in interfaces.items()},
+        'external_tick_per_sweep': 1, 'harness': harness}
+    initial = {'case': prepared.case, 'reward_spec': prepared.reward_spec,
+               'initial_business_sha256': prepared.prefix['prepared_business_state_sha256']}
+    slot_spec = {'slot_id': row['slot_id'], 'xi_id': case['case_id'],
+                  'xi_fingerprint': digest(json_bytes(initial)), 'active_members': list(prepared.active_roles),
+                  'policies': runtime.policy_identities, 'mapping_spec_id': MAPPER}
+    atomic_write(folder/'model-scenario.json', json_bytes(scenario))
+    return {'row': row, 'prepared': prepared, 'folder': folder, 'runtime': runtime,
+            'captured': captured, 'scenario': scenario, 'spec': slot_spec,
+            'harness': harness, 'index': index}
+
+
+def collection_declaration(owner, window_spec, specs, *, execution=None):
+    """One complete declaration, shared by every parallel sampling process."""
+    if [s['slot_id'] for s in specs] != [s['slot_id'] for s in window_spec['slots']]:
+        raise ValueError('Prepared slots must match the complete frozen window order')
+    harness = window_spec['harness']
+    gamma = {'collection_version': VERSION, 'harness': harness,
+        'template': window_spec.get('template', 'retail_harness'), 'source': code_identity(),
+        'recipe': owner.recipe, 'fixed_slot_cases': [s['xi_fingerprint'] for s in specs],
+        'slot_sampling_seeds': {r['slot_id']: r['sampling_seed'] for r in window_spec['slots']},
+        'context_projection': 'latest_observation_last4_tool_rounds' if harness == 'openhands_v16' else 'latest_observation',
+        'external_tick_per_sweep': 1, 'transport_kind': 'resident_direct'}
+    if execution is not None:
+        gamma['collection_execution'] = copy.deepcopy(execution)
+    return declare_window(window_spec['window_id'], actor_identity=owner.freeze_identity(),
+                          gamma_identity=gamma, slot_specs=specs, min_class_count=2)
+
+
+def close_prepared_slot(item):
+    if item.get('runtime_closed'):
+        return
+    if item['harness'] == 'openhands_v16':
+        for worker in item['runtime'].policies.values():
+            worker.close()
+    item['runtime_closed'] = True
+
+
+def run_prepared_slot(owner, item, declaration):
+    """Original finite single-world interaction, including original failure evidence."""
+    row, prepared, folder, runtime, captured, scenario = (item[k] for k in
+        ('row', 'prepared', 'folder', 'runtime', 'captured', 'scenario'))
+    harness = item['harness']
+    sid, started = row['slot_id'], time.time()
+    owner.reseed(row['sampling_seed'], label=sid)
+    episode = folder/'episode'
+    begin_episode(prepared.world, episode, experience=runtime.recorder.snapshot(), work_nodes=['TEAM::build'],
+                  work_ids=[], scenario=scenario, policies=runtime.policy_identities)
+    closed = False
+    try:
+        boundary = run_fragment(prepared, runtime, external_tick_per_sweep=1)
+        finish_episode(prepared.world, episode, experience=runtime.recorder.snapshot(), termination=boundary)
+        closed = True
+        atomic_write(folder/'public-capture.json', json_bytes(captured))
+        atomic_write(folder/'runtime.json', json_bytes(runtime.snapshot()))
+        members = {r['role_id']: {'actor_id': r['actor'], 'origin': 'target_model'} for r in prepared.scenario['roles']}
+        rollout = export_online_rollout(episode, window=expected_window(declaration, sid), members=members,
+            independent_capture=captured, reward_spec=prepared.reward_spec)
+        graph = information_graph(rollout, read_operations=('read_object', 'read_alias', 'read_version'))
+        mapping = map_joint_method(graph, route_id='basis', spec_id=MAPPER)
+        atomic_write(folder/'team-rollout.json', json_bytes(rollout))
+        atomic_write(folder/'mapping.json', json_bytes(mapping))
+        atomic_write(folder/'information-graph.json', json_bytes(graph))
+        entry = {'slot_id': sid, 'rollout': rollout, 'reward': rollout['reward_eligibility'],
+                        'active_members': list(prepared.active_roles)}
+        record = {'slot_id': sid, 'status': 'closed', 'rollout': rollout, 'mapping': mapping}
+        summary = {'slot_id': sid, 'case_id': prepared.case['case_id'], 'harness': harness,
+            'purpose': row.get('purpose', 'development_work'), 'boundary': boundary,
+            'reward': rollout['reward_eligibility'], 'work_validity': rollout['work_validity'],
+            'started_at': started, 'ended_at': time.time()}
+    except Exception as error:
+        detail = {'type': type(error).__name__, 'message': str(error), 'closed': closed, 'runtime': runtime.snapshot()}
+        atomic_write(folder/'interruption.json', json_bytes(detail))
+        atomic_write(folder/'public-capture.json', json_bytes(captured))
+        entry = {'slot_id': sid, 'rollout': None, 'reward': None, 'active_members': list(prepared.active_roles)}
+        record = {'slot_id': sid, 'status': 'closed_unassessed' if closed else 'interrupted'}
+        summary = {'slot_id': sid, 'status': 'closed_unassessed' if closed else 'interrupted',
+                          'error': {k: detail[k] for k in ('type', 'message')}}
+    finally:
+        close_prepared_slot(item)
+    print(json_bytes({'slot': sid, 'harness': harness,
+          'reward': (entry.get('reward') or {}).get('reward'),
+          'status': summary.get('status', 'closed')}).decode(), flush=True)
+    return entry, record, summary
+
+
+def finish_collection(output, identity, declaration, results, *, extra=None):
+    entries, records, summaries = map(list, zip(*results))
     atomic_write(output/'support.json', json_bytes(diagnose_window(declaration, records)))
+    atomic_write(output/'progress.json', json_bytes(summaries))
     atomic_write(output/'summary.json', json_bytes({'version': VERSION, 'actor_identity': identity,
-        'actual_network_http_calls': 0, 'slots': summaries,
+        'actual_network_http_calls': 0, 'slots': summaries, **(extra or {}),
         'scope': 'Actual current-window work with recorded own-token targets; method labels are descriptive. No ID-VTDO O4 or learning gain follows from collection alone.'}))
     return entries
+
+
+def collect_window(owner, window_spec, output_dir):
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=False)
+    atomic_write(output/'window-spec.json', json_bytes(window_spec))
+    if not window_spec.get('slots'):
+        raise ValueError('Predeclare the finite collection slots')
+    identity = owner.freeze_identity()
+    prepared = [prepare_slot(owner, window_spec, row, index, output)
+                for index, row in enumerate(window_spec['slots'])]
+    declaration = collection_declaration(owner, window_spec, [p['spec'] for p in prepared])
+    atomic_write(output/'declaration.json', json_bytes(declaration))
+    results = []
+    for item in prepared:
+        results.append(run_prepared_slot(owner, item, declaration))
+        atomic_write(output/'progress.json', json_bytes([r[2] for r in results]))
+    return finish_collection(output, identity, declaration, results)

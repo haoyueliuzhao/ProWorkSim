@@ -21,7 +21,7 @@ if __package__ in (None, ""):
 
 from proworksim.storage import atomic_write, digest, json_bytes
 
-VERSION = "fixed-harness-continuation-v0.18"
+VERSION = "fixed-harness-continuation-v0.19"
 CANDIDATES = ("qwen35-9b", "qwen38-27b")
 POLL_SECONDS = 30
 RESOURCE_WAIT_SECONDS = 48 * 3600
@@ -29,6 +29,10 @@ MIN_FREE_MIB = {"qwen35-9b": 65536, "qwen38-27b": 78000}
 LANES = {
     "qwen35-9b": {"learning": [0, 1], "projects": [2, 3]},
     "qwen38-27b": {"learning": [0, 1, 2, 3], "projects": [4, 5, 6, 7]},
+}
+OPTIMIZED_LANES = {
+    "qwen35-9b": {"learning": [0, 1], "replica": [2, 3], "projects": [0, 1]},
+    "qwen38-27b": {"learning": [0, 1, 2, 3], "replica": [4, 5, 6, 7], "projects": [0, 1, 2, 3]},
 }
 
 
@@ -159,15 +163,14 @@ def query_resources():
 def pilot_candidate(planned, migration_report):
     """Construct an in-memory candidate; caller validates BEFORE writing it."""
     if (
-        planned.get("experiment_id") not in {"h2-pilot-v017", "h2-pilot-v018"}
+        planned.get("experiment_id") not in {"h2-pilot-v017", "h2-pilot-v018", "h2-pilot-v019"}
         or planned.get("initialization", {}).get("restore_checkpoint_permitted") is not False
     ):
         raise ValueError("Only the fixed fresh H2 pilot may follow migration")
     candidate = copy.deepcopy(planned)
     candidate["launch_gate"] = {
-        "version": "h2-admission-v0.18"
-        if planned["experiment_id"].endswith("v018")
-        else "h2-admission-v0.17",
+        "version": {"v017": "h2-admission-v0.17", "v018": "h2-admission-v0.18",
+                    "v019": "h2-admission-v0.19"}[planned["experiment_id"].rsplit("-", 1)[1]],
         "state": "admitted",
         "migration_report": ref(migration_report),
     }
@@ -196,11 +199,19 @@ def migration_allows_admission(job):
     )
 
 
-def config_for(project, source, output):
+def config_for(project, source, output, optimization_admission):
     project, source, output = map(lambda p: Path(p).resolve(), (project, source, output))
     if source != Path(__file__).resolve().parents[1]:
         raise ValueError("Execute this script from the declared frozen source tree")
     commit = assert_source(source)
+    from proworksim.harness_learning_admission import OPTIMIZATION_VERSION
+
+    optimization_ref = ref(optimization_admission)
+    optimization = read(checked(optimization_ref))
+    if (not isinstance(optimization, dict) or optimization.get("version") != OPTIMIZATION_VERSION
+            or optimization.get("execution_source_commit") != commit
+            or not isinstance(optimization.get("candidates"), dict)):
+        raise ValueError("Actual optimization admission must bind this frozen source before continuation")
     launcher = project / "runs/v015-launch/launcher.py"
     # Do not resolve this symlink: the venv prefix must remain intact.
     python = project / "runs/v016-sdk/resident-venv/bin/python"
@@ -233,9 +244,10 @@ def config_for(project, source, output):
         "poll_seconds": POLL_SECONDS,
         "resource_wait_seconds": RESOURCE_WAIT_SECONDS,
         "minimum_free_mib_per_gpu": MIN_FREE_MIB,
-        "lanes": LANES,
+        "lanes": OPTIMIZED_LANES,
+        "optimization_admission": optimization_ref,
         "resource_basis": "Actual long-request 9B peak about46GiB/device and27B maximum71.84GiB plus declared headroom. Not training/backward capacity certification.",
-        "stage_revision": "Original H1 remains v0.17; repaired SQL, assessability and crossed-review v0.18 are separately frozen. Reuses this single continuation, not another queue layer.",
+        "stage_revision": "Original H1 remains frozen; v0.19 binds measured prefix/replica execution to unchanged v0.18 work budgets. Learning and four-project evaluation use the same parent lane serially; no extra queue layer.",
         "support_density": "Separate 16-episode plan only; not automatically deployed before completed pilot; no O4.",
         "fixed_plan": {
             "migration": 8,
@@ -277,8 +289,10 @@ def make_jobs(config, selected, selection_path, output):
     base = owner["base_identity"]
     model, manifest = str(Path(base["path"]).resolve()), str(checked(base["manifest"]))
     candidate = selected["candidate_id"]
+    optimized = bool(config.get("optimization_admission"))
+    lanes = (OPTIMIZED_LANES if optimized else LANES)[candidate]
     protocol = read(checked(selected["protocol_ref"]))
-    if protocol["runtime"]["profile"]["devices"] != len(LANES[candidate]["learning"]):
+    if protocol["runtime"]["profile"]["devices"] != len(lanes["learning"]):
         raise ValueError(
             "Selected device placement differs from the predeclared continuation lanes"
         )
@@ -287,7 +301,7 @@ def make_jobs(config, selected, selection_path, output):
     for name in ("migration", "projects", "pilot"):
         directory = output / name
         prefix = output / "launches" / name
-        gpus = LANES[candidate]["projects" if name == "projects" else "learning"]
+        gpus = lanes["projects" if name == "projects" else "learning"]
         if name == "projects":
             command = [
                 config["python"],
@@ -322,15 +336,21 @@ def make_jobs(config, selected, selection_path, output):
                 "--output",
                 str(directory),
             ]
+        if optimized and name == "projects":
+            command += ["--optimization-admission", str(checked(config["optimization_admission"]))]
+        waiting = name == "migration" or (name == "projects" and not optimized)
+        replicas = lanes.get("replica", []) if name != "projects" else []
         jobs[name] = {
             "name": name,
-            "status": "waiting_resources" if name != "pilot" else "blocked_on_actual_migration",
+            "status": "waiting_resources" if waiting else "blocked_on_learning" if name == "projects" else "blocked_on_actual_migration",
             "command": command,
             "output": str(directory),
             "prefix": str(prefix),
             "gpus": gpus,
+            "required_gpus": gpus + replicas,
+            "replica_gpus": replicas,
             "minimum_free_mib": MIN_FREE_MIB[candidate],
-            "resource_wait_started_at": time.time() if name != "pilot" else None,
+            "resource_wait_started_at": time.time() if waiting else None,
             "launch_attempted": False,
             "launch_attempt_count": 0,
             "actual_report": None,
@@ -365,6 +385,12 @@ def launch_job(config, state, job, output):
         **config["environment"],
         "CUDA_VISIBLE_DEVICES": ",".join(map(str, job["gpus"])),
     }
+    # Child processes inherit this explicit physical lane; the collector checks
+    # equal widths/disjointness and never changes the original model placement.
+    if job.get("replica_gpus"):
+        environment["PROWORKSIM_REPLICA_GPUS"] = ",".join(map(str, job["replica_gpus"]))
+    else:
+        environment.pop("PROWORKSIM_REPLICA_GPUS", None)
     try:
         with prefix.with_suffix(".observer.log").open("x") as log:
             child = subprocess.Popen(
@@ -452,6 +478,20 @@ def learning_report(config, state, name, output):
     }
 
 
+def release_projects_after_learning(jobs):
+    """Only the fixed three-job continuation; never overlap projects with replicas."""
+    projects = jobs["projects"]
+    if projects["status"] != "blocked_on_learning":
+        return False
+    active = {"running", "launch_intent", "waiting_resources", "blocked_on_actual_migration"}
+    if any(jobs[name]["status"] in active for name in ("migration", "pilot")):
+        return False
+    projects.update(status="waiting_resources", resource_wait_started_at=time.time(),
+                    learning_terminal_before_project_launch={
+                        name: jobs[name]["status"] for name in ("migration", "pilot")})
+    return True
+
+
 def run(config, state, output):
     # No partial H1 scores influence any scheduling decision in this loop.
     while True:
@@ -496,7 +536,7 @@ def run(config, state, output):
     command = [
         config["python"],
         "-m",
-        "scripts.build_harness_learning_v018",
+        "scripts.build_harness_learning_v019",
         "--selection",
         str(selection_path),
         "--protocol",
@@ -504,6 +544,7 @@ def run(config, state, output):
         "--output",
         str(output / "plans"),
     ]
+    command += ["--optimization-admission", str(checked(config["optimization_admission"]))]
     if command_step(config, state, "build-plans", command, output):
         state["status"] = "stopped_plan_construction_failure"
         return 1
@@ -558,7 +599,9 @@ def run(config, state, output):
                     }
                     write(output / "pilot-admission-rejected.json", failure)
                     pilot.update(status="not_started_migration_admission_failed", reason=failure)
-        # Projects proceed independently even when migration/admission fails.
+        # Projects retain their own measurement even if learning fails, but only
+        # after both learning jobs have reached terminal states and released GPUs.
+        release_projects_after_learning(jobs)
         for name in ("migration", "pilot"):
             if jobs[name]["status"] in {"complete", "failed_or_incomplete", "launch_failed"}:
                 learning_report(config, state, name, output)
@@ -568,7 +611,7 @@ def run(config, state, output):
             samples = {
                 "raw": raw,
                 "decisions": {
-                    job["name"]: resource_decision(raw, job["gpus"], job["minimum_free_mib"])
+                    job["name"]: resource_decision(raw, job.get("required_gpus", job["gpus"]), job["minimum_free_mib"])
                     for job in waiting
                 },
             }
@@ -593,7 +636,7 @@ def run(config, state, output):
                     launch_job(config, state, job, output)
         active = any(
             job["status"]
-            in {"running", "launch_intent", "waiting_resources", "blocked_on_actual_migration"}
+            in {"running", "launch_intent", "waiting_resources", "blocked_on_actual_migration", "blocked_on_learning"}
             for job in jobs.values()
         )
         state["observed_at"] = time.time()
@@ -614,10 +657,12 @@ def main(argv=None):
     parser.add_argument("--project", type=Path, required=True)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--optimization-admission", type=Path, required=True,
+                        help="Actual frozen-source v0.19 numerical/performance gate; selected failed candidate stops")
     args = parser.parse_args(argv)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    config = config_for(args.project, args.source, output)
+    config = config_for(args.project, args.source, output, args.optimization_admission)
     (output / "tmp").mkdir()
     write(output / "config.json", config)
     state = {

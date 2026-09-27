@@ -41,7 +41,8 @@ def checked(reference_, *, label):
 
 
 def validate_binding(selection_path, *, model, weight_manifest, harness, candidate=None,
-                     protocol_path=None, runtime_profile=None, placement_reason=None):
+                     protocol_path=None, runtime_profile=None, placement_reason=None,
+                     optimization_admission=None):
     """Metadata only: never instantiate Torch, a model, a world or an evaluator."""
     selection_path = Path(selection_path).resolve()
     document = read_json(selection_path)
@@ -113,12 +114,25 @@ def validate_binding(selection_path, *, model, weight_manifest, harness, candida
                      'scope': 'Explicit new evaluation placement; actual fresh adapter identity comparison is reported, never assumed identical.'}
     else:
         require(placement_reason is None, 'Placement reason without an explicit profile is ambiguous')
+    optimization = None
+    if optimization_admission is not None:
+        require(runtime_profile is None and placement_reason is None,
+                'Optimized evaluation must use its benchmarked original placement; no independent profile override')
+        from proworksim.candidate_runtime_v019 import candidate_profile
+        from proworksim.harness_learning_admission import validate_optimization_admission
+
+        effective = candidate_profile(profile['candidate_id'], dtype=profile['dtype'], devices=profile['devices'])
+        optimization = validate_optimization_admission(
+            reference(optimization_admission), candidate_id=selected['candidate_id'],
+            runtime_profile=effective, weight_manifest=weight_manifest)
     return {'version': VERSION, 'passed': True, 'selected_candidate': selected['candidate_id'], 'selected_harness': harness,
             'selection_input': reference(selection_path), 'source_report': reference(report_path), 'selected': selected,
             'original_protocol': reference(original_protocol_path), 'original_protocol_body': original,
             'H1_initial_actor_identity': owner['initial_actor_identity'], 'H1_source_identity': measured['source_before'],
             'model_path': str(Path(model).resolve()), 'weight_manifest': manifest_ref,
             'recipe': copy.deepcopy(original['recipe']), 'profile': effective, 'placement_revision': placement,
+            'runtime_kind': 'qwen_hybrid_optimized' if optimization else 'qwen_hybrid_diagnostics',
+            'optimization': optimization,
             'model_loads_during_validation': 0, 'selection_is_capability_certification': False}
 
 
@@ -190,6 +204,7 @@ def main(argv=None):
     parser.add_argument('--harness', choices=HARNESSES, required=True)
     parser.add_argument('--runtime-profile', help='Optional explicit profile changing only device-count placement')
     parser.add_argument('--placement-reason')
+    parser.add_argument('--optimization-admission', help='Actual v0.19 candidate-specific numerical/performance admission')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     output = args.output.resolve()
@@ -205,11 +220,15 @@ def main(argv=None):
         require(source.get('code_dirty') is False, 'Freeze a clean source commit before real project evaluation')
         binding = validate_binding(args.selection, model=args.model, weight_manifest=args.weight_manifest,
             harness=args.harness, candidate=args.candidate, protocol_path=args.protocol,
-            runtime_profile=args.runtime_profile, placement_reason=args.placement_reason)
+            runtime_profile=args.runtime_profile, placement_reason=args.placement_reason,
+            optimization_admission=args.optimization_admission)
         atomic_write(output / 'binding-validation.json', json_bytes(binding))
         atomic_write(output / 'effective-profile.json', json_bytes(binding['profile']))
         status = 'loading'
-        from proworksim.candidate_runtime_v017 import CandidateActor
+        if binding['runtime_kind'] == 'qwen_hybrid_optimized':
+            from proworksim.candidate_runtime_v019 import CandidateActor
+        else:
+            from proworksim.candidate_runtime_v017 import CandidateActor
         dependencies = {name: importlib.metadata.version(name) for name in ('duckdb', 'openpyxl', 'torch', 'transformers', 'peft')}
         if args.harness == 'openhands_v16':
             dependencies['openhands-sdk'] = importlib.metadata.version('openhands-sdk')

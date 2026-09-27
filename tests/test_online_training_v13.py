@@ -195,7 +195,11 @@ def test_behavior_probability_mismatch_cannot_update_either_optimizer(tmp_path):
     owner = _owner(tmp_path, torch)
     owner.begin_window("window-0")
     entry = _sample_entry(owner, reward=1)
-    entry["rollout"]["events"][-1]["payload"]["response"]["token_trace"]["behavior_logprobs"] = [-5.0, -5.0]
+    # Deliberately wrong but internally consistent fixture probabilities reach
+    # the learner probability gate; a raw/retained mismatch tests a different,
+    # earlier original-token evidence gate.
+    trace = entry["rollout"]["events"][-1]["payload"]["response"]["token_trace"]
+    trace["behavior_logprobs"] = trace["raw_behavior_logprobs"] = [-5.0, -5.0]
     result = owner.update_window([entry], tmp_path / "mismatch", feature_function=_features)
     assert result["status"] == "zero_step_probability_mismatch"
     assert owner.actor_steps == owner.critic_steps == 0
