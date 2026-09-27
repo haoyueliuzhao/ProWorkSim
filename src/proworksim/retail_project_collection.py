@@ -10,14 +10,15 @@ from .harness_port import HarnessPort
 from .harness_runtime import SDKStaffRuntime
 from .model_policy import ModelPolicy
 from .online_collection import _config
-from .retail_project_rewards import assess_project_episode
+from .retail_project_rewards import (assess_project_episode, assess_collection_records,
+                                     combine_project_measurement, project_phase_diagnostics)
 from .scenarios import ScenarioController
 from .staff_runtime import StaffRuntime
 from .storage import atomic_write, json_bytes
 from .templates.retail_projects import ACTORS
 from .templates.retail_projects_v017 import build_project_case
 
-VERSION = 'retail-project-collection-v0.17'
+VERSION = 'retail-project-collection-v0.18'
 TOOLS = {'read_alias', 'read_version', 'read_object', 'read_messages', 'send_message',
          'write_object', 'share', 'publish', 'adopt', 'adopt_version', 'sql_build', 'sql_query',
          'preflight_submission', 'submit', 'inspect_submission', 'withdraw', 'wait'}
@@ -129,6 +130,24 @@ def collect_project_episode(owner, case_id, output_dir, *, harness):
     begin_episode(prepared.world, episode, experience=recorder.snapshot(), work_ids=[],
                   work_nodes=[p + '::build' for p in ACTORS], scenario=prepared.scenario,
                   policies=runtime.policy_identities)
+    initial_episode = output / 'initial-delivery-episode'
+    initial_scenario = copy.deepcopy(prepared.scenario)
+    initial_scenario['variation']['assessment_phase'] = 'initial_delivery'
+    begin_episode(prepared.world, initial_episode, experience=recorder.snapshot(), work_ids=[],
+                  work_nodes=[p + '::build' for p in ACTORS], scenario=initial_scenario,
+                  policies=runtime.policy_identities)
+    initial_workers = {label: worker.snapshot() if hasattr(worker, 'snapshot') else {} for label, worker in workers.items()}
+    atomic_write(output / 'initial-workers.json', json_bytes(initial_workers))
+    initial_closed = False
+    initial_condition = {'all': [{'work': {'project': p, 'node': 'build', 'phase': 'accepted'}} for p in ACTORS]}
+
+    def close_initial_if_reached():
+        nonlocal initial_closed
+        if not initial_closed and controller.matches(initial_condition):
+            finish_episode(prepared.world, initial_episode, experience=recorder.snapshot(),
+                           termination={'status': 'initial_fixed_deliveries_reached_before_change'})
+            initial_closed = True
+
     stopped, stopped_at, results = {}, {}, []
 
     def current_work(label):
@@ -139,6 +158,7 @@ def collect_project_episode(owner, case_id, output_dir, *, harness):
     termination = {'status': 'finite_project_deadline', 'untriggered_events': []}
     try:
         for sweep in range(max(prepared.case['role_decision_limits'].values()) + 1):
+            close_initial_if_reached()
             effects = controller.tick()
             if any(e['status'] != 'executed' for e in effects):
                 termination = {'status': 'environment_error', 'reason': 'Declared contract event rejected'}
@@ -159,6 +179,7 @@ def collect_project_episode(owner, case_id, output_dir, *, harness):
                 controller.record_environment()
                 if result['status'] in {'completed', 'model_budget_exhausted', 'model_service_error', 'model_format_error', 'model_usage_missing', 'binding_mismatch', 'environment_error', 'policy_error'}:
                     stopped[label], stopped_at[label] = result['status'], current_work(label)
+                close_initial_if_reached()
                 effects = controller.tick()
                 if any(e['status'] != 'executed' for e in effects):
                     raise ValueError('Declared controller effect rejected')
@@ -175,12 +196,18 @@ def collect_project_episode(owner, case_id, output_dir, *, harness):
         termination.update(role_stops=stopped, opportunities=runtime.opportunities,
                            untriggered_events=[e['event_id'] for e in prepared.scenario['events'] if e['event_id'] not in controller.fired],
                            controller=controller.snapshot())
+        if not initial_closed:
+            finish_episode(prepared.world, initial_episode, experience=recorder.snapshot(),
+                           termination={'status': 'initial_delivery_condition_not_reached'})
         finish_episode(prepared.world, episode, experience=recorder.snapshot(), termination=termination)
-        assessment = assess_project_episode(episode)
-        if any(s in {'model_service_error', 'model_format_error', 'model_usage_missing', 'environment_error', 'binding_mismatch', 'policy_error'} for s in stopped.values()) or termination['status'] == 'environment_error':
-            assessment.update(eligible=False, reward=None, completed=None, reason='model_or_environment_execution_incomplete')
+        independent = assess_project_episode(episode)
+        records = assess_collection_records(episode, captured, identity)
+        assessment = combine_project_measurement(independent, records)
+        diagnostics = project_phase_diagnostics(episode, initial_episode, runtime.snapshot(), initial_workers, independent)
         result = {'version': VERSION, 'model_identity': identity, 'harness': harness, 'case': prepared.case,
-                  'termination': termination, 'assessment': assessment,
+                  'termination': termination, 'record_trust': records,
+                  'independent_assessability': {'known': independent['eligible'], 'reason': independent.get('reason')},
+                  'independent_assessment': independent, 'assessment': assessment, 'diagnostics': diagnostics,
                   'opportunities': runtime.opportunities, 'actions': runtime.actions,
                   'training_admission': 'Not implemented by this evaluation collector; no cross-project actor/critic projection claim.'}
         atomic_write(output / 'result.json', json_bytes(result))

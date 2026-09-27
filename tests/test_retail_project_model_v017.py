@@ -7,7 +7,7 @@ import pytest
 from proworksim.candidate_runtime_v017 import candidate_profile
 from proworksim.storage import read_json
 from scripts.harness_report_v017 import select_combination
-from scripts.retail_project_model_v017 import execute, reference, validate_binding
+from scripts.retail_project_model_v017 import H1_REPORT_VERSION, execute, reference, validate_binding
 
 
 def write(path, data):
@@ -47,7 +47,7 @@ def fixture(tmp_path):
                        'references': {label: reference(root / name) for label, name in
                                       [('protocol', 'launch-protocol.json'), ('launch', 'launch.json'),
                                        ('owner', 'resident/owner.json'), ('runner', 'online/report.json')]}})
-    report = {'version': 'harness-readonly-report-v0.17', 'models': models, 'selection': select_combination(models)}
+    report = {'version': H1_REPORT_VERSION, 'models': models, 'selection': select_combination(models)}
     path = tmp_path / 'selection-report.json'
     write(path, report)
     kwargs = {'model': tmp_path / 'qwen35-9b/weights', 'weight_manifest': tmp_path / 'qwen35-9b/weights/manifest.json', 'harness': 'native_v15'}

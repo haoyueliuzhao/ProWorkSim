@@ -13,7 +13,8 @@ from scripts.build_harness_study_v016 import ref
 from test_candidate_selection_v015 import guard
 
 
-def test_migration_binds_actual_selection_and_pilot_waits(tmp_path):
+@pytest.mark.parametrize("revised", [False, True])
+def test_migration_binds_actual_selection_and_pilot_waits(tmp_path, revised):
     def save(path, data):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(json_bytes(data))
@@ -57,7 +58,12 @@ def test_migration_binds_actual_selection_and_pilot_waits(tmp_path):
     save(report, {"selection": chosen, "models": models})
     selection = tmp_path / "selection.json"
     save(selection, {**chosen, "report_ref": ref(report)})
-    migration, pilot = build_protocols(h1, "openhands_v16", ref(selection))
+    builder = build_protocols
+    if revised:
+        from scripts.build_harness_learning_v018 import build_protocols as revised_builder
+
+        builder = revised_builder
+    migration, pilot = builder(h1, "openhands_v16", ref(selection))
     args = {"model_path": model, "weight_manifest": manifest}
     assert (
         validate_h2_launch(migration, **args)["expected_initial_adapter_sha256"]

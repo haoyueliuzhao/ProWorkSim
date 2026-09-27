@@ -21,7 +21,7 @@ if __package__ in (None, ""):
 
 from proworksim.storage import atomic_write, digest, json_bytes
 
-VERSION = "fixed-harness-continuation-v0.17"
+VERSION = "fixed-harness-continuation-v0.18"
 CANDIDATES = ("qwen35-9b", "qwen38-27b")
 POLL_SECONDS = 30
 RESOURCE_WAIT_SECONDS = 48 * 3600
@@ -159,13 +159,15 @@ def query_resources():
 def pilot_candidate(planned, migration_report):
     """Construct an in-memory candidate; caller validates BEFORE writing it."""
     if (
-        planned.get("experiment_id") != "h2-pilot-v017"
+        planned.get("experiment_id") not in {"h2-pilot-v017", "h2-pilot-v018"}
         or planned.get("initialization", {}).get("restore_checkpoint_permitted") is not False
     ):
         raise ValueError("Only the fixed fresh H2 pilot may follow migration")
     candidate = copy.deepcopy(planned)
     candidate["launch_gate"] = {
-        "version": "h2-admission-v0.17",
+        "version": "h2-admission-v0.18"
+        if planned["experiment_id"].endswith("v018")
+        else "h2-admission-v0.17",
         "state": "admitted",
         "migration_report": ref(migration_report),
     }
@@ -233,10 +235,12 @@ def config_for(project, source, output):
         "minimum_free_mib_per_gpu": MIN_FREE_MIB,
         "lanes": LANES,
         "resource_basis": "Actual long-request 9B peak about46GiB/device and27B maximum71.84GiB plus declared headroom. Not training/backward capacity certification.",
+        "stage_revision": "Original H1 remains v0.17; repaired SQL, assessability and crossed-review v0.18 are separately frozen. Reuses this single continuation, not another queue layer.",
+        "support_density": "Separate 16-episode plan only; not automatically deployed before completed pilot; no O4.",
         "fixed_plan": {
             "migration": 8,
             "pilot_train": 64,
-            "pilot_evaluation": 48,
+            "pilot_evaluation": 54,
             "project_evaluation": 4,
         },
         "timeout_policy": "Stop observer only; no signal or cancellation of any downstream/other process",
@@ -492,7 +496,7 @@ def run(config, state, output):
     command = [
         config["python"],
         "-m",
-        "scripts.build_harness_learning_v017",
+        "scripts.build_harness_learning_v018",
         "--selection",
         str(selection_path),
         "--protocol",

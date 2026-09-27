@@ -412,3 +412,94 @@ def test_behavior_uses_actual_inputs_and_saved_build_evidence_without_double_cou
     assert unknown["input_tokens"] is None and unknown["output_tokens"] is None
     assert unknown["attempts_missing_original_token_counts"] == 1
     assert unknown["measured_input_tokens"] == 3
+
+
+def boolean_rejection_fixture(folder, sql="SELECT NOT (false) AS x"):
+    code = {"models": [{"name": "metrics", "sql": sql}]}
+    code_ref = {"object_id": "code", "version_id": "v2"}
+    result_ref = {"object_id": "result", "version_id": "v1"}
+    error = {
+        "phase": "model:metrics",
+        "type": "ValueError",
+        "message": "SQL function is outside the declared allowlist: not",
+    }
+    result = {
+        "engine": "managed-duckdb-v0.11",
+        "status": "execution_error",
+        "error": error,
+        "execution": {"kind": "sql_build", "code_reference": code_ref},
+    }
+    artifacts = {}
+    for reference, data in [(code_ref, code), (result_ref, result)]:
+        object_id, version_id = reference["object_id"], reference["version_id"]
+        write(folder / "world/control/versions" / object_id / version_id / "data.json", data)
+        artifacts[object_id] = {
+            "filename": "data.json",
+            "versions": {version_id: {"sha256": digest(json_bytes(data))}},
+        }
+    # A newer version must never be substituted for the failed build's exact v2.
+    artifacts["code"]["versions"]["v3"] = {"sha256": "irrelevant-newer-version"}
+    write(folder / "world/control/state.json", {"artifacts": artifacts})
+    return {
+        "sequence": 10,
+        "kind": "tool_call",
+        "worker_id": "implementer",
+        "payload": {
+            "action": "sql_build",
+            "model_call_id": "fixture-rejected",
+            "arguments": {"work_id": "TEAM::build"},
+            "response": {
+                "ok": True,
+                "result": {
+                    "reference": result_ref,
+                    "execution_status": "execution_error",
+                    "error": error,
+                },
+            },
+        },
+    }
+
+
+def test_boolean_exposure_counts_calls_and_episodes_without_changing_ranking(tmp_path):
+    runs, launches = study(tmp_path)
+    original = build_report(runs, launches)
+    folder = runs["qwen35-9b"] / "online/window-0/collection/slot-0"
+    event = boolean_rejection_fixture(folder)
+    duplicate = copy.deepcopy(event)
+    duplicate["sequence"] = 11
+    duplicate["payload"]["model_call_id"] = "fixture-rejected-again"
+    for filename in ("episode/experience.json", "team-rollout.json"):
+        data = json.loads((folder / filename).read_text())
+        data["events"].extend([event, duplicate])
+        write(folder / filename, data)
+    result = build_report(runs, launches)
+    original_arm, arm = original["models"][0]["arms"][0], result["models"][0]["arms"][0]
+    exposure = arm["executor_boolean_false_rejection_exposure"]
+    assert exposure["confirmed_affected_episodes"] == 1
+    assert exposure["confirmed_rejection_calls"] == 2
+    assert exposure["unconfirmed_rejection_calls"] == 0
+    assert arm["metrics"] == original_arm["metrics"]
+    assert arm["eligibility_checks"] == original_arm["eligibility_checks"]
+    assert result["models"][0]["paired"] == original["models"][0]["paired"]
+    for field in ("candidate_id", "harness", "allocated_device_seconds", "complete_implement_review", "complete_pair_chain"):
+        assert result["selection"]["selected"][field] == original["selection"]["selected"][field]
+    row = result["models"][0]["rows"][0]["executor_boolean_false_rejection_exposure"]["calls"][0]
+    assert row["code_reference"]["version_id"] == "v2"
+    assert row["code_ref"]["sha256"] and row["result_ref"]["sha256"]
+    assert row["experience_ref"]["sha256"] and row["not_parenthesis_locations"]
+
+
+def test_boolean_exposure_missing_code_and_quoted_text_stay_unconfirmed(tmp_path):
+    from scripts.harness_report_v017 import executor_boolean_exposure
+
+    event = boolean_rejection_fixture(tmp_path, "SELECT 'NOT (false)' AS x /* NOT(true) */")
+    write(tmp_path / "episode/experience.json", {"events": [event]})
+    result = executor_boolean_exposure(
+        [{"kind": "public_observation", "payload": []}, event], reader=Reader(), folder=tmp_path
+    )
+    assert not result["confirmed_affected"] and result["unconfirmed_rejection_calls"] == 1
+    assert result["calls"][0]["reason"] == "no_unquoted_not_parenthesis_in_exact_failed_statement"
+    (tmp_path / "world/control/versions/code/v2/data.json").unlink()
+    missing = executor_boolean_exposure([event], reader=Reader(), folder=tmp_path)
+    assert missing["calls"][0]["status"] == "unconfirmed"
+    assert missing["calls"][0]["reason"] == "missing_or_unverified_exact_code_version"

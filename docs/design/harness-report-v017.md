@@ -40,3 +40,13 @@ work_note、work_todo、history search/read按实际模型call统计机会与原
 实际并行运行已读取两次中间快照：均保留48槽并拒绝提前选择；第二次已有9B首槽闭合、记录与raw episode/身份链接一致，其他槽继续保持原状态。快照读取不是全局原子操作；运行中不同文件可能对应邻近时刻，应以最终进程结束后的新报告作最终选择。
 
 第三次中间读取发现报告器把普通工具的list型result误当object，因而未生成报告；它没有影响模型任务或奖励。已在报告器按实际返回类型区分，并将此正常工具返回加入现有行为控制。失败说明留在 `runs/harness-v017-report-third-error.json`。
+
+## v0.18：原环境 NOT 误拒绝暴露标注
+
+报告版本 `harness-readonly-report-v0.18-e1-annotation` 新增逐 episode 和逐臂的 `executor_boolean_false_rejection_exposure`。只读查找真实 `sql_build/sql_query` 返回中的 `execution_error` 与 allowlist 拒绝项 `not`，再核对该次不可变执行结果、世界版本元数据 SHA 和具体失败语句。build 通过执行证据的 `code_reference` 取当次版本，不用对象最新版本；按原 error.phase 定位 model/test。query 则核对不可变结果并取原实际调用的 SQL 参数。字符串、带引号标识符及注释中的 NOT(...) 不作为语法暴露证据。
+
+确认必须同时具备原拒绝和确切失败 SQL 中的未引用 NOT(...)。缺少结果、代码、SHA 对齐或失败语句定位时保持 `unconfirmed`，不猜测。每臂分别统计确认受影响 episode 数、确认拒绝调用数、含未确认拒绝的 episode/调用数、没有可读经历的 episode 数。同一经历多次拒绝只增加调用数，不增加经历分母；运行中的已有记录也仅表示截至读取时的已观察暴露。
+
+此字段不参与奖励、均值、eligibility 或排序计算，不删除原样本、不重放 SQL，也不把确认误拒绝推断为整条 SQL 或业务内容正确。原 H1 排序仍描述原执行环境中的相对候选，不能冒充修复环境后的完整排名。源码修复及独立公开工具对照另见 `docs/experiments/sql-not-boundary-v018.md`。
+
+报告器现有 4 个控制加 2 个必要夹具：新增控制核对两次拒绝只计一个 episode、精确旧代码版本、原分母/奖励/排序不变；无完整代码或只有字符串/注释中的 NOT 时保持未确认。首次实际读取发现非 tool 事件的 payload 可为 list；提取器现先过滤事件类别，夹具保留这一真实形状。只读复核原 27B native slot-0/1 分别确认一次暴露，SHA 和原事件位置在 `docs/experiments/harness-v018-exposure-read-control.json`；这不是全 H1 统计或新增两样本。

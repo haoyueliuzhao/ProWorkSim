@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,7 +16,7 @@ from pathlib import Path
 from proworksim.storage import digest, json_bytes
 from scripts.build_harness_study_v017 import SELECTION
 
-VERSION = "harness-readonly-report-v0.17"
+VERSION = "harness-readonly-report-v0.18-e1-annotation"
 CANDIDATES = ("qwen35-9b", "qwen38-27b")
 HARNESSES = ("native_v15", "openhands_v16")
 TASKS = ("implement", "review", "pair", "chain")
@@ -159,6 +160,134 @@ def _tool_result_present(messages, tool_id, result):
         except (ValueError, TypeError):
             pass
     return False
+
+
+def executor_boolean_exposure(events, *, reader, folder):
+    """Bind old allowlist:not responses to their exact immutable SQL; never execute it."""
+    folder = Path(folder)
+    calls = []
+    for event in events:
+        if event.get("kind") != "tool_call":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        response = payload.get("response", {})
+        result = response.get("result", {}) if isinstance(response, dict) else {}
+        if (
+            event.get("kind") != "tool_call"
+            or payload.get("action") not in {"sql_build", "sql_query"}
+            or not isinstance(result, dict)
+        ):
+            continue
+        error = result.get("error") or {}
+        message = error.get("message", "") if isinstance(error, dict) else ""
+        prefix = "SQL function is outside the declared allowlist: "
+        rejected = message[len(prefix):].split(",") if message.startswith(prefix) else []
+        if result.get("execution_status") != "execution_error" or "not" not in rejected:
+            continue
+        row = {
+            "sequence": event.get("sequence"),
+            "role": event.get("worker_id"),
+            "model_call_id": payload.get("model_call_id"),
+            "tool": payload["action"],
+            "actual_error": error,
+            "other_rejected_identifiers": [word for word in rejected if word != "not"],
+            "status": "unconfirmed",
+            "reason": "missing_or_unverified_immutable_result",
+            "experience_ref": reader.ref(folder / "episode/experience.json"),
+            "result_reference": result.get("reference"),
+        }
+        calls.append(row)
+        state = reader.read(folder / "world/control/state.json") or {}
+        row["world_state_ref"] = reader.ref(folder / "world/control/state.json")
+
+        def version(reference):
+            if not isinstance(reference, dict):
+                return None, None
+            object_id, version_id = reference.get("object_id"), reference.get("version_id")
+            artifact = state.get("artifacts", {}).get(object_id, {})
+            meta = artifact.get("versions", {}).get(version_id, {})
+            if not object_id or not version_id or not artifact.get("filename"):
+                return None, None
+            path = folder / "world/control/versions" / object_id / version_id / artifact["filename"]
+            data, identity = reader.read(path), reader.ref(path)
+            if not identity or identity["sha256"] != meta.get("sha256"):
+                return None, identity
+            return data, identity
+
+        immutable_result, row["result_ref"] = version(result.get("reference"))
+        if not isinstance(immutable_result, dict):
+            continue
+        if immutable_result.get("error") != error or immutable_result.get("status") != "execution_error":
+            row["reason"] = "immutable_result_does_not_match_actual_response"
+            continue
+        execution = immutable_result.get("execution", {})
+        row["engine"] = immutable_result.get("engine")
+        if execution.get("kind") != payload["action"]:
+            row["reason"] = "execution_kind_mismatch"
+            continue
+        if payload["action"] == "sql_build":
+            code_reference = execution.get("code_reference")
+            row["code_reference"] = code_reference
+            code, row["code_ref"] = version(code_reference)
+            if not isinstance(code, dict):
+                row["reason"] = "missing_or_unverified_exact_code_version"
+                continue
+            phase = error.get("phase", "")
+            section, _, name = phase.partition(":")
+            key = {"model": "models", "test": "tests"}.get(section)
+            items = code.get(key, []) if key else []
+            statements = [m.get("sql") for m in items if isinstance(m, dict) and m.get("name") == name]
+            sql = statements[0] if len(statements) == 1 else None
+            row["statement_locator"] = {"section": key, "name": name}
+        else:
+            # Queries carry literal SQL in the recorded actual call, not a code artifact.
+            sql = payload.get("arguments", {}).get("sql")
+            row["statement_locator"] = {"event_sequence": event.get("sequence"), "field": "payload.arguments.sql"}
+        if not isinstance(sql, str):
+            row["reason"] = "exact_failed_statement_unavailable"
+            continue
+        row["sql_sha256"] = hashlib.sha256(sql.encode()).hexdigest()
+        # Mask literals, quoted identifiers, and comments without changing offsets.
+        masked = re.sub(
+            r"'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|--[^\n]*|/\*[\s\S]*?\*/",
+            lambda match: " " * len(match.group()),
+            sql,
+        )
+        matches = list(re.finditer(r"\bnot\s*\(", masked, re.IGNORECASE))
+        row["not_parenthesis_locations"] = [
+            {"start": match.start(), "end": match.end(), "line": sql.count("\n", 0, match.start()) + 1}
+            for match in matches
+        ]
+        if matches:
+            row.update(status="confirmed", reason="actual_allowlist_not_and_exact_failed_sql_not_parenthesis")
+        else:
+            row["reason"] = "no_unquoted_not_parenthesis_in_exact_failed_statement"
+    confirmed = sum(row["status"] == "confirmed" for row in calls)
+    return {
+        "confirmed_affected": bool(confirmed),
+        "confirmed_rejection_calls": confirmed,
+        "unconfirmed_rejection_calls": len(calls) - confirmed,
+        "observed_allowlist_not_rejection_calls": len(calls),
+        "calls": calls,
+        "interpretation": "Exposure to the old NOT/function classification defect only. SQL/business correctness and counterfactual reward remain unknown; no SQL replay or score change.",
+    }
+
+
+def summarize_boolean_exposure(rows):
+    records = [row.get("executor_boolean_false_rejection_exposure") for row in rows]
+    present = [record for record in records if record is not None]
+    return {
+        "planned_episodes": len(rows),
+        "episodes_with_available_records": len(present),
+        "episodes_without_available_records": len(rows) - len(present),
+        "confirmed_affected_episodes": sum(record["confirmed_affected"] for record in present),
+        "confirmed_rejection_calls": sum(record["confirmed_rejection_calls"] for record in present),
+        "episodes_with_unconfirmed_rejections": sum(record["unconfirmed_rejection_calls"] > 0 for record in present),
+        "unconfirmed_rejection_calls": sum(record["unconfirmed_rejection_calls"] for record in present),
+        "denominator_or_reward_changed": False,
+    }
 
 
 def behavior(events, reward, limits, *, reader, run_root):
@@ -608,6 +737,11 @@ def read_model(candidate, run_root, launch_path, protocol_path=None, *, reader):
                 if experience
                 else None
             )
+            row["executor_boolean_false_rejection_exposure"] = (
+                executor_boolean_exposure(raw_events, reader=reader, folder=folder)
+                if experience
+                else None
+            )
             rows.append(row)
     arms = []
     for harness in HARNESSES:
@@ -649,6 +783,7 @@ def read_model(candidate, run_root, launch_path, protocol_path=None, *, reader):
                 "protocol_ref": reader.ref(run_root / "launch-protocol.json"),
                 "initial_actor_identity": initial,
                 "metrics": metrics,
+                "executor_boolean_false_rejection_exposure": summarize_boolean_exposure(arm_rows),
                 "eligibility_checks": requirements,
                 "eligible": all(requirements.values()),
                 "ineligible_reasons": [k for k, v in requirements.items() if not v],
@@ -792,6 +927,21 @@ def markdown(report):
     lines += [
         "",
         "未知未填零。每臂每模型12例来自6个开发情境×2重复；原均值权重为实现/复核各1/3、pair/chain各1/6，宏均值四任务等权。",
+        "",
+    ]
+    lines += [
+        "| 模型 | harness | 确认暴露 episode | 确认拒绝调用 | 未确认 episode / 调用 | 缺记录 episode |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for model in report["models"]:
+        for arm in model["arms"]:
+            exposure = arm["executor_boolean_false_rejection_exposure"]
+            lines.append(
+                f"| {model['candidate_id']} | {arm['harness']} | {exposure['confirmed_affected_episodes']} | {exposure['confirmed_rejection_calls']} | {exposure['episodes_with_unconfirmed_rejections']} / {exposure['unconfirmed_rejection_calls']} | {exposure['episodes_without_available_records']} |"
+            )
+    lines += [
+        "",
+        "误拒绝暴露须由原实际 allowlist:not 返回及该次不可变版本中失败语句的 NOT(...) 共同确认。多次拒绝只计一个受影响 episode；缺少完整证据保留未确认。未重放 SQL、未改原奖励或分母。原排序仅描述原执行环境中的相对候选，不是修复环境后的完整排名。",
         "",
     ]
     for model in report["models"]:

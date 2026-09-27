@@ -17,7 +17,7 @@ from .storage import atomic_write, digest, json_bytes
 from .templates.retail_harness import build_harness_case, case_spec
 from .work_interface import WorkInterface
 
-VERSION = 'harness-collection-v0.17'
+VERSION = 'harness-collection-v0.18'
 
 
 def _runtime(owner, prepared, folder, harness):
@@ -69,7 +69,9 @@ def collect_window(owner, window_spec, output_dir):
     if not window_spec.get('slots'):
         raise ValueError('Predeclare the finite collection slots')
     template = window_spec.get('template', 'retail_harness')
-    if template == 'retail_work':
+    if template == 'retail_balanced':
+        from .templates.retail_balanced import case_spec as resolve_case, build_balanced_case as build_case
+    elif template == 'retail_work':
         from .templates.retail_work import case_spec as resolve_case, build_retail_case as build_case
     elif template == 'retail_harness':
         resolve_case, build_case = case_spec, build_harness_case
@@ -79,7 +81,7 @@ def collect_window(owner, window_spec, output_dir):
     prepared_rows, specs = [], []
     for index, row in enumerate(window_spec['slots']):
         case = resolve_case(row['case_id'])
-        if window_spec.get('mode') == 'online' and (template != 'retail_work' or case['pool'] != 'train'):
+        if window_spec.get('mode') == 'online' and (template not in {'retail_work', 'retail_balanced'} or case['pool'] != 'train'):
             raise ValueError('Direct H2 updates use only the declared training pool, never H0/H1 development or locked facts')
         if row.get('pool', case['pool']) != case['pool']:
             raise ValueError('Declared usage pool differs from actual case')

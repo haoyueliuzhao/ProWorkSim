@@ -198,9 +198,17 @@ def build_retail_case(case, root, *, assets_root=None):
     case = copy.deepcopy(case)
     if case != case_spec(case['case_id']):
         raise ValueError('Retail case differs from frozen catalog')
+    return _build_prepared_case(case, root, declaration=scenario(case, source_root=assets_root), version=VERSION)
+
+
+def _build_prepared_case(case, root, *, declaration, version):
+    """Shared actual initialization after the caller validates its frozen catalog.
+
+    Host-only preparation spec is not inserted in worker tasks or observations.
+    """
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
-    deployment = build_scenario(scenario(case, source_root=assets_root), root / 'world')
+    deployment = build_scenario(declaration, root / 'world')
     if deployment.status != 'ready':
         raise ValueError(deployment.diagnostics)
     world = deployment.world
@@ -238,7 +246,7 @@ def build_retail_case(case, root, *, assets_root=None):
             if built['execution_status'] != 'success':
                 raise ValueError({'prepared_sql_failed': built})
             call('implementer', 'submit', work_id='TEAM::build', artifacts=['code', 'result'])
-    prefix = {'version': VERSION, 'origin': 'preparation', 'credited_to_current_actor': False,
+    prefix = {'version': version, 'origin': 'preparation', 'credited_to_current_actor': False,
               'case_id': case['case_id'], 'executed': bool(recorder.events), 'initial_business_state_sha256': before,
               'prepared_business_state_sha256': digest(json_bytes(initial_business_state(world))),
               'experience': recorder.snapshot(), 'independent_capture': captured, 'source_before': source, 'source_after': code_identity()}

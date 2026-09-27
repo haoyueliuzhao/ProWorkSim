@@ -16,7 +16,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-ENGINE_VERSION = "managed-duckdb-v0.11"
+ENGINE_VERSION = "managed-duckdb-v0.18"
 LIMITS = {
     "wall_seconds": 8,
     "cpu_seconds": 4,
@@ -28,7 +28,10 @@ LIMITS = {
     "sql_characters": 20000,
 }
 IDENTIFIER = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,62}$")
-FUNCTIONS = frozenset(
+# Explicit grammar tokens before grouped expressions/subqueries are not
+# function invocations. All except NOT were historically mixed into FUNCTIONS.
+# This is a narrow lexical distinction, not a general SQL parser/permission list.
+PARENTHESIZED_SYNTAX = frozenset(
     {
         "as",
         "join",
@@ -42,6 +45,11 @@ FUNCTIONS = frozenset(
         "in",
         "over",
         "filter",
+        "not",
+    }
+)
+FUNCTIONS = frozenset(
+    {
         "cast",
         "try_cast",
         "sum",
@@ -129,7 +137,10 @@ def _sql(connection, text):
     words = {word.lower() for word in re.findall(r"[A-Za-z_][A-Za-z_0-9]*", tokens)}
     if words & FORBIDDEN:
         raise ValueError("SQL capability permits SELECT/CTE only; prohibited keyword")
-    calls = {word.lower() for word in re.findall(r"\b([A-Za-z_][A-Za-z_0-9]*)\s*\(", tokens)}
+    followed_by_paren = {
+        word.lower() for word in re.findall(r"\b([A-Za-z_][A-Za-z_0-9]*)\s*\(", tokens)
+    }
+    calls = followed_by_paren - PARENTHESIZED_SYNTAX
     if calls - FUNCTIONS:
         raise ValueError(
             "SQL function is outside the declared allowlist: " + ",".join(sorted(calls - FUNCTIONS))

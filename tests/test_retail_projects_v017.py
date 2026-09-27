@@ -66,7 +66,7 @@ def test_four_role_collection_records_no_automatic_work(tmp_path, harness):
 
         def complete(self, request, *, timeout_seconds):
             self.calls += 1
-            body = {'id': f'fake-{self.calls}', 'model': 'offline-fixture',
+            body = {'id': f'fake-{self.calls}', 'model': 'offline-fixture', 'actor_identity': self.freeze_identity(),
                     'choices': [{'message': {'role': 'assistant', 'content': None,
                          'tool_calls': [{'id': f'done-{self.calls}', 'type': 'function',
                                          'function': {'name': 'staff_done', 'arguments': '{"reason":"fixture stop"}'}}]},
@@ -84,6 +84,9 @@ def test_four_role_collection_records_no_automatic_work(tmp_path, harness):
     assert runtime['actions'] == 0
     assert all(r['status'] == 'completed' for r in runtime['roles'].values())
     assert result['model_identity'] == owner.freeze_identity()
+    from proworksim.storage import digest, json_bytes
+    startup = read_json(tmp_path / 'model-fixture/initial-workers.json')
+    assert digest(json_bytes(startup)) == result['diagnostics']['initial_worker_snapshot_sha256']
 
 
 def test_sdk_done_worker_handles_actual_new_obligation_without_budget_reset(tmp_path):

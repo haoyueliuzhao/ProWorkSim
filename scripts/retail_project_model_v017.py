@@ -16,9 +16,9 @@ if __package__ in (None, ''):
 
 from proworksim.audit import code_identity
 from proworksim.storage import atomic_write, json_bytes, read_json
-from scripts.harness_report_v017 import CANDIDATES, HARNESSES, select_combination
+from scripts.harness_report_v017 import CANDIDATES, HARNESSES, VERSION as H1_REPORT_VERSION, select_combination
 
-VERSION = 'retail-project-resident-evaluation-v0.17'
+VERSION = 'retail-project-resident-evaluation-v0.18'
 PLAN = Path(__file__).resolve().parents[1] / 'examples/retail-projects-v17/model-evaluation-plan.json'
 
 
@@ -54,7 +54,7 @@ def validate_binding(selection_path, *, model, weight_manifest, harness, candida
                 'Selection wrapper differs from its source report')
     else:
         report_path = selection_path
-    require(document.get('version') == 'harness-readonly-report-v0.17', 'Completed v0.17 H1 report required')
+    require(document.get('version') == H1_REPORT_VERSION, 'Final report must use the explicitly installed H1 reporter version')
     models = document.get('models', [])
     require(len(models) == 2 and {m.get('candidate_id') for m in models} == set(CANDIDATES)
             and all(m.get('ended') is True for m in models), 'Both actual H1 model processes must end before project evaluation')
@@ -144,7 +144,10 @@ def execute(owner, binding, output, plan):
             try:
                 result = collect_project_episode(owner, slot['case_id'], folder, harness=binding['selected_harness'])
                 row.update(status='closed', assessment=result['assessment'], termination=result['termination'],
-                           opportunities=result['opportunities'], actions=result['actions'])
+                           opportunities=result['opportunities'], actions=result['actions'],
+                           independent_assessment=result.get('independent_assessment'),
+                           independent_assessability=result.get('independent_assessability'),
+                           record_trust=result.get('record_trust'), diagnostics=result.get('diagnostics'))
                 row['evaluation_close'] = owner.finish_evaluation([], folder / 'evaluation-close')
             except (Exception, KeyboardInterrupt) as error:
                 failure = error

@@ -19,10 +19,10 @@ def reference(path):
     )
 
 
-def measures(rows):
+def measures(rows, task_weights=None):
     known = [r for r in rows if r["state"] == "closed_known"]
     complete = len(known) == len(rows) and bool(rows)
-    return {
+    result = {
         "planned": len(rows),
         "states": dict(Counter(r["state"] for r in rows)),
         "known": len(known),
@@ -32,14 +32,96 @@ def measures(rows):
         "completion_rate": sum(r["completed"] is True for r in known) / len(rows)
         if complete
         else None,
-        "missing_rule": "Unknown or not-started observations remain in the declared denominator; no mean or zero imputation.",
+        "missing_rule": "Unknown/unstarted observations stay in the declared denominator; no imputation.",
+    }
+    tasks = {}
+    for task in task_weights or sorted({r["task"] for r in rows}):
+        own = [r for r in rows if r["task"] == task]
+        all_known = bool(own) and all(r["state"] == "closed_known" for r in own)
+        tasks[task] = {
+            "planned": len(own),
+            "mean_reward": sum(r["reward"] for r in own) / len(own) if all_known else None,
+            "completion_rate": sum(r["completed"] is True for r in own) / len(own)
+            if all_known
+            else None,
+        }
+    result["tasks"] = tasks
+    if task_weights:
+        if abs(sum(task_weights.values()) - 1) > 1e-12:
+            raise ValueError("Primary task weights must sum to one")
+        ready = all(tasks[t]["mean_reward"] is not None for t in task_weights)
+        result.update(
+            primary_measure="task_macro_mean",
+            primary_task_weights=task_weights,
+            primary_mean_reward=sum(task_weights[t] * tasks[t]["mean_reward"] for t in task_weights)
+            if ready
+            else None,
+            primary_completion_rate=sum(
+                task_weights[t] * tasks[t]["completion_rate"] for t in task_weights
+            )
+            if ready
+            else None,
+        )
+    else:
+        result.update(
+            primary_measure="raw_episode_mean",
+            primary_mean_reward=result["mean_reward"],
+            primary_completion_rate=result["completion_rate"],
+        )
+    return result
+
+
+def lightweight_advantages(admission, update, decisions, slot_rows):
+    values, advantages = update.get("old_critic_values"), update.get("advantages")
+    targets = admission.get("decisions", [])
+    if (
+        not isinstance(values, list)
+        or not isinstance(advantages, list)
+        or len(values) != len(advantages)
+        or len(values) != len(targets)
+    ):
+        return {
+            "status": "unavailable",
+            "reason": "Complete saved advantages/current target rows not present",
+        }
+    slots = {r["slot_id"]: r for r in slot_rows}
+    groups = {}
+    for target, value, advantage in zip(targets, values, advantages):
+        slot = slots.get(target["slot_id"], {})
+        outcome = (
+            "complete"
+            if slot.get("completed") is True
+            else "partial"
+            if (slot.get("reward") or 0) > 0
+            else "zero_or_unknown"
+        )
+        action = decisions.get((target["member_id"], target["call_id"]), "unmapped_decision")
+        key = (target.get("task"), target["member_id"], action, outcome)
+        groups.setdefault(key, []).append((value, advantage, len(target["tokens"]["output_ids"])))
+    return {
+        "status": "measured_saved_values",
+        "groups": [
+            {
+                "task": k[0],
+                "member": k[1],
+                "action": k[2],
+                "episode_outcome": k[3],
+                "decisions": len(v),
+                "output_tokens": sum(x[2] for x in v),
+                "mean_old_critic": sum(x[0] for x in v) / len(v),
+                "mean_advantage": sum(x[1] for x in v) / len(v),
+                "positive_advantage_decisions": sum(x[1] > 0 for x in v),
+            }
+            for k, v in groups.items()
+        ],
+        "scope": "Read-only saved role/action/outcome association; no extra forward, gradient decomposition or causal credit claim. Terminal MC may credit later ineffective actions after partial outcomes.",
     }
 
 
 def build_report(run):
     run = Path(run).resolve()
     protocol = read(run / "launch-protocol.json")
-    if not protocol or protocol.get("stage") != "H2":
+    if not protocol or protocol.get("stage") not in {"H2", "H2_v018", "ID_support_v018"}:
         raise ValueError("An actual declared H2 run is required")
     online = read(run / "online/report.json", {})
     records = {w["window_id"]: w for w in online.get("windows", [])}
@@ -107,7 +189,9 @@ def build_report(run):
                 "mode": spec["mode"],
                 "phase": spec["phase"],
                 "status": record.get("status", "not_started"),
-                "metrics": measures(rows),
+                "metrics": measures(
+                    rows, protocol.get("primary_evaluation", {}).get("task_weights")
+                ),
                 "rows": rows,
                 "before_actor_identity": record.get("before_actor_identity"),
                 "after_actor_identity": record.get("after_actor_identity"),
@@ -130,6 +214,9 @@ def build_report(run):
                         "error",
                     ]
                 },
+                "lightweight_advantage_diagnostics": lightweight_advantages(
+                    admission, update, decisions, rows
+                ),
                 "actual_actor_targets_by_action": dict(action_counts),
                 "actor_targets_unique": len(target_ids) == len(set(target_ids)),
                 "target_input_rule": "Original input_ids/output_ids from current-window member completions; tool and colleague content is input-only.",
@@ -157,8 +244,8 @@ def build_report(run):
             if w is not None
         ),
         "all_initial_and_final_known": bool(initial and final)
-        and initial["metrics"]["mean_reward"] is not None
-        and final["metrics"]["mean_reward"] is not None,
+        and initial["metrics"]["primary_mean_reward"] is not None
+        and final["metrics"]["primary_mean_reward"] is not None,
     }
     if all(comparison_checks.values()):
         pairs = {}
@@ -167,9 +254,13 @@ def build_report(run):
         if set(pairs) != {(r["case_id"], r["sampling_seed"]) for r in final["rows"]}:
             raise ValueError("Frozen initial/final inventory differs")
         delta = {
-            "mean_reward": final["metrics"]["mean_reward"] - initial["metrics"]["mean_reward"],
-            "completion_rate": final["metrics"]["completion_rate"]
-            - initial["metrics"]["completion_rate"],
+            "primary_measure": final["metrics"]["primary_measure"],
+            "mean_reward": final["metrics"]["primary_mean_reward"]
+            - initial["metrics"]["primary_mean_reward"],
+            "secondary_raw_episode_mean_difference": final["metrics"]["mean_reward"]
+            - initial["metrics"]["mean_reward"],
+            "completion_rate": final["metrics"]["primary_completion_rate"]
+            - initial["metrics"]["primary_completion_rate"],
             "paired": [
                 {
                     "case_id": r["case_id"],
@@ -182,7 +273,7 @@ def build_report(run):
             "scope": "One finite training seed/dose and same-source locked facts; no MC/RTG or ID-VTDO causal comparison.",
         }
     return {
-        "version": "harness-learning-readonly-v0.17",
+        "version": "harness-learning-readonly-v0.18",
         "run_root": str(run),
         "status": online.get("status", "not_started"),
         "experiment_id": protocol["experiment_id"],
@@ -204,18 +295,18 @@ def build_report(run):
 
 def markdown(d):
     lines = [
-        "# v0.17 H2 实际记录",
+        "# H2 实际记录（保留协议与主效用口径）",
         "",
         f"状态：{d['status']}；组合：{d['candidate_id']} / {d['harness']}。",
         "",
-        "| 窗口 | 类型 | 已知/计划 | R均值 | actor/critic步数 |",
+        "| 窗口 | 类型 | 已知/计划 | 主效用均值 | actor/critic步数 |",
         "|---|---|---:|---:|---|",
     ]
     for w in d["windows"]:
         m = w["metrics"]
         u = w["update"]
         lines.append(
-            f"|{w['window_id']}|{w['mode']}|{m['known']}/{m['planned']}|{m['mean_reward']}|{u['actor_optimizer_steps']}/{u['critic_optimizer_steps']}|"
+            f"|{w['window_id']}|{w['mode']}|{m['known']}/{m['planned']}|{m['primary_mean_reward']}|{u['actor_optimizer_steps']}/{u['critic_optimizer_steps']}|"
         )
     lines += [
         "",
