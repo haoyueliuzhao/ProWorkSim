@@ -33,6 +33,16 @@ def main():
         raise
     if admission['status'] != 'not_H1':
         atomic_write(output / 'H1-admission.json', json_bytes(admission))
+    from proworksim.harness_learning_admission import validate_h2_launch
+    try:
+        h2_admission = validate_h2_launch(protocol, model_path=args.model, weight_manifest=args.weight_manifest,
+                                          restore_checkpoint=args.restore_checkpoint)
+    except ValueError as error:
+        atomic_write(output / 'H2-admission.json', json_bytes({'status': 'rejected', 'reason': str(error),
+            'model_or_dependency_loading_started': False}))
+        raise
+    if h2_admission['status'] != 'not_H2':
+        atomic_write(output / 'H2-admission.json', json_bytes(h2_admission))
     from proworksim.online_training import SharedActor, run_online_windows
     dependencies = {name: importlib.metadata.version(name) for name in ('duckdb', 'openpyxl', 'torch', 'transformers', 'peft')}
     if dependencies['duckdb'] != '1.5.5':
@@ -58,6 +68,9 @@ def main():
                         attention=runtime['attention'], matmul_precision=runtime['matmul_precision'])
         else:
             raise ValueError('Unknown explicitly registered runtime; no silent fallback')
+        if h2_admission['status'] != 'not_H2' and h2_admission.get('expected_initial_adapter_sha256'):
+            if owner.freeze_identity()['adapter_sha256'] != h2_admission['expected_initial_adapter_sha256']:
+                raise ValueError('Fresh H2 adapter differs from selected H1 shared initial actor')
         atomic_write(output / 'adapter-scope.json', json_bytes({
             'scope': 'Actual trainable actor parameters; fixed base parameters are not updated',
             'trainable_parameters': sum(p.numel() for p in owner.actor_parameters.values()),

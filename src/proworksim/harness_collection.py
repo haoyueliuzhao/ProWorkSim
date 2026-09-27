@@ -17,7 +17,7 @@ from .storage import atomic_write, digest, json_bytes
 from .templates.retail_harness import build_harness_case, case_spec
 from .work_interface import WorkInterface
 
-VERSION = 'harness-collection-v0.16'
+VERSION = 'harness-collection-v0.17'
 
 
 def _runtime(owner, prepared, folder, harness):
@@ -68,16 +68,27 @@ def collect_window(owner, window_spec, output_dir):
     harness = window_spec['harness']
     if not window_spec.get('slots'):
         raise ValueError('Predeclare the finite collection slots')
+    template = window_spec.get('template', 'retail_harness')
+    if template == 'retail_work':
+        from .templates.retail_work import case_spec as resolve_case, build_retail_case as build_case
+    elif template == 'retail_harness':
+        resolve_case, build_case = case_spec, build_harness_case
+    else:
+        raise ValueError('Unknown declared harness world template')
     identity = owner.freeze_identity()
     prepared_rows, specs = [], []
     for index, row in enumerate(window_spec['slots']):
-        case = case_spec(row['case_id'])
+        case = resolve_case(row['case_id'])
+        if window_spec.get('mode') == 'online' and (template != 'retail_work' or case['pool'] != 'train'):
+            raise ValueError('Direct H2 updates use only the declared training pool, never H0/H1 development or locked facts')
+        if row.get('pool', case['pool']) != case['pool']:
+            raise ValueError('Declared usage pool differs from actual case')
         # Public compatibility instructions/limits are frozen in H0, never
         # applied as hidden help to H1 or copied into the old study.
         if row.get('role_decision_limits') and row['role_decision_limits'] != case['role_decision_limits']:
             raise ValueError('Case responsibility budgets remain frozen in the independent catalog')
         folder = output/f'slot-{index}'
-        prepared = build_harness_case(case, folder)
+        prepared = build_case(case, folder)
         if row.get('public_task_override') and (window_spec['stage'] != 'H0_compatibility' or row.get('purpose') != 'public_interface_calibration_not_work_ability'):
             raise ValueError('Only the declared H0 interface probe may override the public role task')
         if row.get('public_task_override'):
@@ -100,7 +111,7 @@ def collect_window(owner, window_spec, output_dir):
         atomic_write(folder/'model-scenario.json', json_bytes(scenario))
         prepared_rows.append((row, prepared, folder, runtime, captured, scenario))
     declaration = declare_window(window_spec['window_id'], actor_identity=identity,
-        gamma_identity={'collection_version': VERSION, 'harness': harness, 'source': code_identity(),
+        gamma_identity={'collection_version': VERSION, 'harness': harness, 'template': template, 'source': code_identity(),
             'recipe': owner.recipe, 'fixed_slot_cases': [s['xi_fingerprint'] for s in specs],
             'slot_sampling_seeds': {r['slot_id']: r['sampling_seed'] for r in window_spec['slots']},
             'context_projection': 'latest_observation_last4_tool_rounds' if harness == 'openhands_v16' else 'latest_observation',
@@ -155,5 +166,5 @@ def collect_window(owner, window_spec, output_dir):
     atomic_write(output/'support.json', json_bytes(diagnose_window(declaration, records)))
     atomic_write(output/'summary.json', json_bytes({'version': VERSION, 'actor_identity': identity,
         'actual_network_http_calls': 0, 'slots': summaries,
-        'scope': 'Development evaluation only; current method labels are descriptive. No H2 training admission or ID-VTDO O4 is claimed.'}))
+        'scope': 'Actual current-window work with recorded own-token targets; method labels are descriptive. No ID-VTDO O4 or learning gain follows from collection alone.'}))
     return entries

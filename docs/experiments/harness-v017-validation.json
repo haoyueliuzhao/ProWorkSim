@@ -1,0 +1,106 @@
+{
+  "version": "harness-v017-validation",
+  "recorded_at": "2026-09-27T01:39:41.558122+00:00",
+  "scope": "One final default full pytest and Ruff run; separately listed resident-SDK targeted fixtures use a different environment and are not real model samples.",
+  "source_before": {
+    "code_commit": "676367772a9ce17fbec081d9bc6ef0c8208aa64f",
+    "code_dirty": true,
+    "source_tree_sha256": "fd1f9460985eef69642cc78b4cd9cbfbd5e306bebee4306e8e646995f2534f52"
+  },
+  "source_after": {
+    "code_commit": "676367772a9ce17fbec081d9bc6ef0c8208aa64f",
+    "code_dirty": true,
+    "source_tree_sha256": "fd1f9460985eef69642cc78b4cd9cbfbd5e306bebee4306e8e646995f2534f52"
+  },
+  "default_checks": [
+    {
+      "name": "pytest",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--junitxml=runs/v017-final-validation/pytest.xml"
+      ],
+      "started_at": "2026-09-27T01:36:49.478393+00:00",
+      "elapsed_seconds": 172.03004864323884,
+      "exit_code": 1,
+      "log": "runs/v017-final-validation/pytest.log",
+      "log_sha256": "fc4077f5abc51a07fd07a3f38e83d46993ae394839bdb437eb5ce06f258921ed",
+      "total": 1001,
+      "skipped": 28,
+      "failed": 1,
+      "errors": 0,
+      "passed": 972,
+      "failures": [
+        {
+          "name": "test_context_policy_and_provenance_errors_are_explicit",
+          "class": "tests.test_model_context_v11",
+          "detail": "def test_context_policy_and_provenance_errors_are_explicit():\n        with pytest.raises(ValueError, match=\"context policy\"):\n            normalize_config({\"context_policy\": \"summarize_and_guess\"})\n        policy = ModelPolicy({\"context_policy\": \"latest_observation\"})\n        message = {\"role\": \"assistant\", \"content\": \"actual prior output\"}\n        with pytest.raises(ValueError, match=\"observation\"):\n            policy._select_messages(\n                {\n                    \"messages\": [message],\n                    \"observation_messages\": [{\"index\": 0, \"sha256\": digest(json_bytes(message))}],\n                }\n            )\n>       assert ADAPTER_VERSION == \"model-policy-v0.12\"\nE       AssertionError: assert 'model-policy-v0.17' == 'model-policy-v0.12'\nE         \nE         - model-policy-v0.12\nE         ?                  ^\nE         + model-policy-v0.17\nE         ?                  ^\n\ntests/test_model_context_v11.py:242: AssertionError"
+        }
+      ]
+    },
+    {
+      "name": "ruff",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "src",
+        "tests",
+        "scripts"
+      ],
+      "started_at": "2026-09-27T01:39:41.511482+00:00",
+      "elapsed_seconds": 0.04655616218224168,
+      "exit_code": 0,
+      "log": "runs/v017-final-validation/ruff.log",
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  ],
+  "resident_sdk_targeted_checks": [
+    {
+      "environment": "runs/v016-sdk/resident-venv/bin/python",
+      "CUDA_VISIBLE_DEVICES": "",
+      "test": "tests/test_retail_projects_v017.py::test_four_role_collection_records_no_automatic_work[openhands_v16]",
+      "passed": 1,
+      "elapsed_seconds": 12.37,
+      "real_sdk": true,
+      "real_model": false,
+      "warning": "Upstream pydantic ReadOnly qualifier warning; no failure"
+    },
+    {
+      "environment": "runs/v016-sdk/resident-venv/bin/python",
+      "CUDA_VISIBLE_DEVICES": "",
+      "test": "tests/test_retail_projects_v017.py::test_sdk_done_worker_handles_actual_new_obligation_without_budget_reset",
+      "passed": 1,
+      "elapsed_seconds": 9.83,
+      "real_sdk": true,
+      "real_model": false,
+      "warning": "Upstream pydantic ReadOnly qualifier warning; no failure"
+    },
+    {
+      "environment": "resident SDK environment (root-reported earlier targeted run)",
+      "test": "SDK private actor targets, seven decisions counted exactly once",
+      "passed": 1,
+      "elapsed_seconds": 7.52,
+      "provenance": "Earlier run reported by root; not rerun by this final validation driver",
+      "real_sdk": true,
+      "real_model": false
+    }
+  ],
+  "passed": false,
+  "root_followups": {
+    "stale_version_assertion": {
+      "file": "tests/test_model_context_v11.py",
+      "change": "Expected declared adapter identity updated v0.12 to v0.17; no model/runtime change",
+      "targeted_result": "10 passed in 1.15s",
+      "full_suite_rerun": false
+    },
+    "H2_plan_fixture": "1 passed in 0.04s; no model",
+    "H2_readonly_report_fixture": "1 passed in 0.03s after adding completed-run/evaluation/source guards; missing final work is not zero and has no learning delta",
+    "H2_actor_projection_real_SDK_fake_model": "1 passed in 7.52s; 7 original fake output traces, no gradient/model learning proof",
+    "H2_actual_selection_gate_fixture": "1 passed in 0.07s; saved metadata only, rejects unmeasured pilot and changed pool",
+    "fixed_continuation_fixtures": "5 passed in 0.05s; no GPU/child model started, existing job attempts cannot restart"
+  }
+}
