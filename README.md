@@ -1,10 +1,10 @@
 # ProWorkSim
 
-## v0.24 同终局合同的时间信用对照（准备完成）
+## v0.24 同终局合同的时间信用对照（2026-09-28已启动）
 
 [本轮方案](docs/domain-collaboration-v024-plan.md)比较终局MC与Handoff-RTG：同一新采D0由两臂从完整共同状态各消费一次，随后各自新采第二窗并更新；θ0/MC/RTG评价同一组12槽，合计54个新内部episode、24次训练episode消费。终局总回报、token分母与学习配方保持，仅把实际交接0.2提前结算；这是基础时间信用surrogate对照，不是ID-VTDO。
 
-[工作与标识准入](docs/experiments/retail-work-v024-qualification.md)、[账本及分支控制](docs/experiments/handoff-credit-v024-controls.md)已完成；先完整初评后训练，每个评价阶段留4.5GPU小时，新内部上限36GPU小时。D2[公开合同与分项修订](docs/experiments/teambench-v024-contract-and-metrics.md)只做CPU控制，9例外测未启动。实际运行与结果另行记录，旧v0.23缺失和负向观察不回填。
+[工作与标识准入](docs/experiments/retail-work-v024-qualification.md)、[账本及分支控制](docs/experiments/handoff-credit-v024-controls.md)已完成；先完整初评后训练，每个评价阶段留4.5GPU小时，新内部上限36GPU小时。北京时间9月28日20:24在GPU4启动初评，执行提交为`702f673`；[启动记录](docs/experiments/credit-pilot-v024-launch.md)是当时状态快照，尚无本轮学习收益结论。监督器将在终止后自动生成并提交终态报告。D2[公开合同与分项修订](docs/experiments/teambench-v024-contract-and-metrics.md)只做CPU控制，9例外测未启动；旧v0.23缺失和负向观察不回填。
 
 
 ## v0.23 四窗Q=B学习已结案：未见完整职责改善
