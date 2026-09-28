@@ -49,6 +49,7 @@ def _policies(policies, active, identity, *, harness=None):
         'native_v22_original_history': 'proworksim.work_view_v022.OriginalHistoryModelPolicy',
         'native_v22_compact_work': 'proworksim.work_view_v022.CompactWorkModelPolicy',
         'native_v23_compact_work': 'proworksim.work_view_v022.CompactWorkModelPolicy',
+        'native_v24_compact_work': 'proworksim.deterministic_work_v024.DeterministicCompactWorkModelPolicy',
     }.get(harness, 'proworksim.model_policy.ModelPolicy')
     for member in active:
         policy = policies[member]

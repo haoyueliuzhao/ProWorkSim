@@ -1,5 +1,12 @@
 # ProWorkSim
 
+## v0.24 同终局合同的时间信用对照（准备完成）
+
+[本轮方案](docs/domain-collaboration-v024-plan.md)比较终局MC与Handoff-RTG：同一新采D0由两臂从完整共同状态各消费一次，随后各自新采第二窗并更新；θ0/MC/RTG评价同一组12槽，合计54个新内部episode、24次训练episode消费。终局总回报、token分母与学习配方保持，仅把实际交接0.2提前结算；这是基础时间信用surrogate对照，不是ID-VTDO。
+
+[工作与标识准入](docs/experiments/retail-work-v024-qualification.md)、[账本及分支控制](docs/experiments/handoff-credit-v024-controls.md)已完成；先完整初评后训练，每个评价阶段留4.5GPU小时，新内部上限36GPU小时。D2[公开合同与分项修订](docs/experiments/teambench-v024-contract-and-metrics.md)只做CPU控制，9例外测未启动。实际运行与结果另行记录，旧v0.23缺失和负向观察不回填。
+
+
 ## v0.23 四窗Q=B学习已结案：未见完整职责改善
 
 [本轮完整报告](docs/experiments/learning-pilot-v023.md)：24个训练episode全部完成，actor/critic各更新4次；内部终评24/24、外部初末6/6完成。内部初评在原2.5小时门停止，仅19/24闭合，因此预定完整主点估计未知。19个已知配对完整职责1/19→0/19，全部24个终评均未完整完成职责；外部完整职责0/3→0/3，没有工作改善证据。

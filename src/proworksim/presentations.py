@@ -103,7 +103,7 @@ def response_matches_receipt(commit, public, *, action, arguments=None):
         "version", "variant", "profile", "project_id", "raw_response_sha256"
     }:
         return False
-    if marker.get("version") != PRESENTATION_VERSION or marker.get("variant") != "compact_v14":
+    if marker.get("version") not in {PRESENTATION_VERSION, "work-presentation-v0.24-canonical"} or marker.get("variant") != "compact_v14":
         return False
     # Runtime import avoids the public interface/presentation import cycle.
     from .work_interface import V14_INTERFACE, V14_PROFILES, V23_MAINTENANCE_INTERFACE
@@ -131,4 +131,7 @@ def response_matches_receipt(commit, public, *, action, arguments=None):
                                        presentation="compact_v14")
     except (KeyError, TypeError, ValueError):
         return False
+    if marker.get("version") == "work-presentation-v0.24-canonical":
+        from .deterministic_work_v024 import canonical_response
+        expected = canonical_response(raw, action=action, arguments=arguments, profile=profile, project_id=pid)
     return public == expected
