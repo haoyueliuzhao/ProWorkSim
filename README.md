@@ -1,5 +1,14 @@
 # ProWorkSim
 
+## v0.25 当前联合支持与成员经验配置（实现与CPU准入完成）
+
+[本轮方案](docs/domain-collaboration-v025-plan.md)固定v0.24 MC完整终态与terminal MC基础配方，在新A/B情境各采8条当前策略经历；首次将完整工作有效性、真实方法支持和成员条件化q/b接入actor更新。若A成员存在两类各至少两条的支持，按固定顺序选择一个块，做同起点基础/小扰动试训、独立开发选择和受约束正式配置；确认材料单独保留，后继只交互不增加更新。
+
+[程序准入](docs/experiments/retail-work-v025-qualification.md)为分项通过：A两路线、B自检与其他14材料获资格；B反馈修复仍触及原上下文门，故本轮**只允许A成员配置，B保持基础权重**。没有继续放宽harness、角色或上下文。[完整工作与支持控制](docs/experiments/work-support-v025-controls.md)、[真实tiny梯度与16槽集成](docs/experiments/composition-training-v025-controls.md)、[条件执行及报告控制](docs/experiments/composition-v025-execution-controls.md)已完成，不能视为真实模型支持或算法收益。
+
+本轮新上限58 GPU小时、最多56新episode和三次独立16槽更新。无支持则跳过探测/配置，仅基础更新、12确认与2后继，最多30新episode、23.5 GPU小时；不补采凑齐。实际模型启动与结果另行记录，不把已实现q/b字段写成完成ID-VTDO效果实验。
+
+
 ## v0.24 MC／交接RTG对照已结案：MC出现有限工作改善
 
 [本轮完整报告](docs/experiments/credit-pilot-v024-final.md)：54个新episode全部闭合，MC与Handoff-RTG各完成两次actor/critic更新，θ0/MC/RTG评价各12/12已知。完整职责分别为0/12、3/12、0/12；预定主比较RTG−MC为−0.25，MC相对θ0为+0.25。MC的三个成功包括一次新正确交付、同一正确初稿B情境的两次独立核准；不将后两者称为修复，也不将单训练seed结果推广为稳定总体优势。

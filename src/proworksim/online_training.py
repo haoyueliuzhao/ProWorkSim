@@ -709,7 +709,7 @@ class SharedActor:
             raise ValueError("Reloaded actor identity differs from exact saved tensors")
         return record
 
-    def update_window(self, entries, output, *, feature_function=None, update_actor=True, post_update_selector=None):
+    def update_window(self, entries, output, *, feature_function=None, update_actor=True, post_update_selector=None, composition=None):
         """One complete-window PPO accumulation; no old D0 or reward-diversity gate."""
         if self.sampling_only:
             raise ValueError("Readonly sampling replicas cannot update")
@@ -745,6 +745,16 @@ class SharedActor:
             prepared = prepare_window(entries, self.freeze_identity(), self.window_id, self.recipe, feature_function)
             atomic_write(output / "admission.json", json_bytes(prepared))
             rows = prepared["decisions"]
+            composition_weights = [1.0] * len(rows)
+            if composition is not None:
+                from .composition_training_v025 import validate_composition
+                composition_weights, composition_report = validate_composition(entries, prepared, composition)
+                atomic_write(output / "composition.json", json_bytes(composition))
+                atomic_write(output / "composition-admission.json", json_bytes(composition_report))
+                report["composition_materialization"] = reference(output / "composition.json")
+                report["composition_admission"] = reference(output / "composition-admission.json")
+                if not composition_report["Q_equals_B"]:
+                    report["composition"] = "Supported member-conditioned q/b actor weights; residuals and other members remain one"
             # Freeze the diagnostic contexts before any optimizer step. A custom
             # selector changes only measured contexts, never loss/admission rows.
             selector = post_update_selector or select_post_update_rows
@@ -802,7 +812,7 @@ class SharedActor:
             self.model.train()  # All dropout zero; HF enables gradient checkpointing only in train mode.
             gradient_checks, losses = [], []
             gradient_capture = GroupGradientCapture(self.actor_parameters, torch, self.recipe["diagnostic_max_groups"])
-            for row, advantage in zip(rows, advantages):
+            for row, advantage, composition_weight in zip(rows, advantages, composition_weights):
                 self._resource_guard()
                 actor_loss_value, ratio_range = 0.0, None
                 clipped_tokens = outside_tokens = measured_tokens = 0
@@ -820,6 +830,8 @@ class SharedActor:
                     behavior = torch.tensor(row["tokens"]["behavior_logprobs"], device=probabilities.device)
                     total, ratio = ppo_sum(torch, probabilities, behavior, advantage, self.recipe["clip"])
                     actor_loss = total / row["actor_denominator"]
+                    if composition_weight != 1.0:
+                        actor_loss = actor_loss * composition_weight
                     if not torch.isfinite(actor_loss):
                         raise ValueError("Nonfinite actor loss")
                     detached_ratio = ratio.detach()
@@ -840,7 +852,7 @@ class SharedActor:
                 losses.append({"call_id": row["call_id"], "slot_id": row["slot_id"],
                                "member_id": row["member_id"], "actor_loss": actor_loss_value,
                                "critic_loss": float(critic_loss.detach()), "ppo_ratio_range": ratio_range,
-                               "composition_weight": 1.0, "clipped_objective_tokens": clipped_tokens,
+                               "composition_weight": composition_weight, "clipped_objective_tokens": clipped_tokens,
                                "ratio_outside_interval_tokens": outside_tokens, "clipping_measured_tokens": measured_tokens})
                 report["backward_decisions_completed"] += 1
                 del value, critic_loss
