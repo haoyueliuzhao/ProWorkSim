@@ -1,12 +1,12 @@
 # ProWorkSim
 
-## v0.25 当前联合支持与成员经验配置（实现与CPU准入完成）
+## v0.25 当前联合支持与成员经验配置（2026-09-29已启动）
 
 [本轮方案](docs/domain-collaboration-v025-plan.md)固定v0.24 MC完整终态与terminal MC基础配方，在新A/B情境各采8条当前策略经历；首次将完整工作有效性、真实方法支持和成员条件化q/b接入actor更新。若A成员存在两类各至少两条的支持，按固定顺序选择一个块，做同起点基础/小扰动试训、独立开发选择和受约束正式配置；确认材料单独保留，后继只交互不增加更新。
 
 [程序准入](docs/experiments/retail-work-v025-qualification.md)为分项通过：A两路线、B自检与其他14材料获资格；B反馈修复仍触及原上下文门，故本轮**只允许A成员配置，B保持基础权重**。没有继续放宽harness、角色或上下文。[完整工作与支持控制](docs/experiments/work-support-v025-controls.md)、[真实tiny梯度与16槽集成](docs/experiments/composition-training-v025-controls.md)、[条件执行及报告控制](docs/experiments/composition-v025-execution-controls.md)已完成，不能视为真实模型支持或算法收益。
 
-本轮新上限58 GPU小时、最多56新episode和三次独立16槽更新。无支持则跳过探测/配置，仅基础更新、12确认与2后继，最多30新episode、23.5 GPU小时；不补采凑齐。实际模型启动与结果另行记录，不把已实现q/b字段写成完成ID-VTDO效果实验。
+本轮新上限58 GPU小时、最多56新episode和三次独立16槽更新。无支持则跳过探测/配置，仅基础更新、12确认与2后继，最多30新episode、23.5 GPU小时；不补采凑齐。北京时间9月29日11:38已在GPU2启动真实支持采集，执行提交`e374324`；[启动记录](docs/experiments/composition-pilot-v025-launch.md)保留当时状态。尚无当前模型双方法支持或配置收益结论，终态将自动报告。
 
 
 ## v0.24 MC／交接RTG对照已结案：MC出现有限工作改善
