@@ -6,7 +6,7 @@
 
 [程序准入](docs/experiments/retail-work-v025-qualification.md)为分项通过：A两路线、B自检与其他14材料获资格；B反馈修复仍触及原上下文门，故本轮**只允许A成员配置，B保持基础权重**。没有继续放宽harness、角色或上下文。[完整工作与支持控制](docs/experiments/work-support-v025-controls.md)、[真实tiny梯度与16槽集成](docs/experiments/composition-training-v025-controls.md)、[条件执行及报告控制](docs/experiments/composition-v025-execution-controls.md)已完成，不能视为真实模型支持或算法收益。
 
-本轮新上限58 GPU小时、最多56新episode和三次独立16槽更新。无支持则跳过探测/配置，仅基础更新、12确认与2后继，最多30新episode、23.5 GPU小时；不补采凑齐。北京时间9月29日11:38已在GPU2启动真实支持采集，执行提交`e374324`；[启动记录](docs/experiments/composition-pilot-v025-launch.md)保留当时状态。尚无当前模型双方法支持或配置收益结论，终态将自动报告。
+原计划上限58 GPU小时、最多56新episode和三次独立16槽更新。实际16条支持采集后无可配置块，按规则仅基础更新、12确认与2后继，最多30新episode；不补采凑齐。9月29日用户授权[运行中预算延长](docs/experiments/composition-v025-budget-extension.md)：同一模型更新上限11→18小时、阶段12→20小时，全计划有效上限66 GPU小时、当前无支持分支31.5 GPU小时。新guard接管监督，GPU模型继续原计算，原计划与数值门保持。北京时间9月29日11:38已在GPU2启动真实支持采集，执行提交`e374324`；[启动记录](docs/experiments/composition-pilot-v025-launch.md)保留当时状态。尚无当前模型双方法支持或配置收益结论，终态将自动报告。
 
 
 ## v0.24 MC／交接RTG对照已结案：MC出现有限工作改善
