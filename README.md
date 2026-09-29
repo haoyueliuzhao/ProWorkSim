@@ -1,12 +1,14 @@
 # ProWorkSim
 
-## v0.25 当前联合支持与成员经验配置（2026-09-29已启动）
+## v0.25 当前支持已采集，基础更新因监控查询超时中断
+
+[最新停止核对](docs/experiments/composition-v025-stop-note.md)：9月30日01:21，单次GPU资源查询超时触发监控终止；支持16/16，最后反向266/283，本轮参数更新0步，确认及后继未启动。累计13.726393 GPU小时，当前模型进程已结束；不是新增18小时预算耗尽。原始失败与旧observer超时标签保留，实际首触发另据guard和资源记录说明。
 
 [本轮方案](docs/domain-collaboration-v025-plan.md)固定v0.24 MC完整终态与terminal MC基础配方，在新A/B情境各采8条当前策略经历；首次将完整工作有效性、真实方法支持和成员条件化q/b接入actor更新。若A成员存在两类各至少两条的支持，按固定顺序选择一个块，做同起点基础/小扰动试训、独立开发选择和受约束正式配置；确认材料单独保留，后继只交互不增加更新。
 
 [程序准入](docs/experiments/retail-work-v025-qualification.md)为分项通过：A两路线、B自检与其他14材料获资格；B反馈修复仍触及原上下文门，故本轮**只允许A成员配置，B保持基础权重**。没有继续放宽harness、角色或上下文。[完整工作与支持控制](docs/experiments/work-support-v025-controls.md)、[真实tiny梯度与16槽集成](docs/experiments/composition-training-v025-controls.md)、[条件执行及报告控制](docs/experiments/composition-v025-execution-controls.md)已完成，不能视为真实模型支持或算法收益。
 
-原计划上限58 GPU小时、最多56新episode和三次独立16槽更新。实际16条支持采集后无可配置块，按规则仅基础更新、12确认与2后继，最多30新episode；不补采凑齐。9月29日用户授权[运行中预算延长](docs/experiments/composition-v025-budget-extension.md)：同一模型更新上限11→18小时、阶段12→20小时，全计划有效上限66 GPU小时、当前无支持分支31.5 GPU小时。新guard接管监督，GPU模型继续原计算，原计划与数值门保持。北京时间9月29日11:38已在GPU2启动真实支持采集，执行提交`e374324`；[启动记录](docs/experiments/composition-pilot-v025-launch.md)保留当时状态。尚无当前模型双方法支持或配置收益结论，终态将自动报告。
+原计划上限58 GPU小时、最多56新episode和三次独立16槽更新。实际16条支持采集后无可配置块，按规则仅基础更新、12确认与2后继，最多30新episode；不补采凑齐。9月29日用户授权[运行中预算延长](docs/experiments/composition-v025-budget-extension.md)：同一模型更新上限11→18小时、阶段12→20小时，全计划有效上限66 GPU小时、当前无支持分支31.5 GPU小时。预算接管曾保留同一模型持续计算，最终在资源查询失败门停止，原计划与数值门保持。北京时间9月29日11:38已在GPU2启动真实支持采集，执行提交`e374324`；[启动记录](docs/experiments/composition-pilot-v025-launch.md)保留当时状态。没有当前可配置双类支持或配置收益结论；[自动终态报告](docs/experiments/composition-pilot-v025.md)已归档，实验未完整完成。
 
 
 ## v0.24 MC／交接RTG对照已结案：MC出现有限工作改善
