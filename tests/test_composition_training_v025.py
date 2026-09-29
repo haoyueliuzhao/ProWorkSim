@@ -179,6 +179,7 @@ def actual_window(tmp_path_factory):
         "changed": changed,
         "selected": selected,
         "recipe": collector.recipe,
+        "collector": collector,
     }
 
 
