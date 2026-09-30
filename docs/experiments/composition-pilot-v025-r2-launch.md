@@ -12,3 +12,5 @@
 [恢复方案](../domain-collaboration-v025-r2-plan.md)说明失败原因、CPU控制、预算与解释边界；[启动机器记录](composition-pilot-v025-r2-launch.json)保留精确身份、环境及摘要。原R1首例未知记录保留，未填零、未重评分。首例重试不增加独特情境数。
 
 运行目录为 `runs/domain-v025-r2`。终态将自动生成独立 `composition-pilot-v025-r2.md/.json` 并提交推送；现阶段不能据启动或恢复成功判断工作能力改善。
+
+北京时间13:49进一步核对：首例模型实际发起的 `sql_build` 已返回 `ok=true`、`execution_status=success`（action-22）。这验证实际工作已跨过原磁盘故障点；此时整例仍在运行，不将SQL执行成功解释为业务正确或完整职责完成。
