@@ -4,6 +4,14 @@
 
 > 审阅者全局视角。模型输出保持原文；各成员完整实际输入在HTML的请求详情和JSON中逐调用保留，不能从全局快照补入模型当时视野。数值token/logprob数组仅保留源引用。
 
+## 成员协作有向图
+
+![成员协作有向图](../graphs/train-00-5.svg)
+
+箭头为动作发起成员→协作对象，按原事件顺序向下排列。实线表示工具已记录，虚线表示尝试被拒；不代表对方已读或业务正确。个人操作及准备动作不连成成员关系。
+
+[在交互页查看并定位事件](train-00-5.html#collaboration) · [单独打开图](../graphs/train-00-5.svg)
+
 ## 任务及原结果
 
 Provider reads an applicable private business basis and legally delivers its exact version through the declared route. The implementer obtains and adopts that delivered version with actual data, uses it in a correct real build and fixes the code/result in a new submission. A message without consumption is insufficient. Proactive delivery and a recipient request are both legitimate.

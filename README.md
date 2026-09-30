@@ -2,7 +2,7 @@
 
 ## v0.25 当前支持已采集，基础更新因监控查询超时中断
 
-原支持窗口的16条联合经历已整理为[离线人工审阅页面](docs/reviews/v025-joint-experiences/index.html)、[中文逐条导读](docs/reviews/v025-joint-experiences/reading-notes.md)和[ZIP阅读包](docs/reviews/v025-joint-experiences.zip)。按角色与原事件顺序展示实际输入、回复、工具执行／拒绝、交接、格式反馈及终止；保留原评分与来源SHA，无新增模型运行或评分。
+原支持窗口的16条联合经历已整理为[离线人工审阅页面](docs/reviews/v025-joint-experiences/index.html)、[中文逐条导读](docs/reviews/v025-joint-experiences/reading-notes.md)和[ZIP阅读包](docs/reviews/v025-joint-experiences.zip)。每条附成员协作有向图，按角色与原事件顺序展示实际输入、回复、工具执行／拒绝、交接、格式反馈及终止；保留原评分与来源SHA，无新增模型运行或评分。
 
 用户已授权[同窗口R1重算](docs/domain-collaboration-v025-r1-plan.md)。恢复原更新前完整快照，保留原16条经历并重新计算全部283个决定；随后只执行原未启动的12例确认和2例后继。新增25.5 GPU小时上限，原13.726393小时单列并计入累计。新监控仅查所用GPU，对连续查询故障设120秒有界宽限，真实越限仍停止；不再因一次查询超时立即杀掉模型。恢复及遥测CPU控制已通过；北京时间9月30日01:52已在GPU3启动，实际完整状态/admission恢复通过，进入原概率核查。[R1启动记录](docs/experiments/composition-pilot-v025-r1-launch.md)保留精确证据及一次已恢复的遥测超时，尚无R1完成结果。
 

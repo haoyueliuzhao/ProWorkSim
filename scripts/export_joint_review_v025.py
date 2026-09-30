@@ -454,6 +454,201 @@ def response_excerpt(event):
     return str(result)
 
 
+def collaboration_graph(review):
+    """Only observed cross-member relations; endpoints come from recorded evidence."""
+    members = list(review["members"])
+    state = review.get("snapshots", {}).get("end", {}).get("state", {})
+    requests, handoffs = state.get("requests", {}), state.get("handoffs", {})
+    issues, works = state.get("issues", {}), state.get("work_items", {})
+    relevant = {
+        "request_information",
+        "handoff_information",
+        "inspect_submission",
+        "raise_issue",
+        "approve",
+        "respond_issue",
+        "decide_issue",
+    }
+    edges, unlinked = [], []
+    for decision in review["decisions"]:
+        routes = []
+        for key in (decision.get("input") or {}).get("messages_refs", []):
+            message = review["payloads"][key]
+            if message.get("role") == "user" and isinstance(message.get("content"), str):
+                try:
+                    content = json.loads(message["content"])
+                except ValueError:
+                    continue
+                if isinstance(content, dict) and isinstance(content.get("observation"), dict):
+                    routes = content["observation"].get("information_routes", [])
+        for event in decision["actions"]:
+            payload = event["payload"]
+            action = payload["action"]
+            if action not in relevant:
+                continue
+            source = event.get("worker_id", decision["member_id"])
+            args, response = payload.get("arguments", {}), payload["response"]
+            result = response.get("result") or {}
+            ok = response.get("ok") is True
+            work = works.get(args.get("work_id"), {})
+            route = next(
+                (
+                    r
+                    for r in routes
+                    if r.get("route_id") == args.get("route_id")
+                    and r.get("work_id") == args.get("work_id")
+                ),
+                {},
+            )
+            targets, evidence, detail_text = [], "", ""
+            label = ACTIONS.get(action, action)
+            if action == "request_information":
+                rid = result.get("request_id")
+                target = requests.get(rid, {}).get("requested_role") or route.get("provider")
+                targets = [target]
+                evidence = "request record / actual input information_routes.provider"
+                detail_text = f"请求 {rid}" if rid else "尝试请求"
+            elif action == "handoff_information":
+                record = handoffs.get(result.get("handoff_id"), {})
+                targets = record.get("recipients") or route.get("recipients", [])
+                evidence = "handoff record / actual input information_routes.recipients"
+                rid = result.get("request_id", args.get("request_id"))
+                detail_text = f"绑定请求 {rid}" if rid else "未绑定请求"
+                if result.get("created") is False:
+                    detail_text += "；幂等重试，未新增交接"
+            elif action in {"inspect_submission", "raise_issue", "approve"}:
+                targets = [result.get("actor_id") or work.get("owner_role")]
+                evidence = "tool result actor_id / captured work_items.owner_role"
+                sid = result.get("submission_id") or args.get("submission_id", "")
+                detail_text = str(sid)
+                if action == "inspect_submission":
+                    label = "读取对方固定提交"
+                elif action == "raise_issue":
+                    label = "登记问题"
+                    if result.get("active_at_creation") is False:
+                        detail_text += "；创建时已非当前提交"
+                else:
+                    label = "登记核准"
+            elif action == "respond_issue":
+                issue = issues.get(args.get("issue_id"), {})
+                targets = [issue.get("raised_by")]
+                evidence = "captured issue.raised_by"
+                detail_text = str(args.get("issue_id", ""))
+            elif action == "decide_issue":
+                issue = issues.get(args.get("issue_id"), {})
+                targets = [works.get(issue.get("work_id"), {}).get("owner_role")]
+                evidence = "captured issue.work_id / work_items.owner_role"
+                detail_text = str(args.get("issue_id", ""))
+            cross_targets = [target for target in targets if target in members and target != source]
+            if not cross_targets:
+                if not ok and action != "inspect_submission":
+                    unlinked.append(
+                        {
+                            "sequence": event["sequence"],
+                            "action": action,
+                            "reason": "被拒绝；对象为自身或无法从记录确定另一成员，未绘制连线",
+                        }
+                    )
+                continue
+            for target in cross_targets:
+                edges.append(
+                    {
+                        "sequence": event["sequence"],
+                        "source": source,
+                        "target": target,
+                        "action": action,
+                        "label": label,
+                        "detail": detail_text,
+                        "ok": ok,
+                        "endpoint_evidence": evidence,
+                    }
+                )
+    return {
+        "nodes": [{"id": role, "label": ROLES.get(role, role)} for role in members],
+        "edges": sorted(edges, key=lambda e: e["sequence"]),
+        "unlinked_attempts": sorted(unlinked, key=lambda e: e["sequence"]),
+        "direction": "动作发起成员 → 协作对象；从上到下按原事件顺序。箭头不表示对方已读或已处理，工具已记录也不等于业务正确。",
+    }
+
+
+def collaboration_svg(review, *, standalone=False):
+    graph = review.get("collaboration_graph") or collaboration_graph(review)
+    nodes, edges = graph["nodes"], graph["edges"]
+    width = 840
+    height = 180 + max(len(edges), 1) * 92
+    xs = {node["id"]: 150 + i * 540 / max(len(nodes) - 1, 1) for i, node in enumerate(nodes)}
+    prefix = f"../episodes/{review['slot']['slot_id']}.html" if standalone else ""
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" class="collaboration-diagram" role="img" aria-labelledby="collab-title collab-desc">',
+        '<title id="collab-title">成员协作有向图</title>',
+        '<desc id="collab-desc">' + esc(graph["direction"]) + "</desc>",
+        '<defs><marker id="collab-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#256fa8"/></marker><marker id="collab-rejected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b65440"/></marker></defs>',
+        '<rect width="100%" height="100%" rx="8" fill="#ffffff"/>',
+        '<g font-family="system-ui, sans-serif" text-anchor="middle">',
+    ]
+    colors = {"provider": "#9c751e", "implementer": "#256fa8", "reviewer": "#855ca2"}
+    for node in nodes:
+        x = xs[node["id"]]
+        color = colors.get(node["id"], "#526579")
+        parts += [
+            f'<line x1="{x}" x2="{x}" y1="78" y2="{height - 64}" stroke="#cfdae5" stroke-dasharray="4 5"/>',
+            f'<rect x="{x - 88}" y="18" width="176" height="60" rx="10" fill="#f4f7fb" stroke="{color}"/>',
+            f'<text x="{x}" y="44" fill="{color}" font-size="17" font-weight="600">{esc(node["label"])}</text>',
+            f'<text x="{x}" y="64" fill="#637486" font-size="12">{esc(node["id"])}</text>',
+        ]
+    for index, edge in enumerate(edges):
+        y = 132 + 92 * index
+        x1, x2 = xs[edge["source"]], xs[edge["target"]]
+        mid = (x1 + x2) / 2
+        status = "ok" if edge["ok"] else "rejected"
+        color = "#256fa8" if edge["ok"] else "#b65440"
+        dash = "" if edge["ok"] else ' stroke-dasharray="7 5"'
+        caption = f"#{edge['sequence']} {edge['label']}" + ("" if edge["ok"] else " · 被拒绝")
+        parts += [
+            f'<a href="{esc(prefix)}#seq-{edge["sequence"]}" data-event-sequence="{edge["sequence"]}">',
+            "<title>"
+            + esc(
+                f"{ROLES.get(edge['source'], edge['source'])} → {ROLES.get(edge['target'], edge['target'])}：{caption}；{edge['detail']}"
+            )
+            + "</title>",
+            f'<rect x="{min(x1, x2) + 8}" y="{y - 37}" width="{abs(x2 - x1) - 16}" height="73" rx="6" fill="#f7f9fc"/>',
+            f'<text x="{mid}" y="{y - 14}" fill="{color}" font-size="16">{esc(caption)}</text>',
+            f'<line x1="{x1}" y1="{y}" x2="{x2}" y2="{y}" stroke="{color}" stroke-width="2"{dash} marker-end="url(#collab-{status})"/>',
+            f'<circle cx="{x1}" cy="{y}" r="4" fill="{color}"/>',
+            f'<text x="{mid}" y="{y + 24}" fill="#526579" font-size="12">{esc(edge["detail"])}</text></a>',
+        ]
+    if not edges:
+        parts.append(
+            '<text x="420" y="142" fill="#526579" font-size="16">未记录可确认的跨成员协作动作</text>'
+        )
+    parts += [
+        f'<text x="420" y="{height - 39}" fill="#526579" font-size="12">从上到下：原事件顺序 · 箭头：动作发起者 → 协作对象</text>',
+        f'<text x="420" y="{height - 18}" fill="#526579" font-size="12">实线：工具已记录；虚线：尝试被拒绝 · 点击事件查看原记录</text>',
+        "</g></svg>",
+    ]
+    return "".join(parts)
+
+
+def collaboration_html(review):
+    graph = review.get("collaboration_graph") or collaboration_graph(review)
+    sid = review["slot"]["slot_id"]
+    output = (
+        '<section class="panel" id="collaboration"><h2>成员协作有向图</h2><p class="small">'
+        + esc(graph["direction"])
+        + '</p><div class="scroll">'
+        + collaboration_svg(review)
+        + "</div>"
+    )
+    for attempt in graph["unlinked_attempts"]:
+        output += f'<p class="small"><a href="#seq-{attempt["sequence"]}" data-event-sequence="{attempt["sequence"]}">#{attempt["sequence"]} {esc(ACTIONS.get(attempt["action"], attempt["action"]))}</a>：{esc(attempt["reason"])}</p>'
+    return (
+        output
+        + '<p class="small"><a href="../graphs/'
+        + esc(sid)
+        + '.svg">单独打开图</a> · 个人读取、构建和提交等操作见下方完整时间线；继承的准备动作不画作本轮协作。</p></section>'
+    )
+
+
 CSS = """
 :root{color-scheme:light;--ink:#172638;--muted:#526579;--line:#dbe3eb;--blue:#1263aa}
 *{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Noto Sans SC",sans-serif}
@@ -465,7 +660,7 @@ a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}.eyeb
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:#f3f6faf5;z-index:4;padding:12px 0;border-bottom:1px solid var(--line)}input,select,button{font:inherit;padding:7px 10px;border:1px solid #bdcbd8;border-radius:6px;background:white}input:not([type=checkbox]){min-width:240px;flex:1}input[type=checkbox]{min-width:0;width:auto;flex:none}button{cursor:pointer;color:var(--blue)}label{font-size:13px}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;background:#f5f7f9;padding:12px;border-radius:6px;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;max-height:640px;overflow:auto}.assistant{font:15px/1.7 system-ui,sans-serif;background:#fafbfc;max-height:none}
 code{font-family:ui-monospace,monospace;font-size:.9em}details{margin:9px 0}summary{cursor:pointer;color:#254e73;font-weight:550}details details{margin-left:10px}.badge{display:inline-block;font-size:12px;border-radius:5px;background:#eaf0f6;padding:3px 7px;margin-right:7px}.bad{background:#fbece8;color:#8e3d30}.good{background:#e7f3ee;color:#235c43}.scoring-hidden .outcome{display:none}.control-events{display:none}.show-controls .control-events{display:block}
-.scroll{overflow:auto}table{border-collapse:collapse;width:100%;background:white;font-size:14px}td,th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);white-space:nowrap}td code{white-space:nowrap}.jump{display:flex;gap:14px;flex-wrap:wrap}.toc{columns:2}.guide{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.guide a{display:block;background:white;border:1px solid var(--line);border-radius:8px;padding:16px}.no-match{display:none}.small{font-size:13px}.message-label{font-size:12px;color:var(--muted)}
+.collaboration-diagram{display:block;width:100%;height:auto;min-width:600px;max-width:1000px;margin:auto}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;background:white;font-size:14px}td,th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);white-space:nowrap}td code{white-space:nowrap}.jump{display:flex;gap:14px;flex-wrap:wrap}.toc{columns:2}.guide{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.guide a{display:block;background:white;border:1px solid var(--line);border-radius:8px;padding:16px}.no-match{display:none}.small{font-size:13px}.message-label{font-size:12px;color:var(--muted)}
 @media(max-width:740px){main{padding:20px 14px}.metrics{grid-template-columns:repeat(2,1fr)}.guide{grid-template-columns:1fr}.toolbar{position:static}.toc{columns:1}h1{font-size:25px}}
 @media print{body{background:white}.toolbar,.jump{display:none}main{max-width:none;padding:0}pre{max-height:none}.card{break-inside:avoid}.control-events{display:block}}
 """
@@ -488,6 +683,7 @@ if(raw){const r=JSON.parse(raw.textContent);
  body.append(part('请求参数（原值）',req.metadata));req.messages_refs.forEach((ref,i)=>{const m=r.payloads[ref];let c=m.content;let pretty=c;if(typeof c==='string'){try{pretty=JSON.parse(c)}catch{}}const label='消息 '+(i+1)+' · '+m.role+(m.name?' · '+m.name:'');const item=part(label,pretty,i===req.messages_refs.length-1);const extra=Object.fromEntries(Object.entries(m).filter(([k])=>k!=='content'));item.append(part('该消息完整字段（content原字符串保存在JSON）',extra));body.append(item)});
  if(req.tools_present)body.append(part('本次实际工具定义',r.payloads[req.tools_ref]));}));}
 function filterRows(){const term=(q('#search-rows')?.value||'').toLowerCase(),task=q('#task-filter')?.value||'';all('tr[data-slot]').forEach(el=>el.hidden=(!el.textContent.toLowerCase().includes(term)||!!task&&el.dataset.task!==task));}
+all('a[data-event-sequence]').forEach(el=>el.addEventListener('click',()=>{['search','role','kind'].forEach(id=>{if(q('#'+id))q('#'+id).value=''});filterCards();}));
 q('#search-rows')?.addEventListener('input',filterRows);q('#task-filter')?.addEventListener('change',filterRows);
 """
 
@@ -615,6 +811,7 @@ def render_episode_html(review):
             + "</p></section>"
         )
         parts.insert(4, note_html)
+    parts.insert(4, collaboration_html(review))
     cards = []
     for index, d in enumerate(review["decisions"]):
         role = d["member_id"]
@@ -798,6 +995,14 @@ def render_episode_markdown(review):
         "",
         "> 审阅者全局视角。模型输出保持原文；各成员完整实际输入在HTML的请求详情和JSON中逐调用保留，不能从全局快照补入模型当时视野。数值token/logprob数组仅保留源引用。",
         "",
+        "## 成员协作有向图",
+        "",
+        f"![成员协作有向图](../graphs/{sid}.svg)",
+        "",
+        "箭头为动作发起成员→协作对象，按原事件顺序向下排列。实线表示工具已记录，虚线表示尝试被拒；不代表对方已读或业务正确。个人操作及准备动作不连成成员关系。",
+        "",
+        f"[在交互页查看并定位事件]({sid}.html#collaboration) · [单独打开图](../graphs/{sid}.svg)",
+        "",
         "## 任务及原结果",
         "",
         review.get("public_requirement") or "",
@@ -954,7 +1159,7 @@ def render_index(rows, totals):
         '<a href="episodes/train-00-5.html"><b>① 一次完整A交付</b><br>train-00-5 · 查看交接怎样进入构建与提交。</a>',
         '<a href="episodes/train-00-1.html"><b>② 请求绑定的交接</b><br>train-00-1 · 交接成立，但后续工作未闭合。</a>',
         '<a href="episodes/train-01-6.html"><b>③ 正确产物与未完成职责</b><br>train-01-6 · 区分局部修正、最终复核与有效性。</a></div>',
-        '<h2>全部经历</h2><div class="toolbar"><input id="search-rows" placeholder="搜索编号、角色或状态…"><select id="task-filter"><option value="">A/B全部</option><option value="joint_a">A · 交接与交付</option><option value="joint_b">B · 复核与修复</option></select><label><input id="hide-scores" type="checkbox">隐藏原评分列</label></div><div class="scroll"><table><thead><tr><th>序号/打开</th><th>任务/重复</th><th>生成/请求</th><th>世界动作/拒绝</th><th class="outcome">R / 完整职责</th><th class="outcome">有效性/方法</th><th>停止记录</th></tr></thead><tbody>',
+        '<p class="small">每条经历已附成员协作有向图，可点击图中事件跳转至原记录。</p><h2>全部经历</h2><div class="toolbar"><input id="search-rows" placeholder="搜索编号、角色或状态…"><select id="task-filter"><option value="">A/B全部</option><option value="joint_a">A · 交接与交付</option><option value="joint_b">B · 复核与修复</option></select><label><input id="hide-scores" type="checkbox">隐藏原评分列</label></div><div class="scroll"><table><thead><tr><th>序号/打开</th><th>任务/重复</th><th>生成/请求</th><th>世界动作/拒绝</th><th class="outcome">R / 完整职责</th><th class="outcome">有效性/方法</th><th>停止记录</th></tr></thead><tbody>',
     ]
     for index, r in enumerate(rows, 1):
         sid = r["slot_id"]
@@ -1018,7 +1223,7 @@ def export(run, output):
         or any(r["status"] != "closed" for r in progress)
     ):
         raise ValueError("Exactly the original sixteen closed v025 slots are required")
-    for sub in ("episodes", "data"):
+    for sub in ("episodes", "data", "graphs"):
         (output / sub).mkdir(parents=True, exist_ok=True)
     notes_path = output / "notes.json"
     notes = (
@@ -1035,6 +1240,8 @@ def export(run, output):
         sid = slot["slot_id"]
         if sid in notes:
             review["editorial_note"] = copy.deepcopy(notes[sid])
+        review["collaboration_graph"] = collaboration_graph(review)
+        (output / "graphs" / f"{sid}.svg").write_text(collaboration_svg(review, standalone=True))
         (output / "data" / f"{sid}.json").write_text(pretty(review) + "\n")
         (output / "episodes" / f"{sid}.html").write_text(render_episode_html(review))
         (output / "episodes" / f"{sid}.md").write_text(render_episode_markdown(review))
@@ -1099,6 +1306,7 @@ def export(run, output):
         "## 文件结构",
         "",
         "- `index.html`：可筛选总览；`episodes/*.html`：成员/事件/关键词筛选、可展开的完整上下文与返回。",
+        "- `graphs/*.svg`：成员协作有向图，按事件顺序展示可确认的跨成员请求、交接、提交检查和复核反馈；在HTML点击箭头可定位原事件。实线为工具已记录，虚线为被拒尝试，不等同业务判断正确或对方已读。未绑定请求、幂等重试与历史提交问题单独标注；无法确认接收成员的拒绝不虚构连线，图下注明原序号。",
         "- `episodes/*.md`：适合逐段批注，模型正文与执行参数保留，工具返回摘要有明确标注。",
         "- `data/*.json`：角色与调用身份绑定的审阅数据；完整输入按message/tool内容地址去重，可精确还原。",
         "- `reading-notes.md`：事后中文导读与逐条原事件证据；不混入模型原始轨迹。",
