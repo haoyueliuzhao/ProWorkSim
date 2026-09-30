@@ -1,21 +1,16 @@
 # ProWorkSim
 
-## v0.25 已完成基础更新，恢复磁盘故障中断的确认评价
+## v0.25 当前支持与更新后工作已结案
 
-[R2恢复方案](docs/domain-collaboration-v025-r2-plan.md)仅从R1已保存的3/3检查点继续原12例确认与2例后继，临时目录迁至数据卷。R1已完成283/283决定和一次actor/critic更新；首例确认因系统盘`/tmp`空间不足而不可评分，原失败及费用保留。仅使用原确认/后继剩余额度，R2不新增训练；北京时间9月30日13:45已在GPU3启动，[启动记录](docs/experiments/composition-pilot-v025-r2-launch.md)确认原actor身份、首例初态及数据卷SQL检查一致。完整评价结果尚待完成。
+[本轮详细报告](docs/experiments/composition-pilot-v025-final.md)覆盖原采集、R1整窗重算和R2评价恢复：16条当前策略联合经历中只有1条完整有效主动交接，未达到每类至少2条的配置支持门；因此实际保持Q=B，没有运行非单位权重贡献探测或正式配置。R1完成283/283决定和92010自身输出token的一次actor/critic更新，完整状态累计由2/2变为3/3。
 
-原支持窗口的16条联合经历已整理为[离线人工审阅页面](docs/reviews/v025-joint-experiences/index.html)、[中文逐条导读](docs/reviews/v025-joint-experiences/reading-notes.md)和[ZIP阅读包](docs/reviews/v025-joint-experiences.zip)。每条附成员协作有向图，按角色与原事件顺序展示实际输入、回复、工具执行／拒绝、交接、格式反馈及终止；保留原评分与来源SHA，无新增模型运行或评分。
+R2独立确认12/12均可评分，完整职责2/12（16.7%）；成功分别为正确初稿核准和数值不变维护，不能称作新修复。2个新后继均可评分、完整职责0/2，没有额外更新。没有这些确认情境的更新前配对端点，所以参数学习收益和ID-VTDO配置增量均未估计，不能与v0.24另一批材料上的3/12直接相减。
 
-[同窗口R1重算](docs/domain-collaboration-v025-r1-plan.md)已结案：原16条经历的283个决定全部完成，actor/critic累计由2/2变为3/3，完整检查点已保存。首例确认因系统盘临时目录写入失败而未知，后继未运行；R1耗时11.612861 GPU小时，含原失败累计25.339254 GPU小时。[R1终态报告](docs/experiments/composition-pilot-v025-r1.md)保留更新成果、失败和费用；后续由上述R2仅评价恢复接续。
+原单次资源查询失败、R1确认的系统临时目录磁盘故障及其成本完整保留；R2把临时目录迁到数据卷，沿用原模型/世界/评分代码完成后续工作。北京时间9月30日14:56:38全部阶段结束，本轮含两次中断累计26.524491 GPU小时。[精简结案数据](docs/experiments/composition-pilot-v025-summary.json)、[工作详析](docs/experiments/composition-v025-work-analysis.md)、[训练与支持详析](docs/experiments/composition-v025-training-analysis.md)和[资源附录](docs/experiments/composition-v025-resource-analysis.md)给出逐项证据。
 
-[最新停止核对](docs/experiments/composition-v025-stop-note.md)：9月30日01:21，单次GPU资源查询超时触发监控终止；支持16/16，最后反向266/283，本轮参数更新0步，确认及后继未启动。累计13.726393 GPU小时，原运行模型进程已结束；不是新增18小时预算耗尽。原始失败与旧observer超时标签保留，实际首触发另据guard和资源记录说明。
+[原方案](docs/domain-collaboration-v025-plan.md)、[分项程序准入](docs/experiments/retail-work-v025-qualification.md)、[原停止记录](docs/experiments/composition-v025-stop-note.md)、[R1恢复](docs/domain-collaboration-v025-r1-plan.md)和[R2仅评价恢复](docs/domain-collaboration-v025-r2-plan.md)保留历史边界。三份自动终态报告均原样归档，不将原失败改写为正常完成。
 
-[本轮方案](docs/domain-collaboration-v025-plan.md)固定v0.24 MC完整终态与terminal MC基础配方，在新A/B情境各采8条当前策略经历；首次将完整工作有效性、真实方法支持和成员条件化q/b接入actor更新。若A成员存在两类各至少两条的支持，按固定顺序选择一个块，做同起点基础/小扰动试训、独立开发选择和受约束正式配置；确认材料单独保留，后继只交互不增加更新。
-
-[程序准入](docs/experiments/retail-work-v025-qualification.md)为分项通过：A两路线、B自检与其他14材料获资格；B反馈修复仍触及原上下文门，故本轮**只允许A成员配置，B保持基础权重**。没有继续放宽harness、角色或上下文。[完整工作与支持控制](docs/experiments/work-support-v025-controls.md)、[真实tiny梯度与16槽集成](docs/experiments/composition-training-v025-controls.md)、[条件执行及报告控制](docs/experiments/composition-v025-execution-controls.md)已完成，不能视为真实模型支持或算法收益。
-
-原计划上限58 GPU小时、最多56新episode和三次独立16槽更新。实际16条支持采集后无可配置块，按规则仅基础更新、12确认与2后继，最多30新episode；不补采凑齐。9月29日用户授权[运行中预算延长](docs/experiments/composition-v025-budget-extension.md)：同一模型更新上限11→18小时、阶段12→20小时，全计划有效上限66 GPU小时、当前无支持分支31.5 GPU小时。预算接管曾保留同一模型持续计算，最终在资源查询失败门停止，原计划与数值门保持。北京时间9月29日11:38已在GPU2启动真实支持采集，执行提交`e374324`；[启动记录](docs/experiments/composition-pilot-v025-launch.md)保留当时状态。没有当前可配置双类支持或配置收益结论；[自动终态报告](docs/experiments/composition-pilot-v025.md)已归档，实验未完整完成。
-
+原支持窗口16条经历可通过[含成员协作有向图的HTML审阅页](docs/reviews/v025-joint-experiences/index.html)、[中文导读](docs/reviews/v025-joint-experiences/reading-notes.md)与[离线ZIP](docs/reviews/v025-joint-experiences.zip)查看。报告工作仅只读整理已有证据，未新开模型实验。
 
 ## v0.24 MC／交接RTG对照已结案：MC出现有限工作改善
 
