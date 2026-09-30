@@ -24,15 +24,35 @@ from scripts.collaboration_carrier_v026 import (
     RESOURCE_CAPS,
     TASK_CAPS,
     VERSION,
+    released_gpus,
     validate_plan,
     validate_cpu_qualification,
 )
 from scripts.evaluate_work_v022 import reference, write
 from scripts.run_bounded_v022 import artifact_bytes, rss
-from scripts.run_credit_v024 import ready_cards
 from scripts.run_ne_v021 import lock, read, resources, stop_owned
 
 SHUTDOWN_RESERVE = 60
+
+
+class StableIdleAdmission:
+    """Require continuous observed idle capacity; active co-residents reset it."""
+
+    def __init__(self, plan):
+        self.plan, self.since = plan, {}
+
+    def observe(self, sample, *, now, excluded=()):
+        ready = released_gpus(self.plan, sample, excluded=excluded)
+        self.since = {gpu: self.since.get(gpu, now) for gpu in ready}
+        if now >= self.plan["queue_deadline_at"]:
+            return []
+        return [gpu for gpu in ready
+                if now - self.since[gpu] >= self.plan["gpu_idle_stability_seconds"]]
+
+
+def wall_expired(plan, now, root_started):
+    return (now - root_started >= plan["max_wall_seconds"] - SHUTDOWN_RESERVE
+            or now >= plan["wall_deadline_at"] - SHUTDOWN_RESERVE)
 
 
 def card_uuid(sample, gpu):
@@ -98,7 +118,7 @@ def stop_reason(plan, state, task, *, now, root_started, own_rss, all_rss, size,
         return "task_time_budget"
     if now - state["started_at"] >= state["budget_seconds"] - SHUTDOWN_RESERVE:
         return "worker_gpu_budget"
-    if now - root_started >= plan["max_wall_seconds"] - SHUTDOWN_RESERVE:
+    if wall_expired(plan, now, root_started):
         return "wall_time_budget"
     if own_rss > plan["host_rss_bytes"] or all_rss > 2 * plan["host_rss_bytes"]:
         return "host_rss_limit"
@@ -170,6 +190,7 @@ def run(plan_path, root):
     root.mkdir(parents=True, exist_ok=False)
     with lock(root):
         states, active, logs, guards = {}, {}, {}, {}
+        idle_admission = StableIdleAdmission(plan)
         summary = {
             "version": VERSION,
             "status": "preflight",
@@ -187,6 +208,11 @@ def run(plan_path, root):
             "no_automatic_second_attempt": True,
             "telemetry_grace_seconds": 120,
             "shutdown_reserve_seconds": SHUTDOWN_RESERVE,
+            "gpu_preference": plan["gpu_preference"],
+            "queue_deadline_at": plan["queue_deadline_at"],
+            "wall_deadline_at": plan["wall_deadline_at"],
+            "gpu_idle_stability_seconds": plan["gpu_idle_stability_seconds"],
+            "previous_attempt": plan["previous_attempt"],
             "checkpoint_marker": plan["checkpoint_marker"],
             "qualification": plan["qualification"],
             "cpu_qualification_passed_before_queue": True,
@@ -315,11 +341,10 @@ def run(plan_path, root):
                     # Global ceilings affect queued workers as well. Per-worker
                     # unknown results stop only its own fixed partition.
                     global_stop = None
-                    if (
-                        time.time() - summary["started_at"]
-                        >= plan["max_wall_seconds"] - SHUTDOWN_RESERVE
-                    ):
+                    if wall_expired(plan, time.time(), summary["started_at"]):
                         global_stop = "wall_time_budget"
+                    elif time.time() >= plan["queue_deadline_at"]:
+                        global_stop = "queue_wait_deadline"
                     elif size >= plan["artifact_bytes"]:
                         global_stop = "artifact_limit"
                     elif free_bytes < plan["minimum_temp_free_bytes"]:
@@ -337,16 +362,17 @@ def run(plan_path, root):
                             raise ValueError("Frozen source or plan changed while waiting")
                         sample = resources()
                         excluded = [states[key]["gpu"] for key in active]
-                        choices = ready_cards(sample, training=False, excluded=excluded)
+                        choices = idle_admission.observe(sample, now=time.time(), excluded=excluded)
                         for worker in waiting:
                             if len(active) >= 2 or not choices:
                                 states[worker].update(
-                                    last_admission_observation=sample, ready_cards=choices
+                                    last_admission_observation=sample, ready_cards=choices,
+                                    idle_observed_since=dict(idle_admission.since)
                                 )
                                 write(root / worker / "state.json", states[worker])
                                 continue
                             confirmed = resources()
-                            choices = ready_cards(confirmed, training=False, excluded=excluded)
+                            choices = idle_admission.observe(confirmed, now=time.time(), excluded=excluded)
                             if not choices:
                                 continue
                             # A changed qualification artifact cannot retain its
@@ -358,6 +384,8 @@ def run(plan_path, root):
                             admission = validate_cpu_qualification(
                                 plan, catalog, current_source=source
                             )
+                            if time.time() >= plan["queue_deadline_at"]:
+                                continue
                             gpu = choices[0]
                             state = states[worker]
                             state["cpu_qualification_admission"] = admission

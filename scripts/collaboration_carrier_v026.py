@@ -8,6 +8,9 @@ probability replay is performed by this worker.
 import argparse
 from collections import Counter
 import copy
+import csv
+import io
+import math
 import os
 from pathlib import Path
 import signal
@@ -20,8 +23,10 @@ from proworksim.online_collection import run_fragment
 from proworksim.storage import digest, json_bytes, read_json
 from scripts.evaluate_work_v022 import checked, reference, write
 
-VERSION = "reciprocal-carrier-development-v0.26"
-RESOURCE_CAPS = {"worker-0": 7200, "worker-1": 7200}
+VERSION = "reciprocal-carrier-development-v0.26-r1"
+# Original loading attempts consumed 25.742102 / 25.402630 seconds.
+# Charge each upward to 26 seconds, retaining the original total 4 GPU-hour cap.
+RESOURCE_CAPS = {"worker-0": 7174, "worker-1": 7174}
 TASK_CAPS = {"loading": 900, "episode": 1200, "boundary": 600}
 INVARIANT_MODULES = tuple(
     "src/proworksim/" + name + ".py"
@@ -48,7 +53,7 @@ INVARIANT_MODULES = tuple(
 FIXED_LIMITS = {
     "resource_caps": RESOURCE_CAPS,
     "task_caps": TASK_CAPS,
-    "internal_gpu_seconds": 14400,
+    "internal_gpu_seconds": 14348,
     "max_concurrent_model_instances": 2,
     "per_episode_model_instances": 1,
     "max_new_episodes": 16,
@@ -57,14 +62,89 @@ FIXED_LIMITS = {
     "model_api_calls": 0,
     "automatic_recovery": False,
     "automatic_successors": [],
-    "max_wall_seconds": 21600,
+    "max_wall_seconds": 64800,
+    "queue_deadline_at": 1790827200,  # 2026-10-01 12:00 Asia/Shanghai
+    "wall_deadline_at": 1790834400,  # Final absolute ceiling, 14:00
+    "minimum_free_gpu_mib": 78000,
+    "max_idle_gpu_utilization_percent": 5,
+    "gpu_idle_stability_seconds": 120,
+    "require_unoccupied_gpu": True,
     "host_rss_bytes": 64 * 1024**3,
     "artifact_bytes": 12 * 1024**3,
     "own_gpu_memory_mib": 32768,
     "minimum_temp_free_bytes": 1024**3,
-    "gpu_preference": [2, 3, 4, 5, 6, 0, 1, 7],
+    "gpu_preference": [0, 4, 5, 7],
     "python_hash_seed": "0",
 }
+
+
+def released_gpus(plan, sample, *, excluded=()):
+    """Only explicitly allowed, currently unoccupied and idle A100 devices."""
+    if any(sample.get(key, {}).get("returncode") != 0 for key in ("gpus", "processes")):
+        return []
+    occupied = set()
+    for row in csv.reader(io.StringIO(sample["processes"]["stdout"])):
+        if len(row) != 4:
+            return []
+        occupied.add(row[0].strip())
+    available = set()
+    try:
+        for row in csv.reader(io.StringIO(sample["gpus"]["stdout"])):
+            if len(row) != 6:
+                return []
+            index, uuid, name, free, total, utilization = (value.strip() for value in row)
+            index, free, total, utilization = int(index), float(free), float(total), float(utilization)
+            if (index in plan["gpu_preference"] and index not in excluded
+                    and uuid not in occupied and "A100" in name
+                    and all(math.isfinite(value) for value in (free, total, utilization))
+                    and total >= 81920 and free >= plan["minimum_free_gpu_mib"]
+                    and 0 <= utilization <= plan["max_idle_gpu_utilization_percent"]):
+                available.add(index)
+    except ValueError:
+        return []
+    return [index for index in plan["gpu_preference"] if index in available]
+
+
+def validate_previous_loading_attempt(plan):
+    """Resume only the unchanged sixteen unstarted slots; debit both old attempts."""
+    previous = plan["previous_attempt"]
+    original = read_json(checked(previous["plan"]))
+    summary = read_json(checked(previous["supervisor"]))
+    if (original.get("version") != "reciprocal-carrier-development-v0.26"
+            or original.get("resource_caps") != {"worker-0": 7200, "worker-1": 7200}
+            or original.get("internal_gpu_seconds") != 14400
+            or summary.get("status") != "closed_with_incomplete_workers"
+            or summary.get("plan") != previous["plan"]
+            or summary.get("parameter_updates") != 0
+            or set(previous.get("workers", {})) != set(RESOURCE_CAPS)):
+        raise ValueError("R1 requires the original terminal loading-only C1 attempt")
+    for key in ("checkpoint_marker", "old_worker_source", "invariant_module_sha256",
+                "prior_model_plan", "owner_recipe", "catalog", "source_pin", "assets_root", "qualification"):
+        if plan.get(key) != original.get(key):
+            raise ValueError("R1 must preserve the original model, carrier and qualification: " + key)
+    costs = {}
+    for name, refs in previous["workers"].items():
+        state, report = read_json(checked(refs["state"])), read_json(checked(refs["report"]))
+        elapsed = state.get("elapsed_gpu_seconds")
+        if (state.get("worker") != name or state.get("status") != "stopped"
+                or state.get("stop_reason") != "worker_failed" or state.get("completed_slot_count") != 0
+                or state.get("task", {}).get("kind") != "loading"
+                or report.get("status") != "interrupted_or_error"
+                or report.get("error", {}).get("type") != "OutOfMemoryError"
+                or report.get("rows") or report.get("restoration") or report.get("final_actor_identity")
+                or report.get("source_unchanged") is not True
+                or any(report.get(key) != 0 for key in ("new_actor_steps", "new_critic_steps", "model_api_calls"))
+                or not isinstance(elapsed, (int, float)) or not math.isfinite(elapsed)
+                or not 0 < elapsed <= 26 or 7200 - math.ceil(elapsed) != RESOURCE_CAPS[name]
+                or state.get("slots") != summary["worker_assignments"][name]
+                or report.get("slots") != summary["worker_assignments"][name]):
+            raise ValueError("Previous worker is not an immutable pre-episode loading failure: " + name)
+        costs[name] = elapsed
+    if (previous.get("actual_gpu_seconds") != sum(costs.values())
+            or previous.get("budget_charge_seconds") != sum(math.ceil(value) for value in costs.values())
+            or previous["budget_charge_seconds"] + plan["internal_gpu_seconds"] != 14400):
+        raise ValueError("Previous loading cost must remain inside the original four GPU-hour cap")
+    return costs
 
 
 def assignments(catalog):
@@ -378,6 +458,7 @@ def validate_plan(plan, *, verify_source=True):
         raise ValueError("The immutable original 3/3 complete endpoint or its source changed")
     if verify_source:
         verify_invariant_source(plan)
+    validate_previous_loading_attempt(plan)
     return catalog, assigned
 
 
@@ -620,6 +701,12 @@ def run(plan_path, output, worker):
         prior = read_json(checked(plan["prior_model_plan"]))
         recipe = read_json(checked(plan["owner_recipe"]))["recipe"]
         task(output, "load-existing-9b", "loading")
+        from scripts.run_ne_v021 import resources
+
+        loading_resources = resources()
+        write(output / "preload-resources.json", loading_resources)
+        if int(os.environ["CUDA_VISIBLE_DEVICES"]) not in released_gpus(plan, loading_resources):
+            raise RuntimeError("Selected GPU lost its released capacity before model loading")
         owner = DeterministicCandidateActor.from_candidate(
             prior["model"],
             manifest=checked(prior["manifest"]),

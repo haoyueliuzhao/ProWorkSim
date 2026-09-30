@@ -4,7 +4,7 @@
 
 按[审计修订方案](docs/domain-collaboration-v026-plan.md)，先完成旧经历的[分层协作证据核对](docs/experiments/collaboration-v026-c0.md)，再建立维护者与消费者双向承担成果的真实SQL载体。C1预定四情境×两通信条件×两次固定seed，共16个冻结参数episode；保留原3/3完整学习状态，零更新，最多4 GPU小时。两通信条件保留相同产物读写和正式复核流；CPU可达性、真实模型结果、配置支持与参数收益分别表述。
 
-[CPU资格](docs/experiments/collaboration-v026-qualification.md)已通过12条正路径、2条错误逻辑负控、6组反事实与4组公平性检查；最小上下文余量仅4 token，不能视为模型任意路径容量证明。C1已按[启动记录](docs/experiments/collaboration-v026-c1-launch.md)进入有限GPU队列，并配置自动终态归档；真实模型结果以终态报告为准。C2新支持与C3配置对照尚未启动；支持不足不再默认触发昂贵的Q=B更新。
+[CPU资格](docs/experiments/collaboration-v026-qualification.md)已通过12条正路径、2条错误逻辑负控、6组反事实与4组公平性检查；最小上下文余量仅4 token，不能视为模型任意路径容量证明。[原C1](docs/experiments/collaboration-v026-c1.md)两次加载均因显存波动退出，16槽均未启动。用户已指定[R1等待](docs/experiments/collaboration-v026-c1-r1-launch.md)仅使用GPU0/4/5/7，等卡截至北京时间10月1日12:00；保留原失败成本及4 GPU小时总上限，结束后独立归档。C2新支持与C3配置对照尚未启动；支持不足不再默认触发昂贵的Q=B更新。
 
 ## v0.25 当前支持与更新后工作已结案
 

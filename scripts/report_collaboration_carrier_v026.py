@@ -875,6 +875,9 @@ def summarize(plan, catalog, supervisor, workers, episodes, *, sources=None):
                 "catalog",
                 "internal_gpu_seconds",
                 "resource_caps",
+                "gpu_preference",
+                "queue_deadline_at",
+                "previous_attempt",
             )
         },
         "overall": group_summary(rows),
@@ -930,6 +933,16 @@ def summarize(plan, catalog, supervisor, workers, episodes, *, sources=None):
             "No parameter update, method-support admission, composition q/b intervention or algorithm increment is inferred from this report.",
         ],
     }
+    if plan.get("previous_attempt"):
+        previous = plan["previous_attempt"]
+        result["resources"].update(
+            previous_attempt_gpu_seconds=previous["actual_gpu_seconds"],
+            previous_attempt_budget_charge_seconds=previous["budget_charge_seconds"],
+            cumulative_terminated_gpu_seconds=(
+                previous["actual_gpu_seconds"] + result["resources"]["terminated_gpu_seconds"]
+            ),
+            original_total_gpu_seconds_cap=14400,
+        )
     return result
 
 
@@ -944,6 +957,10 @@ def load_run(run, *, require_terminal=False):
         raise ValueError("Require a closed supervisor before terminal reporting")
     plan_path = checked_reference(supervisor["plan"])
     plan = read_json(plan_path)
+    if plan.get("previous_attempt"):
+        from scripts.collaboration_carrier_v026 import validate_previous_loading_attempt
+
+        validate_previous_loading_attempt(plan)
     catalog_path = checked_reference(plan["catalog"])
     catalog = read_json(catalog_path)
     sources = {
@@ -1270,6 +1287,13 @@ def markdown(report):
         "",
         "全部源路径、SHA、逐组件结果、精确初始输入比较、动作序号和各协作层次保存在同名 JSON。",
     ]
+    if "previous_attempt_gpu_seconds" in cost:
+        lines += ["", (
+            f"原C1加载失败另耗 {cost['previous_attempt_gpu_seconds']:.6f} GPU秒；"
+            f"本次按每worker向上取整扣除，共 {cost['previous_attempt_budget_charge_seconds']} 秒。"
+            f"原尝试与本恢复已终止部分累计 **{cost['cumulative_terminated_gpu_seconds'] / 3600:.6f} GPU小时**，"
+            "仍受原4 GPU小时总上限约束。两次加载失败没有产生业务episode，不增加16槽分母。"
+        )]
     return "\n".join(lines) + "\n"
 
 
