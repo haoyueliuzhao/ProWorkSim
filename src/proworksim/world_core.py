@@ -323,7 +323,8 @@ class WorldCore(WorldRunner):
         )
         if interface_profile is not None:
             from .work_interface import validate_call
-            validate_call(self._tool_definitions(project_id), interface_profile, tool, arguments)
+            validate_call(self._tool_definitions(project_id), interface_profile, tool, arguments,
+                          state=self.state, actor=actor, project_id=project_id)
         return self._dispatch(actor, project_id, tool, arguments)
 
     def _tool_world_action(self, actor, tool, arguments):

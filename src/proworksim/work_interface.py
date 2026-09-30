@@ -51,6 +51,11 @@ DESCRIPTIONS = {
 
 
 def profile_id(role, variant="v13"):
+    if variant in {"v26_normal", "v26_single_pass"}:
+        from .reciprocal_interface_v026 import NORMAL, SINGLE, ROLES
+        if role not in ROLES:
+            raise ValueError("Unknown reciprocal role")
+        return (NORMAL if variant == "v26_normal" else SINGLE) + ":" + role
     if role not in PROFILES:
         raise ValueError("Unknown work-interface role profile")
     return (V23_MAINTENANCE_INTERFACE if variant == "v23_maintenance" else V14_INTERFACE if variant == "v14" else INTERFACE_VERSION) + ":" + role
@@ -58,6 +63,9 @@ def profile_id(role, variant="v13"):
 
 def tool_definitions(core_definitions, profile):
     prefix, _, role = profile.partition(":")
+    from .reciprocal_interface_v026 import PREFIXES, definitions
+    if prefix in PREFIXES:
+        return definitions(core_definitions, profile)
     if prefix == LEGACY_INTERFACE and role in PROFILES:
         result = copy.deepcopy([d for d in core_definitions if d["name"] not in {"read_alias", "read_version"}])
         for definition in result:
@@ -168,13 +176,16 @@ def _schema_errors(schema, value, path="arguments"):
     return errors
 
 
-def validate_call(core_definitions, profile, name, arguments):
+def validate_call(core_definitions, profile, name, arguments, *, state=None, actor=None, project_id=None):
     definitions = {d["name"]: d for d in tool_definitions(core_definitions, profile)}
     if name not in definitions:
         raise ToolRejection("Tool is not in this declared public role interface", code="tool_not_in_profile", category="capability_gap", context={"tool": name, "interface_profile": profile})
     errors = _schema_errors(definitions[name]["parameters"], arguments)
     if errors:
         raise ToolRejection("; ".join(errors), code="public_argument_schema", category="policy_error", context={"tool": name, "interface_profile": profile})
+
+    from .reciprocal_interface_v026 import guard
+    guard(state, actor, project_id, profile, name, arguments)
 
 
 class WorkInterface:
@@ -185,12 +196,12 @@ class WorkInterface:
             raise ValueError("Work interface requires a bound project")
         self._session = session
         self.profile = profile_id(role, variant)
-        if variant not in {"v13", "v14", "legacy", "v23_maintenance"}:
+        if variant not in {"v13", "v14", "legacy", "v23_maintenance", "v26_normal", "v26_single_pass"}:
             raise ValueError("Unknown declared interface comparison variant")
         self.variant = variant
         if presentation not in PRESENTATIONS:
             raise ValueError("Unknown declared return presentation")
-        if presentation != "v13" and variant not in {"v14", "v23_maintenance"}:
+        if presentation != "v13" and variant not in {"v14", "v23_maintenance", "v26_normal", "v26_single_pass"}:
             raise ValueError("The new presentation requires the declared v0.14 interface")
         self.presentation = presentation
         if variant == "legacy":
@@ -212,8 +223,11 @@ class WorkInterface:
             for pid, project in original.get("projects", {}).items()
         }
         selected, presentation_reason = observation_projection(selected, self.presentation)
+        if self.variant.startswith("v26_"):
+            from .reciprocal_interface_v026 import observation_notes
+            selected = observation_notes(selected, self.profile)
         record = {
-            "version": V23_MAINTENANCE_INTERFACE if self.variant == "v23_maintenance" else V14_INTERFACE if self.variant == "v14" else INTERFACE_VERSION,
+            "version": self.profile.partition(":")[0] if self.variant.startswith("v26_") else V23_MAINTENANCE_INTERFACE if self.variant == "v23_maintenance" else V14_INTERFACE if self.variant == "v14" else INTERFACE_VERSION,
             "presentation_version": PRESENTATION_VERSION, "presentation": self.presentation,
             "presentation_reason": presentation_reason,
             "selected_observation": copy.deepcopy(selected),

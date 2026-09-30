@@ -38,7 +38,9 @@ def project_response(raw, *, action, arguments, profile, project_id, presentatio
     reasons = []
     if presentation != "compact_v14" or not isinstance(raw, dict) or not raw.get("ok"):
         return selected, reasons
-    if action == "submit" or (action == "inspect_submission" and arguments.get("include_contract") is not True):
+    from .reciprocal_interface_v026 import PREFIXES as RECIPROCAL_PREFIXES
+    reciprocal_approval = action == "approve" and profile.partition(":")[0] in RECIPROCAL_PREFIXES
+    if action == "submit" or reciprocal_approval or (action == "inspect_submission" and arguments.get("include_contract") is not True):
         result = selected.get("result", {})
         snapshot = result.get("requirement_snapshot")
         if isinstance(snapshot, dict):
@@ -65,6 +67,13 @@ def project_response(raw, *, action, arguments, profile, project_id, presentatio
                 "returns": "Exact original fixed contract and complete inspection metadata. No correctness answer.",
             }
             reasons.append("Compact submission/inspection retains fixed references, goal, approval/credential conditions and deliverable structure; the complete immutable contract remains explicitly retrievable.")
+        if reciprocal_approval and "requirement_snapshot" in result:
+            # v26's current public observation retains the complete shared
+            # contract. The immutable submission contract remains available via
+            # the explicit read_full_inspection tool above; no product or review
+            # fact is removed from this acknowledgement.
+            result.pop("requirement_snapshot")
+            reasons.append("v26 approval acknowledgement retains exact version/adoption/review facts; repeated contract is available through read_full_inspection.")
         for binding in result.get("adoption_snapshot", {}).values():
             if isinstance(binding, dict):
                 for key in ("history", "work_ids", "adoption_id", "project_id", "work_id", "actor_id", "at"):
@@ -110,6 +119,9 @@ def response_matches_receipt(commit, public, *, action, arguments=None):
     profile = marker.get("profile")
     allowed_profiles = {V14_INTERFACE + ":" + role: actions for role, actions in V14_PROFILES.items()}
     allowed_profiles[V23_MAINTENANCE_INTERFACE + ":implementer"] = V14_PROFILES["implementer"] + ("adopt_version",)
+    from .reciprocal_interface_v026 import PREFIXES, ROLES, BUSINESS, COMMUNICATION
+    allowed_profiles.update({prefix + ":" + role: BUSINESS + COMMUNICATION
+                             for prefix in PREFIXES for role in ROLES})
     if profile not in allowed_profiles or action not in allowed_profiles[profile]:
         return False
     if commit.get("receipt", {}).get("contract") != action:
