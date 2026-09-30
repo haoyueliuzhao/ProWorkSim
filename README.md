@@ -2,7 +2,7 @@
 
 ## v0.25 已完成基础更新，恢复磁盘故障中断的确认评价
 
-[R2恢复方案](docs/domain-collaboration-v025-r2-plan.md)仅从R1已保存的3/3检查点继续原12例确认与2例后继，临时目录迁至数据卷。R1已完成283/283决定和一次actor/critic更新；首例确认因系统盘`/tmp`空间不足而不可评分，原失败及费用保留。仅使用原确认/后继剩余额度，R2不新增训练；实际启动与结果另行记录。
+[R2恢复方案](docs/domain-collaboration-v025-r2-plan.md)仅从R1已保存的3/3检查点继续原12例确认与2例后继，临时目录迁至数据卷。R1已完成283/283决定和一次actor/critic更新；首例确认因系统盘`/tmp`空间不足而不可评分，原失败及费用保留。仅使用原确认/后继剩余额度，R2不新增训练；北京时间9月30日13:45已在GPU3启动，[启动记录](docs/experiments/composition-pilot-v025-r2-launch.md)确认原actor身份、首例初态及数据卷SQL检查一致。完整评价结果尚待完成。
 
 原支持窗口的16条联合经历已整理为[离线人工审阅页面](docs/reviews/v025-joint-experiences/index.html)、[中文逐条导读](docs/reviews/v025-joint-experiences/reading-notes.md)和[ZIP阅读包](docs/reviews/v025-joint-experiences.zip)。每条附成员协作有向图，按角色与原事件顺序展示实际输入、回复、工具执行／拒绝、交接、格式反馈及终止；保留原评分与来源SHA，无新增模型运行或评分。
 
