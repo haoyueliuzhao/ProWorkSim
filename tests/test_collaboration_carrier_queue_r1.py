@@ -97,3 +97,34 @@ def test_loading_cost_is_debited_and_started_episodes_cannot_be_silently_repeate
     plan['previous_attempt']['workers']['worker-0']['report'] = reference(report_path)
     with pytest.raises(ValueError, match='pre-episode loading failure'):
         worker.validate_previous_loading_attempt(plan)
+
+
+def test_deadline_extension_accepts_only_an_unused_previous_queue(tmp_path):
+    previous = {**copy.deepcopy(worker.FIXED_LIMITS),
+                'version': 'reciprocal-carrier-development-v0.26-r1',
+                'queue_deadline_at': 1790827200, 'wall_deadline_at': 1790834400}
+    write(tmp_path/'previous-wait-plan.json', previous)
+    plan_ref = reference(tmp_path/'previous-wait-plan.json')
+    assignments = {name: [{'slot_id': name+'-unstarted-fixture'}] for name in worker.RESOURCE_CAPS}
+    summary = {'plan': plan_ref, 'status': 'supervisor_error',
+               'error': {'type': 'KeyboardInterrupt'}, 'terminated_gpu_seconds': 0,
+               'running_gpu_seconds': 0, 'worker_assignments': assignments}
+    write(tmp_path/'previous-wait-supervisor.json', summary)
+    write(tmp_path/'transition.json', {'operation': 'user_requested_wait_extension',
+          'new_queue_deadline_beijing': '2026-10-02T00:00:00+08:00'})
+    refs = {}
+    for name in worker.RESOURCE_CAPS:
+        folder = tmp_path/name
+        folder.mkdir()
+        write(folder/'state.json', {'status': 'not_started_supervisor_interrupted',
+              'attempted': False, 'slots': assignments[name]})
+        refs[name] = reference(folder/'state.json')
+    plan = {**copy.deepcopy(worker.FIXED_LIMITS), 'version': worker.VERSION, 'previous_queue': {
+        'plan': plan_ref, 'supervisor': reference(tmp_path/'previous-wait-supervisor.json'),
+        'transition': reference(tmp_path/'transition.json'), 'workers': refs}}
+    assert worker.validate_previous_waiting_queue(plan)['previous_queue_gpu_seconds'] == 0
+    write(tmp_path/'worker-0/state.json', {'status': 'not_started_supervisor_interrupted',
+          'attempted': True, 'slots': assignments['worker-0']})
+    plan['previous_queue']['workers']['worker-0'] = reference(tmp_path/'worker-0/state.json')
+    with pytest.raises(ValueError, match='started worker cannot be repeated'):
+        worker.validate_previous_waiting_queue(plan)

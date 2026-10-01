@@ -23,7 +23,7 @@ from proworksim.online_collection import run_fragment
 from proworksim.storage import digest, json_bytes, read_json
 from scripts.evaluate_work_v022 import checked, reference, write
 
-VERSION = "reciprocal-carrier-development-v0.26-r1"
+VERSION = "reciprocal-carrier-development-v0.26-r2"
 # Original loading attempts consumed 25.742102 / 25.402630 seconds.
 # Charge each upward to 26 seconds, retaining the original total 4 GPU-hour cap.
 RESOURCE_CAPS = {"worker-0": 7174, "worker-1": 7174}
@@ -63,8 +63,8 @@ FIXED_LIMITS = {
     "automatic_recovery": False,
     "automatic_successors": [],
     "max_wall_seconds": 64800,
-    "queue_deadline_at": 1790827200,  # 2026-10-01 12:00 Asia/Shanghai
-    "wall_deadline_at": 1790834400,  # Final absolute ceiling, 14:00
+    "queue_deadline_at": 1790870400,  # 2026-10-02 00:00 Asia/Shanghai
+    "wall_deadline_at": 1790877600,  # Final absolute ceiling, 02:00
     "minimum_free_gpu_mib": 78000,
     "max_idle_gpu_utilization_percent": 5,
     "gpu_idle_stability_seconds": 120,
@@ -145,6 +145,37 @@ def validate_previous_loading_attempt(plan):
             or previous["budget_charge_seconds"] + plan["internal_gpu_seconds"] != 14400):
         raise ValueError("Previous loading cost must remain inside the original four GPU-hour cap")
     return costs
+
+
+def validate_previous_waiting_queue(plan):
+    """A user-requested deadline extension may replace only an unused queue."""
+    refs = plan["previous_queue"]
+    previous = read_json(checked(refs["plan"]))
+    summary = read_json(checked(refs["supervisor"]))
+    transition = read_json(checked(refs["transition"]))
+    if (previous.get("version") != "reciprocal-carrier-development-v0.26-r1"
+            or summary.get("plan") != refs["plan"]
+            or summary.get("status") != "supervisor_error"
+            or summary.get("error", {}).get("type") != "KeyboardInterrupt"
+            or summary.get("terminated_gpu_seconds") != 0
+            or summary.get("running_gpu_seconds") != 0
+            or transition.get("operation") != "user_requested_wait_extension"
+            or transition.get("new_queue_deadline_beijing") != "2026-10-02T00:00:00+08:00"
+            or set(refs.get("workers", {})) != set(RESOURCE_CAPS)):
+        raise ValueError("Deadline extension requires the archived zero-GPU waiting queue")
+    for key, value in previous.items():
+        if key not in {"version", "queue_deadline_at", "wall_deadline_at"} and plan.get(key) != value:
+            raise ValueError("Deadline extension changed a non-scheduling declaration: " + key)
+    for name, ref in refs["workers"].items():
+        path = checked(ref)
+        state = read_json(path)
+        if (state.get("status") != "not_started_supervisor_interrupted"
+                or state.get("attempted") is not False or state.get("pid") is not None
+                or state.get("gpu") is not None or state.get("elapsed_gpu_seconds") is not None
+                or state.get("slots") != summary["worker_assignments"][name]
+                or (path.parent / "actual").exists()):
+            raise ValueError("A started worker cannot be repeated by a queue-only extension: " + name)
+    return {"previous_queue_gpu_seconds": 0, "same_unstarted_slots": True}
 
 
 def assignments(catalog):
@@ -459,6 +490,7 @@ def validate_plan(plan, *, verify_source=True):
     if verify_source:
         verify_invariant_source(plan)
     validate_previous_loading_attempt(plan)
+    validate_previous_waiting_queue(plan)
     return catalog, assigned
 
 

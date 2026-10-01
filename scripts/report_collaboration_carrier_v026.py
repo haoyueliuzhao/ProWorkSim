@@ -878,6 +878,7 @@ def summarize(plan, catalog, supervisor, workers, episodes, *, sources=None):
                 "gpu_preference",
                 "queue_deadline_at",
                 "previous_attempt",
+                "previous_queue",
             )
         },
         "overall": group_summary(rows),
@@ -961,6 +962,10 @@ def load_run(run, *, require_terminal=False):
         from scripts.collaboration_carrier_v026 import validate_previous_loading_attempt
 
         validate_previous_loading_attempt(plan)
+    if plan.get("previous_queue"):
+        from scripts.collaboration_carrier_v026 import validate_previous_waiting_queue
+
+        validate_previous_waiting_queue(plan)
     catalog_path = checked_reference(plan["catalog"])
     catalog = read_json(catalog_path)
     sources = {
