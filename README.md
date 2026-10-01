@@ -1,10 +1,12 @@
 # ProWorkSim
 
-## v0.26 审计修订与相互依赖载体验证
+## v0.26 相互依赖载体验证已结案：完整职责0/16
 
-按[审计修订方案](docs/domain-collaboration-v026-plan.md)，先完成旧经历的[分层协作证据核对](docs/experiments/collaboration-v026-c0.md)，再建立维护者与消费者双向承担成果的真实SQL载体。C1预定四情境×两通信条件×两次固定seed，共16个冻结参数episode；保留原3/3完整学习状态，零更新；累计GPU预算已按用户要求扩为8小时。两通信条件保留相同产物读写和正式复核流；CPU可达性、真实模型结果、配置支持与参数收益分别表述。
+[本轮详细报告](docs/experiments/collaboration-v026-final.md)：四情境×两通信条件×两次固定seed的16个逻辑槽经恢复全部可评分，normal与single_pass完整职责均0/8、均分均0。共17次实际业务尝试，含1次原中断；[原R2](docs/experiments/collaboration-v026-c1-r2.md)的完整主比较仍未知，[恢复描述性结果](docs/experiments/collaboration-v026-c1-recovered.md)不覆盖原缺失。未执行训练更新，完整状态从旧3/3恢复；没有学习或配置算法收益结论。
 
-[CPU资格](docs/experiments/collaboration-v026-qualification.md)已通过12条正路径、2条错误逻辑负控、6组反事实与4组公平性检查；最小上下文余量仅4 token，不能视为模型任意路径容量证明。[原C1](docs/experiments/collaboration-v026-c1.md)两次加载均因显存波动退出，16槽均未启动。用户已确认[R2等待](docs/experiments/collaboration-v026-c1-r2-launch.md)仅使用GPU0/4/5/7，等卡延长至北京时间10月2日00:00；此前R1等待没有GPU尝试。原失败成本保留；[在线资源扩展](docs/experiments/collaboration-v026-live-budget-extension.md)已将显存保护上限开放至80GiB，并以[R3固定恢复](docs/experiments/collaboration-v026-c1-r3-launch.md)继续未完成槽。C2新支持与C3配置对照尚未启动；支持不足不再默认触发昂贵的Q=B更新。
+[业务附录](docs/experiments/collaboration-v026-work-analysis.md)区分局部成果与完整合同：恢复后16槽的源端6次SQL执行成功，其中2份固定提交的表内容与单位正确，但类型和显式元数据依赖仍不合格；消费端成功构建0次、提交0次，未形成双向闭环。[C0审计](docs/experiments/collaboration-v026-c0.md)和[CPU资格](docs/experiments/collaboration-v026-qualification.md)分别保留；12条程序正路径通过不等于真实模型成功，CPU最小上下文余量仅4 token。
+
+北京时间10月1日21:47:36全部模型结束，含两次加载失败与一次显存保护中断累计 **2.468925 GPU小时**。用户授权的累计预算为8 GPU小时、显存保护为80GiB；本轮未触发时间预算停止。[资源附录](docs/experiments/collaboration-v026-resource-analysis.md)保留恢复、末态证明缺失及退出核验，[精简结案数据](docs/experiments/collaboration-v026-summary.json)提供分母与证据摘要。C2新支持、C3配置对照及额外Q=B更新均未启动。
 
 ## v0.25 当前支持与更新后工作已结案
 
@@ -53,7 +55,7 @@ N1/W1准备后在GPU2/3并行，B1及R1使用GPU2；全部已结束，含失败�
 
 **面向 ID-VTDO 研究的信息不对称专业工作世界。** ProWorkSim 提供持续世界、局部工具与可核验联合经历；当前研究目标是利用信息依赖结构配置各成员的经验，检验更新后团队的工作能力。世界运行、参数更新和学习收益分别验证。
 
-[研究目标与理论设计 V1](docs/research/id-vtdo.md)是研究入口；[v0.19 吞吐计划](docs/throughput-v019-plan.md)的优化实现和单模型控制已保留，旧高资源后继已按用户要求暂停，本轮仅按v0.22有限方案恢复9B；原H1已在冻结协议下完成，同时保留[v0.15 原线](docs/learning-v015-plan.md)的独立终态。历史 Q=B 基础学习按各阶段原结论保留；当前 v0.26 先做冻结参数的协作载体验证。后继支持不足时停止有限配置研究，不自动追加无对照更新；新配置比较须使用相同完整学习状态、同批原始经历及独立确认。
+[研究目标与理论设计 V1](docs/research/id-vtdo.md)是研究入口；[v0.19 吞吐计划](docs/throughput-v019-plan.md)的优化实现和单模型控制已保留，旧高资源后继已按用户要求暂停；原H1已在冻结协议下完成，同时保留[v0.15 原线](docs/learning-v015-plan.md)的独立终态。历史 Q=B 基础学习按各阶段原结论保留；v0.26 冻结参数协作载体验证已结案，C2/C3尚未执行。后继支持不足时停止有限配置研究，不自动追加无对照更新；新配置比较须使用相同完整学习状态、同批原始经历及独立确认。
 
 WorldCore管理权限、版本、采用、工作义务和问题处理；工作人员决定业务动作；场景控制器执行预声明事件。机构接受、内容正确、未知、服务故障和训练奖励分别记录。
 
