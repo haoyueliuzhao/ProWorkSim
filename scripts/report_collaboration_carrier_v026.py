@@ -957,7 +957,7 @@ def summarize(plan, catalog, supervisor, workers, episodes, *, sources=None):
     return result
 
 
-def load_run(run, *, require_terminal=False):
+def load_run(run, *, require_terminal=False, include_inputs=False):
     """Read one saved snapshot; immutable episode hashes are checked, never replayed."""
     run = Path(run).resolve()
     supervisor_path = run / "supervisor.json"
@@ -1105,6 +1105,8 @@ def load_run(run, *, require_terminal=False):
                     raise ValueError("Runtime events differ from closed episode events")
                 package["sources"]["experience"] = actual
             episodes[slot["slot_id"]] = package
+    if include_inputs:
+        return plan, catalog, supervisor, workers, episodes, sources
     result = summarize(plan, catalog, supervisor, workers, episodes, sources=sources)
     result["run_root"] = str(run)
     result["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
@@ -1304,7 +1306,7 @@ def markdown(report):
         )
     lines += [
         "",
-        f"两个 worker 已终止阶段成本合计 **{cost['terminated_gpu_seconds'] / 3600:.4f} GPU 小时**；快照中尚在运行的额外成本 {cost['running_gpu_seconds_at_snapshot'] / 3600:.4f} GPU 小时。加载、异常和停止耗时保留；并行墙钟时间未当作 GPU 小时。",
+        f"{len(cost['workers'])} 个 worker 已终止阶段成本合计 **{cost['terminated_gpu_seconds'] / 3600:.4f} GPU 小时**；快照中尚在运行的额外成本 {cost['running_gpu_seconds_at_snapshot'] / 3600:.4f} GPU 小时。加载、异常和停止耗时保留；并行墙钟时间未当作 GPU 小时。",
         "",
         f"实际请求 {report['call_counts']['requests']}；响应 {report['call_counts']['responses']}；其中带实际输出 token trace {report['call_counts']['responses_with_actual_token_trace']}；上下文拒绝 {report['call_counts']['backend_context_limits']}；工具拒绝 {report['call_counts']['tool_refusals']}。",
         "",
