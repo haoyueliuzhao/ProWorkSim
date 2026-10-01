@@ -12,4 +12,4 @@ GPU0上的worker-0已于20:35:15被原监督器停止，原因`own_gpu_memory_li
 
 授权声明在`examples/reciprocal-data-v026/c1-live-budget-extension.json`；运行控制记录在`runs/v026-c1-r2-budget-extension`。原计划、原冻结checkout、模型源码和原始episode不会修改。本次报告单列新资源监督源码及授权引用，不将其伪装成原预算。
 
-默认`.venv`不提供Linux pidfd接口，进程绑定测试改用实际resident Python，3项新控制测试通过；其他调度/归档检查此前通过。在线接管使用相同支持pidfd的resident Python，不加载额外模型。Ruff通过。实际接管状态及后续恢复在部署后追加。
+默认`.venv`不提供Linux pidfd接口，进程绑定测试改用实际resident Python，3项新控制测试通过；其他调度/归档检查此前通过。在线接管使用相同支持pidfd的resident Python，不加载额外模型。Ruff通过。已实际接管：资源监督PID`4107438`，源码提交`a7d3e413bf6f3c145646cab5675af7763c73c171`，状态`monitoring`；GPU4原worker PID4047615保持运行，原编排进程暂停，模型进程没有暂停。GPU0的历史停止不回改，已另行部署[R3固定恢复](collaboration-v026-c1-r3-launch.md)。
