@@ -944,6 +944,16 @@ def summarize(plan, catalog, supervisor, workers, episodes, *, sources=None):
             ),
             original_total_gpu_seconds_cap=14400,
         )
+    if supervisor.get("budget_extension"):
+        result["budget_extension"] = {
+            "declaration": supervisor["budget_extension"],
+            "resource_observer": supervisor.get("resource_observer"),
+            "original_caps": supervisor.get("original_caps"),
+            "effective_caps": supervisor["caps"],
+        }
+        result["resources"]["effective_total_gpu_seconds_cap"] = (
+            sum(supervisor["caps"].values()) + plan["previous_attempt"]["budget_charge_seconds"]
+        )
     return result
 
 
@@ -966,6 +976,16 @@ def load_run(run, *, require_terminal=False):
         from scripts.collaboration_carrier_v026 import validate_previous_waiting_queue
 
         validate_previous_waiting_queue(plan)
+    if supervisor.get("budget_extension"):
+        extension = read_json(checked_reference(supervisor["budget_extension"]))
+        if (extension.get("original_plan") != supervisor["plan"]
+                or extension.get("worker_source") != supervisor["source"]
+                or extension.get("resource_caps") != supervisor.get("caps")
+                or extension.get("cumulative_gpu_seconds_cap") != 28800
+                or sum(supervisor["caps"].values()) + plan["previous_attempt"]["budget_charge_seconds"] != 28800
+                or extension.get("additional_episodes") != 0
+                or extension.get("parameter_updates") != 0):
+            raise ValueError("Active resource budget extension does not match its archived authorization")
     catalog_path = checked_reference(plan["catalog"])
     catalog = read_json(catalog_path)
     sources = {
@@ -1297,8 +1317,11 @@ def markdown(report):
             f"原C1加载失败另耗 {cost['previous_attempt_gpu_seconds']:.6f} GPU秒；"
             f"本次按每worker向上取整扣除，共 {cost['previous_attempt_budget_charge_seconds']} 秒。"
             f"原尝试与本恢复已终止部分累计 **{cost['cumulative_terminated_gpu_seconds'] / 3600:.6f} GPU小时**，"
-            "仍受原4 GPU小时总上限约束。两次加载失败没有产生业务episode，不增加16槽分母。"
+            f"本次有效累计预算上限为{cost.get('effective_total_gpu_seconds_cap', 14400) / 3600:g} GPU小时。"
+            "两次加载失败没有产生业务episode，不增加16槽分母。"
         )]
+    if report.get("budget_extension"):
+        lines += ["", "运行中按用户授权扩展资源时间预算；原模型进程、业务源码、固定槽及原计划引用均保留。新增资源监督和授权引用见JSON的budget_extension。"]
     return "\n".join(lines) + "\n"
 
 
