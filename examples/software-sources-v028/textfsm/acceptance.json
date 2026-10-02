@@ -1,0 +1,135 @@
+{
+  "schema": "software-source-parent-acceptance-v028",
+  "cases": [
+    {
+      "case_id": "textfsm-source-00",
+      "group": "source",
+      "request": {
+        "repository": "textfsm",
+        "op": "source",
+        "value": "key: alpha\nitem: red\nitem: blue\nitem: red\nend\n",
+        "template": "Value Required KEY (\\w+)\nValue List ITEM (\\S+)\n\nStart\n ^key: ${KEY}\n ^item: ${ITEM}\n ^end -> Record\n"
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "alpha",
+            [
+              "red",
+              "blue",
+              "red"
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "textfsm-consumer-01",
+      "group": "consumer",
+      "request": {
+        "repository": "textfsm",
+        "op": "consumer",
+        "value": "key: alpha\nitem: red\nitem: blue\nitem: red\nend\n"
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "key": "alpha",
+            "items": [
+              "red",
+              "blue",
+              "red"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "textfsm-source-02",
+      "group": "source",
+      "request": {
+        "repository": "textfsm",
+        "op": "source",
+        "value": "key: one\nitem: z\nitem: a\nend\nkey: two\nitem: c\nitem: b\nend\n",
+        "template": "Value Required KEY (\\w+)\nValue List ITEM (\\S+)\n\nStart\n ^key: ${KEY}\n ^item: ${ITEM}\n ^end -> Record\n"
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "one",
+            [
+              "z",
+              "a"
+            ]
+          ],
+          [
+            "two",
+            [
+              "c",
+              "b"
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "textfsm-consumer-03",
+      "group": "consumer",
+      "request": {
+        "repository": "textfsm",
+        "op": "consumer",
+        "value": "key: one\nitem: z\nitem: a\nend\nkey: two\nitem: c\nitem: b\nend\n"
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "key": "one",
+            "items": [
+              "z",
+              "a"
+            ]
+          },
+          {
+            "key": "two",
+            "items": [
+              "c",
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "textfsm-source-04",
+      "group": "source",
+      "request": {
+        "repository": "textfsm",
+        "op": "source",
+        "value": "",
+        "template": "Value Required KEY (\\w+)\nValue List ITEM (\\S+)\n\nStart\n ^key: ${KEY}\n ^item: ${ITEM}\n ^end -> Record\n"
+      },
+      "expected": {
+        "kind": "return",
+        "value": []
+      }
+    },
+    {
+      "case_id": "textfsm-consumer-05",
+      "group": "consumer",
+      "request": {
+        "repository": "textfsm",
+        "op": "consumer",
+        "value": ""
+      },
+      "expected": {
+        "kind": "return",
+        "value": []
+      }
+    }
+  ],
+  "finite_test_scope": true
+}

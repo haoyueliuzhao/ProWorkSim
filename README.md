@@ -1,5 +1,13 @@
 # ProWorkSim
 
+## v0.28 动态职责修订与后续软件实验
+
+按[10月3日审计](docs/reference/audit-v027-next-v028.md)实施[新协议](docs/software-allocation-v028-plan.md)：补编辑前消息、转交通知与归还、等待唤醒及有界阻塞。稳定成员自主承担预定义子任务，不声称完整任务分解。新Mapper以固定交付净定义及实际输入/验证关系分类，撤销或无关注释不制造第二类。
+
+阶段1为2情境×2先手×2seed共8条9B开发经历，冻结参数、零更新；生成前原请求、SDK流、版本、独立验收与中断全部保存。[运行记录](docs/experiments/software-development-v028.md)给出实际等待/启动/终态，未启动不补零。新预算6 GPU小时，在GPU0/4/5/7空卡条件满足后开始，不继承旧实验上限。
+
+[SWE-smith来源阶段](docs/experiments/software-sources-v028.md)已取得3个整仓分用途的可执行任务：sqlparse训练、schema贡献开发、TextFSM独立确认，已实跑缺陷/修复及联合依赖控制。程序结果、开发模型工作和B/G/I效果分开；现有配置器登记为单窗口线性N/基础锚变体，并区分坐标斜率与b中心化C。
+
 ## v0.27 转向软件协作中的在线经验分配
 
 按[10月2日审计](docs/reference/audit-v026-next-software-v027.md)完成[协议修订](docs/software-allocation-v027-plan.md)：保留世界内核、受管OpenHands SDK和共享学习器，主线改为模型自行分工、代码工作与集成，再比较基础B、一般成员—轨迹重加权G和结构化成员配置I的独立更新后表现。零售SQL保留历史结果与迁移控制，不再优先扩建。

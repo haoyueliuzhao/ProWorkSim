@@ -28,6 +28,20 @@ DEFAULT_CONSTRAINTS = {
     "beta": 0.25,
 }
 PURPOSE = "contribution_development"
+# Explicit reporting identity for the existing numerical rule. This is not the
+# log-deficit/history-anchor variant and it contains no cross-window predictor.
+ALLOCATION_VARIANT = {
+    "variant_id": "single-window-linear-support-deficit-base-anchor-v0.28-reporting",
+    "N_rule": "N_z = max(0, 1 - K * b_z)",
+    "first_KL_anchor": "q0 = b (single current window)",
+    "coverage_anchor": "uniform over supported classes, expanded to original slots for G",
+    "contribution_estimator": "full paired finite differences in an orthonormal Helmert basis",
+    "history_configuration_inherited": False,
+    "cross_window_predictor": False,
+    "G_name": "raw-trajectory reweighting under common support and coverage priors",
+    "I_name": "class-shared member-conditioned reweighting under the same support and coverage priors",
+    "numerical_rule_changed": False,
+}
 
 
 def _sha(value):
@@ -226,6 +240,7 @@ def freeze_allocation_plan(
         raise ValueError("Freeze common finite trial/development budgets and one formal update")
     plan = {
         "version": VERSION, "supports_by_xi": copy.deepcopy(supports_by_xi),
+        "allocation_variant": copy.deepcopy(ALLOCATION_VARIANT),
         "eligible_blocks": [list(p) for p in sorted(eligible)], "constraints": limits,
         "development": dev, "development_sha256": _sha(dev), "budget": copy.deepcopy(budget),
         "status": "ready" if eligible else "no_configurable_support",
@@ -448,6 +463,18 @@ def select_allocation(plan, receipts):
                 coverage, novelty = _coverage(plan["supports_by_xi"][xi]["blocks"][member], method)
                 solution = solve_first_order(q[xi][member], estimates[(xi, member)], coverage,
                                              novelty, constraints=plan["constraints"])
+                if "allocation_variant" in plan:
+                    # Reporting only: the solver consumes the same slope as v027.
+                    # Subtracting this common constant changes the objective by
+                    # a constant on the simplex and does not change its argmax.
+                    slope = estimates[(xi, member)]
+                    offset = math.fsum(q[xi][member][k] * slope[k] for k in slope)
+                    solution.update(
+                        helmert_zero_arithmetic_mean_slope=copy.deepcopy(slope),
+                        b_centered_contribution={k: value - offset for k, value in slope.items()},
+                        contribution_centering_offset=offset,
+                        contribution_field_representation="legacy coordinate slope, not b-centered C",
+                    )
                 q[xi][member] = solution["q"]
                 solutions.append({"xi_id": xi, "member_id": member, **solution})
         supports = _method_supports(plan["supports_by_xi"], method, plan["eligible_blocks"])
@@ -457,12 +484,15 @@ def select_allocation(plan, receipts):
             "solutions": solutions,
             "Q_equals_B": _weights_hash(materialized) == plan["candidates"]["B"]["weights_sha256"],
         }
-    return {
+    report = {
         "version": VERSION, "plan_sha256": plan["plan_sha256"], "receipts": copy.deepcopy(receipts),
         "selections": selections, "provenance": plan["development"]["provenance"],
         "effectiveness_evidence": False,
         "scope": "Selected surrogate configuration; independent post-update confirmation not performed",
     }
+    if "allocation_variant" in plan:
+        report["allocation_variant"] = copy.deepcopy(plan["allocation_variant"])
+    return report
 
 
 def materialize_allocation(plan, selection, method):
