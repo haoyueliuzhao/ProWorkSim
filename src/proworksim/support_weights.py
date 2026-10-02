@@ -7,7 +7,7 @@ removed, and the policy probability ratio is not this composition weight.
 import copy
 import math
 
-from .team_rollout import validate_window
+from .team_rollout import optimizer_scope_allows_update, validate_window
 
 SUPPORT_VERSION = "member-support-v0.12"
 
@@ -70,7 +70,12 @@ def build_support(slots, *, window, member_ids, min_class_count=1):
                 rollout["work_validity"].get("components", {}).get("record", {}).get("value")
                 is True
             )
-            base[sid] = bool(reward_ok and actor_ok and is_current and record_ok)
+            scope = rollout.get("online_scope", {})
+            training_allowed = optimizer_scope_allows_update(rollout)
+            reconfiguration_allowed = (
+                training_allowed and scope.get("composition_reconfiguration_eligible") is not False
+            )
+            base[sid] = bool(reward_ok and actor_ok and is_current and record_ok and training_allowed)
             if (
                 is_current
                 and rollout["work_validity"].get("value") is True
@@ -86,6 +91,8 @@ def build_support(slots, *, window, member_ids, min_class_count=1):
                 reasons.append("record_integrity_unverified")
             if not actor_ok:
                 reasons.append("no_complete_recoverable_own_actions")
+            if not reconfiguration_allowed:
+                reasons.append("declared_scope_forbids_reconfiguration")
             if rollout["members"].get(member_id, {}).get("origin") != "target_model":
                 reasons.append("not_current_target_model_origin")
             if rollout["work_validity"].get("value") is not True:

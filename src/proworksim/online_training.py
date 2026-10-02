@@ -21,6 +21,7 @@ from .online_signals import (
     GroupGradientCapture, decision_stage, joint_return, sampled_change, select_post_update_rows, summarize_signals,
 )
 from .storage import atomic_write, digest, json_bytes, read_json
+from .team_rollout import optimizer_scope_allows_update
 
 VERSION = "shared-online-ppo-v0.15.1"
 DEFAULT_RECIPE = {
@@ -171,6 +172,9 @@ def prepare_window(entries, actor_identity, window_id, recipe, feature_function=
         if rollout is None or not isinstance(reward, dict):
             summary["exclusions"].append("episode_or_reward_record_missing")
             continue
+        if not optimizer_scope_allows_update(rollout):
+            summary["exclusions"].append("declared_scope_forbids_optimizer_update")
+            continue
         summary["reward"] = copy.deepcopy(reward)
         if reward != rollout["reward_eligibility"]:
             raise ValueError("Collection reward differs from attached historical reward")
@@ -241,6 +245,17 @@ def prepare_window(entries, actor_identity, window_id, recipe, feature_function=
 
 class DirectContextLimit(ValueError):
     """An actual tokenized input rejected before any generation begins."""
+
+
+def validate_actor_composition(entries, prepared, composition):
+    """Admit a bound allocation without changing the shared base loss or masks."""
+    from .experience_allocation_v027 import VERSION as allocation_version, validate_allocation
+
+    if isinstance(composition, dict) and composition.get("version") == allocation_version:
+        return validate_allocation(entries, prepared, composition)
+    from .composition_training_v025 import validate_composition
+
+    return validate_composition(entries, prepared, composition)
 
 
 class DirectModelTransport:
@@ -747,14 +762,18 @@ class SharedActor:
             rows = prepared["decisions"]
             composition_weights = [1.0] * len(rows)
             if composition is not None:
-                from .composition_training_v025 import validate_composition
-                composition_weights, composition_report = validate_composition(entries, prepared, composition)
+                composition_weights, composition_report = validate_actor_composition(
+                    entries, prepared, composition
+                )
                 atomic_write(output / "composition.json", json_bytes(composition))
                 atomic_write(output / "composition-admission.json", json_bytes(composition_report))
                 report["composition_materialization"] = reference(output / "composition.json")
                 report["composition_admission"] = reference(output / "composition-admission.json")
                 if not composition_report["Q_equals_B"]:
-                    report["composition"] = "Supported member-conditioned q/b actor weights; residuals and other members remain one"
+                    report["composition"] = (
+                        "Bound member actor weights on the declared eligible branch; "
+                        "residuals and other members remain one"
+                    )
             # Freeze the diagnostic contexts before any optimizer step. A custom
             # selector changes only measured contexts, never loss/admission rows.
             selector = post_update_selector or select_post_update_rows

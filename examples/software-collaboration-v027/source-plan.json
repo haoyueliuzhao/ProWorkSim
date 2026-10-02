@@ -1,0 +1,178 @@
+{
+  "schema": "software-source-plan-v027",
+  "status": "source_interfaces_checked_actual_inventory_and_budget_pending",
+  "checked_date_asia_shanghai": "2026-10-02",
+  "primary_training_source": "swe_smith",
+  "fallback_training_source": "swe_gym",
+  "active_training_sources": [
+    "swe_smith"
+  ],
+  "teacher_trajectories_as_current_experience": false,
+  "purposes": [
+    "interface_development",
+    "policy_training",
+    "contribution_development",
+    "independent_confirmation"
+  ],
+  "partition_policy": "whole_repository_and_lineage_disjoint",
+  "partition": null,
+  "tasks": [],
+  "run_budget": {
+    "protocol": "software-collaboration-v027",
+    "frozen": false,
+    "inherited_from": null,
+    "gpu_seconds": null,
+    "wall_seconds": null,
+    "episode_count": null,
+    "max_decisions_per_member": null,
+    "context_tokens": null,
+    "output_tokens": null
+  },
+  "proposed_stage_a_not_a_frozen_budget": {
+    "development_contexts": 4,
+    "repeats_per_context": 2,
+    "episodes": 8
+  },
+  "task_families": [
+    "interface_producer_consumer",
+    "cross_feature_integration"
+  ],
+  "sources": {
+    "swe_smith": {
+      "role": "primary_task_environment_source",
+      "repository": "https://github.com/SWE-bench/SWE-smith",
+      "reviewed_revision": "9b74ac08118a85c39c356802f7961893af73e07f",
+      "revision_evidence_url": "https://api.github.com/repos/SWE-bench/SWE-smith/commits/9b74ac08118a85c39c356802f7961893af73e07f",
+      "review_scope": "official_docs_and_selected_fixed_revision_files_not_full_implementation_audit",
+      "reviewed_files_sha256": {
+        "README.md": "058ccfb4465b3d067ac53eae9db43d55dfdaf180fcae438880901e3b192584b7",
+        "swesmith/build_repo/create_images.py": "c151cb3e78724bc65b2c23a77952432b4ad45aa12ba6e372cd083a977fab741f",
+        "swesmith/bug_gen/procedural/generate.py": "c36c22445af3bc887807f93020d562cbc0bb832fe7fafc34e31eeb4314f222af",
+        "swesmith/bug_gen/collect_patches.py": "f416b75c2b989f3f838f50fe57a6098806db1c389f56069e3ffe33045658eab0",
+        "swesmith/harness/valid.py": "51a01158cfb0c94c63ce5f8773a02dac57561128a8cb98a22ae59a15aed0ecd8",
+        "swesmith/harness/gather.py": "86605af68c490cfc79277667d06a4b57f0f8446d61bed5e25e76793b52606d11",
+        "swesmith/harness/eval.py": "330963dad5cd3bc1aff43f45c7501c88f2aded87dcda20ccaa42543daf727e10"
+      },
+      "dataset_url": "https://huggingface.co/datasets/SWE-bench/SWE-smith",
+      "dataset_revision": null,
+      "selected_instance_ids": [],
+      "downloaded_tasks": 0,
+      "built_environments": 0,
+      "entrypoints": {
+        "build_environment": {
+          "module": "swesmith.build_repo.create_images",
+          "arguments_template": [
+            "-r",
+            "<selected-repository>"
+          ],
+          "docs": "https://swesmith.com/guides/env_construction/"
+        },
+        "derive_candidate_bug": {
+          "module": "swesmith.bug_gen.procedural.generate",
+          "arguments_template": [
+            "<selected-repository>",
+            "--max_bugs",
+            "<frozen-limit>"
+          ],
+          "docs": "https://swesmith.com/guides/create_instances/"
+        },
+        "collect_candidate_patches": {
+          "module": "swesmith.bug_gen.collect_patches",
+          "arguments_template": [
+            "<candidate-log-directory>"
+          ],
+          "docs": "https://swesmith.com/guides/harnesses/"
+        },
+        "validate_candidate": {
+          "module": "swesmith.harness.valid",
+          "arguments_template": [
+            "<collected-patches.json>"
+          ],
+          "docs": "https://swesmith.com/guides/harnesses/"
+        },
+        "gather_valid_instances": {
+          "module": "swesmith.harness.gather",
+          "arguments_template": [
+            "<validation-run-directory>"
+          ],
+          "docs": "https://swesmith.com/guides/harnesses/"
+        },
+        "evaluate_patch": {
+          "module": "swesmith.harness.eval",
+          "arguments_template": [
+            "--dataset_path",
+            "<task-instances.json>",
+            "--predictions_path",
+            "<predictions.json>",
+            "--run_id",
+            "<frozen-run-id>"
+          ],
+          "docs": "https://swesmith.com/guides/harnesses/"
+        },
+        "existing_task_container": {
+          "python_api": "swesmith.profiles.registry.get_from_inst(task).get_container(task)",
+          "docs": "https://github.com/SWE-bench/SWE-smith/blob/9b74ac08118a85c39c356802f7961893af73e07f/README.md"
+        }
+      }
+    },
+    "swe_gym": {
+      "role": "inactive_fallback_task_environment_source",
+      "repository": "https://github.com/SWE-Gym/SWE-Gym",
+      "reviewed_revision": "b681068ca20628c6987b7416cc4cf03f06b77ba5",
+      "reviewed_files_sha256": {
+        "README.md": "97df54c2ecfe311fc1b8e4eed345fdeffbbb1d93dc4adf82a8252e1145bc825a"
+      },
+      "switch_condition": "record_primary_source_incompatibility_or_cost_and_freeze_a_new_protocol",
+      "import_original_training_recipe": false
+    },
+    "cooperbench": {
+      "role": "external_collaboration_supplement_pending_task_overlap_and_evaluator_admission",
+      "repository": "https://github.com/cooperbench/CooperBench",
+      "reviewed_revision": "63b9d44d9f39a02fccf5bf0052db48a917a011fd",
+      "reviewed_files_sha256": {
+        "README.md": "c63732976c8bb6aa39947b71b6facf5e65a25c85048cab85d24e859ec4c709ac"
+      },
+      "team_task_board": "shared_task_list_with_atomic_claim",
+      "native_evaluation": "per_feature_single_agent_patch_or_each_individual_agent_patch",
+      "native_score_implies_merged_integration": false,
+      "independent_merged_integration_score": "separate_project_metric_if_run"
+    },
+    "asyncodebench": {
+      "role": "optional_candidate_only",
+      "official_url": "https://asyncodebench.org/",
+      "reviewed_revision": null,
+      "implementation_audited": false,
+      "access_result": "official_page_body_not_available_to_web_reader",
+      "required_for_next_stage": false
+    },
+    "swe_bench": {
+      "role": "candidate_individual_repair_regression_control",
+      "official_url": "https://www.swebench.com/",
+      "selected_subset": [],
+      "cooperation_evidence_by_itself": false
+    }
+  },
+  "historical_exclusions": [
+    {
+      "repository": "https://github.com/marshmallow-code/marshmallow",
+      "previous_stage": "v0.15",
+      "commit": "c7b559a1fa3aba57ca6dba0ab336841c5038a782",
+      "allowed_new_purpose": "interface_development",
+      "manifest": "examples/software-v15/source-manifest.json",
+      "independent_confirmation_allowed": false
+    }
+  ],
+  "pending_before_real_run": [
+    "select_actual_upstream_task_inventory_and_pin_dataset_repository_environment_hashes",
+    "freeze_purpose_partition_before_collaboration_requirement_derivation",
+    "derive_jointly_satisfiable_tasks_with_real_dependency_and_execute_independent_witnesses",
+    "bind_member_raw_actions_to_current_actor_and_window",
+    "freeze_v027_budget_and_sampling_contract_instead_of_reusing_v026_extensions"
+  ],
+  "executions_in_this_alignment": {
+    "gpu_runs": 0,
+    "training_updates": 0,
+    "downloaded_task_instances": 0,
+    "built_environments": 0
+  }
+}

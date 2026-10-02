@@ -1,0 +1,13 @@
+{
+  "groups": ["casefold_api", "combined_normalization", "casefold_regression"],
+  "cases": [
+    {"case_id": "cf-00", "group": "casefold_api", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "kwargs": {"casefold": true}, "value": " Straße "}, "expected": {"kind": "return", "value": " strasse "}},
+    {"case_id": "cf-01", "group": "casefold_api", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "kwargs": {"casefold": true}, "value": {"__bytes_hex__": "c389"}}, "expected": {"kind": "return", "value": "é"}},
+    {"case_id": "cf-02", "group": "combined_normalization", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "kwargs": {"strip_whitespace": true, "casefold": true}, "value": "  Straße\t"}, "expected": {"kind": "return", "value": "strasse"}},
+    {"case_id": "cf-03", "group": "combined_normalization", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "kwargs": {"strip_whitespace": true, "casefold": true}, "length": {"equal": 7}, "value": "  Straße "}, "expected": {"kind": "return", "value": "strasse"}},
+    {"case_id": "cf-04", "group": "casefold_regression", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "kwargs": {"casefold": false}, "value": " UPPER "}, "expected": {"kind": "return", "value": " UPPER "}},
+    {"case_id": "cf-05", "group": "casefold_regression", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "serialize", "kwargs": {"strip_whitespace": true, "casefold": true}, "value": " UPPER "}, "expected": {"kind": "return", "value": " UPPER "}},
+    {"case_id": "cf-06", "group": "casefold_regression", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "kwargs": {"casefold": true}, "value": 1}, "expected": {"kind": "exception", "type": "marshmallow.exceptions.ValidationError", "messages": ["Not a valid string."]}},
+    {"case_id": "cf-07", "group": "casefold_api", "locator": ["files", "src/marshmallow/fields.py"], "request": {"op": "deserialize", "field": "Str", "kwargs": {"casefold": true}, "value": "ABC"}, "expected": {"kind": "return", "value": "abc"}}
+  ]
+}

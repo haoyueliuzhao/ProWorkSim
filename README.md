@@ -1,5 +1,13 @@
 # ProWorkSim
 
+## v0.27 转向软件协作中的在线经验分配
+
+按[10月2日审计](docs/reference/audit-v026-next-software-v027.md)完成[协议修订](docs/software-allocation-v027-plan.md)：保留世界内核、受管OpenHands SDK和共享学习器，主线改为模型自行分工、代码工作与集成，再比较基础B、一般成员—轨迹重加权G和结构化成员配置I的独立更新后表现。零售SQL保留历史结果与迁移控制，不再优先扩建。
+
+本次新增两成员私有代码副本、轻量任务板、固定补丁与真实三方集成；软件工作证据接入原始成员投影。[通用配置器](docs/design/experience-allocation-v027.md)支持多情境、多成员、多类别、完整配对有限差分C、支持覆盖N及双KL锚，试训和正式配置都进入原actor损失。原始分母、critic与可信失败残余保持独立；接口开发资产即使删掉附加标签也不能进入训练。
+
+[实施与验证报告](docs/experiments/software-alignment-v027.md)区分真实CPU代码执行、受控SDK响应、小模型反向控制和研究效果。已有Marshmallow仅用于接口开发；[SWE-smith来源方案](docs/research/software-sources-v027.md)完成用途和谱系准入，实际任务、环境与新运行预算尚未冻结。尚未运行9B软件采集、B/G/I效果比较或新GPU队列，不继承v0.26资源上限。[当前理论入口](docs/research/id-vtdo.md)已重组，旧V1与历史阶段[原文归档](docs/research/id-vtdo-v1-through-v026.md)。
+
 ## v0.26 相互依赖载体验证已结案：完整职责0/16
 
 [本轮详细报告](docs/experiments/collaboration-v026-final.md)：四情境×两通信条件×两次固定seed的16个逻辑槽经恢复全部可评分，normal与single_pass完整职责均0/8、均分均0。共17次实际业务尝试，含1次原中断；[原R2](docs/experiments/collaboration-v026-c1-r2.md)的完整主比较仍未知，[恢复描述性结果](docs/experiments/collaboration-v026-c1-recovered.md)不覆盖原缺失。未执行训练更新，完整状态从旧3/3恢复；没有学习或配置算法收益结论。
@@ -53,9 +61,9 @@ N1/W1准备后在GPU2/3并行，B1及R1使用GPU2；全部已结束，含失败�
 [本轮实验报告](docs/experiments/domain-collaboration-v020.md)：真实来源3例33项CPU控制通过；两种9B单卡配置各在首条自身概率门停止，合计92.691 GPU秒，0业务/反向/更新，未启动144例后继。原数据、FP32 head的有限作用及资源竞争均分别归档。
 
 
-**面向 ID-VTDO 研究的信息不对称专业工作世界。** ProWorkSim 提供持续世界、局部工具与可核验联合经历；当前研究目标是利用信息依赖结构配置各成员的经验，检验更新后团队的工作能力。世界运行、参数更新和学习收益分别验证。
+**面向 ID-VTDO 的软件协作与在线经验分配研究环境。** ProWorkSim 提供持续世界、局部工具与可核验联合经历；模型选择分工、调度与执行，算法配置当前经历的训练权重，检验更新后团队相对基础分配和一般重加权的独立工作增量。世界运行、基础学习和分配收益分别验证。
 
-[研究目标与理论设计 V1](docs/research/id-vtdo.md)是研究入口；[v0.19 吞吐计划](docs/throughput-v019-plan.md)的优化实现和单模型控制已保留，旧高资源后继已按用户要求暂停；原H1已在冻结协议下完成，同时保留[v0.15 原线](docs/learning-v015-plan.md)的独立终态。历史 Q=B 基础学习按各阶段原结论保留；v0.26 冻结参数协作载体验证已结案，C2/C3尚未执行。后继支持不足时停止有限配置研究，不自动追加无对照更新；新配置比较须使用相同完整学习状态、同批原始经历及独立确认。
+[当前研究设计与实现状态](docs/research/id-vtdo.md)是研究入口；[v0.19 吞吐计划](docs/throughput-v019-plan.md)等历史实现和[v0.15 原线](docs/learning-v015-plan.md)独立终态继续保留。历史Q=B基础学习、旧H1和v0.26结论不重判。v0.27的新配置比较须使用相同完整学习状态、同批当前经历与独立确认；无可配置支持时停止本次有限研究，不自动追加无对照训练。
 
 WorldCore管理权限、版本、采用、工作义务和问题处理；工作人员决定业务动作；场景控制器执行预声明事件。机构接受、内容正确、未知、服务故障和训练奖励分别记录。
 

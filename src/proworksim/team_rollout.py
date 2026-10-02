@@ -22,6 +22,31 @@ ORIGINS = {"target_model", "rule", "teacher", "historical_model", "offline_fixtu
 DIMENSIONS = ("record", "permission", "basis", "delivery")
 
 
+def optimizer_scope_allows_update(rollout):
+    """Honor frozen software source purpose as well as attached runtime scope.
+
+    Historical non-software records keep their existing admission rules. A new
+    software development source cannot become training data by dropping an
+    optional exporter label or calling the generic TeamRollout exporter.
+    """
+    scope = rollout.get("online_scope", {})
+    if scope.get("optimizer_update_allowed") is False:
+        return False
+    if rollout.get("reward_eligibility", {}).get("spec", {}).get("training_supported") is False:
+        return False
+    case = rollout.get("manifest", {}).get("scenario", {}).get("variation", {}).get("software_case")
+    if case is not None:
+        return bool(
+            isinstance(case, dict)
+            and case.get("training_eligible") is True
+            and case.get("usage") == "policy_training"
+            and scope.get("purpose") == "policy_training"
+            and scope.get("source_training_admission") is True
+            and scope.get("optimizer_update_allowed") is True
+        )
+    return True
+
+
 def validate_window(window):
     if not isinstance(window, dict) or set(window) != set(WINDOW_FIELDS):
         raise ValueError("Window must declare exact situation, protocol and team-policy identities")

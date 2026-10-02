@@ -20,13 +20,14 @@ from .work_interface import WorkInterface
 VERSION = 'harness-collection-v0.18'
 
 
-def _runtime(owner, prepared, folder, harness):
+def _runtime(owner, prepared, folder, harness, *, interface_factory=None):
     recorder = ExperienceRecorder()
     captured, policies, ports, interfaces = {}, {}, {}, {}
     holder = {}
     for role in prepared.scenario['roles']:
         label = role['role_id']
-        interface = WorkInterface(prepared.world.session(role['actor'], role['project']), label,
+        factory = WorkInterface if interface_factory is None else interface_factory
+        interface = factory(prepared.world.session(role['actor'], role['project']), label,
             audit_dir=folder/'public-projections'/label, variant='v14', presentation='compact_v14')
         interfaces[label] = interface
         base = capture_port(interface, captured.setdefault(label, []))
