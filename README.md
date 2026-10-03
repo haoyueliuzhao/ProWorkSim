@@ -1,5 +1,11 @@
 # ProWorkSim
 
+## v0.29 新来源当前策略经验分配
+
+按[新审计](docs/reference/audit-v028-next-v029.md)完成[统一新来源与有限B/G/I协议](docs/experiments/software-allocation-v029-protocol.md)：sqlparse当前策略训练、schema贡献开发、TextFSM独立确认接入既有WorldCore、SDK与共享学习器。过程Mapper描述真实契约工作和有效导入关系；完整验收分列API、所选回归与consumer实际调用。新共同起点统一绑定软件critic坐标，保留全部旧参数、两个optimizer与RNG；训练只用模型实际见到的token。
+
+首窗固定8条同情境、member_a先手、最低类频数2；无可配置支持就结束，不补采或追加无对照更新。有支持才运行完整候选探测、三方法正式更新与独立确认。GPU0–7均获最新授权，旧GPU5单实例限制仅属v0.28历史；累计时长和统一截止不恢复。CPU资格与真实模型结果严格区分，当前运行以本轮原始记录为准。
+
 ## v0.28 动态职责修订与后续软件实验
 
 按[10月3日审计](docs/reference/audit-v027-next-v028.md)实施[新协议](docs/software-allocation-v028-plan.md)：补编辑前消息、转交通知与归还、等待唤醒及有界阻塞。稳定成员自主承担预定义子任务，不声称完整任务分解。新Mapper以固定交付净定义及实际输入/验证关系分类，撤销或无关注释不制造第二类。
