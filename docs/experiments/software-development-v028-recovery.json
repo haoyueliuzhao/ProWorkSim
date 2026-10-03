@@ -1,8 +1,8 @@
 {
   "version": "software-development-report-v0.28",
-  "generated_at_beijing": "2026-10-03T19:14:59.947798+08:00",
-  "run_status": "running",
-  "terminal": false,
+  "generated_at_beijing": "2026-10-03T19:44:59.408424+08:00",
+  "run_status": "complete",
+  "terminal": true,
   "plan": {
     "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/plan.json",
     "sha256": "8d99c86831c0f1ddfccd9b87c8c01fe1dd69af6d5f55a7ee0cbe0e97c9305dda",
@@ -651,12 +651,12 @@
   "max_parallel_model_instances": 1,
   "overall": {
     "scheduled": 8,
-    "started": 6,
-    "known": 5,
-    "unknown_started": 1,
-    "not_started": 2,
+    "started": 8,
+    "known": 8,
+    "unknown_started": 0,
+    "not_started": 0,
     "complete": 4,
-    "complete_rate_all": null
+    "complete_rate_all": 0.5
   },
   "by_first_member": {
     "member_a": {
@@ -667,21 +667,21 @@
     },
     "member_b": {
       "scheduled": 4,
-      "known": 1,
+      "known": 4,
       "complete": 1,
-      "complete_rate_all": null
+      "complete_rate_all": 0.25
     }
   },
   "call_counts": {
-    "model_requests": 313,
-    "model_responses": 311,
-    "prompt_tokens": 2200221,
-    "completion_tokens": 74459,
-    "world_tool_calls": 283,
-    "world_tool_refusals": 28,
+    "model_requests": 482,
+    "model_responses": 481,
+    "prompt_tokens": 3479378,
+    "completion_tokens": 106549,
+    "world_tool_calls": 436,
+    "world_tool_refusals": 34,
     "reactivations": 5,
-    "durable_request_ledgers": 313,
-    "durable_return_ledgers": 312
+    "durable_request_ledgers": 482,
+    "durable_return_ledgers": 482
   },
   "episodes": [
     {
@@ -11832,29 +11832,184 @@
         "member_b": 48
       },
       "worker": "worker-1",
-      "status": "started",
-      "known": false,
-      "complete": null,
-      "reward": null,
-      "raw_assessment": null,
+      "status": "closed",
+      "known": true,
+      "complete": false,
+      "reward": 0,
+      "raw_assessment": {
+        "version": "software-collaboration-v0.28",
+        "status": "evaluable",
+        "R": 0,
+        "submitted": false,
+        "reason": "No fixed integrated delivery",
+        "usage": "interface_dev"
+      },
       "calls": {
-        "model_requests": 3,
-        "model_responses": 2,
-        "prompt_tokens": 8554,
-        "completion_tokens": 211,
-        "world_tool_calls": 2,
-        "durable_request_ledgers": 3,
-        "durable_return_ledgers": 2
+        "model_requests": 81,
+        "model_responses": 81,
+        "prompt_tokens": 606222,
+        "completion_tokens": 13504,
+        "world_tool_calls": 76,
+        "world_tool_refusals": 3,
+        "durable_request_ledgers": 81,
+        "durable_return_ledgers": 81
       },
       "actions": {
         "list_files:ok": 1,
-        "read_file:ok": 1
+        "read_file:ok": 54,
+        "claim_task:ok": 2,
+        "search_file:ok": 9,
+        "claim_task:rejected": 1,
+        "list_files:rejected": 1,
+        "send_message:ok": 1,
+        "replace_file:ok": 3,
+        "write_file:ok": 1,
+        "fix_patch:ok": 1,
+        "send_message:rejected": 1,
+        "integrate_patch:ok": 1
       },
-      "role_stops": {},
-      "selected_actual_calls": [],
+      "role_stops": {
+        "model_format_error": 1,
+        "model_budget_exhausted": 1
+      },
+      "selected_actual_calls": [
+        {
+          "sequence": 48,
+          "member": "member_b",
+          "action": "claim_task",
+          "ok": true,
+          "arguments": {
+            "task_id": "whitespace"
+          },
+          "result": {
+            "task_id": "whitespace",
+            "description": "Add optional String whitespace normalization and adapt inventory SKU loading.",
+            "owner": "member_b",
+            "depends_on": []
+          },
+          "error": null
+        },
+        {
+          "sequence": 96,
+          "member": "member_a",
+          "action": "claim_task",
+          "ok": true,
+          "arguments": {
+            "task_id": "casefold"
+          },
+          "result": {
+            "task_id": "casefold",
+            "description": "Add optional String casefold normalization. Both options must compose and preserve default/dump/error behavior.",
+            "owner": "member_a",
+            "depends_on": []
+          },
+          "error": null
+        },
+        {
+          "sequence": 147,
+          "member": "member_b",
+          "action": "claim_task",
+          "ok": false,
+          "arguments": {
+            "task_id": "casefold"
+          },
+          "result": null,
+          "error": {
+            "type": "ValueError",
+            "message": "Task has already been claimed",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "unclassified_exception",
+              "category": "unknown",
+              "context": {
+                "actor_id": "member_b",
+                "action": "project_action",
+                "project_id": "SOFTWARE27",
+                "tool": "claim_task",
+                "arguments_type": "dict"
+              }
+            }
+          }
+        },
+        {
+          "sequence": 283,
+          "member": "member_b",
+          "action": "send_message",
+          "ok": true,
+          "arguments": {
+            "recipient": "member_a",
+            "task_id": "whitespace",
+            "body": "I've claimed the whitespace task. Since both tasks need to be in the final tree, should I:\n1. Implement both features (whitespace and casefold) in my patch, or\n2. Wait for your casefold patch and then integrate it before adding whitespace?\n\nEither way works, but I want to ensure we deliver a single tree with both features."
+          },
+          "result": {
+            "message_sequence": 13,
+            "recipient": "member_a",
+            "task_id": "whitespace",
+            "world_file_effect": false
+          },
+          "error": null
+        },
+        {
+          "sequence": 1343,
+          "member": "member_a",
+          "action": "send_message",
+          "ok": false,
+          "arguments": {
+            "recipient": "member_b",
+            "task_id": "whitespace",
+            "body": "I've published patch-1 with my casefold implementation. You should integrate this patch before adding your whitespace feature. Then you can publish a combined patch with both whitespace and casefold features, plus the consumer.py changes. This will ensure we deliver a single tree with both features as required."
+          },
+          "result": null,
+          "error": {
+            "type": "ValueError",
+            "message": "Recipient has ended or exhausted its budget and cannot receive new work",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "unclassified_exception",
+              "category": "unknown",
+              "context": {
+                "actor_id": "member_a",
+                "action": "project_action",
+                "project_id": "SOFTWARE27",
+                "tool": "send_message",
+                "arguments_type": "dict"
+              }
+            }
+          }
+        },
+        {
+          "sequence": 1360,
+          "member": "member_a",
+          "action": "integrate_patch",
+          "ok": true,
+          "arguments": {
+            "patch_id": "patch-1"
+          },
+          "result": {
+            "source_reference": {
+              "object_id": "obj-78733a9911df3f1ce0a3aaa3",
+              "version_id": "v3"
+            },
+            "conflicts": [],
+            "status": "merged",
+            "included_patch_ids": [
+              "patch-1"
+            ]
+          },
+          "error": null
+        }
+      ],
       "stream_tail_problem": null,
       "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0",
-      "mapping": null,
+      "mapping": {
+        "version": "software-token-projection-v0.28",
+        "rollout_id": "38d0948e-bfaf-49bf-8f28-71269ff4d01d",
+        "spec_id": "software-work-methods-v0.28",
+        "status": "unmapped",
+        "class_id": null,
+        "evidence_sha256": "0c46b557fb2c2d7ce1e0f2f1b85a84949f9d8986279d4806644bdfad074b4e3a",
+        "reason": "Complete work false or unknown; no positive method support"
+      },
       "row": {
         "slot_id": "dev-1-first-1-r0",
         "case_id": "marshmallow-integration-dev",
@@ -11864,12 +12019,65 @@
           "member_a": 48,
           "member_b": 48
         },
-        "status": "started",
+        "status": "closed",
         "started_at": 1791026083.3371258,
         "attempt_index": 1,
         "interface_revision": "software-collaboration-v0.28.1",
         "context_policy": "software-context-v0.28.1",
-        "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0"
+        "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0",
+        "reward": {
+          "version": "software-token-projection-v0.28",
+          "episode_id": "38d0948e-bfaf-49bf-8f28-71269ff4d01d",
+          "manifest_sha256": "b962d9cd904f76245fb941faa77e755d617fc17a78a490a75bb2a42d3eca46c6",
+          "eligible": true,
+          "reward": 0,
+          "completed": false,
+          "scope": "cross_feature_integration",
+          "source_assessment_sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "spec": {
+            "version": "software-collaboration-v0.28",
+            "training_supported": false,
+            "independent_assessment": "assess_software_collaboration"
+          }
+        },
+        "mapping": {
+          "version": "software-token-projection-v0.28",
+          "rollout_id": "38d0948e-bfaf-49bf-8f28-71269ff4d01d",
+          "spec_id": "software-work-methods-v0.28",
+          "status": "unmapped",
+          "class_id": null,
+          "evidence_sha256": "0c46b557fb2c2d7ce1e0f2f1b85a84949f9d8986279d4806644bdfad074b4e3a",
+          "reason": "Complete work false or unknown; no positive method support"
+        },
+        "evaluation_guard": {
+          "learning_before_sha256": {
+            "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+            "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+            "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+            "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+            "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+          },
+          "learning_after_sha256": {
+            "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+            "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+            "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+            "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+            "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+          },
+          "learning_unchanged": true,
+          "rng_before_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+          "rng_after_collection_sha256": "73532ef74d34bb3330e670f5b448776674b438cfd81486e0d5152d25a320abca",
+          "rng_after_restore_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+          "rng_restored_exactly": true,
+          "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."
+        },
+        "ended_at": 1791026858.9402926
       },
       "attempt_index": 1,
       "source": {
@@ -11880,7 +12088,28 @@
       "interface_revision": "software-collaboration-v0.28.1",
       "context_policy": "software-context-v0.28.1",
       "started": true,
-      "evidence": {},
+      "evidence": {
+        "entry": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/slot-0/entry.json",
+          "sha256": "d451020b2e35a6a16526e43ccd580bf7d80fd831df011e6b4734e17024876309",
+          "bytes": 96835545
+        },
+        "assessment": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/slot-0/assessment.json",
+          "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "bytes": 177
+        },
+        "raw_independent_assessment": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/slot-0/raw-independent-assessment.json",
+          "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "bytes": 177
+        },
+        "evaluation_guard": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/evaluation-guard.json",
+          "sha256": "0b58ff2c13039730bf8ef2e572f9621a84e3bb833cb4b58b037eb5edbaf94db8",
+          "bytes": 2030
+        }
+      },
       "attempts": [
         {
           "slot_id": "dev-1-first-1-r0",
@@ -12034,21 +12263,32 @@
             "member_b": 48
           },
           "worker": "worker-1",
-          "status": "started",
-          "known": false,
-          "complete": null,
-          "reward": null,
-          "raw_assessment": null,
-          "calls": {
-            "model_requests": 3,
-            "model_responses": 2,
-            "prompt_tokens": 8554,
-            "completion_tokens": 211,
-            "world_tool_calls": 2,
-            "durable_request_ledgers": 3,
-            "durable_return_ledgers": 2
+          "status": "closed",
+          "known": true,
+          "complete": false,
+          "reward": 0,
+          "raw_assessment": {
+            "version": "software-collaboration-v0.28",
+            "status": "evaluable",
+            "R": 0,
+            "submitted": false,
+            "reason": "No fixed integrated delivery",
+            "usage": "interface_dev"
           },
-          "role_stops": {},
+          "calls": {
+            "model_requests": 81,
+            "model_responses": 81,
+            "prompt_tokens": 606222,
+            "completion_tokens": 13504,
+            "world_tool_calls": 76,
+            "world_tool_refusals": 3,
+            "durable_request_ledgers": 81,
+            "durable_return_ledgers": 81
+          },
+          "role_stops": {
+            "model_format_error": 1,
+            "model_budget_exhausted": 1
+          },
           "stream_tail_problem": null,
           "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0",
           "row": {
@@ -12060,12 +12300,65 @@
               "member_a": 48,
               "member_b": 48
             },
-            "status": "started",
+            "status": "closed",
             "started_at": 1791026083.3371258,
             "attempt_index": 1,
             "interface_revision": "software-collaboration-v0.28.1",
             "context_policy": "software-context-v0.28.1",
-            "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0"
+            "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0",
+            "reward": {
+              "version": "software-token-projection-v0.28",
+              "episode_id": "38d0948e-bfaf-49bf-8f28-71269ff4d01d",
+              "manifest_sha256": "b962d9cd904f76245fb941faa77e755d617fc17a78a490a75bb2a42d3eca46c6",
+              "eligible": true,
+              "reward": 0,
+              "completed": false,
+              "scope": "cross_feature_integration",
+              "source_assessment_sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "spec": {
+                "version": "software-collaboration-v0.28",
+                "training_supported": false,
+                "independent_assessment": "assess_software_collaboration"
+              }
+            },
+            "mapping": {
+              "version": "software-token-projection-v0.28",
+              "rollout_id": "38d0948e-bfaf-49bf-8f28-71269ff4d01d",
+              "spec_id": "software-work-methods-v0.28",
+              "status": "unmapped",
+              "class_id": null,
+              "evidence_sha256": "0c46b557fb2c2d7ce1e0f2f1b85a84949f9d8986279d4806644bdfad074b4e3a",
+              "reason": "Complete work false or unknown; no positive method support"
+            },
+            "evaluation_guard": {
+              "learning_before_sha256": {
+                "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+                "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+                "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+                "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+                "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+              },
+              "learning_after_sha256": {
+                "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+                "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+                "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+                "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+                "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+              },
+              "learning_unchanged": true,
+              "rng_before_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+              "rng_after_collection_sha256": "73532ef74d34bb3330e670f5b448776674b438cfd81486e0d5152d25a320abca",
+              "rng_after_restore_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+              "rng_restored_exactly": true,
+              "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."
+            },
+            "ended_at": 1791026858.9402926
           },
           "attempt_index": 1,
           "source": {
@@ -12076,11 +12369,32 @@
           "interface_revision": "software-collaboration-v0.28.1",
           "context_policy": "software-context-v0.28.1",
           "started": true,
-          "evidence": {}
+          "evidence": {
+            "entry": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/slot-0/entry.json",
+              "sha256": "d451020b2e35a6a16526e43ccd580bf7d80fd831df011e6b4734e17024876309",
+              "bytes": 96835545
+            },
+            "assessment": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/slot-0/assessment.json",
+              "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "bytes": 177
+            },
+            "raw_independent_assessment": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/slot-0/raw-independent-assessment.json",
+              "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "bytes": 177
+            },
+            "evaluation_guard": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r0/evaluation-guard.json",
+              "sha256": "0b58ff2c13039730bf8ef2e572f9621a84e3bb833cb4b58b037eb5edbaf94db8",
+              "bytes": 2030
+            }
+          }
         }
       ],
       "retained_closed": false,
-      "recovery_status": "started"
+      "recovery_status": "closed"
     },
     {
       "slot_id": "dev-0-first-1-r1",
@@ -12092,22 +12406,343 @@
         "member_b": 48
       },
       "worker": "worker-1",
-      "status": "not_started",
-      "known": false,
-      "complete": null,
-      "reward": null,
-      "raw_assessment": null,
-      "calls": {
-        "durable_request_ledgers": 0,
-        "durable_return_ledgers": 0
+      "status": "closed",
+      "known": true,
+      "complete": false,
+      "reward": 0,
+      "raw_assessment": {
+        "version": "software-collaboration-v0.28",
+        "status": "evaluable",
+        "R": 0,
+        "submitted": false,
+        "reason": "No fixed integrated delivery",
+        "usage": "interface_dev"
       },
-      "actions": {},
-      "role_stops": {},
-      "selected_actual_calls": [],
+      "calls": {
+        "model_requests": 70,
+        "model_responses": 70,
+        "prompt_tokens": 549047,
+        "completion_tokens": 15316,
+        "world_tool_calls": 60,
+        "world_tool_refusals": 3,
+        "durable_request_ledgers": 70,
+        "durable_return_ledgers": 70
+      },
+      "actions": {
+        "claim_task:ok": 2,
+        "list_files:ok": 3,
+        "read_file:ok": 28,
+        "search_file:ok": 16,
+        "claim_task:rejected": 2,
+        "replace_file:ok": 4,
+        "send_message:ok": 1,
+        "run_tests:ok": 3,
+        "replace_file:rejected": 1
+      },
+      "role_stops": {
+        "model_budget_exhausted": 1
+      },
+      "selected_actual_calls": [
+        {
+          "sequence": 13,
+          "member": "member_b",
+          "action": "claim_task",
+          "ok": true,
+          "arguments": {
+            "task_id": "string_api"
+          },
+          "result": {
+            "task_id": "string_api",
+            "description": "Implement optional String strip_whitespace while preserving legacy behavior.",
+            "owner": "member_b",
+            "depends_on": []
+          },
+          "error": null
+        },
+        {
+          "sequence": 229,
+          "member": "member_a",
+          "action": "claim_task",
+          "ok": false,
+          "arguments": {
+            "task_id": "string_api"
+          },
+          "result": null,
+          "error": {
+            "type": "ValueError",
+            "message": "Task has already been claimed",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "unclassified_exception",
+              "category": "unknown",
+              "context": {
+                "actor_id": "member_a",
+                "action": "project_action",
+                "project_id": "SOFTWARE27",
+                "tool": "claim_task",
+                "arguments_type": "dict"
+              }
+            }
+          }
+        },
+        {
+          "sequence": 263,
+          "member": "member_a",
+          "action": "claim_task",
+          "ok": true,
+          "arguments": {
+            "task_id": "inventory_consumer"
+          },
+          "result": {
+            "task_id": "inventory_consumer",
+            "description": "Adapt inventory SKU loading to the optional API; preserve descriptions and dump behavior.",
+            "owner": "member_a",
+            "depends_on": []
+          },
+          "error": null
+        },
+        {
+          "sequence": 331,
+          "member": "member_a",
+          "action": "send_message",
+          "ok": true,
+          "arguments": {
+            "recipient": "member_b",
+            "task_id": "string_api",
+            "body": "I'm member_a and own inventory_consumer. Since inventory_consumer depends on string_api being implemented first, I propose you implement string_api (adding strip_whitespace option to String/Str fields). Once that's done, I'll adapt InventorySchema.sku in consumer.py to use the new option. We can then integrate both patches together. What are your thoughts?"
+          },
+          "result": {
+            "message_sequence": 16,
+            "recipient": "member_b",
+            "task_id": "string_api",
+            "world_file_effect": false
+          },
+          "error": null
+        },
+        {
+          "sequence": 484,
+          "member": "member_b",
+          "action": "run_tests",
+          "ok": true,
+          "arguments": {},
+          "result": {
+            "sandbox": {
+              "version": "software-landlock-seccomp-v0.15",
+              "landlock_abi": 4,
+              "filesystem": "read_only_allowlist",
+              "network": "seccomp_denied",
+              "subprocess": "seccomp_denied",
+              "limits": {
+                "wall_seconds": 20,
+                "cpu_seconds": 10,
+                "memory_bytes": 536870912,
+                "output_bytes": 262144,
+                "open_files": 64,
+                "processes": 0
+              }
+            },
+            "executed": true,
+            "driver_completed": false,
+            "returncode": 1,
+            "timeout": false,
+            "output": "F..\n======================================================================\nFAIL: test_consumer_only_normalizes_sku (__main__.VisibleContract.test_consumer_only_normalizes_sku)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_visible.py\", line 15, in test_consumer_only_normalizes_sku\n    self.assertEqual(load_inventory({\"sku\": \"  A  \", \"description\": \" keep \"}),\nAssertionError: {'sku': '  A  ', 'description': ' keep '} != {'sku': 'A', 'description': ' keep '}\n- {'description': ' keep ', 'sku': '  A  '}\n?                                   -- --\n\n+ {'description': ' keep ', 'sku': 'A'}\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nFAILED (failures=1)\n",
+            "output_truncated": false,
+            "elapsed_seconds": 0.16450572200119495,
+            "source_reference": {
+              "object_id": "obj-77afcd671d61457a0df1efc9",
+              "version_id": "v2"
+            },
+            "source_sha256": "b8eac9598dc5e383def3c613b1b12e940bfa9adc703477a55c87ff3950733fdb",
+            "files_sha256": "57924d6ec423b633de6efe7402f7a1411f1eac8abd54a27951b517cb33864178",
+            "suite": "visible-and-member-v0.27"
+          },
+          "error": null
+        },
+        {
+          "sequence": 716,
+          "member": "member_b",
+          "action": "run_tests",
+          "ok": true,
+          "arguments": {},
+          "result": {
+            "sandbox": {
+              "version": "software-landlock-seccomp-v0.15",
+              "landlock_abi": 4,
+              "filesystem": "read_only_allowlist",
+              "network": "seccomp_denied",
+              "subprocess": "seccomp_denied",
+              "limits": {
+                "wall_seconds": 20,
+                "cpu_seconds": 10,
+                "memory_bytes": 536870912,
+                "output_bytes": 262144,
+                "open_files": 64,
+                "processes": 0
+              }
+            },
+            "executed": true,
+            "driver_completed": false,
+            "returncode": 1,
+            "timeout": false,
+            "output": "FF.\n======================================================================\nFAIL: test_consumer_only_normalizes_sku (__main__.VisibleContract.test_consumer_only_normalizes_sku)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_visible.py\", line 15, in test_consumer_only_normalizes_sku\n    self.assertEqual(load_inventory({\"sku\": \"  A  \", \"description\": \" keep \"}),\nAssertionError: {'sku': 'A', 'description': 'keep'} != {'sku': 'A', 'description': ' keep '}\n- {'description': 'keep', 'sku': 'A'}\n+ {'description': ' keep ', 'sku': 'A'}\n?                  +    +\n\n\n======================================================================\nFAIL: test_legacy_default_preserves_spaces (__main__.VisibleContract.test_legacy_default_preserves_spaces)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_visible.py\", line 9, in test_legacy_default_preserves_spaces\n    self.assertEqual(fields.String().deserialize(\"  A  \"), \"  A  \")\nAssertionError: 'A' != '  A  '\n- A\n+   A  \n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nFAILED (failures=2)\n",
+            "output_truncated": false,
+            "elapsed_seconds": 0.1646954771131277,
+            "source_reference": {
+              "object_id": "obj-77afcd671d61457a0df1efc9",
+              "version_id": "v3"
+            },
+            "source_sha256": "b3028cd6ee91851baf7ff99d9426dda3941c20d4394ed5f69df7d220c3122fa4",
+            "files_sha256": "b20eb1dd032d735c21f47dccb65dff5bf9409410b68a20b126461ac922cac28f",
+            "suite": "visible-and-member-v0.27"
+          },
+          "error": null
+        },
+        {
+          "sequence": 785,
+          "member": "member_b",
+          "action": "run_tests",
+          "ok": true,
+          "arguments": {},
+          "result": {
+            "sandbox": {
+              "version": "software-landlock-seccomp-v0.15",
+              "landlock_abi": 4,
+              "filesystem": "read_only_allowlist",
+              "network": "seccomp_denied",
+              "subprocess": "seccomp_denied",
+              "limits": {
+                "wall_seconds": 20,
+                "cpu_seconds": 10,
+                "memory_bytes": 536870912,
+                "output_bytes": 262144,
+                "open_files": 64,
+                "processes": 0
+              }
+            },
+            "executed": true,
+            "driver_completed": false,
+            "returncode": 1,
+            "timeout": false,
+            "output": "FF.\n======================================================================\nFAIL: test_consumer_only_normalizes_sku (__main__.VisibleContract.test_consumer_only_normalizes_sku)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_visible.py\", line 15, in test_consumer_only_normalizes_sku\n    self.assertEqual(load_inventory({\"sku\": \"  A  \", \"description\": \" keep \"}),\nAssertionError: {'sku': 'A', 'description': 'keep'} != {'sku': 'A', 'description': ' keep '}\n- {'description': 'keep', 'sku': 'A'}\n+ {'description': ' keep ', 'sku': 'A'}\n?                  +    +\n\n\n======================================================================\nFAIL: test_legacy_default_preserves_spaces (__main__.VisibleContract.test_legacy_default_preserves_spaces)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_visible.py\", line 9, in test_legacy_default_preserves_spaces\n    self.assertEqual(fields.String().deserialize(\"  A  \"), \"  A  \")\nAssertionError: 'A' != '  A  '\n- A\n+   A  \n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nFAILED (failures=2)\n",
+            "output_truncated": false,
+            "elapsed_seconds": 0.16484353598207235,
+            "source_reference": {
+              "object_id": "obj-77afcd671d61457a0df1efc9",
+              "version_id": "v4"
+            },
+            "source_sha256": "30cddac8069772f9fa971f27f86e656a3fc94d8fe90683f168c6cfa6a88ae97c",
+            "files_sha256": "534810afab293f078dc4d84ea96935e9362e7c48d3d44e8b8ebd59d145785963",
+            "suite": "visible-and-member-v0.27"
+          },
+          "error": null
+        },
+        {
+          "sequence": 887,
+          "member": "member_b",
+          "action": "claim_task",
+          "ok": false,
+          "arguments": {
+            "task_id": "string_api"
+          },
+          "result": null,
+          "error": {
+            "type": "ValueError",
+            "message": "Task has already been claimed",
+            "rejection": {
+              "version": "tool-rejection-v0.9",
+              "code": "unclassified_exception",
+              "category": "unknown",
+              "context": {
+                "actor_id": "member_b",
+                "action": "project_action",
+                "project_id": "SOFTWARE27",
+                "tool": "claim_task",
+                "arguments_type": "dict"
+              }
+            }
+          }
+        }
+      ],
       "stream_tail_problem": null,
       "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1",
-      "mapping": null,
-      "row": null,
+      "mapping": {
+        "version": "software-token-projection-v0.28",
+        "rollout_id": "545c6b09-8b6f-4d46-8307-3c89472a6c31",
+        "spec_id": "software-work-methods-v0.28",
+        "status": "unmapped",
+        "class_id": null,
+        "evidence_sha256": "5952dbf9319053aeec22787504691ad6b75a46d758c36eaaf961a54a2cff67c2",
+        "reason": "Complete work false or unknown; no positive method support"
+      },
+      "row": {
+        "slot_id": "dev-0-first-1-r1",
+        "case_id": "marshmallow-interface-dev",
+        "sampling_seed": 202610030102,
+        "first_member": "member_b",
+        "role_decision_limits": {
+          "member_a": 48,
+          "member_b": 48
+        },
+        "status": "closed",
+        "started_at": 1791026858.9771075,
+        "attempt_index": 1,
+        "interface_revision": "software-collaboration-v0.28.1",
+        "context_policy": "software-context-v0.28.1",
+        "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1",
+        "reward": {
+          "version": "software-token-projection-v0.28",
+          "episode_id": "545c6b09-8b6f-4d46-8307-3c89472a6c31",
+          "manifest_sha256": "7d04593e146fe632b168d3ed5ea3f224367202223cc763e686cfa320953b14e3",
+          "eligible": true,
+          "reward": 0,
+          "completed": false,
+          "scope": "producer_consumer",
+          "source_assessment_sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "spec": {
+            "version": "software-collaboration-v0.28",
+            "training_supported": false,
+            "independent_assessment": "assess_software_collaboration"
+          }
+        },
+        "mapping": {
+          "version": "software-token-projection-v0.28",
+          "rollout_id": "545c6b09-8b6f-4d46-8307-3c89472a6c31",
+          "spec_id": "software-work-methods-v0.28",
+          "status": "unmapped",
+          "class_id": null,
+          "evidence_sha256": "5952dbf9319053aeec22787504691ad6b75a46d758c36eaaf961a54a2cff67c2",
+          "reason": "Complete work false or unknown; no positive method support"
+        },
+        "evaluation_guard": {
+          "learning_before_sha256": {
+            "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+            "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+            "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+            "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+            "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+          },
+          "learning_after_sha256": {
+            "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+            "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+            "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+            "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+            "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+          },
+          "learning_unchanged": true,
+          "rng_before_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+          "rng_after_collection_sha256": "48390625a57965da5aa5057d109fc3c66d6a73be9b17f609994d49ffe719545b",
+          "rng_after_restore_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+          "rng_restored_exactly": true,
+          "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."
+        },
+        "ended_at": 1791027691.370911
+      },
       "attempt_index": 1,
       "source": {
         "code_commit": "df37917d0a2b8555125d0bd57309a897be9dd2f5",
@@ -12116,8 +12751,29 @@
       },
       "interface_revision": "software-collaboration-v0.28.1",
       "context_policy": "software-context-v0.28.1",
-      "started": false,
-      "evidence": {},
+      "started": true,
+      "evidence": {
+        "entry": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/slot-0/entry.json",
+          "sha256": "2bc82244e3764129bcc733bccb7d67f7fab594b590d437b156a63ad58f2869df",
+          "bytes": 88106399
+        },
+        "assessment": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/slot-0/assessment.json",
+          "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "bytes": 177
+        },
+        "raw_independent_assessment": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/slot-0/raw-independent-assessment.json",
+          "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "bytes": 177
+        },
+        "evaluation_guard": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/evaluation-guard.json",
+          "sha256": "ca48d093978298b93b52ea263d9eac702cd28952ab9434676038449837a25334",
+          "bytes": 2030
+        }
+      },
       "attempts": [
         {
           "slot_id": "dev-0-first-1-r1",
@@ -12163,19 +12819,102 @@
             "member_b": 48
           },
           "worker": "worker-1",
-          "status": "not_started",
-          "known": false,
-          "complete": null,
-          "reward": null,
-          "raw_assessment": null,
-          "calls": {
-            "durable_request_ledgers": 0,
-            "durable_return_ledgers": 0
+          "status": "closed",
+          "known": true,
+          "complete": false,
+          "reward": 0,
+          "raw_assessment": {
+            "version": "software-collaboration-v0.28",
+            "status": "evaluable",
+            "R": 0,
+            "submitted": false,
+            "reason": "No fixed integrated delivery",
+            "usage": "interface_dev"
           },
-          "role_stops": {},
+          "calls": {
+            "model_requests": 70,
+            "model_responses": 70,
+            "prompt_tokens": 549047,
+            "completion_tokens": 15316,
+            "world_tool_calls": 60,
+            "world_tool_refusals": 3,
+            "durable_request_ledgers": 70,
+            "durable_return_ledgers": 70
+          },
+          "role_stops": {
+            "model_budget_exhausted": 1
+          },
           "stream_tail_problem": null,
           "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1",
-          "row": null,
+          "row": {
+            "slot_id": "dev-0-first-1-r1",
+            "case_id": "marshmallow-interface-dev",
+            "sampling_seed": 202610030102,
+            "first_member": "member_b",
+            "role_decision_limits": {
+              "member_a": 48,
+              "member_b": 48
+            },
+            "status": "closed",
+            "started_at": 1791026858.9771075,
+            "attempt_index": 1,
+            "interface_revision": "software-collaboration-v0.28.1",
+            "context_policy": "software-context-v0.28.1",
+            "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1",
+            "reward": {
+              "version": "software-token-projection-v0.28",
+              "episode_id": "545c6b09-8b6f-4d46-8307-3c89472a6c31",
+              "manifest_sha256": "7d04593e146fe632b168d3ed5ea3f224367202223cc763e686cfa320953b14e3",
+              "eligible": true,
+              "reward": 0,
+              "completed": false,
+              "scope": "producer_consumer",
+              "source_assessment_sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "spec": {
+                "version": "software-collaboration-v0.28",
+                "training_supported": false,
+                "independent_assessment": "assess_software_collaboration"
+              }
+            },
+            "mapping": {
+              "version": "software-token-projection-v0.28",
+              "rollout_id": "545c6b09-8b6f-4d46-8307-3c89472a6c31",
+              "spec_id": "software-work-methods-v0.28",
+              "status": "unmapped",
+              "class_id": null,
+              "evidence_sha256": "5952dbf9319053aeec22787504691ad6b75a46d758c36eaaf961a54a2cff67c2",
+              "reason": "Complete work false or unknown; no positive method support"
+            },
+            "evaluation_guard": {
+              "learning_before_sha256": {
+                "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+                "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+                "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+                "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+                "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+              },
+              "learning_after_sha256": {
+                "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+                "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+                "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+                "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+                "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+              },
+              "learning_unchanged": true,
+              "rng_before_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+              "rng_after_collection_sha256": "48390625a57965da5aa5057d109fc3c66d6a73be9b17f609994d49ffe719545b",
+              "rng_after_restore_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+              "rng_restored_exactly": true,
+              "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."
+            },
+            "ended_at": 1791027691.370911
+          },
           "attempt_index": 1,
           "source": {
             "code_commit": "df37917d0a2b8555125d0bd57309a897be9dd2f5",
@@ -12184,12 +12923,33 @@
           },
           "interface_revision": "software-collaboration-v0.28.1",
           "context_policy": "software-context-v0.28.1",
-          "started": false,
-          "evidence": {}
+          "started": true,
+          "evidence": {
+            "entry": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/slot-0/entry.json",
+              "sha256": "2bc82244e3764129bcc733bccb7d67f7fab594b590d437b156a63ad58f2869df",
+              "bytes": 88106399
+            },
+            "assessment": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/slot-0/assessment.json",
+              "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "bytes": 177
+            },
+            "raw_independent_assessment": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/slot-0/raw-independent-assessment.json",
+              "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "bytes": 177
+            },
+            "evaluation_guard": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-0-first-1-r1/evaluation-guard.json",
+              "sha256": "ca48d093978298b93b52ea263d9eac702cd28952ab9434676038449837a25334",
+              "bytes": 2030
+            }
+          }
         }
       ],
       "retained_closed": false,
-      "recovery_status": "not_started"
+      "recovery_status": "closed"
     },
     {
       "slot_id": "dev-1-first-1-r1",
@@ -12201,22 +12961,185 @@
         "member_b": 48
       },
       "worker": "worker-1",
-      "status": "not_started",
-      "known": false,
-      "complete": null,
-      "reward": null,
-      "raw_assessment": null,
-      "calls": {
-        "durable_request_ledgers": 0,
-        "durable_return_ledgers": 0
+      "status": "closed",
+      "known": true,
+      "complete": false,
+      "reward": 0,
+      "raw_assessment": {
+        "version": "software-collaboration-v0.28",
+        "status": "evaluable",
+        "R": 0,
+        "submitted": false,
+        "reason": "No fixed integrated delivery",
+        "usage": "interface_dev"
       },
-      "actions": {},
+      "calls": {
+        "model_requests": 21,
+        "model_responses": 21,
+        "prompt_tokens": 132442,
+        "completion_tokens": 3481,
+        "world_tool_calls": 19,
+        "durable_request_ledgers": 21,
+        "durable_return_ledgers": 21
+      },
+      "actions": {
+        "claim_task:ok": 2,
+        "read_file:ok": 11,
+        "search_file:ok": 3,
+        "send_message:ok": 2,
+        "replace_file:ok": 1
+      },
       "role_stops": {},
-      "selected_actual_calls": [],
+      "selected_actual_calls": [
+        {
+          "sequence": 13,
+          "member": "member_b",
+          "action": "claim_task",
+          "ok": true,
+          "arguments": {
+            "task_id": "whitespace"
+          },
+          "result": {
+            "task_id": "whitespace",
+            "description": "Add optional String whitespace normalization and adapt inventory SKU loading.",
+            "owner": "member_b",
+            "depends_on": []
+          },
+          "error": null
+        },
+        {
+          "sequence": 99,
+          "member": "member_a",
+          "action": "claim_task",
+          "ok": true,
+          "arguments": {
+            "task_id": "casefold"
+          },
+          "result": {
+            "task_id": "casefold",
+            "description": "Add optional String casefold normalization. Both options must compose and preserve default/dump/error behavior.",
+            "owner": "member_a",
+            "depends_on": []
+          },
+          "error": null
+        },
+        {
+          "sequence": 201,
+          "member": "member_a",
+          "action": "send_message",
+          "ok": true,
+          "arguments": {
+            "recipient": "member_b",
+            "task_id": "whitespace",
+            "body": "I've claimed the casefold task. Since both features need to work together and be delivered in the same tree, I propose we coordinate. I'll implement the casefold feature in fields.String, and you implement the whitespace feature. We can then integrate our patches together to deliver a combined implementation that includes both features and the consumer.py adaptation. What do you think?"
+          },
+          "result": {
+            "message_sequence": 12,
+            "recipient": "member_b",
+            "task_id": "whitespace",
+            "world_file_effect": false
+          },
+          "error": null
+        },
+        {
+          "sequence": 320,
+          "member": "member_b",
+          "action": "send_message",
+          "ok": true,
+          "arguments": {
+            "recipient": "member_a",
+            "task_id": "whitespace",
+            "body": "I've implemented the whitespace feature in fields.py by adding `strip_whitespace=False` parameter to String class and updating _deserialize to strip whitespace when enabled. Now I need to:\n1. Update consumer.py to use strip_whitespace=True for the SKU field\n2. Coordinate with you on the casefold feature\n\nShould I update consumer.py now, or wait for your casefold implementation first? Since both features need to be in the same tree, it might be better to wait for your patch before I proceed."
+          },
+          "result": {
+            "message_sequence": 19,
+            "recipient": "member_a",
+            "task_id": "whitespace",
+            "world_file_effect": false
+          },
+          "error": null
+        }
+      ],
       "stream_tail_problem": null,
       "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1",
-      "mapping": null,
-      "row": null,
+      "mapping": {
+        "version": "software-token-projection-v0.28",
+        "rollout_id": "e4a3df33-9eb3-4f85-93d4-a356f71a0cb4",
+        "spec_id": "software-work-methods-v0.28",
+        "status": "unmapped",
+        "class_id": null,
+        "evidence_sha256": "27bb84db93325bd4d42f4b0d7bc90aa34e9cb85049b6e73dd8f9f678e1cd8689",
+        "reason": "Complete work false or unknown; no positive method support"
+      },
+      "row": {
+        "slot_id": "dev-1-first-1-r1",
+        "case_id": "marshmallow-integration-dev",
+        "sampling_seed": 202610030102,
+        "first_member": "member_b",
+        "role_decision_limits": {
+          "member_a": 48,
+          "member_b": 48
+        },
+        "status": "closed",
+        "started_at": 1791027691.408491,
+        "attempt_index": 1,
+        "interface_revision": "software-collaboration-v0.28.1",
+        "context_policy": "software-context-v0.28.1",
+        "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1",
+        "reward": {
+          "version": "software-token-projection-v0.28",
+          "episode_id": "e4a3df33-9eb3-4f85-93d4-a356f71a0cb4",
+          "manifest_sha256": "1c6a41fc59956347a0a3210e86e8f2e58ab87ceedfcda17bdc151b284ca1fbe6",
+          "eligible": true,
+          "reward": 0,
+          "completed": false,
+          "scope": "cross_feature_integration",
+          "source_assessment_sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "spec": {
+            "version": "software-collaboration-v0.28",
+            "training_supported": false,
+            "independent_assessment": "assess_software_collaboration"
+          }
+        },
+        "mapping": {
+          "version": "software-token-projection-v0.28",
+          "rollout_id": "e4a3df33-9eb3-4f85-93d4-a356f71a0cb4",
+          "spec_id": "software-work-methods-v0.28",
+          "status": "unmapped",
+          "class_id": null,
+          "evidence_sha256": "27bb84db93325bd4d42f4b0d7bc90aa34e9cb85049b6e73dd8f9f678e1cd8689",
+          "reason": "Complete work false or unknown; no positive method support"
+        },
+        "evaluation_guard": {
+          "learning_before_sha256": {
+            "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+            "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+            "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+            "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+            "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+          },
+          "learning_after_sha256": {
+            "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+            "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+            "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+            "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+            "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+            "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+          },
+          "learning_unchanged": true,
+          "rng_before_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+          "rng_after_collection_sha256": "02e0e799d0d0e2faa09f9341d94fddb385042c7c2fac8dcb3aa68d9cca0d567e",
+          "rng_after_restore_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+          "rng_restored_exactly": true,
+          "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."
+        },
+        "ended_at": 1791027879.4686267
+      },
       "attempt_index": 1,
       "source": {
         "code_commit": "df37917d0a2b8555125d0bd57309a897be9dd2f5",
@@ -12225,8 +13148,29 @@
       },
       "interface_revision": "software-collaboration-v0.28.1",
       "context_policy": "software-context-v0.28.1",
-      "started": false,
-      "evidence": {},
+      "started": true,
+      "evidence": {
+        "entry": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/slot-0/entry.json",
+          "sha256": "ecae78873088bf79f26c6871cd4dedb51bfac731c1c6c14125aa7f3578a2a0a0",
+          "bytes": 22284660
+        },
+        "assessment": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/slot-0/assessment.json",
+          "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "bytes": 177
+        },
+        "raw_independent_assessment": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/slot-0/raw-independent-assessment.json",
+          "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+          "bytes": 177
+        },
+        "evaluation_guard": {
+          "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/evaluation-guard.json",
+          "sha256": "a71a103b167a0394934157a12aa88ff20a39378acf92edbf0e6151d0b6e0de91",
+          "bytes": 2030
+        }
+      },
       "attempts": [
         {
           "slot_id": "dev-1-first-1-r1",
@@ -12272,19 +13216,99 @@
             "member_b": 48
           },
           "worker": "worker-1",
-          "status": "not_started",
-          "known": false,
-          "complete": null,
-          "reward": null,
-          "raw_assessment": null,
+          "status": "closed",
+          "known": true,
+          "complete": false,
+          "reward": 0,
+          "raw_assessment": {
+            "version": "software-collaboration-v0.28",
+            "status": "evaluable",
+            "R": 0,
+            "submitted": false,
+            "reason": "No fixed integrated delivery",
+            "usage": "interface_dev"
+          },
           "calls": {
-            "durable_request_ledgers": 0,
-            "durable_return_ledgers": 0
+            "model_requests": 21,
+            "model_responses": 21,
+            "prompt_tokens": 132442,
+            "completion_tokens": 3481,
+            "world_tool_calls": 19,
+            "durable_request_ledgers": 21,
+            "durable_return_ledgers": 21
           },
           "role_stops": {},
           "stream_tail_problem": null,
           "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1",
-          "row": null,
+          "row": {
+            "slot_id": "dev-1-first-1-r1",
+            "case_id": "marshmallow-integration-dev",
+            "sampling_seed": 202610030102,
+            "first_member": "member_b",
+            "role_decision_limits": {
+              "member_a": 48,
+              "member_b": 48
+            },
+            "status": "closed",
+            "started_at": 1791027691.408491,
+            "attempt_index": 1,
+            "interface_revision": "software-collaboration-v0.28.1",
+            "context_policy": "software-context-v0.28.1",
+            "trajectory_directory": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1",
+            "reward": {
+              "version": "software-token-projection-v0.28",
+              "episode_id": "e4a3df33-9eb3-4f85-93d4-a356f71a0cb4",
+              "manifest_sha256": "1c6a41fc59956347a0a3210e86e8f2e58ab87ceedfcda17bdc151b284ca1fbe6",
+              "eligible": true,
+              "reward": 0,
+              "completed": false,
+              "scope": "cross_feature_integration",
+              "source_assessment_sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "spec": {
+                "version": "software-collaboration-v0.28",
+                "training_supported": false,
+                "independent_assessment": "assess_software_collaboration"
+              }
+            },
+            "mapping": {
+              "version": "software-token-projection-v0.28",
+              "rollout_id": "e4a3df33-9eb3-4f85-93d4-a356f71a0cb4",
+              "spec_id": "software-work-methods-v0.28",
+              "status": "unmapped",
+              "class_id": null,
+              "evidence_sha256": "27bb84db93325bd4d42f4b0d7bc90aa34e9cb85049b6e73dd8f9f678e1cd8689",
+              "reason": "Complete work false or unknown; no positive method support"
+            },
+            "evaluation_guard": {
+              "learning_before_sha256": {
+                "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+                "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+                "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+                "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+                "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+              },
+              "learning_after_sha256": {
+                "actor": "a86e2de651045373cf93242b1708f9f431d9a9388eb43c16e3376bf015fe443a",
+                "critic": "23f9bc0fb82540c717fd038a072dc33572236beafdc0274bf68d47cae981036e",
+                "actor_optimizer": "6fc597506243b99b7057594f0c08591dc4464effb9e49043fda1189dcab70c19",
+                "critic_optimizer": "c2bd0016c8b908bef1856a189ba612f39bd653fc6c162b962fda2ac7fddcfa0e",
+                "policy_revision": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "actor_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_steps": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+                "critic_has_nonzero_reward_history": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74"
+              },
+              "learning_unchanged": true,
+              "rng_before_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+              "rng_after_collection_sha256": "02e0e799d0d0e2faa09f9341d94fddb385042c7c2fac8dcb3aa68d9cca0d567e",
+              "rng_after_restore_sha256": "155f696a961c8738601bb8015b947ec14f5685874e777c467006008636884708",
+              "rng_restored_exactly": true,
+              "scope": "Only Torch CPU/CUDA RNG is restored. Probe window IDs, logs and generation/cache counters remain real; learner tensors and steps are never rolled back."
+            },
+            "ended_at": 1791027879.4686267
+          },
           "attempt_index": 1,
           "source": {
             "code_commit": "df37917d0a2b8555125d0bd57309a897be9dd2f5",
@@ -12293,16 +13317,37 @@
           },
           "interface_revision": "software-collaboration-v0.28.1",
           "context_policy": "software-context-v0.28.1",
-          "started": false,
-          "evidence": {}
+          "started": true,
+          "evidence": {
+            "entry": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/slot-0/entry.json",
+              "sha256": "ecae78873088bf79f26c6871cd4dedb51bfac731c1c6c14125aa7f3578a2a0a0",
+              "bytes": 22284660
+            },
+            "assessment": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/slot-0/assessment.json",
+              "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "bytes": 177
+            },
+            "raw_independent_assessment": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/slot-0/raw-independent-assessment.json",
+              "sha256": "ca119bad5f7e6da8d8c981b74e13c66ec7185493dcd3d428291a5fd2e69b5e17",
+              "bytes": 177
+            },
+            "evaluation_guard": {
+              "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual/dev-1-first-1-r1/evaluation-guard.json",
+              "sha256": "a71a103b167a0394934157a12aa88ff20a39378acf92edbf0e6151d0b6e0de91",
+              "bytes": 2030
+            }
+          }
         }
       ],
       "retained_closed": false,
-      "recovery_status": "not_started"
+      "recovery_status": "closed"
     }
   ],
-  "gpu_seconds": 3981.2147421836853,
-  "current_run_gpu_seconds": 35.64759397506714,
+  "gpu_seconds": 5779.077407360077,
+  "current_run_gpu_seconds": 1833.5102591514587,
   "prior_run_gpu_seconds": 3945.567148208618,
   "reservation_handoff": {
     "status": "released",
@@ -12381,10 +13426,10 @@
     "immediate_capacity_available": false
   },
   "reservation_held_seconds": 870.5355865955353,
-  "gpu_seconds_are_final": false,
+  "gpu_seconds_are_final": true,
   "supervisor": {
     "version": "software-development-v0.28",
-    "status": "running",
+    "status": "complete",
     "source": {
       "code_commit": "df37917d0a2b8555125d0bd57309a897be9dd2f5",
       "code_dirty": false,
@@ -12414,7 +13459,7 @@
       },
       "worker-1": {
         "worker": "worker-1",
-        "status": "running",
+        "status": "complete",
         "attempted": true,
         "slots": [
           {
@@ -12474,19 +13519,25 @@
           "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/worker-1/actual",
           "--worker",
           "worker-1"
-        ]
+        ],
+        "ended_at": 1791027885.0029647,
+        "exit_code": 0,
+        "stop_reason": null,
+        "elapsed_gpu_seconds": 1833.5102591514587,
+        "closed_slots": 3
       }
     },
-    "terminated_gpu_seconds": 0,
-    "running_gpu_seconds": 35.64759397506714,
-    "observed_at": 1791026087.1402874
+    "terminated_gpu_seconds": 1833.5102591514587,
+    "running_gpu_seconds": 0,
+    "observed_at": 1791027885.005395,
+    "ended_at": 1791027885.0053935
   },
   "trajectory_index": {
     "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-context-recovery/trajectory-index.json",
-    "sha256": "5e996c2cb5f89908ea3e129567503173e74e8be0039abc5663578384a78db002",
-    "bytes": 1632229
+    "sha256": "661b53f5b8c76e9bb069b29b1d8487a4004d9e60bc6ef6b2f041cfcdaac942ea",
+    "bytes": 2878457
   },
-  "trajectory_files": 2587,
+  "trajectory_files": 4581,
   "model_api_calls": 0,
   "optimizer_updates": 0,
   "scope": "Eight-slot status ledger with original attempts; not B/G/I, learning benefit or a pooled interface-effect estimate.",
