@@ -4,7 +4,7 @@
 
 按[10月3日审计](docs/reference/audit-v027-next-v028.md)实施[新协议](docs/software-allocation-v028-plan.md)：补编辑前消息、转交通知与归还、等待唤醒及有界阻塞。稳定成员自主承担预定义子任务，不声称完整任务分解。新Mapper以固定交付净定义及实际输入/验证关系分类，撤销或无关注释不制造第二类。
 
-阶段1为2情境×2先手×2seed共8条9B开发经历，冻结参数、零更新；生成前原请求、SDK流、版本、独立验收与中断全部保存。[运行记录](docs/experiments/software-development-v028.md)给出实际等待/启动/终态，未启动不补零。按最新指令后续仅在GPU5排队、单实例运行，等待截止北京时间2026-10-06 00:00；累计GPU时长、每worker时长和全局墙钟截止均已撤销。原运行5条已闭合（4通过/1未交付），上下文故障及未启动槽按[修复恢复协议](docs/experiments/software-development-v028-context-repair.md)单独记录。
+阶段1为2情境×2先手×2seed共8条9B开发经历，冻结参数、零更新；生成前原请求、SDK流、版本、独立验收与中断全部保存。[原运行记录](docs/experiments/software-development-v028.md)给出实际等待/启动/终态，未启动不补零。按最新指令后续仅在GPU5排队、单实例运行，等待截止北京时间2026-10-06 00:00；累计GPU时长、每worker时长和全局墙钟截止均已撤销。原运行5条已闭合（4通过/1未交付），上下文故障及未启动槽按[修复恢复协议](docs/experiments/software-development-v028-context-repair.md)单独记录，最新状态见[恢复运行报告](docs/experiments/software-development-v028-recovery.md)。
 
 [SWE-smith来源阶段](docs/experiments/software-sources-v028.md)已取得3个整仓分用途的可执行任务：sqlparse训练、schema贡献开发、TextFSM独立确认，已实跑缺陷/修复及联合依赖控制。程序结果、开发模型工作和B/G/I效果分开；现有配置器登记为单窗口线性N/基础锚变体，并区分坐标斜率与b中心化C。
 

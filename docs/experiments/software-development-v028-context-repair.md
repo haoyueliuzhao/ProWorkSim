@@ -52,4 +52,18 @@
 
 用户要求立即占用GPU后，确认GPU5无其他compute进程、空闲容量符合要求，启动本项目reservation进程939191（start_ticks344950613），实际占用约76GiB。该进程只占用显存、模型调用0；状态及命令保存在`runs/v028-context-repair/gpu5-reservation/`。模型恢复前按PID/start_ticks/GPU UUID核对并交接，仅释放本项目reservation；若交接时出现其他作业则回到GPU5排队。显存保留时长与模型执行GPU时长分开记账。GPU7当前已有其他作业，不会触碰。
 
-恢复源码、正式资格、最终计划、交接和模型启动身份在完成后补入；未来当前状态以独立的恢复报告为准，旧运行报告保持原终态。
+实际恢复冻结源码为`df37917d0a2b8555125d0bd57309a897be9dd2f5`，工作树`runs/frozen-v028-context-repair/`。同源SDK/tokenizer正式资格4/4程序控制、58次程序请求通过，最大输入7824、最大程序输出635、输出预留后的最小余量6512；同源专项回归14门全部通过，原19439、新分页7961、旧轮筛选后6280、不可舍弃最新轮17481的测量与开发回归一致。两套资格均模型调用0，源提交干净且资格过程中未变。
+
+GPU5 reservation仅在身份核对后释放，实际预留占用 **870.536秒**，与模型运行时间分开记账。释放后首次采样显存已空闲81154MiB，但利用率仍报告99%，因此没有即时准入；后续满足原60秒空卡门后，于北京时间 **2026-10-03T19:14:11+08:00** 启动恢复worker。未更改准入门限或终止其他项目进程。
+
+截至 **2026-10-03T19:17:35.224228+08:00**：归档驱动PID 951091、监督PID 951100、GPU5 worker PID 952068均核对存活、start_ticks和冻结cwd。worker-0状态retained，不再加载模型；worker-1执行恢复计划的3槽。完整原3/3状态恢复校验通过，actor、critic、两优化器及RNG的完整摘要与原checkpoint一致，原marker未变，optimizer更新0。已观察到20次真实响应，首响应HTTP200、原生解析无错误；这只证明已恢复实际采样，不提前声称当前任务成功。
+
+当前有效入口：
+
+- 恢复声明：`runs/v028-context-repair/recovery-plan.json`；同时绑定普通资格、专项资格、原运行闭合记录及reservation身份。
+- 启动及核验：同目录`recovery-launch.json`、`recovery-verification.json`、`recovery-finish.log`。
+- 当前模型轨迹与监督：`runs/domain-v028-software-dev-context-recovery/`。
+- 归档驱动状态：`runs/domain-v028-software-dev-context-recovery-finish.json`。
+- 同源资格：`runs/v028-context-repair/frozen-sdk-tokenizer-01/`、`frozen-context-regression-01/`。
+
+[恢复运行报告](software-development-v028-recovery.md)与同名JSON为独立报告，逐槽保留attempt0/attempt1及各自源提交/接口修订，原未知尝试不会被覆盖；模型worker消耗含原运行与恢复运行，并与显存预留分别列示。恢复驱动结束时自动汇总、只提交推送这对新报告。旧[原运行报告](software-development-v028.md)保持原终态。完整计划、进程、交接、恢复和采样证明见[机器证据](software-development-v028-context-repair.json)。
