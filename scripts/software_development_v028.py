@@ -1,8 +1,8 @@
 """Bounded eight-episode software development with durable original trajectories.
 
 Two first-speaker strata use the same restored 9B endpoint, no updates and no
-training support. Each process gets a fresh budget; historical GPU queues are
-neither resumed nor extended. Source/task admission is a separate CPU stage.
+training support. Task timeouts and resource limits remain; cumulative GPU
+duration is uncapped. Source/task admission is a separate CPU stage.
 """
 
 import argparse
@@ -33,7 +33,7 @@ CASES = ("marshmallow-interface-dev", "marshmallow-integration-dev")
 MEMBERS = ("member_a", "member_b")
 SEEDS = (202610030101, 202610030102)
 GPUS = list(range(8))
-CAPS = {"worker-0": 10800, "worker-1": 10800}
+WORKERS = ("worker-0", "worker-1")
 LIMITS = {
     "max_new_episodes": 8, "max_parallel_model_instances": 2,
     "max_new_actor_steps": 0, "max_new_critic_steps": 0,
@@ -90,13 +90,13 @@ def make_plan(data_root, qualification, queue_deadline):
         "version": VERSION, "created_at": time.time(), "source": code_identity(),
         "authorization": "2026-10-03 user requested audit revisions and subsequent experiments with original trajectories retained.",
         "purpose": "interface_development", "inherited_resource_budget": False,
-        "gpu_preference": GPUS, "worker_gpu_seconds": CAPS, "total_gpu_seconds": sum(CAPS.values()),
+        "gpu_preference": GPUS, "worker_gpu_seconds": dict.fromkeys(WORKERS), "total_gpu_seconds": None,
         "limits": LIMITS, "assignments": assignments(), "qualification": reference(qualification),
         "prior_model_plan": reference(prior), "owner_recipe": reference(recipe),
         "checkpoint_marker": reference(marker),
         "queue_deadline_at": queue_deadline,
         "queue_deadline_beijing": datetime.fromtimestamp(queue_deadline, ZoneInfo("Asia/Shanghai")).isoformat(),
-        "wall_deadline_at": queue_deadline + max(CAPS.values()) + 300,
+        "wall_deadline_at": None,
         "shared_gpu_capacity_allowed": False, "automatic_retries": False,
         "automatic_successors": [], "model_api_calls": 0,
         "source_scope": "New software/harness protocol; unchanged strict original model recipe and full-state restoration. Not an old SQL result replay.",
@@ -105,8 +105,8 @@ def make_plan(data_root, qualification, queue_deadline):
 
 def validate_plan(plan, *, check_files=True):
     if (plan.get("version") != VERSION or plan.get("assignments") != assignments()
-            or plan.get("worker_gpu_seconds") != CAPS or plan.get("limits") != LIMITS
-            or plan.get("total_gpu_seconds") != sum(CAPS.values())
+            or plan.get("worker_gpu_seconds") != dict.fromkeys(WORKERS) or plan.get("limits") != LIMITS
+            or "total_gpu_seconds" not in plan or plan["total_gpu_seconds"] is not None
             or plan.get("gpu_preference") != GPUS
             or plan.get("purpose") != "interface_development"
             or plan.get("inherited_resource_budget") is not False
@@ -114,7 +114,7 @@ def validate_plan(plan, *, check_files=True):
             or plan.get("automatic_retries") is not False
             or plan.get("automatic_successors") != [] or plan.get("model_api_calls") != 0
             or type(plan.get("queue_deadline_at")) not in (int, float)
-            or plan.get("wall_deadline_at") != plan["queue_deadline_at"] + max(CAPS.values()) + 300):
+            or "wall_deadline_at" not in plan or plan["wall_deadline_at"] is not None):
         raise ValueError("Freeze the complete new eight-slot zero-update software protocol")
     if check_files:
         if code_identity() != plan["source"] or plan["source"].get("code_dirty") is not False:
@@ -205,7 +205,7 @@ def restore(owner, plan, output):
 
 def run_worker(plan_path, output, worker):
     plan = validate_plan(read_json(plan_path))
-    if worker not in CAPS or os.environ.get("CUDA_VISIBLE_DEVICES") not in set(map(str, GPUS)):
+    if worker not in WORKERS or os.environ.get("CUDA_VISIBLE_DEVICES") not in set(map(str, GPUS)):
         raise ValueError("Bind one assigned worker to one declared physical GPU")
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -306,7 +306,7 @@ def supervise(plan_path, root):
     summary = {"version": VERSION, "status": "waiting", "source": code_identity(),
                "plan": reference(plan_path), "observer_pid": os.getpid(), "started_at": time.time(),
                "states": {name: {"worker": name, "status": "not_started", "attempted": False,
-                                  "slots": plan["assignments"][name]} for name in CAPS},
+                                  "slots": plan["assignments"][name]} for name in WORKERS},
                "terminated_gpu_seconds": 0.0, "running_gpu_seconds": 0.0}
     active, logs, guards, stable = {}, {}, {}, {}
 
@@ -370,7 +370,7 @@ def supervise(plan_path, root):
                         state = summary["states"][name]
                         state.update(status="running", attempted=True, gpu=card["index"], gpu_uuid=card["uuid"],
                                      pid=process.pid, process_identity=identity, started_at=started,
-                                     gpu_budget_seconds=CAPS[name], command=argv)
+                                     gpu_budget_seconds=plan["worker_gpu_seconds"][name], command=argv)
                         active[name] = process
                         guards[name] = TelemetryGuard(card["index"], card["uuid"], identity["start_ticks"], worker_pid=process.pid)
                         write(folder / "state.json", state)
@@ -397,11 +397,7 @@ def supervise(plan_path, root):
                         own_rss = rss(process.pid)
                         reason = guard.get("stop_reason")
                         now = time.time()
-                        if now - state["started_at"] >= CAPS[name] - LIMITS["shutdown_reserve_seconds"]:
-                            reason = "worker_gpu_time_budget"
-                        elif now >= plan["wall_deadline_at"] - LIMITS["shutdown_reserve_seconds"]:
-                            reason = "wall_deadline"
-                        elif current_task.get("kind") not in LIMITS["task_seconds"]:
+                        if current_task.get("kind") not in LIMITS["task_seconds"]:
                             reason = "unknown_task_kind"
                         elif now - current_task["started_at"] >= LIMITS["task_seconds"][current_task["kind"]]:
                             reason = "single_task_budget"
@@ -436,7 +432,7 @@ def main():
     parser.add_argument("mode", choices=["prepare", "worker", "supervise"])
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--worker", choices=list(CAPS))
+    parser.add_argument("--worker", choices=WORKERS)
     parser.add_argument("--data-root", type=Path)
     parser.add_argument("--qualification", type=Path)
     parser.add_argument("--queue-deadline", default="2026-10-06T00:00:00+08:00")

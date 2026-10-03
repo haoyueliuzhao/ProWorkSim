@@ -135,6 +135,8 @@ def report(root):
             "plan": _reference(root / "plan.json"), "source": plan["source"],
             "gpu_preference": plan["gpu_preference"], "queue_deadline_at": plan["queue_deadline_at"],
             "queue_deadline_beijing": datetime.fromtimestamp(plan["queue_deadline_at"], BEIJING).isoformat(),
+            "total_gpu_seconds": plan["total_gpu_seconds"], "worker_gpu_seconds": plan["worker_gpu_seconds"],
+            "wall_deadline_at": plan["wall_deadline_at"],
             "overall": {"scheduled": len(episodes), "started": started, "known": len(known),
                         "unknown_started": started - len(known), "not_started": len(episodes) - started,
                         "complete": complete, "complete_rate_all": complete / len(episodes) if len(known) == len(episodes) else None},
@@ -151,6 +153,12 @@ def markdown(data):
     overall = data["overall"]
     gpu_range = "/".join(str(gpu) for gpu in data["gpu_preference"])
     queue_deadline = datetime.fromtimestamp(data["queue_deadline_at"], BEIJING).strftime("%Y-%m-%d %H:%M")
+    total_budget = "不设" if data["total_gpu_seconds"] is None else f"{data['total_gpu_seconds']/3600:g} GPU小时"
+    worker_budgets = "不设" if all(value is None for value in data["worker_gpu_seconds"].values()) else "、".join(
+        f"{worker}=" + ("不设" if seconds is None else f"{seconds/3600:g}小时")
+        for worker, seconds in data["worker_gpu_seconds"].items())
+    wall_deadline = "不设" if data["wall_deadline_at"] is None else (
+        "北京时间" + datetime.fromtimestamp(data["wall_deadline_at"], BEIJING).strftime("%Y-%m-%d %H:%M"))
     lines = ["# v0.28 真实软件开发运行记录", "", f"更新时间：{data['generated_at_beijing']}（北京时间）。",
              "", f"监督状态：`{data['run_status']}`。计划8条，已启动{overall['started']}条，可评{overall['known']}条；"
              f"启动后未知{overall['unknown_started']}条、未启动{overall['not_started']}条。",
@@ -164,7 +172,8 @@ def markdown(data):
         lines.append(f"| {row['slot_id']} | {row['first_member']} | {row['status']} | {result} | `{row['trajectory_directory']}` |")
     lines += ["", f"GPU累计占用 {data['gpu_seconds']/3600:.6f} 小时"
               + ("（终态）。" if data["gpu_seconds_are_final"] else "（最近监督快照，含进行中占用；不是最终费用）。"),
-              "", "预算为本次独立6 GPU小时，最多两模型实例、每worker3小时；每成员48次决策，context16384/output2048。"
+              "", f"累计GPU时长上限：{total_budget}；每worker GPU时长上限：{worker_budgets}；全局墙钟截止：{wall_deadline}。"
+              "最多两模型实例；每成员48次决策，context16384/output2048。"
               f"在GPU{gpu_range}等待空卡，等卡截止北京时间{queue_deadline}；未沿用旧v0.26预算或期限。", "",
               f"已登记原始轨迹文件 {data['trajectory_files']} 份。索引：`{data['trajectory_index']['path']}`。",
               "", "归档包含生成前请求、原始响应和token、SDK事件流、实际工具返回、世界版本/结束快照、"

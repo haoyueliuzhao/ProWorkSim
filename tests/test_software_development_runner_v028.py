@@ -12,12 +12,12 @@ from scripts import software_development_v028 as runner
 
 def plan():
     return {"version": runner.VERSION, "assignments": runner.assignments(),
-            "worker_gpu_seconds": runner.CAPS, "limits": runner.LIMITS,
-            "total_gpu_seconds": sum(runner.CAPS.values()), "gpu_preference": runner.GPUS,
+            "worker_gpu_seconds": dict.fromkeys(runner.WORKERS), "limits": runner.LIMITS,
+            "total_gpu_seconds": None, "gpu_preference": runner.GPUS,
             "purpose": "interface_development", "inherited_resource_budget": False,
             "shared_gpu_capacity_allowed": False, "automatic_retries": False,
             "automatic_successors": [], "model_api_calls": 0,
-            "queue_deadline_at": 1000000, "wall_deadline_at": 1000000 + max(runner.CAPS.values()) + 300,
+            "queue_deadline_at": 1000000, "wall_deadline_at": None,
             "source": {"code_commit": "CPU_fixture", "code_dirty": False, "source_tree_sha256": "a" * 64}}
 
 
@@ -29,12 +29,14 @@ def resources():
         "processes": {"returncode": 0, "stdout": ""}}
 
 
-def test_exact_eight_slots_keep_first_speaker_strata_and_new_budget():
+def test_exact_eight_slots_keep_first_speaker_strata_and_uncapped_gpu_duration():
     spec = plan()
     runner.validate_plan(spec, check_files=False)
     slots = [slot for worker in spec["assignments"].values() for slot in worker]
     assert len(slots) == len({s["slot_id"] for s in slots}) == 8
-    assert spec["total_gpu_seconds"] == 21600
+    assert spec["total_gpu_seconds"] is None
+    assert spec["worker_gpu_seconds"] == {"worker-0": None, "worker-1": None}
+    assert spec["wall_deadline_at"] is None
     for worker, values in spec["assignments"].items():
         assert len({s["first_member"] for s in values}) == 1
         assert len(values) == 4 and len({s["sampling_seed"] for s in values}) == 2
@@ -43,7 +45,15 @@ def test_exact_eight_slots_keep_first_speaker_strata_and_new_budget():
         lambda p: p.update(inherited_resource_budget=True),
         lambda p: p["assignments"]["worker-0"].pop(),
         lambda p: p.update(total_gpu_seconds=28800),
+        lambda p: p.update(total_gpu_seconds=0),
+        lambda p: p.update(total_gpu_seconds=float("inf")),
+        lambda p: p.pop("total_gpu_seconds"),
+        lambda p: p.update(worker_gpu_seconds={"worker-0": 10800, "worker-1": 10800}),
+        lambda p: p.update(worker_gpu_seconds={"worker-0": 0, "worker-1": 0}),
+        lambda p: p.update(worker_gpu_seconds={"worker-0": float("inf"), "worker-1": float("inf")}),
         lambda p: p.update(automatic_retries=True),
+        lambda p: p.update(wall_deadline_at=p["queue_deadline_at"] + 11100),
+        lambda p: p.pop("wall_deadline_at"),
     ):
         bad = copy.deepcopy(spec)
         mutate(bad)
@@ -91,18 +101,27 @@ def test_original_request_is_durable_before_generation_and_error_is_retained(tmp
     assert "response" not in ended
 
 
-def test_supervisor_starts_two_owned_workers_and_calls_keyword_only_telemetry(tmp_path, monkeypatch):
+@pytest.mark.parametrize("elapsed,task_age,expected_status", [
+    (0, 0, "complete"),
+    (10801, 0, "complete"),
+    (10801, 901, "closed_with_missing_or_interrupted"),
+])
+def test_supervisor_keeps_task_limits_without_worker_duration_cap(tmp_path, monkeypatch,
+                                                                 elapsed, task_age, expected_status):
     spec = plan()
     path = tmp_path / "plan.json"
     path.write_text(json.dumps(spec))
-    clock = iter(range(100, 100000, 61))
-    monkeypatch.setattr(runner.time, "time", lambda: next(clock))
-    monkeypatch.setattr(runner.time, "sleep", lambda _: None)
+    clock = [100]
+    monkeypatch.setattr(runner.time, "time", lambda: clock[0])
+    monkeypatch.setattr(runner.time, "sleep", lambda _: clock.__setitem__(0, clock[0] + 61))
     monkeypatch.setattr(runner, "validate_plan", lambda p: p)
     monkeypatch.setattr(runner, "code_identity", lambda: spec["source"])
     monkeypatch.setattr(runner, "resources", resources)
     monkeypatch.setattr(runner.shutil, "disk_usage", lambda _: SimpleNamespace(free=100 * 1024**3))
     monkeypatch.setattr(runner, "worker_identity", lambda pid: {"pid": pid, "start_ticks": 5})
+    monkeypatch.setattr(runner, "rss", lambda _: 0)
+    monkeypatch.setattr(runner, "TelemetryGuard", lambda *a, **kw: SimpleNamespace(observe=lambda *a, **kw: {}))
+    monkeypatch.setattr(runner, "stop_owned", lambda process: setattr(process, "returncode", -15))
     processes, observed = {}, []
 
     class Process:
@@ -112,8 +131,11 @@ def test_supervisor_starts_two_owned_workers_and_calls_keyword_only_telemetry(tm
             processes[self.pid] = self
             from pathlib import Path
             destination = Path(argv[argv.index("--output") + 1])
+            self.destination = destination
             destination.mkdir(parents=True)
             (destination / "report.json").write_text(json.dumps({"status": "complete", "rows": [{"status": "closed"}] * 4}))
+            if len(processes) == 2:
+                clock[0] += elapsed
 
         def poll(self):
             return self.returncode
@@ -123,13 +145,22 @@ def test_supervisor_starts_two_owned_workers_and_calls_keyword_only_telemetry(tm
 
     def target(gpu, *, worker_pid):
         observed.append((gpu, worker_pid))
-        processes[worker_pid].returncode = 0
+        process = processes[worker_pid]
+        (process.destination / "task.json").write_text(json.dumps({"kind": "loading", "started_at": clock[0] - task_age}))
+        if observed.count((gpu, worker_pid)) == 2:
+            process.returncode = 0
         return {"explicit_CPU_fixture": True}
 
     monkeypatch.setattr(runner.subprocess, "Popen", Process)
     monkeypatch.setattr(runner, "target_resources", target)
     summary = runner.supervise(path, tmp_path / "run")
-    assert summary["status"] == "complete" and len(observed) == 2
+    assert summary["status"] == expected_status
+    assert len(observed) == (4 if expected_status == "complete" else 2)
     assert {gpu for gpu, _ in observed} == {0, 4}
-    assert all(state["status"] == "complete" and state["closed_slots"] == 4
-               for state in summary["states"].values())
+    assert all(state["gpu_budget_seconds"] is None for state in summary["states"].values())
+    assert all(state["elapsed_gpu_seconds"] >= elapsed for state in summary["states"].values())
+    if expected_status == "complete":
+        assert all(state["status"] == "complete" and state["closed_slots"] == 4
+                   for state in summary["states"].values())
+    else:
+        assert all(state["stop_reason"] == "single_task_budget" for state in summary["states"].values())
