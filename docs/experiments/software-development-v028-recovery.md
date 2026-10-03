@@ -49,6 +49,6 @@ GPU累计占用 1.605299 小时（终态）。
 
 归档包含生成前请求、原始响应和token、SDK事件流、实际工具返回、世界版本/结束快照、独立验收、Mapper证据与冻结状态guard。中断时已产生的记录保留；没有返回的生成不补文本或token。
 
-同名JSON保存逐槽实际调用及原始结果。逐条协商/责任/代码关系的人工审阅尚待实际轨迹产生后完成；自动消息数、领取数或测试数不代表协作质量、因果贡献或学习效果。
+同名JSON保存逐槽实际调用及原始结果。8个最终选用结果的逐条内容审阅已完成，原技术未知attempt的根因另有保留，见[完整审阅记录](software-development-v028-context-repair.md)。恢复轮172次响应均HTTP200，无上下文超限；3条均未提交固定集成交付。自动消息数、领取数或测试数不代表协作质量、因果贡献或学习效果。
 
 [新协议](../software-allocation-v028-plan.md) · [实际SWE-smith来源资格](software-sources-v028.md) · [机器记录](software-development-v028-recovery.json)
