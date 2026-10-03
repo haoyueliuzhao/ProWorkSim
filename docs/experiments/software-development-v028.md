@@ -1,6 +1,6 @@
 # v0.28 真实软件开发运行记录
 
-更新时间：2026-10-03T14:46:31.783859+08:00（北京时间）。
+更新时间：2026-10-03T14:56:33.852473+08:00（北京时间）。
 
 监督状态：`waiting`。计划8条，已启动0条，可评0条；启动后未知0条、未启动8条。
 
@@ -10,20 +10,20 @@
 
 | 槽 | 先手 | 状态 | 已知完整职责 | 原始轨迹 |
 | --- | --- | --- | --- | --- |
-| dev-0-first-0-r0 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-0/actual/dev-0-first-0-r0` |
-| dev-1-first-0-r0 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-0/actual/dev-1-first-0-r0` |
-| dev-0-first-0-r1 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-0/actual/dev-0-first-0-r1` |
-| dev-1-first-0-r1 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-0/actual/dev-1-first-0-r1` |
-| dev-0-first-1-r0 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-1/actual/dev-0-first-1-r0` |
-| dev-1-first-1-r0 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-1/actual/dev-1-first-1-r0` |
-| dev-0-first-1-r1 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-1/actual/dev-0-first-1-r1` |
-| dev-1-first-1-r1 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/worker-1/actual/dev-1-first-1-r1` |
+| dev-0-first-0-r0 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-0/actual/dev-0-first-0-r0` |
+| dev-1-first-0-r0 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-0/actual/dev-1-first-0-r0` |
+| dev-0-first-0-r1 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-0/actual/dev-0-first-0-r1` |
+| dev-1-first-0-r1 | member_a | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-0/actual/dev-1-first-0-r1` |
+| dev-0-first-1-r0 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-1/actual/dev-0-first-1-r0` |
+| dev-1-first-1-r0 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-1/actual/dev-1-first-1-r0` |
+| dev-0-first-1-r1 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-1/actual/dev-0-first-1-r1` |
+| dev-1-first-1-r1 | member_b | not_started | 未知 | `/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/worker-1/actual/dev-1-first-1-r1` |
 
 GPU累计占用 0.000000 小时（最近监督快照，含进行中占用；不是最终费用）。
 
-预算为本次独立6 GPU小时，最多两模型实例、每worker3小时；每成员48次决策，context16384/output2048。在GPU0/1/2/3/4/5/6/7等待空卡，等卡截止北京时间2026-10-06 00:00；未沿用旧v0.26预算或期限。
+累计GPU时长上限：不设；每worker GPU时长上限：不设；全局墙钟截止：不设。最多两模型实例；每成员48次决策，context16384/output2048。在GPU0/1/2/3/4/5/6/7等待空卡，等卡截止北京时间2026-10-06 00:00；未沿用旧v0.26预算或期限。
 
-已登记原始轨迹文件 0 份。索引：`/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-wait-extension/trajectory-index.json`。
+已登记原始轨迹文件 0 份。索引：`/data1/zhuxinrui/projects/ProWorkSim/runs/domain-v028-software-dev-open-runtime/trajectory-index.json`。
 
 归档包含生成前请求、原始响应和token、SDK事件流、实际工具返回、世界版本/结束快照、独立验收、Mapper证据与冻结状态guard。中断时已产生的记录保留；没有返回的生成不补文本或token。
 
