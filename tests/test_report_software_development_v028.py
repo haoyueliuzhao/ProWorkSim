@@ -2,12 +2,16 @@
 
 import json
 
+import pytest
+
 from scripts.report_software_development_v028 import markdown, report
 from scripts.software_development_v028 import assignments
 
 
 def test_waiting_and_interrupted_requests_are_not_business_zero(tmp_path):
-    (tmp_path / "plan.json").write_text(json.dumps({"assignments": assignments(), "source": {"fixture": True}}))
+    (tmp_path / "plan.json").write_text(json.dumps({
+        "assignments": assignments(), "source": {"fixture": True},
+        "gpu_preference": [0, 4, 5, 7], "queue_deadline_at": 1791043200.0}))
     (tmp_path / "supervisor.json").write_text(json.dumps({"status": "waiting"}))
     data = report(tmp_path)
     assert data["overall"] == {"scheduled": 8, "started": 0, "known": 0, "unknown_started": 0,
@@ -37,3 +41,19 @@ def test_waiting_and_interrupted_requests_are_not_business_zero(tmp_path):
     index = json.loads((tmp_path / "trajectory-index.json").read_text())
     assert {row["path"] for row in index["files"]} == {
         str(stream), str(raw / "call-00001.started.json"), str(backend)}
+
+
+@pytest.mark.parametrize("gpus,deadline,expected_date", [
+    ([0, 4, 5, 7], 1791043200.0, "2026-10-04 00:00"),
+    (list(range(8)), 1791216000.0, "2026-10-06 00:00"),
+])
+def test_report_uses_actual_plan_gpu_range_and_deadline(tmp_path, gpus, deadline, expected_date):
+    (tmp_path / "plan.json").write_text(json.dumps({
+        "assignments": assignments(), "source": {"fixture": True},
+        "gpu_preference": gpus, "queue_deadline_at": deadline}))
+    data = report(tmp_path)
+    rendered = markdown(data)
+    assert data["gpu_preference"] == gpus and data["queue_deadline_at"] == deadline
+    assert data["queue_deadline_beijing"] == expected_date.replace(" ", "T") + ":00+08:00"
+    assert f"在GPU{'/'.join(map(str, gpus))}等待空卡" in rendered
+    assert f"等卡截止北京时间{expected_date}；" in rendered

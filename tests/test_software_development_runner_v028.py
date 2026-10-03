@@ -65,6 +65,14 @@ def test_capacity_admission_rejects_competing_or_low_or_unknown_capacity():
     assert runner.available_cards(plan(), malformed) == []
 
 
+def test_capacity_admission_includes_all_eight_cards():
+    sample = resources()
+    sample["gpus"]["stdout"] = "".join(
+        f"{index}, GPU-{index}, NVIDIA A100-SXM4-80GB, 81000, 81920, 0\n"
+        for index in range(8))
+    assert [card["index"] for card in runner.available_cards(plan(), sample)] == list(range(8))
+
+
 def test_original_request_is_durable_before_generation_and_error_is_retained(tmp_path):
     request = {"messages": [{"role": "user", "content": "Original fixture input"}], "max_tokens": 2048}
 

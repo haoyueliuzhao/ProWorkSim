@@ -32,7 +32,7 @@ SOURCE = Path(__file__).resolve().parents[1]
 CASES = ("marshmallow-interface-dev", "marshmallow-integration-dev")
 MEMBERS = ("member_a", "member_b")
 SEEDS = (202610030101, 202610030102)
-GPUS = [0, 4, 5, 7]
+GPUS = list(range(8))
 CAPS = {"worker-0": 10800, "worker-1": 10800}
 LIMITS = {
     "max_new_episodes": 8, "max_parallel_model_instances": 2,
@@ -439,7 +439,7 @@ def main():
     parser.add_argument("--worker", choices=list(CAPS))
     parser.add_argument("--data-root", type=Path)
     parser.add_argument("--qualification", type=Path)
-    parser.add_argument("--queue-deadline", default="2026-10-04T00:00:00+08:00")
+    parser.add_argument("--queue-deadline", default="2026-10-06T00:00:00+08:00")
     args = parser.parse_args()
     if args.mode == "prepare":
         if not args.data_root or not args.qualification:
