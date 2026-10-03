@@ -16,11 +16,14 @@ from proworksim.storage import atomic_write, json_bytes
 VERSION = "software-development-finisher-v0.28"
 
 
-def run(plan, run_root, report_repo, *, publish=False):
+def run(plan, run_root, report_repo, *, publish=False, report_prefix="software-development-v028"):
+    if report_prefix not in {"software-development-v028", "software-development-v028-recovery"}:
+        raise ValueError("Use the explicit original or recovery report pair")
     source = Path(__file__).resolve().parents[1]
     state_path = run_root.parent / (run_root.name + "-finish.json")
     state = {"version": VERSION, "started_at": time.time(), "status": "supervising",
-             "run_root": str(run_root), "plan": str(plan), "report_repository": str(report_repo)}
+             "run_root": str(run_root), "plan": str(plan), "report_repository": str(report_repo),
+             "report_prefix": report_prefix}
     atomic_write(state_path, json_bytes(state))
     process = subprocess.run([sys.executable, "-m", "scripts.software_development_v028", "supervise",
                               "--plan", str(plan), "--output", str(run_root)], cwd=source, check=False)
@@ -32,12 +35,13 @@ def run(plan, run_root, report_repo, *, publish=False):
         return state
     output = report_repo / "docs/experiments"
     done = subprocess.run([sys.executable, "-m", "scripts.report_software_development_v028",
-                           "--run-root", str(run_root), "--output-dir", str(output)],
+                           "--run-root", str(run_root), "--output-dir", str(output),
+                           "--output-prefix", report_prefix],
                           cwd=source, check=False)
     state["report_exit_code"] = done.returncode
     state["status"] = "reported" if done.returncode == 0 else "report_failed"
     if publish and done.returncode == 0:
-        paths = ["docs/experiments/software-development-v028.md", "docs/experiments/software-development-v028.json"]
+        paths = [f"docs/experiments/{report_prefix}.md", f"docs/experiments/{report_prefix}.json"]
         branch = subprocess.check_output(["git", "branch", "--show-current"], cwd=report_repo, text=True).strip()
         if branch != "main":
             state["publish_status"] = "not_published_repository_branch_changed"
@@ -71,8 +75,11 @@ def main():
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--report-repo", type=Path, required=True)
     parser.add_argument("--publish", action="store_true")
+    parser.add_argument("--report-prefix", choices=["software-development-v028", "software-development-v028-recovery"],
+                        default="software-development-v028")
     args = parser.parse_args()
-    result = run(args.plan.resolve(), args.run_root.resolve(), args.report_repo.resolve(), publish=args.publish)
+    result = run(args.plan.resolve(), args.run_root.resolve(), args.report_repo.resolve(),
+                 publish=args.publish, report_prefix=args.report_prefix)
     print(json.dumps(result, ensure_ascii=False), flush=True)
 
 

@@ -16,11 +16,17 @@ from .work_interface import _schema_errors
 from .world_core import WorldCore
 
 VERSION = "software-collaboration-v0.28"
+INTERFACE_REVISION = "software-collaboration-v0.28.1"
+DIFF_PAGE_CHARS = 4000
+DIFF_MAX_PAGE_CHARS = 6000
 SCHEDULER = "round_robin_event_wakeup-v0.28"
 PROJECT = previous.PROJECT
 MEMBERS = previous.MEMBERS
 CASE_IDS = previous.CASE_IDS
 EDITABLE = previous.EDITABLE
+_REFERENCE = {"type": "object", "properties": {
+    "object_id": previous._PATH, "version_id": previous._PATH},
+    "required": ["object_id", "version_id"], "additionalProperties": False}
 
 TOOLS = copy.deepcopy(previous.TOOLS)
 for _definition in TOOLS:
@@ -31,6 +37,17 @@ for _definition in TOOLS:
             "Transfer your task to the other available member and notify them. "
             "The recipient may return it to the unassigned board using return_task. "
             "Finished or exhausted members cannot receive responsibility.")
+    if _definition["name"] == "diff_workspace":
+        _definition["description"] = (
+            "Read an exact page of unified diff against the frozen baseline. "
+            "Offsets count Unicode characters; default page is 4000, maximum 6000. "
+            "Continue with next_offset and the returned source_reference to pin the same version. "
+            "Your historical workspace versions and published fixed versions remain readable.")
+        _definition["parameters"]["properties"] = {
+            "offset": {"type": "integer", "minimum": 0},
+            "max_chars": {"type": "integer", "minimum": 1, "maximum": DIFF_MAX_PAGE_CHARS},
+            "source_reference": copy.deepcopy(_REFERENCE),
+        }
 TOOLS += [
     previous._tool("send_message", "Send a work message before or after edits. Does not claim, import, adopt or merge anything. Optional reference must already be publicly fixed.",
                    {"recipient": previous._MEMBER, "task_id": previous._PATH,
@@ -103,6 +120,38 @@ class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
         if not self.member_availability()[recipient]["can_receive_work"]:
             raise ValueError("Recipient has ended or exhausted its budget and cannot receive new work")
 
+    def _action_diff_workspace(self, actor, project_id, offset=0, max_chars=DIFF_PAGE_CHARS,
+                               source_reference=None):
+        # The legacy schema subset does not enforce numeric maxima. Check the
+        # complete page contract here, including direct internal invocations.
+        if type(offset) is not int or offset < 0:
+            raise ValueError("Diff offset must be a nonnegative character index")
+        if type(max_chars) is not int or not 1 <= max_chars <= DIFF_MAX_PAGE_CHARS:
+            raise ValueError("Diff page must contain from 1 to 6000 characters")
+        if offset and source_reference is None:
+            raise ValueError("Continue with the preceding page's source_reference, or restart at offset 0")
+        if source_reference is not None:
+            public = [patch["source_reference"] for patch in self._software()["patches"].values()]
+            public += [delivery["source_reference"] for delivery in self._software()["deliveries"]]
+            if (source_reference["object_id"] != self._resolve(PROJECT, actor)
+                    and source_reference not in public):
+                raise ValueError("Choose your workspace version or an already published fixed version")
+        # _bundle/_object still enforce project and exact-version read grants;
+        # sharing one patch must never expose later private versions of it.
+        artifact, version, bundle = self._bundle(actor, reference=source_reference)
+        base_artifact, base_version, baseline = self._bundle(actor, baseline=True)
+        full_diff = previous._diff(baseline["files"], bundle["files"])
+        if offset > len(full_diff):
+            raise ValueError("Diff offset exceeds total_chars for this fixed source version")
+        end = min(offset + max_chars, len(full_diff))
+        return {"interface_revision": INTERFACE_REVISION,
+                "source_reference": previous._reference(artifact, version),
+                "base_reference": previous._reference(base_artifact, base_version),
+                "diff": full_diff[offset:end], "diff_sha256": digest(full_diff.encode()),
+                "total_chars": len(full_diff), "offset": offset,
+                "next_offset": end if end < len(full_diff) else None,
+                "has_more": end < len(full_diff), "offset_unit": "unicode_characters"}
+
     def _action_send_message(self, actor, project_id, recipient, task_id, body, fixed_reference=None):
         self._available_recipient(actor, recipient)
         self._task(task_id)
@@ -166,6 +215,7 @@ class SoftwareCollaborationPort(previous.SoftwareCollaborationPort):
             handoffs = observation["handoffs"]
             patches = observation["patches"]
             observation.update(
+                interface_revision=INTERFACE_REVISION,
                 member_availability=world.member_availability(),
                 messages=messages[-4:], handoffs=handoffs[-4:], patches=patches[-6:],
                 deliveries=observation["deliveries"][-2:],

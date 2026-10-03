@@ -5,9 +5,12 @@ import copy
 import pytest
 
 from proworksim.software_collaboration_v028 import (
-    MEMBERS, PROJECT, SoftwareCollaborationPort, build_software_collaboration_case,
+    DIFF_MAX_PAGE_CHARS, DIFF_PAGE_CHARS, INTERFACE_REVISION, MEMBERS, PROJECT,
+    SoftwareCollaborationPort, build_software_collaboration_case,
     case_spec, software_collaboration_facts,
 )
+from proworksim.software_collaboration_v027 import _diff
+from proworksim.storage import digest
 
 
 def setup_case(tmp_path):
@@ -86,3 +89,77 @@ def test_cases_fix_first_opportunity_and_limits_without_relabeling_source():
     assert not a["training_eligible"] and not a["independent_confirmation_eligible"]
     with pytest.raises(ValueError, match="decision limit"):
         case_spec(role_decision_limits=dict.fromkeys(MEMBERS, 0))
+
+
+def test_diff_pages_reconstruct_large_overwrite_after_workspace_advances(tmp_path):
+    prepared, a, _ = setup_case(tmp_path)
+    baseline = copy.deepcopy(prepared.world._bundle(MEMBERS[0], baseline=True)[2])
+    # Reproduce the real failure's recovery path: overwrite the whole upstream
+    # fields.py with a short String class, then inspect the resulting large diff.
+    changed = checked(a, "write_file", path="src/marshmallow/fields.py",
+                      text="\nclass String(Field[str]):\n    pass  # 修复候选\n")
+    snapshot = copy.deepcopy(prepared.world._bundle(MEMBERS[0])[2])
+    expected = _diff(baseline["files"], snapshot["files"])
+    assert len(expected) > 40_000
+    page = checked(a, "diff_workspace")
+    assert page["diff"] == expected[:DIFF_PAGE_CHARS]
+    assert page["source_reference"] == changed["source_reference"]
+    assert page["interface_revision"] == INTERFACE_REVISION
+    assert a.observe()["interface_revision"] == INTERFACE_REVISION
+    assert page["offset_unit"] == "unicode_characters"
+    pinned, baseline_ref = page["source_reference"], page["base_reference"]
+    checked(a, "write_file", path="consumer.py", text="# A later private version\n")
+    pieces = []
+    while True:
+        assert page["total_chars"] == len(expected)
+        assert page["diff_sha256"] == digest(expected.encode())
+        assert page["source_reference"] == pinned
+        assert page["base_reference"] == baseline_ref
+        assert len(page["diff"]) <= DIFF_PAGE_CHARS
+        pieces.append(page["diff"])
+        if not page["has_more"]:
+            assert page["next_offset"] is None
+            break
+        assert page["next_offset"] == page["offset"] + len(page["diff"])
+        page = checked(a, "diff_workspace", offset=page["next_offset"], source_reference=pinned)
+    assert "".join(pieces) == expected
+    assert prepared.world._bundle(MEMBERS[0], reference=pinned)[2] == snapshot
+    assert checked(a, "diff_workspace", source_reference=pinned)["diff"] == expected[:DIFF_PAGE_CHARS]
+    assert checked(a, "diff_workspace", offset=len(expected), source_reference=pinned)["diff"] == ""
+
+
+def test_diff_pages_keep_small_diffs_exact_and_enforce_bounds(tmp_path):
+    prepared, a, _ = setup_case(tmp_path)
+    empty = checked(a, "diff_workspace")
+    assert empty["diff"] == "" and empty["total_chars"] == 0 and empty["has_more"] is False
+    baseline = copy.deepcopy(prepared.world._bundle(MEMBERS[0], baseline=True)[2])
+    checked(a, "write_file", path="consumer.py", text=baseline["files"]["consumer.py"] + "\n# 小改动\n")
+    expected = _diff(baseline["files"], prepared.world._bundle(MEMBERS[0])[2]["files"])
+    page = checked(a, "diff_workspace", max_chars=DIFF_MAX_PAGE_CHARS)
+    assert page["diff"] == expected and page["has_more"] is False and page["next_offset"] is None
+    assert page["diff_sha256"] == digest(expected.encode())
+    for arguments in ({"max_chars": 0}, {"max_chars": DIFF_MAX_PAGE_CHARS + 1},
+                      {"max_chars": True}, {"max_chars": "4000"}, {"offset": -1},
+                      {"offset": True}, {"offset": "0"}, {"offset": 1},
+                      {"offset": len(expected) + 1, "source_reference": page["source_reference"]}):
+        assert not a.call("diff_workspace", **arguments)["ok"]
+    unknown = {**page["source_reference"], "version_id": "v-does-not-exist"}
+    assert not a.call("diff_workspace", source_reference=unknown)["ok"]
+
+
+def test_diff_reference_cannot_read_unpublished_partner_versions(tmp_path):
+    _, a, b = setup_case(tmp_path)
+    private_before = a.observe()["workspace_reference"]
+    assert not b.call("diff_workspace", source_reference=private_before)["ok"]
+    checked(a, "claim_task", task_id="string_api")
+    checked(a, "write_file", path="src/marshmallow/fields.py", text="# public patch\n")
+    patch = checked(a, "fix_patch", task_ids=["string_api"], message="Publish exact version")
+    first = checked(b, "diff_workspace", source_reference=patch["source_reference"])
+    assert first["diff_sha256"] == patch["diff_sha256"]
+    assert "diff" not in patch
+    later = checked(a, "write_file", path="src/marshmallow/fields.py", text="# later private change\n")
+    assert not b.call("diff_workspace", source_reference=later["source_reference"])["ok"]
+    assert not b.call("diff_workspace", source_reference=private_before)["ok"]
+    continued = checked(b, "diff_workspace", offset=first["next_offset"], source_reference=patch["source_reference"])
+    assert continued["source_reference"] == first["source_reference"]
+    assert continued["diff_sha256"] == patch["diff_sha256"]

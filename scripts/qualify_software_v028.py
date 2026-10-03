@@ -19,11 +19,12 @@ sys.path[:0] = [str(ROOT / "src"), str(ROOT / "tests")]
 from proworksim.audit import code_identity  # noqa: E402
 from proworksim.deterministic_work_v024 import DeterministicCandidateActor  # noqa: E402
 from proworksim.software_collaboration_v028 import CASE_IDS, MEMBERS, case_spec  # noqa: E402
+from proworksim.software_context_v028 import VERSION as CONTEXT_POLICY, project_software_request  # noqa: E402
 from proworksim.software_runtime_v028 import collect_software_window  # noqa: E402
 from proworksim.storage import atomic_write, digest, json_bytes, read_json  # noqa: E402
 from test_software_runtime_v028 import ScriptedSoftwareOwner, successful_cpu_actions  # noqa: E402
 
-VERSION = "software-sdk-tokenizer-qualification-v0.28"
+VERSION = "software-sdk-tokenizer-qualification-v0.28.1"
 CONTEXT = 16384
 OUTPUT = 2048
 MINIMUM_MARGIN = 1024
@@ -55,6 +56,7 @@ class QualifiedProgramOwner(ScriptedSoftwareOwner):
         self.renderer = object.__new__(DeterministicCandidateActor)
         self.renderer.tokenizer = tokenizer
         self.renderer.inference_profile = copy.deepcopy(profile)
+        self.software_context_policy = CONTEXT_POLICY
         self.measurements = []
 
     def complete(self, request, **kwargs):
@@ -62,19 +64,25 @@ class QualifiedProgramOwner(ScriptedSoftwareOwner):
         body = response["body"]
         function = body["choices"][0]["message"]["tool_calls"][0]["function"]
         arguments = json.loads(function["arguments"])
-        rendered, messages, projection = self.renderer.prepare_request(request)
+        selected, context_projection = project_software_request(
+            request, render=self.renderer.prepare_request, tokenizer=self.renderer.tokenizer,
+            context_limit=CONTEXT)
+        if not context_projection["fits"]:
+            raise ValueError("Qualification program exceeds the declared context capacity")
+        rendered, messages, projection = self.renderer.prepare_request(selected)
         wire = native_xml(function["name"], arguments)
         number = len(self.measurements) + 1
         folder = self.output / f"request-{number:03d}"
         folder.mkdir()
         # Archive the proposed program output before parsing, so even a failed
         # future codec check retains the exact attempted bytes and real input.
-        for name, data in (("request.json", request), ("normalized-messages.json", messages),
+        for name, data in (("request.json", request), ("selected-request.json", selected),
+                           ("context-projection.json", context_projection), ("normalized-messages.json", messages),
                            ("projection.json", projection)):
             atomic_write(folder / name, json_bytes(data))
         atomic_write(folder / "rendered-prompt.txt", rendered.encode())
         atomic_write(folder / "program-output.xml", wire.encode())
-        parsed, error = self.renderer.parse_response(wire, request)
+        parsed, error = self.renderer.parse_response(wire, selected)
         atomic_write(folder / "native-parsed.json", json_bytes({"message": parsed, "error": error}))
         if error is not None:
             raise ValueError({"program_native_parse_error": error})
@@ -100,6 +108,7 @@ class QualifiedProgramOwner(ScriptedSoftwareOwner):
             "rendered_prompt": file_reference(folder / "rendered-prompt.txt"),
             "program_output": file_reference(folder / "program-output.xml"),
             "projection": projection, "native_parser_roundtrip": True,
+            "context_projection": context_projection,
             "source": "actual SDK request and official local tokenizer; scripted output, zero model calls",
         }
         atomic_write(folder / "measurement.json", json_bytes(measurement))
@@ -139,7 +148,8 @@ def qualify(output, prior_model_plan):
                if (model_path / name).is_file()}
     implementation = {str(path.relative_to(ROOT)): file_reference(path) for path in (
         Path(__file__).resolve(), ROOT / "tests/test_software_runtime_v028.py",
-        ROOT / "tests/test_online_collection_v013.py", ROOT / "tests/test_software_collaboration_v027.py")}
+        ROOT / "tests/test_online_collection_v013.py", ROOT / "tests/test_software_collaboration_v027.py",
+        ROOT / "src/proworksim/software_context_v028.py")}
     report = {
         "version": VERSION, "passed": False, "source": source, "model_calls": 0,
         "optimizer_updates": 0, "model_weights_loaded": False, "gpu_used": False,

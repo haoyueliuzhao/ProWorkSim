@@ -1,0 +1,55 @@
+# v0.28.1 软件上下文修复与GPU5恢复
+
+日期：2026-10-03，北京时间。用户要求修复上下文问题并恢复实验，随后要求后续仅在GPU5排队、先占用GPU5。此前取消总GPU时长、每worker累计时长和统一墙钟截止的授权继续有效；等卡截止仍为2026-10-06 00:00。
+
+## 16K的来源与实际故障
+
+16K是本项目的冻结推理配置，不是模型文件声明的最大上下文。本地已绑定的`Qwen3.5-9B-c20223623576/config.json`中`text_config.max_position_embeddings=262144`，`tokenizer_config.json`中`model_max_length=262144`；本项目旧recipe的`max_length=16384`，输出预留2048。模型声明容量与本运行器已实测容量应分别表述；本次修复保留16K/2048及同一actor、critic、优化器和RNG起点，只修改工作接口及上下文选择。
+
+旧槽`worker-1/dev-1-first-1-r0`中member_a把`fields.py`整体改写为43行的String片段，导致测试NameError。随后`diff_workspace({})`无界返回全部差异。原WorldCore回执的diff为78987字符；SDK把整个工具消息裁到50000字符，模型可见diff仅47922字符且含`<response clipped>`标记。下一次请求（call31、该成员第16次决策）真实输入19439 tokens，预留2048后超过16384，生成未开始，记录HTTP400 `context_length_exceeded`。旧运行将其记为`execution_unknown`并停止该worker，另两槽未启动。原始请求、完整WorldCore回执、SDK已裁视图及错误均保留，未重写旧判定。
+
+这不是GPU累计时长触发。GPU5上的worker-0后来已自然完成全部四槽，退出码0；不能把其正常结束误报为同类故障。
+
+## 修复范围
+
+- `diff_workspace`提供版本绑定分页：默认4000、最多6000 Unicode字符；返回总长度、下一页offset、原diff SHA、源版本及基线引用。继续分页须固定同一source_reference；本人历史版本和已公开固定版本可回读，伙伴未公开版本仍不可读。拼接页可以恢复完整真实diff，原世界版本和原始证据不删改。
+- 真实采样前使用相同actor renderer和本地tokenizer计数。只移除最旧的完整assistant/tool轮次；保留最新完整轮次、全部system/user原文、工具schema及采样参数，不生成摘要、不截文本、不隐式重试。SDK原请求、实际选取请求、逐步token计数、删除索引和原始响应分别落盘。
+- 若保留必要反馈后仍超限，在生成前明确记录context_capacity边界。SDK原错误事件保留，软件运行边界另记录受控的上下文额度耗尽，不将其伪装成模型调用成功，也不按推理服务宕机停止整个worker。其他服务/环境故障仍为unknown。
+- 经验声明登记新接口修订`software-collaboration-v0.28.1`和上下文策略`software-context-v0.28.1`。恢复轮结果与旧接口结果不能视为完全同条件重复。
+
+## 必要资格与原失败复现
+
+必要针对检查共50项通过：接口分页10项、上下文选择和独立恢复报告路径5项、真实SDK/runtime 15项、恢复与预留交接/报告20项。其中包括生成前上下文耗尽与其他技术故障的区分、保留R0、历史unknown尝试保留、GPU5串行和只向身份匹配的reservation发送信号。全体src/tests/scripts静态检查通过。原始SDK/runtime测试目录与JUnit位于`runs/v028-context-repair/runtime-checks/`及`runtime-checks.xml`。源码冻结后另做同源正式资格，不用开发期脏源码结果启动模型。
+
+实际tokenizer开发回归文件为`runs/v028-context-repair/context-regression-development-r2/context-qualification.json`，14项门检查通过，模型调用0、未加载模型权重、未使用GPU：
+
+| 程序控制 | 真实输入tokens | 结果 |
+| --- | ---: | --- |
+| 原call31原始请求 | 19439 | 复现超过16K；原文件不修改 |
+| 同一错误写入、采用新WorldCore分页回执 | 7961 | 输出预留2048后余量6375 |
+| 大diff成为较旧完整轮次 | 6280 | 完整移除旧轮后可容纳 |
+| 大diff仍为最新完整轮次 | 17481 | 保留必要反馈，明确拒绝；不裁掉最新结果以伪造可容纳 |
+
+新WorldCore根据原请求历史中实际write_file参数重建错误工作区，20页拼接出的78987字符diff及SHA与旧`public-capture/member_a.jsonl`中的完整原始回执一致。程序重建明确是CPU回归控制，不是模型重跑或对旧轨迹的修改。首轮`context-regression-development`误把SDK已裁文本当完整diff参考，唯一相关门检查失败，失败目录保留；第二轮改为对照原WorldCore完整回执。
+
+## 原运行的真实闭合结果及逐条审阅
+
+原运行`runs/domain-v028-software-dev-open-runtime/`自然终态为`closed_with_missing_or_interrupted`。5条closed中4条独立验收通过、1条未交付；另1条上下文技术异常未知、2条未启动。原报告已经自动归档推送。以下基于实际消息、文件编辑、补丁导入、测试及固定交付审阅，未重新评分。
+
+| 原槽 | 事实链及独立验收 | Mapper与限定 |
+| --- | --- | --- |
+| dev-0-first-0-r0 | A实际实现API和consumer；B发消息、导入后未编辑业务文件便再发布补丁；最终A交付，R1。自写test_member.py使用未安装的pytest，6次运行在visible测试通过后仍因ModuleNotFoundError失败，不能照抄模型“全部测试通过”的自述。 | unmapped：自写测试缺少成功验证来源；业务代码集中由A实现，不能按补丁往返次数声称双方共同实现。 |
+| dev-1-first-0-r0 | 双方领取不同任务，各自在fields.py引入构造参数错误或破坏性整文件覆盖，无消息、固定补丁、导入和提交；R0。终态A=model_budget_exhausted，B=model_format_error，93 opportunities/89 actions。 | unmapped：无完整交付。不是16K异常，恢复不得挑掉此R0或重新跑到成功为止。 |
+| dev-0-first-0-r1 | A把consumer责任转交B；B实现两个文件、测试、固定包含两任务的补丁并提交，R1；A随后导入。 | concentrated_net_delivery：实际是转交后的单成员实现；A后续格式错误不否定先前已有有效交付。 |
+| dev-1-first-0-r1 | A提出方案并实现两功能及consumer；B导入A补丁出现真实冲突，随后修改冲突区域、测试、固定两任务补丁并交付，R1。 | unmapped：有跨成员接入和冲突处理，但最终String净来源不能按保守规则确认；不擅自归类或声称独立双分支贡献。 |
+| dev-0-first-1-r0 | B固定API补丁，A声明依赖、导入API后编辑consumer；双方后续有重复改动与导入，最终A固定交付通过，R1。 | net_work_after_import：可追踪B→A的API输入和A随后consumer修改；重复导入不重复计新增贡献。 |
+
+这些是复用开发题上的真实冻结模型观察，不是参数训练收益、独立留出确认或因果方法效果。独立验收R1也不等于所有成员自写测试均通过。
+
+## 恢复与GPU5占用
+
+恢复只执行3槽：原技术异常槽`dev-1-first-1-r0`重新开始一次，以及尚未启动的`dev-0-first-1-r1`、`dev-1-first-1-r1`。保留全部5条已闭合结果，包括R0。旧未知attempt及修复后的新attempt分别记录；同slot/seed不能宣称轨迹逐字复现。每个新worker从原完整3/3 checkpoint严格恢复，逐槽重新设置原seed并核对学习状态和RNG，不接着改写旧世界。
+
+用户要求立即占用GPU后，确认GPU5无其他compute进程、空闲容量符合要求，启动本项目reservation进程939191（start_ticks344950613），实际占用约76GiB。该进程只占用显存、模型调用0；状态及命令保存在`runs/v028-context-repair/gpu5-reservation/`。模型恢复前按PID/start_ticks/GPU UUID核对并交接，仅释放本项目reservation；若交接时出现其他作业则回到GPU5排队。显存保留时长与模型执行GPU时长分开记账。GPU7当前已有其他作业，不会触碰。
+
+恢复源码、正式资格、最终计划、交接和模型启动身份在完成后补入；未来当前状态以独立的恢复报告为准，旧运行报告保持原终态。

@@ -209,6 +209,31 @@ def test_real_sdk_streams_raw_events_and_collects_complete_episode(tmp_path):
     assert (folder / "entry.json").exists() and (folder / "team-rollout.json").exists()
 
 
+def test_identified_context_preflight_exhaustion_is_finite_work_not_service_unknown(tmp_path):
+    pytest.importorskip("openhands.sdk")
+    from proworksim.software_context_v028 import CAPACITY_ERROR, VERSION as CONTEXT_VERSION
+
+    class CapacityOwner(ScriptedSoftwareOwner):
+        def complete(self, request, **kwargs):
+            body = {"error": {"code": CAPACITY_ERROR}, "transport_kind": CONTEXT_VERSION,
+                    "generation_started": False, "context_projection": {"fits": False, "fixture": True}}
+            return {"http_status": 400, "body": body, "raw_body": json.dumps(body)}
+
+    owner = CapacityOwner({member: [] for member in MEMBERS})
+    entries = collect_software_window(owner, window_spec(), tmp_path / "window")
+    folder = tmp_path / "window/slot-0"
+    assessment = json.loads((folder / "assessment.json").read_text())
+    assert assessment["status"] == "evaluable" and assessment["R"] == 0
+    assert entries[0]["reward"]["eligible"] is True
+    events = [json.loads(line) for line in (folder / "experience.jsonl").read_text().splitlines()]
+    raw_errors = [event for event in events if event["kind"] == "model_boundary_error"]
+    assert len(raw_errors) == 2 and all(event["payload"]["status"] == "model_service_error" for event in raw_errors)
+    boundaries = [event for event in events if event["kind"] == "software_context_capacity_boundary"]
+    assert len(boundaries) == 2 and all(event["payload"]["model_generation_started"] is False for event in boundaries)
+    termination = json.loads((folder / "episode/manifest.json").read_text())["termination"]
+    assert set(termination["role_stops"].values()) == {"model_budget_exhausted"}
+
+
 def test_sdk_stream_exists_before_final_episode_snapshot(tmp_path):
     pytest.importorskip("openhands.sdk")
     owner = ScriptedSoftwareOwner({member: [action("staff_done", reason="CPU fixture")] for member in MEMBERS})

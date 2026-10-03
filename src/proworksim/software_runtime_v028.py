@@ -21,9 +21,10 @@ from .online_collection import _config
 from .online_support import declare_window
 from .scenarios import ScenarioController
 from .software_collaboration_v028 import (
-    MEMBERS, SCHEDULER, VERSION as INTERFACE_VERSION, SoftwareCollaborationPort,
+    INTERFACE_REVISION, MEMBERS, SCHEDULER, VERSION as INTERFACE_VERSION, SoftwareCollaborationPort,
     assess_software_collaboration, build_software_collaboration_case, case_spec, validate_case,
 )
+from .software_context_v028 import CAPACITY_ERROR, VERSION as CONTEXT_VERSION
 from .storage import atomic_write, digest, json_bytes
 
 VERSION = "software-runtime-v0.28"
@@ -194,7 +195,30 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
         if member not in runnable:
             runtime.cursor += 1
             continue
+        first_event = len(runtime.recorder.events)
         result = runtime.step()
+        if result["status"] == "model_service_error" and not result.get("action_performed"):
+            # The SDK records the original non-200 envelope as a service error.
+            # Our explicitly identified pre-generation capacity boundary is a
+            # finite context limit, not an inference/adapter outage. Keep that
+            # original event and append the exact interpretation separately.
+            attempts = [event for event in runtime.recorder.events[first_event:]
+                        if event["kind"] == "model_attempt" and event.get("worker_id") == member
+                        and event["payload"].get("stage") == "finished"]
+            last = attempts[-1] if attempts else None
+            body = last["payload"].get("response", {}).get("body", {}) if last else {}
+            if (isinstance(body, dict) and body.get("transport_kind") == CONTEXT_VERSION
+                    and body.get("generation_started") is False
+                    and body.get("error", {}).get("code") == CAPACITY_ERROR):
+                result = {**result, "original_status": result["status"],
+                          "status": "model_budget_exhausted", "budget_kind": "context_capacity"}
+                runtime.roles[member].update(status="model_budget_exhausted",
+                    reason="Declared context capacity exhausted before generation")
+                runtime.recorder.record("software_context_capacity_boundary", {
+                    "source_attempt_sequence": last["sequence"], "error": body["error"],
+                    "raw_sdk_status": "model_service_error", "status": "model_budget_exhausted",
+                    "model_generation_started": False, "context_projection": body["context_projection"],
+                }, worker_id=member)
         outcomes.append(result)
         controller.record_environment()
         status = result["status"]
@@ -273,6 +297,8 @@ def collect_software_window(owner, window_spec, output_dir):
             scenario.setdefault("variation", {})["software_case"] = copy.deepcopy(prepared.case)
             scenario["variation"]["software_runtime"] = {
                 "version": VERSION, "harness": "openhands_v16", "source_usage": "interface_dev",
+                "interface_revision": INTERFACE_REVISION,
+                "context_policy": getattr(owner, "software_context_policy", "latest_observation_last4_tool_rounds"),
                 "profile_bindings": {member: interface.profile for member, interface in interfaces.items()},
                 "external_tick_per_sweep": 0, "first_member": prepared.case["first_member"],
                 "scheduling_protocol": SCHEDULER,
@@ -287,7 +313,9 @@ def collect_software_window(owner, window_spec, output_dir):
             atomic_write(folder / "model-scenario.json", json_bytes(scenario))
         gamma = {"collection_version": VERSION, "harness": "openhands_v16", "interface": INTERFACE_VERSION,
                  "source": code_identity(), "source_usage": "interface_dev", "recipe": copy.deepcopy(owner.recipe),
-                 "context_projection": "latest_observation_last4_tool_rounds", "external_tick_per_sweep": 0,
+                 "interface_revision": INTERFACE_REVISION,
+                 "context_projection": getattr(owner, "software_context_policy", "latest_observation_last4_tool_rounds"),
+                 "external_tick_per_sweep": 0,
                  "scheduling_protocol": SCHEDULER, "budget": copy.deepcopy(window_spec["budget"]),
                  "slot_sampling_seeds": {row["slot_id"]: row["sampling_seed"] for row in rows},
                  "fixed_slot_cases": [item["slot_spec"]["xi_fingerprint"] for item in items]}

@@ -23,6 +23,8 @@ from zoneinfo import ZoneInfo
 
 from proworksim.audit import code_identity
 from proworksim.resource_monitor_v025 import TelemetryGuard, target_resources, worker_identity
+from proworksim.software_collaboration_v028 import INTERFACE_REVISION
+from proworksim.software_context_v028 import VERSION as CONTEXT_POLICY
 from proworksim.storage import digest, json_bytes, read_json
 from scripts.run_bounded_v022 import artifact_bytes, rss
 from scripts.run_ne_v021 import checked, lock, read, reference, resources, stop_owned, write
@@ -32,10 +34,16 @@ SOURCE = Path(__file__).resolve().parents[1]
 CASES = ("marshmallow-interface-dev", "marshmallow-integration-dev")
 MEMBERS = ("member_a", "member_b")
 SEEDS = (202610030101, 202610030102)
-GPUS = list(range(8))
+GPUS = [5]
 WORKERS = ("worker-0", "worker-1")
+TERMINAL_RUN_STATES = {"complete", "closed_with_missing_or_interrupted", "supervisor_interrupted"}
+RECOVERY_VERSION = "software-development-recovery-v0.28"
+STATISTICS_SCOPE = (
+    "Eight-slot completion ledger only. Retained and recovery interface revisions are distinct; "
+    "their outcomes must not be treated as one same-protocol effect estimate."
+)
 LIMITS = {
-    "max_new_episodes": 8, "max_parallel_model_instances": 2,
+    "max_new_episodes": 8, "max_parallel_model_instances": 1,
     "max_new_actor_steps": 0, "max_new_critic_steps": 0,
     "minimum_free_gpu_mib": 78000, "gpu_capacity_stability_seconds": 60,
     "own_gpu_memory_mib": 81920, "host_rss_per_worker_bytes": 64 * 1024**3,
@@ -88,6 +96,7 @@ def make_plan(data_root, qualification, queue_deadline):
     marker = data_root / "runs/domain-v025-r1/checkpoints/base.json"
     return {
         "version": VERSION, "created_at": time.time(), "source": code_identity(),
+        "interface_revision": INTERFACE_REVISION, "context_policy": CONTEXT_POLICY,
         "authorization": "2026-10-03 user requested audit revisions and subsequent experiments with original trajectories retained.",
         "purpose": "interface_development", "inherited_resource_budget": False,
         "gpu_preference": GPUS, "worker_gpu_seconds": dict.fromkeys(WORKERS), "total_gpu_seconds": None,
@@ -103,8 +112,228 @@ def make_plan(data_root, qualification, queue_deadline):
     }
 
 
+def _prior_snapshot(prior_run_root):
+    """Bind a terminal first run without rerunning or rewriting any old artifact."""
+    root = Path(prior_run_root).resolve()
+    prior = read_json(root / "plan.json")
+    supervisor = read_json(root / "supervisor.json")
+    if (prior.get("assignments") != assignments() or prior.get("recovery") is not None
+            or supervisor.get("status") not in TERMINAL_RUN_STATES
+            or not supervisor.get("ended_at")
+            or set(supervisor.get("states", {})) != set(WORKERS)
+            or any(state.get("status") in {"waiting", "running"} for state in supervisor["states"].values())):
+        raise ValueError("Recovery requires the terminal canonical first run; never freeze an active queue")
+    reports, slots = {}, {}
+    for worker, canonical in assignments().items():
+        actual = root / worker / "actual"
+        report_path, progress_path = actual / "report.json", actual / "progress.json"
+        worker_report = read_json(report_path) if report_path.exists() else {}
+        if worker_report and (worker_report.get("source_before") != prior["source"]
+                              or worker_report.get("status") in {"loading", "running"}):
+            raise ValueError("Prior worker report must be terminal and bound to its source")
+        rows = worker_report.get("rows", [])
+        if progress_path.exists():
+            progress = read_json(progress_path)
+            if worker_report and progress != rows:
+                raise ValueError("Terminal prior progress and worker report disagree")
+            rows = progress
+        if [row.get("slot_id") for row in rows] != [slot["slot_id"] for slot in canonical[:len(rows)]]:
+            raise ValueError("Prior worker rows must preserve the canonical slot prefix")
+        reports[worker] = {name: reference(path) for name, path in (
+            ("report", report_path), ("progress", progress_path)) if path.exists()}
+        byslot = {row["slot_id"]: row for row in rows}
+        for slot in canonical:
+            sid, folder = slot["slot_id"], actual / slot["slot_id"]
+            row = byslot.get(sid)
+            if row and any(row.get(key) != value for key, value in slot.items()):
+                raise ValueError("Prior slot identity, seed or decisions differ from the canonical protocol")
+            evidence = {name: reference(path) for name, path in (
+                ("entry", folder / "slot-0/entry.json"),
+                ("assessment", folder / "slot-0/assessment.json"),
+                ("raw_independent_assessment", folder / "slot-0/raw-independent-assessment.json"),
+                ("evaluation_guard", folder / "evaluation-guard.json")) if path.exists()}
+            if row and row.get("status") == "closed":
+                if not {"entry", "assessment", "evaluation_guard"} <= evidence.keys():
+                    raise ValueError("Every retained closed slot needs its entry, assessment and evaluation guard")
+                entry = read_json(checked(evidence["entry"]))
+                guard = read_json(checked(evidence["evaluation_guard"]))
+                assessment = read_json(checked(evidence["assessment"]))
+                if (entry.get("reward") != row.get("reward") or not entry["reward"].get("eligible")
+                        or guard != row.get("evaluation_guard") or not guard.get("learning_unchanged")
+                        or not guard.get("rng_restored_exactly") or assessment.get("status") == "unknown"):
+                    raise ValueError("Retained results must be evaluable and preserve learning/RNG guards, including R=0")
+            slots[sid] = {"worker": worker, "row": row, "row_sha256": digest(json_bytes(row)),
+                          "status": row["status"] if row else "not_started",
+                          "trajectory_directory": str(folder), "evidence": evidence}
+    return {"prior_run_root": str(root), "prior_plan": reference(root / "plan.json"),
+            "prior_supervisor": reference(root / "supervisor.json"), "prior_source": prior["source"],
+            "prior_interface_revision": prior.get("interface_revision", "software-collaboration-v0.28"),
+            "prior_context_policy": prior.get("context_policy", "latest_observation_last4_tool_rounds"),
+            "prior_worker_records": reports, "prior_slots": slots}
+
+
+def make_recovery_plan(data_root, qualification, queue_deadline, prior_run_root, *, context_qualification,
+                       reservation_launch=None):
+    """Freeze one user-authorized recovery round after the first run terminates."""
+    plan = make_plan(data_root, qualification, queue_deadline)
+    plan["context_qualification"] = reference(context_qualification)
+    snapshot = _prior_snapshot(prior_run_root)
+    retained = [slot["slot_id"] for slots in assignments().values() for slot in slots
+                if snapshot["prior_slots"][slot["slot_id"]]["status"] == "closed"]
+    plan["recovery"] = {"version": RECOVERY_VERSION, "attempt_index": 1,
+                        "authorization": "explicit_user_requested_fix_and_recovery",
+                        **snapshot, "retained_closed_slot_ids": retained,
+                        "execution_slot_ids": {worker: [slot["slot_id"] for slot in slots
+                                                         if slot["slot_id"] not in retained]
+                                               for worker, slots in assignments().items()},
+                        "statistics_scope": STATISTICS_SCOPE}
+    _validate_context_qualification(plan)
+    if reservation_launch is not None:
+        launch_path = Path(reservation_launch).resolve()
+        launch, state = read_json(launch_path), read_json(launch_path.parent / "state.json")
+        plan["owned_reservation"] = {
+            "launch": reference(launch_path), "state_path": str(launch_path.parent / "state.json"),
+            "pid": launch["pid"], "start_ticks": launch["start_ticks"],
+            "physical_gpu": launch["physical_gpu"], "gpu_uuid": state["gpu_uuid"]}
+        _validate_reservation(plan)
+    return plan
+
+
+def _validate_context_qualification(plan):
+    qualification = read_json(checked(plan["context_qualification"]))
+    if (qualification.get("passed") is not True or qualification.get("source") != plan["source"]
+            or qualification.get("model_calls") != 0):
+        raise ValueError("Same-source zero-model context failure regression qualification is required")
+
+
+def validate_recovery(plan, *, check_files=True):
+    recovery = plan.get("recovery")
+    if recovery is None:
+        return
+    canonical = assignments()
+    canonical_ids = [slot["slot_id"] for slots in canonical.values() for slot in slots]
+    context_ref = plan.get("context_qualification", {})
+    if (recovery.get("version") != RECOVERY_VERSION or recovery.get("attempt_index") != 1
+            or recovery.get("authorization") != "explicit_user_requested_fix_and_recovery"
+            or recovery.get("statistics_scope") != STATISTICS_SCOPE
+            or set(recovery.get("prior_slots", {})) != set(canonical_ids)
+            or set(context_ref) != {"path", "sha256"}
+            or not isinstance(context_ref["path"], str) or not isinstance(context_ref["sha256"], str)
+            or len(context_ref["sha256"]) != 64):
+        raise ValueError("Declare exactly one explicit recovery round for the canonical eight slots")
+    retained = [sid for sid in canonical_ids if recovery["prior_slots"][sid]["status"] == "closed"]
+    execution = {worker: [slot["slot_id"] for slot in slots if slot["slot_id"] not in retained]
+                 for worker, slots in canonical.items()}
+    if (recovery.get("retained_closed_slot_ids") != retained or recovery.get("execution_slot_ids") != execution):
+        raise ValueError("Recovery must execute exactly canonical slots minus all prior closed results, including R=0")
+    if check_files:
+        _validate_context_qualification(plan)
+        snapshot = _prior_snapshot(recovery["prior_run_root"])
+        if any(recovery.get(key) != value for key, value in snapshot.items()):
+            raise ValueError("Recovery prior row or artifact reference changed")
+        prior_plan = read_json(checked(recovery["prior_plan"]))
+        if any(plan.get(key) != prior_plan.get(key) for key in ("checkpoint_marker", "owner_recipe", "prior_model_plan")):
+            raise ValueError("Recovery must restore the same original checkpoint, recipe and model profile")
+
+
+def execution_slots(plan, worker):
+    recovery = plan.get("recovery")
+    selected = recovery["execution_slot_ids"][worker] if recovery else None
+    return [slot for slot in plan["assignments"][worker] if selected is None or slot["slot_id"] in selected]
+
+
+def _validate_reservation(plan, *, check_files=True):
+    owned = plan.get("owned_reservation")
+    if owned is None:
+        return
+    if (not plan.get("recovery") or owned.get("physical_gpu") != 5
+            or type(owned.get("pid")) is not int or owned["pid"] <= 0
+            or type(owned.get("start_ticks")) is not int or owned["start_ticks"] <= 0
+            or not isinstance(owned.get("gpu_uuid"), str) or not owned["gpu_uuid"].startswith("GPU-")):
+        raise ValueError("Only the explicitly owned GPU5 recovery reservation may be handed over")
+    if check_files:
+        launch_path = checked(owned["launch"])
+        launch = read_json(launch_path)
+        if (any(launch.get(key) != owned[key] for key in ("pid", "start_ticks", "physical_gpu"))
+                or Path(owned["state_path"]) != launch_path.parent / "state.json"
+                or not launch.get("user_authorization")):
+            raise ValueError("Owned reservation launch identity differs")
+
+
+def _release_reservation_pid(pid, start_ticks):
+    """Use a PID descriptor so a recycled PID can never receive our signal."""
+    descriptor = os.pidfd_open(pid)
+    try:
+        identity = worker_identity(pid)
+        if not identity.get("alive") or identity.get("start_ticks") != start_ticks:
+            raise ValueError("Owned reservation process identity changed before release")
+        signal.pidfd_send_signal(descriptor, signal.SIGTERM)
+    finally:
+        os.close(descriptor)
+
+
+def consume_owned_reservation(plan, root):
+    """Release this run's existing reservation; return idle capacity or resume queuing."""
+    owned = plan.get("owned_reservation")
+    if owned is None:
+        return None
+    _validate_reservation(plan)
+    state = read_json(Path(owned["state_path"]))
+    identity = worker_identity(owned["pid"])
+    now = time.time()
+    if (now >= plan["queue_deadline_at"] or state.get("status") != "reserved" or state.get("model_calls") != 0
+            or any(state.get(key) != owned[key] for key in ("pid", "physical_gpu", "gpu_uuid"))
+            or not identity.get("alive") or identity.get("start_ticks") != owned["start_ticks"]
+            or now - state.get("ready_at", now) < LIMITS["gpu_capacity_stability_seconds"]
+            or not 0 <= now - state.get("heartbeat_at", 0) <= 3 * LIMITS["poll_seconds"]):
+        raise ValueError("GPU5 reservation must be alive, stable for 60 seconds and recently observed")
+    sample = resources()
+    if any(sample.get(key, {}).get("returncode") != 0 for key in ("gpus", "processes")):
+        raise ValueError("Cannot verify reserved GPU capacity")
+    try:
+        gpu_rows = list(csv.reader(io.StringIO(sample["gpus"]["stdout"]), strict=True))
+        target = [row for row in gpu_rows if int(row[0].strip()) == 5]
+        processes = list(csv.reader(io.StringIO(sample["processes"]["stdout"]), strict=True))
+        if (len(target) != 1 or len(target[0]) != 6 or target[0][1].strip() != owned["gpu_uuid"]
+                or "A100" not in target[0][2] or float(target[0][4]) < 81920
+                or any(len(row) != 4 for row in processes)
+                or [int(row[1].strip()) for row in processes if row[0].strip() == owned["gpu_uuid"]] != [owned["pid"]]):
+            raise ValueError("Reserved GPU5 identity or exclusive process ownership differs")
+    except (IndexError, TypeError, csv.Error) as error:
+        raise ValueError("Malformed GPU reservation telemetry") from error
+    proof_path = Path(root) / "reservation-handoff.json"
+    proof = {"status": "verified_before_release", "owned_reservation": owned, "state_before": state,
+             "identity_before": identity, "resources_before": sample, "verified_at": now,
+             "model_generation_calls": 0, "accounting_scope": "GPU reservation occupancy; separate from model worker GPU seconds"}
+    write(proof_path, proof)
+    try:
+        _release_reservation_pid(owned["pid"], owned["start_ticks"])
+        deadline = time.monotonic() + 30
+        while True:
+            after = worker_identity(owned["pid"])
+            if not after.get("alive") or after.get("start_ticks") != owned["start_ticks"]:
+                break
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Owned reservation did not exit after SIGTERM")
+            time.sleep(0.1)
+        released_at = time.time()
+        proof.update(status="released", identity_after=after, released_at=released_at,
+                     reservation_held_seconds=released_at - state["ready_at"])
+        released_sample = resources()
+        ready = available_cards(plan, released_sample)
+        proof.update(resources_after=released_sample, immediate_capacity_available=bool(ready))
+        return ready[0] if ready else None
+    except BaseException as error:
+        proof.update(status="release_failed", error={"type": type(error).__name__, "message": str(error)})
+        raise
+    finally:
+        write(proof_path, proof)
+
+
 def validate_plan(plan, *, check_files=True):
     if (plan.get("version") != VERSION or plan.get("assignments") != assignments()
+            or plan.get("interface_revision") != INTERFACE_REVISION
+            or plan.get("context_policy") != CONTEXT_POLICY
             or plan.get("worker_gpu_seconds") != dict.fromkeys(WORKERS) or plan.get("limits") != LIMITS
             or "total_gpu_seconds" not in plan or plan["total_gpu_seconds"] is not None
             or plan.get("gpu_preference") != GPUS
@@ -116,6 +345,8 @@ def validate_plan(plan, *, check_files=True):
             or type(plan.get("queue_deadline_at")) not in (int, float)
             or "wall_deadline_at" not in plan or plan["wall_deadline_at"] is not None):
         raise ValueError("Freeze the complete new eight-slot zero-update software protocol")
+    validate_recovery(plan, check_files=check_files)
+    _validate_reservation(plan, check_files=check_files)
     if check_files:
         if code_identity() != plan["source"] or plan["source"].get("code_dirty") is not False:
             raise ValueError("Run only the clean frozen source bound in this new plan")
@@ -168,8 +399,12 @@ class DurableTransport:
 
 class CollectionOwner:
     def __init__(self, owner, directory):
+        from proworksim.software_context_v028 import SoftwareContextTransport
         self.owner = owner
-        self.transport = DurableTransport(owner.transport, directory, owner.window_id)
+        self.software_context_policy = CONTEXT_POLICY
+        self.software_context_projection = CONTEXT_POLICY
+        self.transport = DurableTransport(
+            SoftwareContextTransport(owner, Path(directory) / "context-projections"), directory, owner.window_id)
 
     def __getattr__(self, name):
         return getattr(self.owner, name)
@@ -205,16 +440,28 @@ def restore(owner, plan, output):
 
 def run_worker(plan_path, output, worker):
     plan = validate_plan(read_json(plan_path))
-    if worker not in WORKERS or os.environ.get("CUDA_VISIBLE_DEVICES") not in set(map(str, GPUS)):
+    if worker not in WORKERS:
+        raise ValueError("Unknown declared worker")
+    slots = execution_slots(plan, worker)
+    if slots and os.environ.get("CUDA_VISIBLE_DEVICES") not in set(map(str, GPUS)):
         raise ValueError("Bind one assigned worker to one declared physical GPU")
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
     source, owner = code_identity(), None
     report = {"version": VERSION, "worker": worker, "status": "loading", "source_before": source,
-              "plan": reference(plan_path), "slots": plan["assignments"][worker], "rows": [],
+              "interface_revision": plan["interface_revision"],
+              "context_policy": plan["context_policy"],
+              "statistics_scope": STATISTICS_SCOPE if plan.get("recovery") else "Single declared interface revision",
+              "plan": reference(plan_path), "slots": slots, "rows": [],
+              "retained_closed_slot_ids": [slot["slot_id"] for slot in plan["assignments"][worker]
+                                           if slot not in slots],
               "started_at": time.time(), "new_actor_steps": 0, "new_critic_steps": 0,
               "model_api_calls": 0, "automatic_successors": []}
     write(output / "report.json", report)
+    if not slots:
+        report.update(status="retained", ended_at=time.time(), source_after=source, source_unchanged=True, not_started=[])
+        write(output / "report.json", report)
+        return report
     try:
         from proworksim.deterministic_work_v024 import DeterministicCandidateActor
         from proworksim.software_runtime_v028 import collect_software_window
@@ -232,14 +479,17 @@ def run_worker(plan_path, output, worker):
         report["restore"] = restore(owner, plan, output)
         identity = owner.freeze_identity()
         report["status"] = "running"
-        for slot in plan["assignments"][worker]:
+        for slot in slots:
             task(output, slot["slot_id"], "episode")
             folder = output / slot["slot_id"]
             guard_before = owner.capture_evaluation_state()
-            window_id = "v028-" + slot["slot_id"]
+            attempt = 1 if plan.get("recovery") else 0
+            window_id = ("v028-recovery-1-" if attempt else "v028-") + slot["slot_id"]
             if owner.begin_window(window_id) != identity:
                 raise ValueError("Actor changed across frozen software episodes")
             row = {**copy.deepcopy(slot), "status": "started", "started_at": time.time(),
+                   "attempt_index": attempt, "interface_revision": plan["interface_revision"],
+                   "context_policy": plan["context_policy"],
                    "trajectory_directory": str(folder)}
             report["rows"].append(row)
             write(output / "progress.json", report["rows"])
@@ -304,9 +554,15 @@ def supervise(plan_path, root):
     root.mkdir(parents=True, exist_ok=False)
     write(root / "plan.json", plan)
     summary = {"version": VERSION, "status": "waiting", "source": code_identity(),
+               "interface_revision": plan["interface_revision"],
+               "context_policy": plan["context_policy"],
+               "statistics_scope": STATISTICS_SCOPE if plan.get("recovery") else "Single declared interface revision",
                "plan": reference(plan_path), "observer_pid": os.getpid(), "started_at": time.time(),
-               "states": {name: {"worker": name, "status": "not_started", "attempted": False,
-                                  "slots": plan["assignments"][name]} for name in WORKERS},
+               "states": {name: {"worker": name, "status": "not_started" if execution_slots(plan, name) else "retained",
+                                  "attempted": False, "slots": execution_slots(plan, name),
+                                  "retained_closed_slot_ids": [slot["slot_id"] for slot in plan["assignments"][name]
+                                                               if slot not in execution_slots(plan, name)]}
+                          for name in WORKERS},
                "terminated_gpu_seconds": 0.0, "running_gpu_seconds": 0.0}
     active, logs, guards, stable = {}, {}, {}, {}
 
@@ -334,6 +590,10 @@ def supervise(plan_path, root):
 
     with lock(root):
         try:
+            if plan.get("owned_reservation") and any(execution_slots(plan, worker) for worker in WORKERS):
+                admitted = consume_owned_reservation(plan, root)
+                if admitted:
+                    stable[admitted["index"]] = time.time() - LIMITS["gpu_capacity_stability_seconds"]
             while True:
                 now = time.time()
                 for name, process in list(active.items()):
@@ -348,7 +608,7 @@ def supervise(plan_path, root):
                     ready = available_cards(plan, sample, occupied)
                     stable = {c["index"]: stable.get(c["index"], now) for c in ready}
                     for card in ready:
-                        if not waiting or len(active) >= 2:
+                        if not waiting or len(active) >= plan["limits"]["max_parallel_model_instances"]:
                             break
                         if time.time() - stable[card["index"]] < LIMITS["gpu_capacity_stability_seconds"]:
                             continue
@@ -415,7 +675,7 @@ def supervise(plan_path, root):
                 if not active and not pending:
                     break
                 time.sleep(LIMITS["poll_seconds"])
-            summary["status"] = "complete" if all(s["status"] == "complete" for s in summary["states"].values()) else "closed_with_missing_or_interrupted"
+            summary["status"] = "complete" if all(s["status"] in {"complete", "retained"} for s in summary["states"].values()) else "closed_with_missing_or_interrupted"
         except BaseException as error:
             summary.update(status="supervisor_interrupted", error={"type": type(error).__name__, "message": str(error)})
             for name in list(active):
@@ -435,12 +695,20 @@ def main():
     parser.add_argument("--worker", choices=WORKERS)
     parser.add_argument("--data-root", type=Path)
     parser.add_argument("--qualification", type=Path)
+    parser.add_argument("--prior-run-root", type=Path)
+    parser.add_argument("--context-qualification", type=Path)
+    parser.add_argument("--reservation-launch", type=Path)
     parser.add_argument("--queue-deadline", default="2026-10-06T00:00:00+08:00")
     args = parser.parse_args()
     if args.mode == "prepare":
         if not args.data_root or not args.qualification:
             parser.error("prepare requires data-root and qualification")
-        plan = make_plan(args.data_root, args.qualification, datetime.fromisoformat(args.queue_deadline).timestamp())
+        if args.prior_run_root and not args.context_qualification:
+            parser.error("recovery prepare requires context-qualification")
+        deadline = datetime.fromisoformat(args.queue_deadline).timestamp()
+        plan = (make_recovery_plan(args.data_root, args.qualification, deadline, args.prior_run_root,
+                                  context_qualification=args.context_qualification, reservation_launch=args.reservation_launch)
+                if args.prior_run_root else make_plan(args.data_root, args.qualification, deadline))
         validate_plan(plan)
         write(args.output, plan)
     elif args.mode == "worker":
