@@ -1,6 +1,6 @@
 # v0.29 新来源经验分配实验记录
 
-- 运行状态：`waiting`；当前阶段：`support`。
+- 运行状态：`no_configurable_support`；当前阶段：`no_configurable_support`。
 - 固定源码：`6b90e9bf71455e904e6b1d2b56e2ef59dabbb7be`；原始目录：`/data1/zhuxinrui/projects/ProWorkSim/runs/software-allocation-v029`。
 - 三个来源用途固定：sqlparse训练、schema贡献开发、TextFSM独立确认。
 - 首窗8槽同一精确情境、同一参数版本、member_a先手、最低类频数2。保留所有失败、未映射与技术未知。
@@ -10,22 +10,29 @@
 
 | 槽位 | 状态 | R | 路线 |
 |---|---|---:|---|
-| support-0 | not_started | None | — |
-| support-1 | not_started | None | — |
-| support-2 | not_started | None | — |
-| support-3 | not_started | None | — |
-| support-4 | not_started | None | — |
-| support-5 | not_started | None | — |
-| support-6 | not_started | None | — |
-| support-7 | not_started | None | — |
+| support-0 | closed | 0 | None |
+| support-1 | closed | 0 | None |
+| support-2 | closed | 0 | None |
+| support-3 | closed | 0 | None |
+| support-4 | closed | 0 | None |
+| support-5 | closed | 0 | None |
+| support-6 | closed | 0 | None |
+| support-7 | closed | 0 | None |
+
+支持门状态：`no_configurable_support`。选定成员块：`[]`。
+
+| 成员 | M | n_z | n+ | v | b |
+|---|---:|---|---:|---:|---|
+| member_a | 8 | {} | 0 | 0.0 | {} |
+| member_b | 8 | {} | 0 | 0.0 | {} |
 
 ## 实际更新与工作执行
 
 | Worker | 状态 | GPU小时 | actor/critic新步数 |
 |---|---|---:|---|
-| support | not_started | 0.000000 | 0/0 |
+| support | complete | 1.783123 | 0/0 |
 
-已结束worker累计GPU小时：0.000000；尚在运行worker已用GPU小时：0.000000。
+已结束worker累计GPU小时：1.783123；尚在运行worker已用GPU小时：0.000000。
 该账含模型装载、训练、冻结执行与worker边界；没有另建显存预留进程。单次训练耗时与峰值见JSON中training_consumption。
 
 ## 独立确认与结论边界
