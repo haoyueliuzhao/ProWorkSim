@@ -40,3 +40,11 @@ Transformers 5.17的`LoadStateDictInfo.to_dict()`返回`missing_keys`、`unexpec
 原批次目录`runs/software-model-selection-v030/`及其已推送报告提交`d2766791b094b23603835f209416b63b6d033c06`保留；旧终态报告副本另存`runs/v030-recovery/original-final-report.md/.json`。新恢复使用独立输出目录，原9B通过明确旧路径与SHA继承，两个旧加载失败不会被覆盖为成功。
 
 本次恢复只重新启动这两个尚无模型调用的新候选，最多各一次。实际推理/训练资格失败仍按协议停止该臂；不无限重试，不把技术未知补成工作0分。最终把原9B和两次恢复结果按原选择规则汇总，报告同时列出原失败与新worker成本。整批完成后自动更新实验报告、提交并推送，不自动启动未冻结的B/G-raw/I-P。
+
+## 实际启动与交接结果
+
+恢复已在干净提交`caf52da513aea0ba3b4fe27dddf8786ca56358e5`的独立工作树`runs/v030-recovery-source`启动；继承资格与原strict plan验证均通过。恢复计划为`runs/v030-recovery/plan.json`，执行目录为`runs/software-model-selection-v030-recovery/`；独立finisher PID2959668、supervisor PID2959732。SWE-Next-14B于北京时间约**20:39:09**在GPU5启动，worker PID2963082；Devstral保持排队，原9B通过只读路径继承。
+
+实际预约释放后，第一份资源样本已无GPU5 compute PID且空闲81,151 MiB，但利用率采样仍为100%，未通过原≤5%门，因此**本次没有成功直接交接**；恢复队列退回正常60秒观察后启动，worker记录`reservation_handoff=false`。释放至模型worker启动约71秒。handoff原件中的`second_empty_card_stability_wait_required=false`是该快捷分支的固定声明，不能用它推翻本次`immediate_capacity_available=false`及随后实际发生的普通排队；此处明确保留实际过程，不宣称零空窗交接。
+
+SWE实际加载已通过：此前失败的`dense-loading.json`成功写出，三个原set都记为[]并保留其原容器类型。模型从全新actor/critic 0/0进入原生资格，前三次响应均有完整真实trace，但输出`<function=…>`，没有满足该冻结组合要求的`<tool_call>{…}</tool_call>`。因此这三项接口检查未通过；控制器没有把输出改写为正确格式或追加调用。记录时继续执行预定第四次及数值诊断，完整资格终态以[运行报告](software-model-selection-v030.md)为准。
