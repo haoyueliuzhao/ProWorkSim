@@ -1,8 +1,8 @@
 # ProWorkSim
 
-## v0.30 模型与 O1 选型：源码及 CPU 控制已完成，GPU 队列尚未启动
+## v0.30 模型与 O1 选型：CPU 核验通过，实验队列已启动
 
-更新于2026-10-04。按[新审计](docs/reference/audit-v029-next-v030.md)实施[本轮协议](docs/experiments/software-model-selection-v030-protocol.md)：保留v0.29完整工作0/8、无有效支持、依约停止的结论，后续先验证共同模型载体的API使用、真实失败修复与可微更新能力。本页更新时，三个候选的GPU资格及正式筛选队列尚未启动，尚无本轮真实模型成绩或参数训练收益。
+更新于2026-10-04。按[新审计](docs/reference/audit-v029-next-v030.md)实施[本轮协议](docs/experiments/software-model-selection-v030-protocol.md)：保留v0.29完整工作0/8、无有效支持、依约停止的结论，后续先验证共同模型载体的API使用、真实失败修复与可微更新能力。三个候选的监督队列已于北京时间2026-10-04 13:54启动：9B于13:59在GPU4开始运行，恢复原3/3状态后进入真实资格测试；14B与24B等待完整权重下载及校验。当前尚无正式开发筛选成绩或参数训练收益；后续按条件自动接续并在整批结束时更新[运行报告](docs/experiments/software-model-selection-v030.md)。[启动记录](docs/experiments/software-model-selection-v030-launch.md)保存冻结版本、计划和进程凭据。
 
 新工作世界从共同根目标和空任务表开始，成员自行形成、修订任务、责任与依赖；公开反馈分别呈现上游回归、consumer正常路径、成员自测和未测部分。[六个新开发合同](examples/software-sources-v030/README.md)复用一个固定Marshmallow仓库，分为2个API正常路径、2个真实故障修复和2个双成员O1根目标案例。它们永远属于模型／接口开发池，不用于参数训练、贡献估计或独立确认；不是六个独立仓库，也不重复旧sqlparse同题窗口。
 
