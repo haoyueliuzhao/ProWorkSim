@@ -1,6 +1,8 @@
 # ProWorkSim
 
-## v0.30 模型与 O1 选型：CPU 核验通过，实验队列已启动
+## v0.30 模型与 O1 选型：9B已完成，两新模型修复加载记录后接续
+
+最新进度：9B完成12槽，API2/4、修复4/4、O1 0/4；两个新模型均已下载完整，但旧尝试在零采样阶段写加载记录失败。现已修复set的JSON表示，8项定向恢复测试和Ruff通过，GPU5于20:27成功预约，准备从干净快照接续两候选。原结果与失败成本保留，详见[恢复记录](docs/experiments/software-model-selection-v030-recovery.md)。以下首段为原启动阶段记录。
 
 更新于2026-10-04。按[新审计](docs/reference/audit-v029-next-v030.md)实施[本轮协议](docs/experiments/software-model-selection-v030-protocol.md)：保留v0.29完整工作0/8、无有效支持、依约停止的结论，后续先验证共同模型载体的API使用、真实失败修复与可微更新能力。三个候选的监督队列已于北京时间2026-10-04 13:54启动：9B于13:59在GPU4开始运行，恢复原3/3状态后进入真实资格测试；14B与24B等待完整权重下载及校验。当前尚无正式开发筛选成绩或参数训练收益；后续按条件自动接续并在整批结束时更新[运行报告](docs/experiments/software-model-selection-v030.md)。[启动记录](docs/experiments/software-model-selection-v030-launch.md)保存冻结版本、计划和进程凭据。
 

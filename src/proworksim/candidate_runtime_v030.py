@@ -215,6 +215,21 @@ def verify_manifest(model_path, manifest, candidate_id):
     return record
 
 
+def loading_info_record(loading):
+    """Represent Transformers 5 loading-key sets without altering load admission.
+
+    LoadStateDictInfo.to_dict() returns sets for missing/unexpected/mismatched
+    keys, even when all are empty. JSON stores those exact sets as sorted arrays;
+    source container types are recorded separately and original objects remain.
+    """
+    return {
+        'loading_info': {key: sorted(value) if isinstance(value, set) else copy.deepcopy(value)
+                         for key, value in loading.items()},
+        'loading_info_source_types': {key: type(value).__name__ for key, value in loading.items()},
+        'loading_info_serialization': 'Top-level loading-key sets represented by sorted JSON arrays; no key or error is omitted.',
+    }
+
+
 class DenseCandidateActor(SharedActor):
     def prepare_request(self, request):
         if isinstance(self.tokenizer, MistralNativeTokenizer):
@@ -316,6 +331,6 @@ class DenseCandidateActor(SharedActor):
                 'manifest': reference(manifest), 'revision': identity['declared_hf_revision']})
         owner.head_execution = head_execution
         atomic_write(Path(output) / 'dense-generation-contract.json', json_bytes(generation))
-        atomic_write(Path(output) / 'dense-loading.json', json_bytes({'loading_info': loading,
+        atomic_write(Path(output) / 'dense-loading.json', json_bytes({**loading_info_record(loading),
             'actual_storage': actual_storage, 'actual_lora_modules': matched}))
         return owner

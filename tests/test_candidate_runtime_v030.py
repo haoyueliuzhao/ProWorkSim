@@ -6,7 +6,7 @@ import json
 import pytest
 
 from proworksim.candidate_runtime_v030 import (
-    MistralNativeTokenizer, NativePrompt, candidate_profile, mistral_message_projection,
+    MistralNativeTokenizer, NativePrompt, candidate_profile, loading_info_record, mistral_message_projection,
     parse_mistral_generated,
 )
 
@@ -79,3 +79,30 @@ def test_native_role_projection_keeps_every_original_message_without_fake_ack():
     assert proof['source_message_indices_per_native_message'] == [[0], [1], [2], [3, 4, 5]]
     assert selected[:3] == messages[:3]
     assert selected[-1]['tool_call_id'] == messages[3]['tool_call_id']
+
+
+def test_empty_transformers_loading_sets_serialize_without_mutating_originals():
+    from proworksim.storage import json_bytes
+
+    loading = {'missing_keys': set(), 'unexpected_keys': set(), 'mismatched_keys': set(), 'error_msgs': []}
+    original = copy.deepcopy(loading)
+    record = json.loads(json_bytes(loading_info_record(loading)))
+    assert record['loading_info'] == {key: [] for key in loading}
+    assert record['loading_info_source_types'] == {
+        'missing_keys': 'set', 'unexpected_keys': 'set', 'mismatched_keys': 'set', 'error_msgs': 'list'}
+    assert loading == original and isinstance(loading['missing_keys'], set)
+
+
+def test_loading_evidence_preserves_nonempty_errors_and_deterministic_key_sets():
+    from proworksim.storage import json_bytes
+
+    loading = {'missing_keys': {'layer.z', 'layer.a'}, 'unexpected_keys': {'old.weight'},
+               'mismatched_keys': {('projection.weight', (2, 3), (2, 4))}, 'error_msgs': ['original error']}
+    original = copy.deepcopy(loading)
+    record = json.loads(json_bytes(loading_info_record(loading)))
+    assert record['loading_info']['missing_keys'] == ['layer.a', 'layer.z']
+    assert record['loading_info']['unexpected_keys'] == ['old.weight']
+    assert record['loading_info']['mismatched_keys'] == [['projection.weight', [2, 3], [2, 4]]]
+    assert record['loading_info']['error_msgs'] == ['original error']
+    assert any(record['loading_info'][key] for key in ('missing_keys', 'unexpected_keys', 'mismatched_keys', 'error_msgs'))
+    assert loading == original

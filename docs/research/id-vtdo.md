@@ -1,5 +1,7 @@
 # ID-VTDO 当前研究设计与实现状态
 
+最新恢复进度（2026-10-04晚）：9B已完成12槽（API2/4、修复4/4、O1 0/4）；两个新模型下载完整，但在写加载诊断时发生零采样序列化失败。仅修复诊断表示并建立一次恢复，GPU5已成功预约，原9B及两次失败原件全部保留。见[恢复记录](../experiments/software-model-selection-v030-recovery.md)。
+
 更新：2026-10-04。主线仍为**软件协作中的在线经验分配**：模型在真实工作中形成任务、承担责任、修改代码并集成交付；分配算法改变已发生经历在学习中的权重，以更新后的独立团队工作检验增量。当前执行依据[v0.30模型与O1选型协议](../experiments/software-model-selection-v030-protocol.md)，三个候选的监督队列已于北京时间2026-10-04 13:54启动；9B于13:59在GPU4启动并进入真实资格测试，14B与24B等待完整下载，详见[启动凭据](../experiments/software-model-selection-v030-launch.md)及[运行报告](../experiments/software-model-selection-v030.md)。
 
 [v0.29已结案](../experiments/software-allocation-v029-final.md)：同一sqlparse情境的8槽全部可评，完整工作0/8；7份固定交付完成局部库修复，但consumer正常路径失败，另1槽无固定交付。完整有效支持为零，因此未执行B/G/I试训、正式更新、schema贡献开发或TextFSM独立确认。该结果既不支持也不反驳分配算法的效果，旧0/8和失败原件不回改。
