@@ -15,7 +15,7 @@ def qualify(controls, output):
     source = code_identity()
     if source["code_dirty"] is not False:
         raise ValueError("Freeze a clean source checkout before admission")
-    integration_path = controls / "integration-r1/checks.json"
+    integration_path = controls / "integration-r1/admission-checks.json"
     native_path = controls / "native-templates-r1/qualification.json"
     integration, native = read_json(integration_path), read_json(native_path)
     for evidence in (integration, native):
@@ -37,7 +37,9 @@ def qualify(controls, output):
                 raise ValueError("Native control dependency changed: " + relative)
     for files in native["tokenizer_files"].values():
         for record in files.values():
-            checked(record)
+            path = checked({key: record[key] for key in ("path", "sha256")})
+            if path.stat().st_size != record["bytes"]:
+                raise ValueError("Tokenizer byte length changed: " + str(path))
     development_path = SOURCE / "examples/software-sources-v030/qualification.json"
     development = read_json(development_path)
     if development["summary"] != {

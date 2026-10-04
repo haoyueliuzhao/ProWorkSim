@@ -4,6 +4,8 @@
 
 结果与文件指纹见[结构化记录](software-model-selection-v030-cpu.json)。原始stdout和前后身份保存在`runs/v030-controls/integration-r1/`；被测源码树SHA-256为`d0331a942b14ed7e23018c37ba7d64de0b6a69f8edbb1c427fd766b408ef7774`。测试执行时改动尚待统一提交，故原件保留dirty=true与当时HEAD，不改写为后续提交；启动时由[绑定脚本](../../scripts/qualify_software_model_selection_v030.py)将同一源码及依赖hash绑定到干净执行快照，任何不一致都拒绝GPU启动。
 
+首次提交后的冻结绑定在GPU启动前被拒绝：tokenizer控制引用包含`bytes`字段，而旧`checked()`只接受精确的`path/sha256`字典。实际16份tokenizer文件的SHA与字节数全部未变。仅修正资格汇总脚本对这两种引用格式的衔接，仍逐项检查完整SHA和字节数；脚本定向Ruff通过。原71项测试证据不改写，单独`admission-checks.json`保留原证据引用、该辅助脚本的新旧hash及修订原因；所有src和测试文件未变，未重复运行71项测试或原生模板矩阵。
+
 ## 检查覆盖与含义
 
 此次只运行九个`tests/*v030.py`文件，覆盖模型原生编解码、下载分片与SHA边界、一阶分配数值控制、六案例独立验收、O1任务形成与版本依赖、真实SDK和公开工具回流、Tiny Torch资格更新/恢复、队列资格门和固定选择规则。静态检查命令为`.venv/bin/python -m ruff check src tests scripts`。没有为本轮重复历史广泛测试套件。
