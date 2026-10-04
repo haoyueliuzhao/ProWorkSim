@@ -1,8 +1,8 @@
 # ID-VTDO 当前研究设计与实现状态
 
-当前接续为[v0.31](../experiments/software-model-selection-v031-protocol.md)：公共世界、六案例、SDK及9B原组合均不改，仅两个新候选修订原生协议与完整可微缓存重算。GPU4/6上两条真实旧trace数值证明已通过（新缓存/可微路径误差0、完整反传与恢复通过）；两个新组合已进入新鲜资格，近16K容量和筛选尚待完成，不能宣称训练或分配收益。见[实际GPU记录](../experiments/software-model-selection-v031-launch.md)。旧v0.30-r1已于20:48有限结束，无合格入选组合；以下保留当时过程记录。
+当前接续为[v0.31r2路径修订](../experiments/software-path-recovery-v031r2-protocol.md)：截至北京时间2026-10-04 23:47，SWE三条新原生调用、全部行为／梯度概率重算与完整反传均通过（误差0、无纠正重试、零新optimizer step、完整恢复），GPU4已进入原12槽正式筛选；GPU6原Devstral闭合5/12、成功1槽，继续运行。两个新模型在v0.31的真实近16K容量、一次诊断更新、保存重载及恢复均已通过；SWE旧路径错误导致的整体资格失败保留，新轮按同一common和原始记录继承数值正证据，不重复压力测试。公共世界、六案例、SDK及9B原组合保持。详见[实际补验与启动](../experiments/software-path-recovery-v031r2-launch.md)、[独立运行报告](../experiments/software-path-recovery-v031r2.md)和[原v0.31 GPU记录](../experiments/software-model-selection-v031-launch.md)。仍无最终三模型选择、参数训练或分配收益结论。
 
-最新恢复进度（2026-10-04晚）：9B已完成12槽（API2/4、修复4/4、O1 0/4）；两个新模型下载完整，但在写加载诊断时发生零采样序列化失败。仅修复诊断表示并建立一次恢复，GPU5已成功预约并于20:39启动SWE真实资格，Devstral继续排队，原9B及两次失败原件全部保留。见[恢复记录](../experiments/software-model-selection-v030-recovery.md)。
+历史v0.30-r1恢复（2026-10-04晚，已于20:48结束）：9B已完成12槽（API2/4、修复4/4、O1 0/4）；两个新模型下载完整，修复零采样序列化失败后进入资格，但数值门未过，整轮无合格入选组合。见[恢复记录](../experiments/software-model-selection-v030-recovery.md)。以下早期启动记录只说明历史实施过程。
 
 更新：2026-10-04。主线仍为**软件协作中的在线经验分配**：模型在真实工作中形成任务、承担责任、修改代码并集成交付；分配算法改变已发生经历在学习中的权重，以更新后的独立团队工作检验增量。当前执行依据[v0.30模型与O1选型协议](../experiments/software-model-selection-v030-protocol.md)，三个候选的监督队列已于北京时间2026-10-04 13:54启动；9B于13:59在GPU4启动并进入真实资格测试，14B与24B等待完整下载，详见[启动凭据](../experiments/software-model-selection-v030-launch.md)及[运行报告](../experiments/software-model-selection-v030.md)。
 
@@ -17,9 +17,9 @@
 | 六个新开发合同 | 一个固定MIT Marshmallow仓库；6份参考解公开／独立检查全过，20个坏控制均拒绝 | 六独立来源、真实模型成功或可训练支持 |
 | O1工作世界 | 共同根目标、空任务表、自主创建／修订任务和责任、版本化依赖与真实集成 | 已观察到真实候选模型自主有效协作 |
 | 原生模板与SDK | 18个模型／案例组合、72次脚本化请求通过；实际tokenizer与WorldCore错误回流 | 模型生成、行为概率、近16K训练或工作能力通过 |
-| 技术更新与恢复实现 | CPU小模型实际采样、全token反向、两个optimizer各一次聚合更新和完整恢复已核验 | 9B／14B／24B的本轮训练准入或能力收益 |
+| 技术更新与恢复实现 | CPU控制与真实候选诊断已通过；SWE/Devstral近16K反向、诊断更新、重载和common恢复已实测，SWE路径补验另行通过 | 诊断准入带来业务提升或参数训练收益 |
 | 一阶分配规则 | 对数N、显式历史／覆盖双锚、G-raw／G-lift／I-P接口及CPU数值控制 | 已执行真实贡献试训、分配更新或完整V1.3 |
-| 三候选正式运行 | 候选、用途、调用上限、资格门及选择规则已冻结；监督队列已启动；9B在GPU4执行真实资格，14B／24B等待下载，尚无筛选结果 | 已有候选排名、软件成绩或ID-VTDO增量 |
+| 三候选正式运行 | 9B保留12槽；SWE在GPU4进入原12槽，Devstral在GPU6继续，23:47已闭合5/12、成功1槽 | 已有最终候选排名、参数训练收益或ID-VTDO增量 |
 
 规则基线、脚本化SDK请求、CPU小模型参数控制、真实候选模型运行和正式参数学习分别记账。[最终CPU集成报告](../experiments/software-model-selection-v030-cpu.md)记录71项测试及Ruff通过；[原生模板资格报告](../experiments/software-native-templates-v030.md)说明18组合与72次请求的实际范围，其中真实模型调用为0，没有采样token_trace或可训练rollout。[开发池说明](../../examples/software-sources-v030/README.md)与其资格原件固定源码、合同和正反控制。
 

@@ -1,8 +1,10 @@
 # ProWorkSim
 
-## v0.31 接口与可微重算修订：GPU数值对照通过，GPU4/6接续资格实验
+## v0.31r2 路径补验通过：GPU4/6并行正式筛选
 
-按继续实验要求，修订两个新候选的原生接口与密集模型重算路径；旧v0.30/r1结果保持。新接口12组合、48次真实SDK脚本往返通过，数值图、旧trace验证程序和队列已做必要CPU控制。GPU4、6的真实旧trace对照均已通过：原偏差精确复现，新原生缓存/可微路径误差为0，完整反传和恢复通过，零新采样/零更新。两个新组合已在GPU4/6接续新鲜资格；近16K容量及正式筛选仍待实际完成。见[实际启动与GPU证明](docs/experiments/software-model-selection-v031-launch.md)。见[CPU记录](docs/experiments/software-model-selection-v031-cpu.md)、[本轮协议](docs/experiments/software-model-selection-v031-protocol.md)、[数值设计](docs/design/dense-replay-v031.md)和[官方原生协议依据](docs/research/software-native-protocol-v031.md)。
+截至北京时间2026-10-04 23:47，SWE的新路径补验已通过并在GPU4进入原12槽正式筛选；Devstral在GPU6继续筛选，已闭合5/12、成功1槽。SWE本次3条真实调用均成功，无纠正重试；no-grad与grad-mode概率误差全部0、完整反传3/3、零新优化器步且原common完整恢复。此前两个新模型的近16K容量、诊断更新及恢复均已实际通过；SWE旧整体资格因路径失败仍保留，新轮明确继承其数值证据而不重复压力测试。见[路径修订协议](docs/experiments/software-path-recovery-v031r2-protocol.md)、[实际补验与启动](docs/experiments/software-path-recovery-v031r2-launch.md)和[独立运行报告](docs/experiments/software-path-recovery-v031r2.md)。当前尚无最终三模型选择、参数训练收益或分配收益结论。
+
+v0.31原生协议与密集模型重算修订记录继续保留：[旧trace GPU证明](docs/experiments/software-model-selection-v031-launch.md)、[CPU记录](docs/experiments/software-model-selection-v031-cpu.md)、[本轮协议](docs/experiments/software-model-selection-v031-protocol.md)、[数值设计](docs/design/dense-replay-v031.md)和[官方原生协议依据](docs/research/software-native-protocol-v031.md)。
 
 
 ## v0.30 模型与 O1 选型：9B已完成，两新模型修复加载记录后接续
