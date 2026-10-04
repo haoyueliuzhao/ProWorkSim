@@ -9,7 +9,7 @@ import pytest
 pytest.importorskip('jsonschema', reason='Run these controls in the existing managed SDK/resident environment')
 
 from proworksim.native_codecs_v031 import (  # noqa: E402
-    MISTRAL_FORMAT, SWE_FORMAT, parse_code_response, parse_mistral_v13_generated,
+    MISTRAL_FORMAT, SWE_FORMAT, SWE_MANUAL_VERSION, _swe_manual, parse_code_response, parse_mistral_v13_generated,
     parse_swe_xml_generated, prepare_code_request, prepare_swe_xml_request, xml_call_text,
 )
 
@@ -251,3 +251,49 @@ def test_exact_string_framing_preserves_code_indentation_and_additional_boundary
     # remains the same XML protocol, not an attribute-form or JSON fallback.
     raw = '<function = record_fact >\n<parameter = code >\n    keep indentation  \n</parameter>\n<parameter = revision >17</parameter>\n</function>'
     assert decoded(raw, supplied) == {'code': '    keep indentation  ', 'revision': 17}
+
+
+EMPTY_PARAMETER_CASES = json.loads(
+    (ROOT / 'tests/fixtures/native_swe_empty_parameter_v031r3.json').read_text()
+)['cases']
+
+
+@pytest.mark.parametrize('case', EMPTY_PARAMETER_CASES)
+def test_saved_actual_empty_parameter_outputs_remain_rejected_and_empty_calls_pass(case):
+    supplied = {'tools': [case['tool']]}
+    message, error = parse_swe_xml_generated(case['raw_generated_text'], supplied)
+    assert error == case['protocol_parse_error']
+    assert message == {'role': 'assistant', 'content': case['raw_generated_text']}
+    name = case['tool']['function']['name']
+    assert decoded('<function=' + name + '>\n</function><|im_end|>', supplied) == {}
+
+
+def test_saved_actual_schema_violation_remains_rejected_without_correcting_value():
+    case = json.loads((ROOT / 'tests/fixtures/native_swe_schema_rejection_v031r3.json').read_text())['cases'][0]
+    message, error = parse_swe_xml_generated(case['raw_generated_text'], {'tools': [case['tool']]})
+    assert error == case['protocol_parse_error']
+    assert '200 is greater than the maximum of 180' in error
+    assert message == {'role': 'assistant', 'content': case['raw_generated_text']}
+
+
+def test_empty_call_manual_examples_depend_only_on_complete_public_schemas():
+    supplied = request()
+    supplied['tools'].extend(copy.deepcopy(case['tool']) for case in EMPTY_PARAMETER_CASES[::2])
+    # No top-level required field, but the complete schema still forbids {}.
+    supplied['tools'].append({'type': 'function', 'function': {'name': 'constrained_optional',
+        'parameters': {'type': 'object', 'properties': {'flag': {'type': 'boolean'}},
+                       'allOf': [{'minProperties': 1}], 'additionalProperties': False}}})
+    original = copy.deepcopy(supplied)
+    manual = _swe_manual(supplied)
+    for name in ('run_tests', 'diff_workspace'):
+        assert '<function=' + name + '>\n</function>' in manual
+    for name in ('record_fact', 'constrained_optional', 'staff_wait', 'staff_done', 'unprovided_tool'):
+        assert '<function=' + name + '>' not in manual
+    assert 'Omit optional parameters' in manual
+    assert 'never emit an empty parameter name' in manual
+    supplied['messages'] = [{'role': 'user', 'content': 'SECRET_TASK_ANSWER_NEVER_IN_MANUAL'}]
+    assert _swe_manual(supplied) == manual
+    assert 'SECRET_TASK_ANSWER_NEVER_IN_MANUAL' not in manual
+    _, _, projection = prepare_swe_xml_request(original, CapturingTokenizer())
+    assert projection['public_manual_version'] == SWE_MANUAL_VERSION
+    assert projection['version'] == 'native-codecs-v0.31'

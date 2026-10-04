@@ -378,6 +378,15 @@ class DurableTransport:
         self.inner, self.directory, self.window_id = inner, Path(directory), window_id
         self.counter = 0
 
+    def prepare_for_budget(self, request):
+        prepare = getattr(self.inner, "prepare_for_budget", None)
+        return prepare(request) if prepare is not None else None
+
+    def discard_prepared_request(self, request):
+        discard = getattr(self.inner, "discard_prepared_request", None)
+        if discard is not None:
+            discard(request)
+
     def complete(self, request, **kwargs):
         self.counter += 1
         stem = self.directory / f"call-{self.counter:05d}"

@@ -463,7 +463,7 @@ class ModelPolicy:
         )
         return result, selection
 
-    def _reserve(self, request):
+    def _reserve(self, request, *, prepared=None, actor_identity=None):
         # A deliberately conservative admission estimate, NOT observed token usage.
         # Exact tokenizer/context enforcement belongs to the fixed backend. Byte
         # count plus message/tool overhead is recorded and never claimed exact.
@@ -472,8 +472,18 @@ class ModelPolicy:
             byte_count + 1024 + 64 * (len(request["messages"]) + len(request.get("tools", [])))
         )
         output_upper = self.config["max_output_tokens"]
+        if prepared is not None:
+            from .software_context_v028 import validate_budget_preparation
+
+            validate_budget_preparation(request, prepared)
+            if (self.config["backend_id"] != "resident_direct"
+                    or prepared["actor_identity"] != (self.config["weight_identity"] if actor_identity is None else actor_identity)
+                    or prepared["context_limit"] != self.config["max_context_tokens"]
+                    or prepared["reserved_output_tokens"] != output_upper):
+                raise ValueError("Resident budget preparation differs from the worker's frozen owner contract")
+            input_upper = prepared["prompt_tokens"]
         price = self.config["pricing"]
-        return {
+        result = {
             "request_bytes": byte_count,
             "input_token_reservation": input_upper,
             "output_token_reservation": output_upper,
@@ -485,6 +495,10 @@ class ModelPolicy:
             / 1e6,
             "method": "UTF8 request bytes + 1024 + 64 per message/tool; conservative admission estimate, not measured usage or a tokenizer proof",
         }
+        if prepared is not None:
+            result.update(method="Actual resident selected prompt token count + unchanged maximum output tokens; strict token upper bound",
+                          reservation_kind="exact_resident_prompt", preparation=copy.deepcopy(prepared))
+        return result
 
     def _admit(self, memory, reservation, call_id):
         meter, cap = memory["meter"], self.config["budget"]
@@ -497,12 +511,14 @@ class ModelPolicy:
             meter["budget_accounted_tokens"] + reservation["token_reservation"]
             > cap["max_total_tokens"]
         ):
-            failures.append("max_total_tokens_conservative_reservation")
+            failures.append("max_total_tokens_exact_reservation" if reservation.get("reservation_kind") == "exact_resident_prompt"
+                            else "max_total_tokens_conservative_reservation")
         if (
             meter["budget_accounted_cost_usd"] + reservation["cost_reservation_usd"]
             > cap["max_cost_usd"] + 1e-12
         ):
-            failures.append("max_cost_usd_conservative_reservation")
+            failures.append("max_cost_usd_exact_reservation" if reservation.get("reservation_kind") == "exact_resident_prompt"
+                            else "max_cost_usd_conservative_reservation")
         if failures:
             self._emit(
                 "model_budget_stop",

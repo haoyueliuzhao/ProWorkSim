@@ -33,7 +33,7 @@ from .format_diagnostics import exception_diagnostic, feedback_diagnostics, sche
 from .staff_runtime import PolicyBoundaryError
 from .storage import digest, json_bytes
 
-HARNESS_VERSION = "openhands-managed-worker-v0.17"
+HARNESS_VERSION = "openhands-managed-worker-v0.31-r3"
 SDK_VERSION = "1.49.6"
 SDK_COMMIT = "fcc102a697874d54a357e36004e02c95040dbdc0"
 SYSTEM = """You are an independently scheduled worker inside a managed professional world.
@@ -376,7 +376,14 @@ class HarnessWorker:
             sdk_event_count=len(self._sdk_events),
             reconstructed_token_trace=False,
         )
-        reservation = self._accountant._reserve(request)
+        prepare_budget = getattr(self.transport, "prepare_for_budget", None)
+        prepared = prepare_budget(copy.deepcopy(request)) if prepare_budget is not None else None
+        try:
+            reservation = self._accountant._reserve(request, prepared=prepared, actor_identity=self._identity)
+        except Exception:
+            if prepared is not None:
+                self.transport.discard_prepared_request(request)
+            raise
         memory = {"meter": self.meter}
         self._emit(
             "model_call",
@@ -389,7 +396,12 @@ class HarnessWorker:
                 "config": self.config,
             },
         )
-        self._accountant._admit(memory, reservation, self._association["call_id"])
+        try:
+            self._accountant._admit(memory, reservation, self._association["call_id"])
+        except Exception:
+            if prepared is not None:
+                self.transport.discard_prepared_request(request)
+            raise
         self.meter["http_attempts"] += 1
         attempt = {
             **self._association,
@@ -688,6 +700,8 @@ class HarnessWorker:
             or exception_diagnostic(error, stage="adapter_structure"),
             adapter="openhands_worker_v017",
         )
+        native_failure = diagnostics["native_parser"].get("failure") or {}
+        reason = native_failure.get("reason") or str(error)
         reached = [
             name for name, count in self.format_errors.items() if count >= limits["max_" + name]
         ]
@@ -696,7 +710,7 @@ class HarnessWorker:
             "model_format_error",
             {
                 **self._association,
-                "reason": str(error),
+                "reason": reason,
                 "format_errors": self.format_errors,
                 "format_limits": limits,
                 "continues_on_later_opportunity": continues,
@@ -705,12 +719,12 @@ class HarnessWorker:
         )
         if self.config["format_error_policy"] == "format_feedback_continue":
             feedback = {
-                "version": "public-format-feedback-v0.17",
+                "version": "public-format-feedback-v0.31-r3",
                 "model_call_id": self._association["call_id"],
                 "original_response_id": (self._last_body or {}).get("id"),
                 "original_response_sha256": digest(json_bytes(self._last_body)),
                 "status": "decision_rejected",
-                "reason": str(error),
+                "reason": reason,
                 "world_action_executed": False,
                 "decision_consumed": True,
                 "format_errors": self.format_errors,
@@ -718,7 +732,12 @@ class HarnessWorker:
                 "continues_on_later_opportunity": continues,
                 "raw_response_location": "model_response ledger, unchanged",
                 "parse_diagnostics": diagnostics,
-                "contract": "Return exactly one public native function call, or an exact JSON wait/done control with a nonempty reason.",
+                "contract": (
+                    "Return exactly one public native function call using the declared native syntax "
+                    "and that function's public argument schema. This is correctable format feedback, "
+                    "not an instruction to wait or end your work. Any correction uses a later "
+                    "opportunity only if continues_on_later_opportunity is true."
+                ),
             }
             self._emit("model_format_feedback", {**self._association, "feedback": feedback})
             # The SDK receives explicit environmental feedback as a user-channel
@@ -740,13 +759,13 @@ class HarnessWorker:
         if not continues:
             raise PolicyBoundaryError(
                 "model_format_error",
-                "Frozen format-error limit reached" if reached else str(error),
+                "Frozen format-error limit reached" if reached else reason,
                 memory=self.snapshot(),
                 details={"format_errors": self.format_errors, "reached_limits": reached},
             ) from None
         return {
             "kind": "protocol_rejection",
-            "reason": str(error),
+            "reason": reason,
             "executed": False,
             "model_call_id": self._association["call_id"],
             "decision_id": self._association["decision_id"],

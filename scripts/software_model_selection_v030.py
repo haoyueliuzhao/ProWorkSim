@@ -184,6 +184,17 @@ class RoutedTransport:
             raise RuntimeError("No predeclared screening or technical return slot is active")
         return self.inner.complete(request, **kwargs)
 
+    def prepare_for_budget(self, request):
+        if self.inner is None:
+            raise RuntimeError("No predeclared screening or technical return slot is active")
+        prepare = getattr(self.inner, "prepare_for_budget", None)
+        return prepare(request) if prepare is not None else None
+
+    def discard_prepared_request(self, request):
+        discard = getattr(self.inner, "discard_prepared_request", None)
+        if discard is not None:
+            discard(request)
+
 
 class CollectionOwner:
     def __init__(self, owner):

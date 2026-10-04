@@ -2,6 +2,7 @@
 
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -246,6 +247,60 @@ def test_two_consecutive_format_failures_stop_without_model_retry(tmp_path):
     assert len(transport.requests) == 2 and actual == []
     assert w.format_errors == {"total": 2, "consecutive": 2}
     w.close()
+
+
+@pytest.mark.parametrize('structured_native_error', [False, True])
+@pytest.mark.parametrize('fixture_name', ['native_swe_empty_parameter_v031r3.json', 'native_swe_schema_rejection_v031r3.json'])
+def test_saved_xml_rejection_reports_native_cause_and_keeps_adapter_diagnostic(tmp_path, structured_native_error, fixture_name):
+    from proworksim.format_diagnostics import VERSION as DIAGNOSTIC_VERSION
+    from proworksim.native_codecs_v031 import parse_swe_xml_generated
+
+    case = json.loads((Path(__file__).parent / 'fixtures' / fixture_name).read_text())['cases'][0]
+    native_error = case['protocol_parse_error']
+    if structured_native_error:
+        native_error = {'version': DIAGNOSTIC_VERSION, 'parser': 'native_swe_test',
+                        'status': 'rejected', 'failure': {'reason': case['protocol_parse_error']}}
+
+    class SavedXmlTransport(FixtureTransport):
+        def complete(self, request, **kwargs):
+            response = super().complete(request, **kwargs)
+            message, error = parse_swe_xml_generated(case['raw_generated_text'], {'tools': [case['tool']]})
+            assert error == case['protocol_parse_error']
+            response['body']['choices'][0].update(message=message, finish_reason='stop')
+            response['body']['protocol_parse_error'] = copy.deepcopy(native_error)
+            response['raw_body'] = json.dumps(response['body'])
+            return response
+
+    transport, actual, events = SavedXmlTransport([[], []]), [], []
+    w = HarnessWorker('A', [case['tool']['function']],
+        {**CONFIG, 'format_error_policy': 'format_feedback_continue'}, transport,
+        lambda *args: actual.append(args),
+        event_sink=lambda kind, payload: events.append((kind, copy.deepcopy(payload))), directory=tmp_path / 'A')
+    try:
+        rejected = w.step({}, {'run_id': 'cpu', 'opportunity_id': '1'})
+        assert rejected['reason'] == case['protocol_parse_error']
+        assert rejected['executed'] is False and actual == []
+        feedback = next(row['feedback'] for kind, row in events if kind == 'model_format_feedback')
+        assert feedback['reason'] == case['protocol_parse_error']
+        assert feedback['world_action_executed'] is False
+        assert feedback['format_limits'] == {'max_consecutive': 2, 'max_total': 4}
+        assert feedback['continues_on_later_opportunity'] is True
+        assert feedback['parse_diagnostics']['adapter_parser']['failure']['reason'] == 'Expecting value'
+        assert 'correctable format feedback' in feedback['contract']
+        assert 'exact JSON wait/done' not in feedback['contract']
+        assert feedback['version'] == 'public-format-feedback-v0.31-r3'
+        assert not any(kind == 'model_tool_result' for kind, _ in events)
+        error_event = next(row for kind, row in events if kind == 'model_format_error')
+        assert error_event['reason'] == case['protocol_parse_error']
+        original_body = next(row['response'] for kind, row in events if kind == 'model_response')
+        assert original_body['protocol_parse_error'] == native_error
+        assert original_body['choices'][0]['message']['content'] == case['raw_generated_text']
+        with pytest.raises(PolicyBoundaryError, match='limit'):
+            w.step({}, {'run_id': 'cpu', 'opportunity_id': '2'})
+        assert len(transport.requests) == 2 and actual == []
+        assert w.format_errors == {'total': 2, 'consecutive': 2}
+    finally:
+        w.close()
 
 
 def test_exact_json_wait_is_sdk_message_and_direct_control_executor(tmp_path):

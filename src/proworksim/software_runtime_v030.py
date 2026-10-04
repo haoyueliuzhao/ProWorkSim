@@ -156,7 +156,39 @@ def _new_events(prepared, member, after):
     return [event for event in state.get("software_events", []) if event["sequence"] > after and (
         (event["kind"] in {"work_message", "handoff", "delegate", "task_returned"}
          and event.get("recipient") == member)
-        or (event["kind"] == "patch_fixed" and event["actor_id"] != member))]
+         or (event["kind"] == "patch_fixed" and event["actor_id"] != member))]
+
+
+def _terminal_detail(member, result, runtime, case, events=()):
+    """Describe the observed stopping boundary without changing retirement rules."""
+    detail = {"status": result["status"], "reason": result.get("reason", runtime.roles[member].get("reason")),
+              "decisions": _decisions(runtime, member), "decision_limit": case["role_decision_limits"][member],
+              "action_performed": bool(result.get("action_performed")),
+              "cause": result["status"], "evidence": []}
+    relevant = {"model_budget_stop", "model_format_error", "model_boundary_error", "interface_error",
+                "software_context_capacity_boundary", "model_control"}
+    for event in events:
+        if event.get("worker_id") == member and event["kind"] in relevant:
+            payload = event["payload"]
+            detail["evidence"].append({"sequence": event["sequence"], "kind": event["kind"]})
+            if event["kind"] == "model_budget_stop":
+                detail.update(cause="model_accounting_budget", limits=copy.deepcopy(payload.get("limits", [])),
+                              meter=copy.deepcopy(payload.get("meter", {})),
+                              reservation=copy.deepcopy(payload.get("reservation", {})))
+            elif event["kind"] == "model_format_error":
+                detail.update(cause="format_error_limit", format_errors=copy.deepcopy(payload.get("format_errors", {})),
+                              format_limits=copy.deepcopy(payload.get("format_limits", {})),
+                              last_format_reason=payload.get("reason"))
+            elif event["kind"] == "software_context_capacity_boundary":
+                detail.update(cause="context_capacity", context_error=copy.deepcopy(payload.get("error", {})),
+                              generation_started=False)
+    if result.get("budget_kind") == "decision_limit":
+        detail["cause"] = "member_decision_limit"
+    elif result.get("budget_kind") == "context_capacity":
+        detail["cause"] = "context_capacity"
+    elif result["status"] == "completed":
+        detail["cause"] = "member_explicit_done"
+    return detail
 
 
 def run_fragment(prepared, runtime, *, on_opportunity=None):
@@ -164,7 +196,7 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
     case = validate_case(prepared.case)
     controller = ScenarioController(prepared.deployment, recorder=runtime.recorder)
     controller.record_environment()
-    waiting, stopped, outcomes = {}, {}, []
+    waiting, stopped, outcomes, terminal_details = {}, {}, [], {}
     runtime.cursor = list(runtime.labels).index(case["first_member"])
     prepared.world.runtime_availability = lambda: availability(runtime, case)
 
@@ -176,6 +208,8 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
             if _decisions(runtime, member) >= case["role_decision_limits"][member]:
                 role.update(status="model_budget_exhausted", reason="Frozen member decision cap reached")
                 stopped[member] = "model_budget_exhausted"
+                terminal_details[member] = _terminal_detail(member, {
+                    "status": stopped[member], "reason": role["reason"], "budget_kind": "decision_limit"}, runtime, case)
                 waiting.pop(member, None)
                 runtime.recorder.record("role_retired", {"reason": stopped[member],
                     "decisions": _decisions(runtime, member)}, worker_id=member)
@@ -228,6 +262,7 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
         status = result["status"]
         if status in TERMINAL and not (status == "policy_error" and result.get("action_performed")):
             stopped[member] = status
+            terminal_details[member] = _terminal_detail(member, result, runtime, case, runtime.recorder.events[first_event:])
             runtime.roles[member]["software_retired"] = True
         elif status in {"worker_waiting", "world_blocked"}:
             events = prepared.world.store.load().get("software_events", [])
@@ -236,12 +271,17 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
                 "decisions_already_consumed": _decisions(runtime, member)}, worker_id=member)
         if on_opportunity:
             on_opportunity(result)
+    for member, sequence in waiting.items():
+        terminal_details[member] = {"status": runtime.roles[member]["status"], "cause": "no_reachable_wake_event",
+            "reason": runtime.roles[member].get("reason"), "waiting_after_event_sequence": sequence,
+            "decisions": _decisions(runtime, member), "decision_limit": case["role_decision_limits"][member]}
     boundary = {
         "status": ("blocked_no_reachable_events" if waiting else "workers_done"
                    if all(value == "completed" for value in stopped.values()) else "finite_task_deadline"),
         "kind": "finite_horizon_task_terminal", "scheduling_protocol": SCHEDULER,
         "first_member": case["first_member"], "role_stops": stopped,
         "waiting_members": copy.deepcopy(waiting), "outcomes": outcomes,
+        "closure_reason": "no_runnable_members", "terminal_details": terminal_details,
         "opportunities": runtime.opportunities, "actions": runtime.actions,
         "continuation": False, "bootstrap": 0,
         "scope": "No asynchronous work or external producer exists; no runnable member means no future wake event. This terminal does not imply business success.",

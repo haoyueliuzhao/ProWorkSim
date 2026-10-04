@@ -21,6 +21,7 @@ from .training import normalize_messages
 
 VERSION = 'native-codecs-v0.31'
 SWE_FORMAT = 'swe_next_author_openhands_xml_v031'
+SWE_MANUAL_VERSION = 'native-swe-public-manual-v0.31-r3'
 MISTRAL_FORMAT = 'mistral_common_v13_provided_tools_v031'
 SWE_AUTHOR_COMMIT = 'b55c0841f364f9fe7363b2012cd0ae8d8afdf872'
 NAME = r'[A-Za-z_][A-Za-z0-9_.-]*'
@@ -237,7 +238,12 @@ def _swe_manual(request):
         '<function=FUNCTION_NAME>\n<parameter=PARAMETER_NAME>VALUE</parameter>\n</function>\n'
         'Only the actual function names and parameter names listed below are available. '
         'Do not add a tool_call wrapper or a JSON function-call wrapper. '
-        'Supply every required argument once. For a parameter whose declared type is exactly string '
+        'Supply every required argument once. Omit optional parameters when they are not needed; '
+        'never emit an empty parameter name or a placeholder parameter element. '
+        'If the public schema accepts an empty argument object, use an empty function body:\n'
+        '<function=FUNCTION_NAME>\n</function>\n'
+        'Do not insert <parameter=></parameter> or text such as "no params" into that body. '
+        'For a parameter whose declared type is exactly string '
         '(including a local reference to that type), VALUE is literal text. One immediate LF after the '
         'opening parameter tag and one immediate LF before its closing tag form an optional paired '
         'structural frame; only that one pair is removed. Other spaces, indentation and extra LFs '
@@ -245,10 +251,17 @@ def _swe_manual(request):
         'For every other type, including type unions, VALUE is strict JSON of that declared type. '
         'XML-escape &, < and > inside all values as &amp;, &lt; and &gt;; no other decoding or type repair is applied. '
         'Do not invent tool results. Only actual tool responses establish execution.'
-        + _control_guidance(contracts) + '\n\nAvailable public functions and complete argument schemas:\n'
+        + _control_guidance(contracts)
     )
-    return manual + '\n'.join(json.dumps(row['definition'], ensure_ascii=False, sort_keys=True, allow_nan=False)
-                               for row in contracts.values())
+    empty_calls = ['<function=' + name + '>\n</function>' for name, row in contracts.items()
+                   if row['validator'].is_valid({})]
+    if empty_calls:
+        manual += ('\n\nIndependent syntax examples for functions whose supplied public schemas accept '
+                   'no arguments. Choose only one call per decision; these examples do not prescribe '
+                   'a task action:\n' + '\n'.join(empty_calls))
+    return manual + '\n\nAvailable public functions and complete argument schemas:\n' + '\n'.join(
+        json.dumps(row['definition'], ensure_ascii=False, sort_keys=True, allow_nan=False)
+        for row in contracts.values())
 
 
 def prepare_swe_xml_request(request, tokenizer):
@@ -289,6 +302,7 @@ def prepare_swe_xml_request(request, tokenizer):
     return rendered, messages, {
         'version': VERSION, 'native_format': SWE_FORMAT, 'author_repository_commit': SWE_AUTHOR_COMMIT,
         'native_tool_prompt': 'public_schema_single_xml_text_manual', 'hf_template_tools_argument': None,
+        'public_manual_version': SWE_MANUAL_VERSION,
         'request_sha256': digest(json_bytes(request)),
         'normalized_messages_sha256': digest(json_bytes(original)),
         'actual_prompt_messages_sha256': digest(json_bytes(messages)),
