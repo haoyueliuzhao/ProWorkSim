@@ -1,6 +1,6 @@
 # ID-VTDO 当前研究设计与实现状态
 
-当前接续为[v0.31](../experiments/software-model-selection-v031-protocol.md)：公共世界、六案例、SDK及9B原组合均不改，仅两个新候选修订原生协议与完整可微缓存重算。GPU4/6已预约；新CPU控制通过，真实旧trace数值证明和新资格仍待执行，不能宣称训练或分配收益。旧v0.30-r1已于20:48有限结束，无合格入选组合；以下保留当时过程记录。
+当前接续为[v0.31](../experiments/software-model-selection-v031-protocol.md)：公共世界、六案例、SDK及9B原组合均不改，仅两个新候选修订原生协议与完整可微缓存重算。GPU4/6上两条真实旧trace数值证明已通过（新缓存/可微路径误差0、完整反传与恢复通过）；两个新组合已进入新鲜资格，近16K容量和筛选尚待完成，不能宣称训练或分配收益。见[实际GPU记录](../experiments/software-model-selection-v031-launch.md)。旧v0.30-r1已于20:48有限结束，无合格入选组合；以下保留当时过程记录。
 
 最新恢复进度（2026-10-04晚）：9B已完成12槽（API2/4、修复4/4、O1 0/4）；两个新模型下载完整，但在写加载诊断时发生零采样序列化失败。仅修复诊断表示并建立一次恢复，GPU5已成功预约并于20:39启动SWE真实资格，Devstral继续排队，原9B及两次失败原件全部保留。见[恢复记录](../experiments/software-model-selection-v030-recovery.md)。
 

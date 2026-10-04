@@ -1,8 +1,8 @@
 # ProWorkSim
 
-## v0.31 接口与可微重算修订：CPU核验完成，GPU4/6已预约
+## v0.31 接口与可微重算修订：GPU数值对照通过，GPU4/6接续资格实验
 
-按继续实验要求，修订两个新候选的原生接口与密集模型重算路径；旧v0.30/r1结果保持。新接口12组合、48次真实SDK脚本往返通过，数值图、旧trace验证程序和队列已做必要CPU控制。GPU4、6各已预约76GiB，下一步先做真实旧trace的概率/完整梯度对照，再按臂进入新资格和原12槽筛选；目前不预先宣布GPU数值或容量通过。见[CPU记录](docs/experiments/software-model-selection-v031-cpu.md)、[本轮协议](docs/experiments/software-model-selection-v031-protocol.md)、[数值设计](docs/design/dense-replay-v031.md)和[官方原生协议依据](docs/research/software-native-protocol-v031.md)。
+按继续实验要求，修订两个新候选的原生接口与密集模型重算路径；旧v0.30/r1结果保持。新接口12组合、48次真实SDK脚本往返通过，数值图、旧trace验证程序和队列已做必要CPU控制。GPU4、6的真实旧trace对照均已通过：原偏差精确复现，新原生缓存/可微路径误差为0，完整反传和恢复通过，零新采样/零更新。两个新组合已在GPU4/6接续新鲜资格；近16K容量及正式筛选仍待实际完成。见[实际启动与GPU证明](docs/experiments/software-model-selection-v031-launch.md)。见[CPU记录](docs/experiments/software-model-selection-v031-cpu.md)、[本轮协议](docs/experiments/software-model-selection-v031-protocol.md)、[数值设计](docs/design/dense-replay-v031.md)和[官方原生协议依据](docs/research/software-native-protocol-v031.md)。
 
 
 ## v0.30 模型与 O1 选型：9B已完成，两新模型修复加载记录后接续
