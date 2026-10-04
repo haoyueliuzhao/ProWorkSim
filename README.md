@@ -1,5 +1,17 @@
 # ProWorkSim
 
+## v0.30 模型与 O1 选型：源码及 CPU 控制已完成，GPU 队列尚未启动
+
+更新于2026-10-04。按[新审计](docs/reference/audit-v029-next-v030.md)实施[本轮协议](docs/experiments/software-model-selection-v030-protocol.md)：保留v0.29完整工作0/8、无有效支持、依约停止的结论，后续先验证共同模型载体的API使用、真实失败修复与可微更新能力。本页更新时，三个候选的GPU资格及正式筛选队列尚未启动，尚无本轮真实模型成绩或参数训练收益。
+
+新工作世界从共同根目标和空任务表开始，成员自行形成、修订任务、责任与依赖；公开反馈分别呈现上游回归、consumer正常路径、成员自测和未测部分。[六个新开发合同](examples/software-sources-v030/README.md)复用一个固定Marshmallow仓库，分为2个API正常路径、2个真实故障修复和2个双成员O1根目标案例。它们永远属于模型／接口开发池，不用于参数训练、贡献估计或独立确认；不是六个独立仓库，也不重复旧sqlparse同题窗口。
+
+候选固定为当前9B端点、SWE-Next-14B和Devstral-Small-2507，最多6案例×2seed×3模型＝36条正式筛选经历，三类成绩分别报告。每臂先经过最多4次原生技术诊断、1次可逆诊断更新和1次更新后单调用回流；保持原概率门及全部实际token，训练就绪还要求真实近16K序列完整反传。诊断后完整恢复共同actor／critic／两个optimizer／RNG，筛选不更新参数；未通过资格或全部候选不合格均按协议结束，不因低分增加候选或补采。
+
+源码参考解、坏控制、O1生命周期和一阶分配已做CPU核验，[最终集成控制](docs/experiments/software-model-selection-v030-cpu.md)71项通过且Ruff通过；[原生模板资格](docs/experiments/software-native-templates-v030.md)的18个模型／案例组合、72次脚本化SDK请求全部通过，真实模型调用为0。CPU小模型的真实反传与恢复控制、脚本化规则执行、候选真实模型资格和软件工作成绩分别记账。新[一阶数学修订](docs/design/experience-allocation-v030.md)采用对数N、显式历史／覆盖双锚，并分开G-raw、G-lift与I-P；本地未取得完整V1.3原文，只声明可见一阶条款的实现，本轮不执行分配效果实验。
+
+[候选来源与模型研究](docs/research/software-model-candidates-v030.md)记录固定revision、许可和有限重合检查；[旧27B清理记录](docs/operations/model-27b-cleanup-2026-10-04.md)记录已删除的权重、专属缓存与探针，合计约51.75GiB分配块，9B及历史实验、检查点均保留。[当前研究入口](docs/research/id-vtdo.md)汇总现状与回到同模型B／G-raw／I-P比较的条件。
+
 ## v0.29 新来源首窗已结案：完整工作0/8，无配置更新
 
 [详细结案报告](docs/experiments/software-allocation-v029-final.md)：同一sqlparse情境、固定A先手的8个预登记seed全部可评，7槽有固定交付但consumer失败、1槽无固定交付，完整工作0/8。七份固定成果的库API和所选上游回归均通过，consumer均把Statement当Comparison而提前异常。一次交付后的成员自测实际暴露该错误，但预算内未修复；不能把全部测试绿色或模型自述扩大为任务通过。
@@ -12,7 +24,7 @@
 
 按[10月3日审计](docs/reference/audit-v027-next-v028.md)实施[新协议](docs/software-allocation-v028-plan.md)：补编辑前消息、转交通知与归还、等待唤醒及有界阻塞。稳定成员自主承担预定义子任务，不声称完整任务分解。新Mapper以固定交付净定义及实际输入/验证关系分类，撤销或无关注释不制造第二类。
 
-阶段1为2情境×2先手×2seed共8条9B开发经历，冻结参数、零更新；生成前原请求、SDK流、版本、独立验收与中断全部保存。[原运行记录](docs/experiments/software-development-v028.md)给出实际等待/启动/终态，未启动不补零。按最新指令后续仅在GPU5排队、单实例运行，等待截止北京时间2026-10-06 00:00；累计GPU时长、每worker时长和全局墙钟截止均已撤销。原运行与[修复恢复轮](docs/experiments/software-development-v028-context-repair.md)已于10月3日19:44结束：8槽全部可评，4通过/4未交付，GPU5已释放；原异常attempt保留，新旧接口结果仅作状态总账，详见[恢复运行报告](docs/experiments/software-development-v028-recovery.md)。 完整协议、九次尝试、故障与成本汇总见[本轮实验报告](docs/experiments/software-development-v028-summary.md)。
+阶段1为2情境×2先手×2seed共8条9B开发经历，冻结参数、零更新；生成前原请求、SDK流、版本、独立验收与中断全部保存。[原运行记录](docs/experiments/software-development-v028.md)给出实际等待/启动/终态，未启动不补零。该轮恢复按当时指令仅在GPU5排队、单实例运行，原等待截止为北京时间2026-10-06 00:00；这不是当前v0.30的GPU范围。原运行与[修复恢复轮](docs/experiments/software-development-v028-context-repair.md)已于10月3日19:44结束：8槽全部可评，4通过/4未交付，GPU5已释放；原异常attempt保留，新旧接口结果仅作状态总账，详见[恢复运行报告](docs/experiments/software-development-v028-recovery.md)。 完整协议、九次尝试、故障与成本汇总见[本轮实验报告](docs/experiments/software-development-v028-summary.md)。
 
 [SWE-smith来源阶段](docs/experiments/software-sources-v028.md)已取得3个整仓分用途的可执行任务：sqlparse训练、schema贡献开发、TextFSM独立确认，已实跑缺陷/修复及联合依赖控制。程序结果、开发模型工作和B/G/I效果分开；现有配置器登记为单窗口线性N/基础锚变体，并区分坐标斜率与b中心化C。
 

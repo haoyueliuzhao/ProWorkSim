@@ -1,0 +1,14 @@
+[
+  {
+    "control_id": "discard_invalid_rows_without_errors",
+    "replace_files": {
+      "consumer.py": "from marshmallow import ValidationError\nfrom models import PersonSchema\n\n\ndef _paths(messages, prefix=\"\"):\n    result = []\n    for key, value in messages.items():\n        path = prefix + \".\" + str(key) if prefix else str(key)\n        if isinstance(value, dict):\n            result.extend(_paths(value, path))\n        else:\n            result.append(path)\n    return sorted(result)\n\n\ndef validate_people(rows):\n    accepted, rejected = [], []\n    schema = PersonSchema()\n    for index, row in enumerate(rows):\n        try:\n            accepted.append(schema.load(row))\n        except ValidationError as error:\n            pass\n    return {\"accepted\": accepted, \"rejected\": rejected}\n"
+    }
+  },
+  {
+    "control_id": "treat_schema_validate_result_as_loaded_rows",
+    "replace_files": {
+      "consumer.py": "from models import PersonSchema\ndef validate_people(rows):\n    return {\"accepted\": [PersonSchema().validate(row) for row in rows], \"rejected\": []}\n"
+    }
+  }
+]

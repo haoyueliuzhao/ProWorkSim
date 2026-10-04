@@ -1,0 +1,233 @@
+{
+  "authority": "independent model-interface screening only, never contribution or confirmation",
+  "cases": [
+    {
+      "case_id": "independent-ledger-precision",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "ledger_report",
+        "args": [
+          [
+            {
+              "id": "x",
+              "amount": "0.01",
+              "ignored": true
+            },
+            {
+              "id": "y",
+              "amount": "009.9"
+            },
+            {
+              "id": "z",
+              "amount": "1000000000000000.02"
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "LedgerSchema",
+            "load"
+          ],
+          [
+            "models",
+            "LedgerSchema",
+            "dump"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "id": "x",
+              "amount": "0.01"
+            },
+            {
+              "id": "y",
+              "amount": "9.90"
+            },
+            {
+              "id": "z",
+              "amount": "1000000000000000.02"
+            }
+          ],
+          "rejected": [],
+          "total": "1000000000000009.93"
+        },
+        "source_api_used": {
+          "models.LedgerSchema.load": true,
+          "models.LedgerSchema.dump": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-ledger-validation-before-dedupe",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "ledger_report",
+        "args": [
+          [
+            {
+              "id": "q",
+              "amount": "2.345"
+            },
+            {
+              "id": "q",
+              "amount": "7"
+            },
+            {
+              "id": "q",
+              "amount": "oops"
+            },
+            {
+              "id": "q",
+              "amount": "9"
+            },
+            {
+              "id": "zero",
+              "amount": "0"
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "LedgerSchema",
+            "load"
+          ],
+          [
+            "models",
+            "LedgerSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "id": "q",
+              "amount": "7.00"
+            },
+            {
+              "id": "zero",
+              "amount": "0.00"
+            }
+          ],
+          "rejected": [
+            {
+              "index": 0,
+              "reason": "invalid"
+            },
+            {
+              "index": 2,
+              "reason": "invalid"
+            },
+            {
+              "index": 3,
+              "reason": "duplicate"
+            }
+          ],
+          "total": "7.00"
+        },
+        "source_api_used": {
+          "models.LedgerSchema.load": true,
+          "models.LedgerSchema.dump": true
+        }
+      }
+    },
+    {
+      "case_id": "independent-ledger-invalid-formats",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "ledger_report",
+        "args": [
+          [
+            {
+              "id": "a",
+              "amount": true
+            },
+            {
+              "id": "b",
+              "amount": " 2.00"
+            },
+            {
+              "id": "c",
+              "amount": "1e2"
+            },
+            {
+              "id": "d",
+              "amount": ".5"
+            },
+            {
+              "id": "e",
+              "amount": "-0.01"
+            },
+            {
+              "id": "ok",
+              "amount": "5.00"
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "LedgerSchema",
+            "load"
+          ],
+          [
+            "models",
+            "LedgerSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "id": "ok",
+              "amount": "5.00"
+            }
+          ],
+          "rejected": [
+            {
+              "index": 0,
+              "reason": "invalid"
+            },
+            {
+              "index": 1,
+              "reason": "invalid"
+            },
+            {
+              "index": 2,
+              "reason": "invalid"
+            },
+            {
+              "index": 3,
+              "reason": "invalid"
+            },
+            {
+              "index": 4,
+              "reason": "invalid"
+            }
+          ],
+          "total": "5.00"
+        },
+        "source_api_used": {
+          "models.LedgerSchema.load": true,
+          "models.LedgerSchema.dump": true
+        }
+      }
+    }
+  ]
+}

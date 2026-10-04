@@ -1,0 +1,20 @@
+[
+  {
+    "control_id": "models_only_consumer_unimplemented",
+    "replace_files": {
+      "consumer.py": "def apply_settings(base, patch):\n    \"\"\"Apply an atomic partial settings update.\"\"\"\n    raise NotImplementedError(\"Implement the public contract\")\n"
+    }
+  },
+  {
+    "control_id": "consumer_only_models_unimplemented",
+    "replace_files": {
+      "models.py": "from marshmallow import Schema\n\n\nclass SettingsSchema(Schema):\n    \"\"\"Define the settings contract, including nested partial updates.\"\"\"\n    pass\n"
+    }
+  },
+  {
+    "control_id": "replace_nested_object_loses_host",
+    "replace_files": {
+      "consumer.py": "from copy import deepcopy\nfrom marshmallow import ValidationError\nfrom models import SettingsSchema\n\n\ndef apply_settings(base, patch):\n    schema = SettingsSchema()\n    state = schema.load(base)\n    try:\n        change = schema.load(patch, partial=True)\n    except ValidationError:\n        return {\"ok\": False, \"public\": schema.dump(state), \"state\": state}\n    merged = deepcopy(state)\n    for key, value in change.items():\n        if key == \"network\":\n            merged[key] = value\n        else:\n            merged[key] = value\n    return {\"ok\": True, \"public\": schema.dump(merged), \"state\": merged}\n"
+    }
+  }
+]

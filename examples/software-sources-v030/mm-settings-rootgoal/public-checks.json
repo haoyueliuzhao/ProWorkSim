@@ -1,0 +1,100 @@
+{
+  "authority": "public examples derived from the public requirements, not copied from hidden acceptance",
+  "cases": [
+    {
+      "case_id": "public-settings-partial-network",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_settings",
+        "args": [
+          {
+            "name": "svc",
+            "network": {
+              "host": "localhost",
+              "port": 8000
+            },
+            "token": "keep",
+            "retries": 3
+          },
+          {
+            "network": {
+              "port": "9000"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "public": {
+            "name": "svc",
+            "network": {
+              "host": "localhost",
+              "port": 9000
+            },
+            "retries": 3
+          },
+          "state": {
+            "name": "svc",
+            "network": {
+              "host": "localhost",
+              "port": 9000
+            },
+            "token": "keep",
+            "retries": 3
+          }
+        }
+      }
+    },
+    {
+      "case_id": "public-settings-invalid-atomic",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_settings",
+        "args": [
+          {
+            "name": "svc",
+            "network": {
+              "host": "localhost",
+              "port": 8000
+            },
+            "token": "keep",
+            "retries": 3
+          },
+          {
+            "name": "new",
+            "network": {
+              "port": 0
+            }
+          }
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": false,
+          "public": {
+            "name": "svc",
+            "network": {
+              "host": "localhost",
+              "port": 8000
+            },
+            "retries": 3
+          },
+          "state": {
+            "name": "svc",
+            "network": {
+              "host": "localhost",
+              "port": 8000
+            },
+            "token": "keep",
+            "retries": 3
+          }
+        }
+      }
+    }
+  ]
+}

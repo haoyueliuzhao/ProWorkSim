@@ -1,0 +1,78 @@
+{
+  "authority": "public examples derived from the public requirements, not copied from hidden acceptance",
+  "cases": [
+    {
+      "case_id": "public-ledger-mixed",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "ledger_report",
+        "args": [
+          [
+            {
+              "id": "a",
+              "amount": "1.2"
+            },
+            {
+              "id": "b",
+              "amount": "3.45"
+            },
+            {
+              "id": "a",
+              "amount": "8.00"
+            },
+            {
+              "id": "c",
+              "amount": "-1"
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "id": "a",
+              "amount": "1.20"
+            },
+            {
+              "id": "b",
+              "amount": "3.45"
+            }
+          ],
+          "rejected": [
+            {
+              "index": 2,
+              "reason": "duplicate"
+            },
+            {
+              "index": 3,
+              "reason": "invalid"
+            }
+          ],
+          "total": "4.65"
+        }
+      }
+    },
+    {
+      "case_id": "public-ledger-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "ledger_report",
+        "args": [
+          []
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [],
+          "rejected": [],
+          "total": "0.00"
+        }
+      }
+    }
+  ]
+}

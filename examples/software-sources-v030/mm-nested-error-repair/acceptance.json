@@ -1,0 +1,123 @@
+{
+  "authority": "independent model-interface screening only, never contribution or confirmation",
+  "cases": [
+    {
+      "case_id": "independent-people-multiple-errors",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "validate_people",
+        "args": [
+          [
+            {
+              "address": {
+                "postal": 0
+              }
+            },
+            {
+              "fullName": "Kai",
+              "address": {
+                "postal": "456",
+                "city": "East",
+                "note": "ignored"
+              },
+              "extra": 1
+            },
+            {
+              "fullName": "Una",
+              "address": {
+                "city": "South"
+              }
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "PersonSchema",
+            "load"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "name": "Kai",
+              "address": {
+                "postal": 456,
+                "city": "East"
+              }
+            }
+          ],
+          "rejected": [
+            {
+              "index": 0,
+              "fields": [
+                "address.city",
+                "address.postal",
+                "fullName"
+              ]
+            },
+            {
+              "index": 2,
+              "fields": [
+                "address.postal"
+              ]
+            }
+          ]
+        },
+        "source_api_used": {
+          "models.PersonSchema.load": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-people-all-valid",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "validate_people",
+        "args": [
+          [
+            {
+              "fullName": "Jin",
+              "address": {
+                "postal": 19,
+                "city": "Lake"
+              }
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "PersonSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "name": "Jin",
+              "address": {
+                "postal": 19,
+                "city": "Lake"
+              }
+            }
+          ],
+          "rejected": []
+        },
+        "source_api_used": {
+          "models.PersonSchema.load": true
+        }
+      }
+    }
+  ]
+}

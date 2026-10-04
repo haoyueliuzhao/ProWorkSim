@@ -1,0 +1,95 @@
+{
+  "authority": "independent model-interface screening only, never contribution or confirmation",
+  "cases": [
+    {
+      "case_id": "independent-envelope-many",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "unpack_envelope",
+        "args": [
+          {
+            "items": [
+              {
+                "code": "archive",
+                "quantity": "14"
+              },
+              {
+                "code": "tape",
+                "quantity": 0
+              },
+              {
+                "code": "box",
+                "quantity": "-2"
+              }
+            ]
+          },
+          true
+        ],
+        "trace": [
+          [
+            "models",
+            "EnvelopeSchema",
+            "load"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "code": "archive",
+            "quantity": 14
+          },
+          {
+            "code": "tape",
+            "quantity": 0
+          },
+          {
+            "code": "box",
+            "quantity": -2
+          }
+        ],
+        "source_api_used": {
+          "models.EnvelopeSchema.load": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-envelope-single",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "unpack_envelope",
+        "args": [
+          {
+            "item": {
+              "code": "stamp",
+              "quantity": "23"
+            }
+          },
+          false
+        ],
+        "trace": [
+          [
+            "models",
+            "EnvelopeSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "code": "stamp",
+          "quantity": 23
+        },
+        "source_api_used": {
+          "models.EnvelopeSchema.load": true
+        }
+      }
+    }
+  ]
+}

@@ -160,7 +160,8 @@ class HarnessWorker:
             raise ValueError("SDK worker admits exactly one transport attempt per decision")
         if self.config["context_policy"] != "full_history":
             raise ValueError("SDK v0.16 uses explicit full SDK event history; no hidden truncation")
-        if context_selection not in {"full_history", "latest_observation_last4_tool_rounds"}:
+        if context_selection not in {"full_history", "latest_observation_last4_tool_rounds",
+                                      "first_and_latest_observation_last4_tool_rounds"}:
             raise ValueError("Unknown frozen SDK context selection")
         self.context_selection = context_selection
         self._observation_texts = []
@@ -821,6 +822,11 @@ def select_context(messages, observation_texts, policy):
     if policy == "latest_observation_last4_tool_rounds":
         removed.update(observations[:-1])
         removed.update(i for pair in pairs[:-4] for i in pair)
+    elif policy == "first_and_latest_observation_last4_tool_rounds":
+        if messages[observations[0]]["content"] != observation_texts[0]:
+            raise RuntimeError("Initial SDK observation has no exact registered provenance")
+        removed.update(observations[1:-1])
+        removed.update(i for pair in pairs[:-4] for i in pair)
     selected_indices = [i for i in range(len(messages)) if i not in removed]
     selected = [copy.deepcopy(messages[i]) for i in selected_indices]
     audit = {
@@ -850,4 +856,7 @@ def select_context(messages, observation_texts, policy):
             for i, m in enumerate(messages)
         ],
     }
+    if policy == "first_and_latest_observation_last4_tool_rounds":
+        audit["first_observation_index"] = observations[0]
+        audit["retained_observation_indices"] = sorted({observations[0], observations[-1]})
     return selected, audit

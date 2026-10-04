@@ -1,0 +1,71 @@
+{
+  "authority": "public examples derived from the public requirements, not copied from hidden acceptance",
+  "cases": [
+    {
+      "case_id": "public-people-mixed",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "validate_people",
+        "args": [
+          [
+            {
+              "fullName": "Ari",
+              "address": {
+                "postal": "123",
+                "city": "North"
+              }
+            },
+            {
+              "fullName": "Pat",
+              "address": {
+                "postal": "bad",
+                "city": "West"
+              }
+            }
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "name": "Ari",
+              "address": {
+                "postal": 123,
+                "city": "North"
+              }
+            }
+          ],
+          "rejected": [
+            {
+              "index": 1,
+              "fields": [
+                "address.postal"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "public-people-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "validate_people",
+        "args": [
+          []
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [],
+          "rejected": []
+        }
+      }
+    }
+  ]
+}

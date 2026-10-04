@@ -1,0 +1,94 @@
+{
+  "authority": "independent model-interface screening only, never contribution or confirmation",
+  "cases": [
+    {
+      "case_id": "independent-events-offset",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "export_events",
+        "args": [
+          [
+            {
+              "label": "release",
+              "timestamp": "2025-04-06T10:30:12.125000+05:30",
+              "owner": "Rae",
+              "secret": "do-not-export"
+            },
+            {
+              "label": "meeting",
+              "timestamp": "2024-12-31T00:00:00-03:00",
+              "owner": "Bo",
+              "secret": "private"
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "EventSchema",
+            "dump"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "title": "release",
+            "at": "2025-04-06T10:30:12.125000+05:30",
+            "owner": "Rae"
+          },
+          {
+            "title": "meeting",
+            "at": "2024-12-31T00:00:00-03:00",
+            "owner": "Bo"
+          }
+        ],
+        "source_api_used": {
+          "models.EventSchema.dump": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-events-naive",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "export_events",
+        "args": [
+          [
+            {
+              "label": "draft",
+              "timestamp": "2023-08-01T06:07:08",
+              "owner": "Lu",
+              "secret": "s"
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "EventSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "title": "draft",
+            "at": "2023-08-01T06:07:08",
+            "owner": "Lu"
+          }
+        ],
+        "source_api_used": {
+          "models.EventSchema.dump": true
+        }
+      }
+    }
+  ]
+}

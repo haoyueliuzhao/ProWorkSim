@@ -1,0 +1,20 @@
+[
+  {
+    "control_id": "models_only_consumer_unimplemented",
+    "replace_files": {
+      "consumer.py": "def ledger_report(rows):\n    \"\"\"Import ledger rows and report accepted, rejected and total.\"\"\"\n    raise NotImplementedError(\"Implement the public contract\")\n"
+    }
+  },
+  {
+    "control_id": "consumer_only_models_unimplemented",
+    "replace_files": {
+      "models.py": "from marshmallow import Schema, fields\n\n\nclass CentsField(fields.Field):\n    \"\"\"Load nonnegative integer minor units; dump canonical major-unit strings.\"\"\"\n    def _deserialize(self, value, attr, data, **kwargs):\n        raise NotImplementedError(\"Implement money parsing\")\n\n    def _serialize(self, value, attr, obj, **kwargs):\n        raise NotImplementedError(\"Implement canonical money formatting\")\n\n\nclass LedgerSchema(Schema):\n    id = fields.String(required=True)\n    amount = CentsField(required=True)\n"
+    }
+  },
+  {
+    "control_id": "silently_drop_duplicates",
+    "replace_files": {
+      "consumer.py": "from marshmallow import ValidationError\nfrom models import CentsField, LedgerSchema\n\n\ndef ledger_report(rows):\n    accepted, rejected, seen = [], [], set()\n    schema = LedgerSchema()\n    total = 0\n    for index, row in enumerate(rows):\n        try:\n            item = schema.load(row)\n        except ValidationError:\n            rejected.append({\"index\": index, \"reason\": \"invalid\"})\n            continue\n        if item[\"id\"] in seen:\n            pass\n            continue\n        seen.add(item[\"id\"])\n        accepted.append(schema.dump(item))\n        total += item[\"amount\"]\n    return {\"accepted\": accepted, \"rejected\": rejected,\n            \"total\": CentsField()._serialize(total, None, None)}\n"
+    }
+  }
+]

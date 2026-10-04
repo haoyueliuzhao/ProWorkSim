@@ -1,0 +1,122 @@
+{
+  "authority": "independent model-interface screening only, never contribution or confirmation",
+  "cases": [
+    {
+      "case_id": "independent-orders-nested-extra",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "import_orders",
+        "args": [
+          [
+            {
+              "orderId": "h-17",
+              "debug": true,
+              "buyer": {
+                "email": "h@other.org",
+                "ignore": 8
+              },
+              "lines": [
+                {
+                  "sku": "file",
+                  "qty": "12",
+                  "price": 4
+                }
+              ]
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "OrderSchema",
+            "load"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "id": "h-17",
+            "email": "h@other.org",
+            "units": 12,
+            "skus": [
+              "file"
+            ]
+          }
+        ],
+        "source_api_used": {
+          "models.OrderSchema.load": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-orders-collection",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "import_orders",
+        "args": [
+          [
+            {
+              "orderId": "h-2",
+              "buyer": {
+                "email": "z@other.org"
+              },
+              "lines": []
+            },
+            {
+              "orderId": "h-3",
+              "buyer": {
+                "email": "y@other.org"
+              },
+              "lines": [
+                {
+                  "sku": "r",
+                  "qty": 0
+                },
+                {
+                  "sku": "r",
+                  "qty": "4"
+                }
+              ]
+            }
+          ]
+        ],
+        "trace": [
+          [
+            "models",
+            "OrderSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "id": "h-2",
+            "email": "z@other.org",
+            "units": 0,
+            "skus": []
+          },
+          {
+            "id": "h-3",
+            "email": "y@other.org",
+            "units": 4,
+            "skus": [
+              "r",
+              "r"
+            ]
+          }
+        ],
+        "source_api_used": {
+          "models.OrderSchema.load": true
+        }
+      }
+    }
+  ]
+}

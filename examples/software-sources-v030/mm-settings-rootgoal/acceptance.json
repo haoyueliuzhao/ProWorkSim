@@ -1,0 +1,264 @@
+{
+  "authority": "independent model-interface screening only, never contribution or confirmation",
+  "cases": [
+    {
+      "case_id": "independent-settings-secret-and-default",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_settings",
+        "args": [
+          {
+            "name": "alpha",
+            "network": {
+              "host": "example.org",
+              "port": "443"
+            },
+            "token": "old",
+            "irrelevant": 5
+          },
+          {
+            "token": "new",
+            "network": {
+              "host": "backup.org"
+            },
+            "extra": "ignored"
+          }
+        ],
+        "trace": [
+          [
+            "models",
+            "SettingsSchema",
+            "load"
+          ],
+          [
+            "models",
+            "SettingsSchema",
+            "dump"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "public": {
+            "name": "alpha",
+            "network": {
+              "host": "backup.org",
+              "port": 443
+            },
+            "retries": 3
+          },
+          "state": {
+            "name": "alpha",
+            "network": {
+              "host": "backup.org",
+              "port": 443
+            },
+            "token": "new",
+            "retries": 3
+          }
+        },
+        "source_api_used": {
+          "models.SettingsSchema.load": true,
+          "models.SettingsSchema.dump": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-settings-empty-patch",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_settings",
+        "args": [
+          {
+            "name": "beta",
+            "network": {
+              "host": "internal",
+              "port": 6123
+            },
+            "token": "b",
+            "retries": 0
+          },
+          {}
+        ],
+        "trace": [
+          [
+            "models",
+            "SettingsSchema",
+            "load"
+          ],
+          [
+            "models",
+            "SettingsSchema",
+            "dump"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "public": {
+            "name": "beta",
+            "network": {
+              "host": "internal",
+              "port": 6123
+            },
+            "retries": 0
+          },
+          "state": {
+            "name": "beta",
+            "network": {
+              "host": "internal",
+              "port": 6123
+            },
+            "token": "b",
+            "retries": 0
+          }
+        },
+        "source_api_used": {
+          "models.SettingsSchema.load": true,
+          "models.SettingsSchema.dump": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-settings-invalid-retries",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_settings",
+        "args": [
+          {
+            "name": "gamma",
+            "network": {
+              "host": "localhost",
+              "port": 1234
+            },
+            "token": "keep",
+            "retries": 7
+          },
+          {
+            "retries": -1,
+            "token": "bad",
+            "network": {
+              "port": 5678
+            }
+          }
+        ],
+        "trace": [
+          [
+            "models",
+            "SettingsSchema",
+            "load"
+          ],
+          [
+            "models",
+            "SettingsSchema",
+            "dump"
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": false,
+          "public": {
+            "name": "gamma",
+            "network": {
+              "host": "localhost",
+              "port": 1234
+            },
+            "retries": 7
+          },
+          "state": {
+            "name": "gamma",
+            "network": {
+              "host": "localhost",
+              "port": 1234
+            },
+            "token": "keep",
+            "retries": 7
+          }
+        },
+        "source_api_used": {
+          "models.SettingsSchema.load": true,
+          "models.SettingsSchema.dump": true
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "independent-settings-valid-retries",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_settings",
+        "args": [
+          {
+            "name": "delta",
+            "network": {
+              "host": "localhost",
+              "port": 1000
+            },
+            "token": "keep",
+            "retries": 8
+          },
+          {
+            "retries": "2",
+            "network": {
+              "port": 65000
+            }
+          }
+        ],
+        "trace": [
+          [
+            "models",
+            "SettingsSchema",
+            "load"
+          ],
+          [
+            "models",
+            "SettingsSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "public": {
+            "name": "delta",
+            "network": {
+              "host": "localhost",
+              "port": 65000
+            },
+            "retries": 2
+          },
+          "state": {
+            "name": "delta",
+            "network": {
+              "host": "localhost",
+              "port": 65000
+            },
+            "token": "keep",
+            "retries": 2
+          }
+        },
+        "source_api_used": {
+          "models.SettingsSchema.load": true,
+          "models.SettingsSchema.dump": true
+        }
+      }
+    }
+  ]
+}
