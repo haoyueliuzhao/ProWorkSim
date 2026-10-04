@@ -1,6 +1,6 @@
 # v0.31 原生接口与数值路径修订后的有限选型
 
-状态：`running`；新批执行源码：`3baa4783b7a76d3513a4e2a0d07a0eccb3a81475`。
+状态：`finite_batch_no_qualified_candidate`；新批执行源码：`3baa4783b7a76d3513a4e2a0d07a0eccb3a81475`。
 原始记录：`/data1/zhuxinrui/projects/ProWorkSim/runs/software-model-selection-v031`。
 
 本批仅改变SWE-Next与Devstral的原生接口／密集学习路径；公共世界、六开发合同、SDK、9B路径、两seed及所有选择门均保持。9B的原12槽和旧source只读保留，未重跑或挑选其成功子集。
@@ -11,8 +11,8 @@ v0.30原加载失败及r1技术资格失败均保留独立引用与成本；这�
 | 组合 | 来源 | 旧trace GPU门 | 当前状态 | 新鲜推理资格 | 更新接入 | 近16K | 完整恢复 |
 |---|---|---|---|---|---|---|---|
 | qwen3.5-9b | 原9B保留 | 不适用 | complete | True | True | True | True |
-| swe-next-14b | 新v031组合 | passed | running | False | False | False | False |
-| devstral-small-2507 | 新v031组合 | passed | running | True | False | False | False |
+| swe-next-14b | 新v031组合 | passed | qualification_failed | False | True | True | True |
+| devstral-small-2507 | 新v031组合 | passed | complete | True | True | True | True |
 
 旧trace GPU控制只消费原失败的完整token，零新生成／零optimizer step，不证明16K容量。失败臂在numeric_preflight_failed终结，0新资格调用、0正式筛选；另一已准入臂可继续。新鲜资格仍需4条完整trace、原概率门、最多1次真实技术更新、1次新身份回流及完整common恢复。`None`表示未执行或无该项证据，不填成0分。
 
@@ -20,32 +20,38 @@ v0.30原加载失败及r1技术资格失败均保留独立引用与成本；这�
 
 | 案例／seed | 9B原结果 | SWE-Next新组合 | Devstral新组合 |
 |---|---|---|---|
-| mm-nested-order-import / 202610040701 | 0 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-event-projection / 202610040701 | 1 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-envelope-hook-repair / 202610040701 | 1 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-nested-error-repair / 202610040701 | 1 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-ledger-rootgoal / 202610040701 | 0 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-settings-rootgoal / 202610040701 | 0 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-nested-order-import / 202610040702 | 0 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-event-projection / 202610040702 | 1 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-envelope-hook-repair / 202610040702 | 1 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-nested-error-repair / 202610040702 | 1 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-ledger-rootgoal / 202610040702 | 0 | not_started_or_not_closed | not_started_or_not_closed |
-| mm-settings-rootgoal / 202610040702 | 0 | not_started_or_not_closed | not_started_or_not_closed |
+| mm-nested-order-import / 202610040701 | 0 | not_started_or_not_closed | 0 |
+| mm-event-projection / 202610040701 | 1 | not_started_or_not_closed | 1 |
+| mm-envelope-hook-repair / 202610040701 | 1 | not_started_or_not_closed | 0 |
+| mm-nested-error-repair / 202610040701 | 1 | not_started_or_not_closed | 0 |
+| mm-ledger-rootgoal / 202610040701 | 0 | not_started_or_not_closed | 0 |
+| mm-settings-rootgoal / 202610040701 | 0 | not_started_or_not_closed | 0 |
+| mm-nested-order-import / 202610040702 | 0 | not_started_or_not_closed | 1 |
+| mm-event-projection / 202610040702 | 1 | not_started_or_not_closed | 1 |
+| mm-envelope-hook-repair / 202610040702 | 1 | not_started_or_not_closed | 0 |
+| mm-nested-error-repair / 202610040702 | 1 | not_started_or_not_closed | 1 |
+| mm-ledger-rootgoal / 202610040702 | 0 | not_started_or_not_closed | 0 |
+| mm-settings-rootgoal / 202610040702 | 0 | not_started_or_not_closed | 0 |
 
 公开测试绿色、任务数、消息数和固定提交都不等于完整验收。每臂须12槽全已知且API／修复／O1各至少2/4完整通过才可入选；三类成绩分开，未知或未启动不补零。
 
 ## 分类与选择
 
-两新组合尚未全部终态，未执行最终选择。
+预定选择结果：`finite_batch_no_qualified_candidate`；选定组合：`None`。
+
+| 组合 | API成功／已知 | 修复成功／已知 | O1成功／已知 | 可选 |
+|---|---:|---:|---:|---|
+| qwen3.5-9b | 2/4 | 4/4 | 0/4 | False |
+| swe-next-14b | 0/0 | 0/0 | 0/0 | False |
+| devstral-small-2507 | 3/4 | 1/4 | 0/4 | False |
 
 ## 成本与解释范围
 
 | 组合 | 原v030 GPU秒 | r1 GPU秒 | 旧trace GPU证明秒 | v031新worker秒 | 累计GPU小时 |
 |---|---:|---:|---:|---:|---:|
 | qwen3.5-9b | 7028.481027 | 0.000000 | 0.000000 | 0.000000 | 1.952356 |
-| swe-next-14b | 15.887841 | 236.632682 | 28.811610 | 0.000000 | 0.078148 |
-| devstral-small-2507 | 20.620105 | 224.493526 | 40.724319 | 0.000000 | 0.079399 |
+| swe-next-14b | 15.887841 | 236.632682 | 28.811610 | 2799.487545 | 0.855783 |
+| devstral-small-2507 | 20.620105 | 224.493526 | 40.724319 | 9517.624646 | 2.723184 |
 
 成本排名使用上表实际分阶段总成本；原失败不丢弃、r1累计字段中的原失败不重复加。worker成本是单张GPU分配期间墙钟，不是按利用率积分；下载／排队与预约占用另留原始记录。
 
