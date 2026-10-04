@@ -1,8 +1,10 @@
 # ProWorkSim
 
-## v0.31r2 路径补验通过：GPU4/6并行正式筛选
+## v0.32 终止原因修复：新补验未过操作门，Devstral继续
 
-截至北京时间2026-10-04 23:47，SWE的新路径补验已通过并在GPU4进入原12槽正式筛选；Devstral在GPU6继续筛选，已闭合5/12、成功1槽。SWE本次3条真实调用均成功，无纠正重试；no-grad与grad-mode概率误差全部0、完整反传3/3、零新优化器步且原common完整恢复。此前两个新模型的近16K容量、诊断更新及恢复均已实际通过；SWE旧整体资格因路径失败仍保留，新轮明确继承其数值证据而不重复压力测试。见[路径修订协议](docs/experiments/software-path-recovery-v031r2-protocol.md)、[实际补验与启动](docs/experiments/software-path-recovery-v031r2-launch.md)和[独立运行报告](docs/experiments/software-path-recovery-v031r2.md)。当前尚无最终三模型选择、参数训练收益或分配收益结论。
+截至北京时间2026-10-05 00:36，SWE原r2已正常完成12槽，完整交付0/12，无GPU、RSS或存储停止。按用户要求先抢占GPU4后，已修订无参工具说明、原生错误反馈首因、resident精确token预约和终态细分。新GPU补验的无参读取与8K事实记录通过，第三条10K请求却选错工具；三条概率／梯度误差均0、完整反传及common恢复通过，但整体准入未过，未启动新12槽。GPU4已正常释放。GPU6原Devstral继续，已闭合11/12、成功4槽。详见[终止审计](docs/experiments/software-termination-audit-v031r2.md)、[修订协议](docs/experiments/software-harness-recovery-v032-protocol.md)和[实际终态说明](docs/experiments/software-harness-recovery-v032-summary.md)。当前尚无最终三模型选择、参数训练收益或分配收益结论。
+
+此前SWE r2路径补验和原12槽记录保持：[路径修订协议](docs/experiments/software-path-recovery-v031r2-protocol.md)、[当时启动记录](docs/experiments/software-path-recovery-v031r2-launch.md)和[已结束运行报告](docs/experiments/software-path-recovery-v031r2.md)。新轮短补验继承原数值正证据，未重复近16K压力资格。
 
 v0.31原生协议与密集模型重算修订记录继续保留：[旧trace GPU证明](docs/experiments/software-model-selection-v031-launch.md)、[CPU记录](docs/experiments/software-model-selection-v031-cpu.md)、[本轮协议](docs/experiments/software-model-selection-v031-protocol.md)、[数值设计](docs/design/dense-replay-v031.md)和[官方原生协议依据](docs/research/software-native-protocol-v031.md)。
 
