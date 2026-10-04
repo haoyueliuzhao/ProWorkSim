@@ -1,5 +1,10 @@
 # ProWorkSim
 
+## v0.31 接口与可微重算修订：CPU核验完成，GPU4/6已预约
+
+按继续实验要求，修订两个新候选的原生接口与密集模型重算路径；旧v0.30/r1结果保持。新接口12组合、48次真实SDK脚本往返通过，数值图、旧trace验证程序和队列已做必要CPU控制。GPU4、6各已预约76GiB，下一步先做真实旧trace的概率/完整梯度对照，再按臂进入新资格和原12槽筛选；目前不预先宣布GPU数值或容量通过。见[CPU记录](docs/experiments/software-model-selection-v031-cpu.md)、[本轮协议](docs/experiments/software-model-selection-v031-protocol.md)、[数值设计](docs/design/dense-replay-v031.md)和[官方原生协议依据](docs/research/software-native-protocol-v031.md)。
+
+
 ## v0.30 模型与 O1 选型：9B已完成，两新模型修复加载记录后接续
 
 最新进度：9B完成12槽，API2/4、修复4/4、O1 0/4；两个新模型均已下载完整，但旧尝试在零采样阶段写加载记录失败。现已修复set的JSON表示，8项定向恢复测试和Ruff通过，GPU5于20:27成功预约，SWE-Next于20:39从干净快照在GPU5进入真实资格，Devstral继续排队。原结果与失败成本保留，详见[恢复记录](docs/experiments/software-model-selection-v030-recovery.md)。以下首段为原启动阶段记录。
