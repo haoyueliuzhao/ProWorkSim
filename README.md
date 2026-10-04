@@ -1,10 +1,12 @@
 # ProWorkSim
 
-## v0.29 新来源当前策略经验分配
+## v0.29 新来源首窗已结案：完整工作0/8，无配置更新
 
-按[新审计](docs/reference/audit-v028-next-v029.md)完成[统一新来源与有限B/G/I协议](docs/experiments/software-allocation-v029-protocol.md)：sqlparse当前策略训练、schema贡献开发、TextFSM独立确认接入既有WorldCore、SDK与共享学习器。过程Mapper描述真实契约工作和有效导入关系；完整验收分列API、所选回归与consumer实际调用。新共同起点统一绑定软件critic坐标，保留全部旧参数、两个optimizer与RNG；训练只用模型实际见到的token。
+[详细结案报告](docs/experiments/software-allocation-v029-final.md)：同一sqlparse情境、固定A先手的8个预登记seed全部可评，7槽有固定交付但consumer失败、1槽无固定交付，完整工作0/8。七份固定成果的库API和所选上游回归均通过，consumer均把Statement当Comparison而提前异常。一次交付后的成员自测实际暴露该错误，但预算内未修复；不能把全部测试绿色或模型自述扩大为任务通过。
 
-首窗固定8条同情境、member_a先手、最低类频数2；无可配置支持就结束，不补采或追加无对照更新。有支持才运行完整候选探测、三方法正式更新与独立确认。GPU0–7均获最新授权，旧GPU5单实例限制仅属v0.28历史；累计时长和统一截止不恢复。CPU资格与真实模型结果严格区分：[36项新增检查通过](docs/experiments/software-allocation-v029-qualification.md)；[队列已启动](docs/experiments/software-allocation-v029-launch.md)，当前支持采集等待空闲卡，尚无分配效果结果。[运行报告](docs/experiments/software-allocation-v029.md)保留逐槽原件与终态。
+两成员各M=8、n+=0、v=0，无可配置支持，按[冻结协议](docs/experiments/software-allocation-v029-protocol.md)结束。没有B/G/I试训、正式更新、schema开发、TextFSM确认或后继工作；actor/critic累计仍为3/3，本轮未得到ID-VTDO效果结果。478次真实响应和全部失败原件保留，详见[结案机器账](docs/experiments/software-allocation-v029-summary.json)。
+
+北京时间10月4日04:28全部结束，实际使用GPU2一个owner，worker占用1.783123 GPU小时，原进程已退出。新来源、过程Mapper、实际token学习桥接及[36项CPU检查](docs/experiments/software-allocation-v029-qualification.md)与真实模型结果分别记录；[启动快照](docs/experiments/software-allocation-v029-launch.md)和[自动终态报告](docs/experiments/software-allocation-v029.md)保留原状态，不把等待记录误作当前运行状态。
 
 ## v0.28 动态职责修订与后续软件实验
 
