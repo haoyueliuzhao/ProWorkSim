@@ -1,6 +1,6 @@
 # SWE v0.31-r2 公开路径准入修复与独立筛选
 
-状态：`running`；源码：`2456572481b01a8b6bde9cfd5fd168c35024a830`；原始目录：`/data1/zhuxinrui/projects/ProWorkSim/runs/software-path-recovery-v031r2`。
+状态：`complete`；源码：`2456572481b01a8b6bde9cfd5fd168c35024a830`；原始目录：`/data1/zhuxinrui/projects/ProWorkSim/runs/software-path-recovery-v031r2`。
 
 仅针对原 SWE 首次输出 `/public-note.json` 未满足已声明相对路径的准入失败。旧调用、旧资格失败及其全部成本保留不变。新准入公开唯一相对路径，首次真实读取失败时最多一次真实错误反馈纠正；最多4次新原生调用，不执行新的 optimizer step。
 
@@ -12,24 +12,24 @@
 
 | 案例／seed | 状态 | 完整交付 | R |
 |---|---|---|---:|
-| mm-nested-order-import / 202610040701 | not_started_or_not_closed | None | None |
-| mm-event-projection / 202610040701 | not_started_or_not_closed | None | None |
-| mm-envelope-hook-repair / 202610040701 | not_started_or_not_closed | None | None |
-| mm-nested-error-repair / 202610040701 | not_started_or_not_closed | None | None |
-| mm-ledger-rootgoal / 202610040701 | not_started_or_not_closed | None | None |
-| mm-settings-rootgoal / 202610040701 | not_started_or_not_closed | None | None |
-| mm-nested-order-import / 202610040702 | not_started_or_not_closed | None | None |
-| mm-event-projection / 202610040702 | not_started_or_not_closed | None | None |
-| mm-envelope-hook-repair / 202610040702 | not_started_or_not_closed | None | None |
-| mm-nested-error-repair / 202610040702 | not_started_or_not_closed | None | None |
-| mm-ledger-rootgoal / 202610040702 | not_started_or_not_closed | None | None |
-| mm-settings-rootgoal / 202610040702 | not_started_or_not_closed | None | None |
+| mm-nested-order-import / 202610040701 | closed | False | 0 |
+| mm-event-projection / 202610040701 | closed | False | 0 |
+| mm-envelope-hook-repair / 202610040701 | closed | False | 0 |
+| mm-nested-error-repair / 202610040701 | closed | False | 0 |
+| mm-ledger-rootgoal / 202610040701 | closed | False | 0 |
+| mm-settings-rootgoal / 202610040701 | closed | False | 0 |
+| mm-nested-order-import / 202610040702 | closed | False | 0 |
+| mm-event-projection / 202610040702 | closed | False | 0 |
+| mm-envelope-hook-repair / 202610040702 | closed | False | 0 |
+| mm-nested-error-repair / 202610040702 | closed | False | 0 |
+| mm-ledger-rootgoal / 202610040702 | closed | False | 0 |
+| mm-settings-rootgoal / 202610040702 | closed | False | 0 |
 
 | 类别 | 完整成功／已知 |
 |---|---:|
-| api_normal_path | 0/0 |
-| repair_after_real_failure | 0/0 |
-| o1_root_goal | 0/0 |
+| api_normal_path | 0/4 |
+| repair_after_real_failure | 0/4 |
+| o1_root_goal | 0/4 |
 
 SWE本次是否满足原候选可选门：`False`；这不等于三模型最终选中。
 
@@ -41,7 +41,7 @@ SWE本次是否满足原候选可选门：`False`；这不等于三模型最终�
 | r1_worker_gpu_seconds | 236.632682 |
 | v031_old_trace_gpu_proof_seconds | 28.811610 |
 | v031_worker_gpu_seconds | 2799.487545 |
-| v031r2_worker_gpu_seconds | 0.000000 |
+| v031r2_worker_gpu_seconds | 1410.463386 |
 
 GPU成本为分配单张GPU后的完整worker墙钟，包括导入、加载、补验、筛选、清理及失败；预约和排队另存记录，不重复加旧累计成本。资源限制仍为每worker64GiB RSS、全部旧新产物合计128GiB及卷预留20GiB，无累计GPU／队列／总墙钟截止。
 
