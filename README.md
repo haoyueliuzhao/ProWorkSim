@@ -1,18 +1,14 @@
 # ProWorkSim
 
-## v0.33：同一O1根目标的单／双执行诊断
+## v0.33 已结案：同根目标S/T共16槽，完整交付0/16
 
-原运行已于北京时间2026-10-05 14:56:34因记录判定缺陷停止：实际执行4槽，其中2个S槽已知R=0，2个T槽的生成前共享预算拒绝被误认成缺失response；剩余12槽未开始。原guard和common恢复均通过，实际138次模型调用、1665658 token、0.639925 GPU小时，零参数更新。[原自动报告](docs/experiments/software-paired-o1-v033.md)及原异常保持。
+北京时间2026-10-05 21:23:20全部闭合。9B和Devstral在相同ledger／settings根目标、相同团队总预算下完成S/T各两seed；每模型S/T均为0/4，八个配对均两侧未通过。16槽全部记录可信，无技术未知；6份固定提交均通过公开7项检查，但独立内容均未通过，另10条未提交且内容／过程保持未知。详见[完整实验报告](docs/experiments/software-paired-o1-v033-final.md)和[最终机器证据](docs/experiments/software-paired-o1-v033-final.json)。
 
-按用户继续实验指令实施[记录修复与接续协议](docs/experiments/software-paired-o1-v033-recovery-protocol.md)：从旧原件严格证明未发生生成，离线重导出四条经历，再按原顺序只执行十二个未开始槽。世界、提示、工具、预算、采样和数值路径保持，四条已发生经历不重采；接续状态与完整逻辑16槽结果见[新运行报告](docs/experiments/software-paired-o1-v033-recovery.md)。
+原4条经过离线记录修复，与只接续的12条合为原16槽，没有重采或重新验收旧交付。共594次决定、575次实际模型调用、7,118,669 token、98次run_tests；本轮逐卡worker占用并集2.591725 GPU小时。所有common与学习／RNG保护通过，新增优化步骤为0。Devstral实际三次省略提交message均获受理，但未产生完整交付通过；13/16槽终止于token预算，不能据此断言扩大预算会成功。
 
-修复与正式离线恢复已通过：原四条记录均可信，业务验收仍为R=0，原归档全树hash不变。接续队列已于北京时间2026-10-05 15:37:52启动；[启动快照](docs/experiments/software-paired-o1-v033-recovery-launch.md)时所有GPU均忙，剩余12条均未开始，结束后自动归档并推送。生产源码除记录解释和跳过已执行前缀外，其余194个文件与原冻结版本字节一致。
+按[原协议](docs/experiments/software-paired-o1-v033-protocol.md)的事前结束规则，没有新训练来源的局部团队载体，`support_collection_candidate=null`。单人也在相同根目标失败，不能将全零仅归因协作；未执行B/G/I或形成参数学习收益。后续方向为领域负担更小、仍保持真实API—消费者依赖和空任务表的新根目标，本报告未启动该后继。旧36槽与原无赢家结论不改，当前开发经历不进入训练。
 
-按[新审计](docs/reference/audit-v032-next-v033.md)冻结[16条有限配对协议](docs/experiments/software-paired-o1-v033-protocol.md)：仅当前9B与Devstral，在相同ledger／settings根目标上比较单执行者S与双成员T，各两个固定seed。两条件共享相同团队总额度：128次决定、500000实际调用token、32次测试；T不按人数翻倍。空任务表、自主组织、两个私有副本及显式集成保留，S获得团队合法初始信息并集。
-
-本轮统一普通格式错误的真实反馈和预算恢复，将只作备注的提交message改为可选；身份、权限及关键记录问题单独阻断。继承原common及已完成的完整数值／16K／更新恢复证据，不重复三题资格或新增候选。运行状态与S/T配对结果见[自动报告](docs/experiments/software-paired-o1-v033.md)；未开始／技术未知不记为业务失败。执行可信、学习接入、工作行为、分配支持四层分开；本轮无参数更新，开发轨迹不能转为训练支持。
-
-全部诊断结束后按事前规则确定新训练来源的局部支持采集候选；所有T仍为零则设计领域负担更小、仍保留真实API—消费者依赖的新根目标。本16条只运行一次，旧筛选无赢家和全部失败保持。[历史GPU占用核算](docs/experiments/gpu-occupancy-v030-v032.md)按每张卡对实际worker／预约区间取并集，已记录区间合计7.346618小时，另保留未知区间。
+[原启动快照](docs/experiments/software-paired-o1-v033-launch.md)、[原记录异常](docs/experiments/software-paired-o1-v033.md)、[修复接续协议](docs/experiments/software-paired-o1-v033-recovery-protocol.md)、[修复控制与启动记录](docs/experiments/software-paired-o1-v033-recovery-launch.md)和[接续自动终态](docs/experiments/software-paired-o1-v033-recovery.md)保存完整实施谱系。历史v0.30—v0.32的[GPU占用并集核算](docs/experiments/gpu-occupancy-v030-v032.md)独立保留，不混入本轮2.591725小时。
 
 ## v0.30—v0.32 已结案：36槽闭合，无合格入选组合
 
