@@ -1,8 +1,10 @@
 # ProWorkSim
 
-## v0.32 终止原因修复：新补验未过操作门，Devstral继续
+## v0.30—v0.32 已结案：36槽闭合，无合格入选组合
 
-截至北京时间2026-10-05 00:36，SWE原r2已正常完成12槽，完整交付0/12，无GPU、RSS或存储停止。按用户要求先抢占GPU4后，已修订无参工具说明、原生错误反馈首因、resident精确token预约和终态细分。新GPU补验的无参读取与8K事实记录通过，第三条10K请求却选错工具；三条概率／梯度误差均0、完整反传及common恢复通过，但整体准入未过，未启动新12槽。GPU4已正常释放。GPU6原Devstral继续，已闭合11/12、成功4槽。详见[终止审计](docs/experiments/software-termination-audit-v031r2.md)、[修订协议](docs/experiments/software-harness-recovery-v032-protocol.md)和[实际终态说明](docs/experiments/software-harness-recovery-v032-summary.md)。当前尚无最终三模型选择、参数训练收益或分配收益结论。
+最后一个Devstral worker已于北京时间2026-10-05 00:54:47正常结束。原9B、SWE r2和Devstral v0.31各有12槽实际结果：API／修复／O1分别为9B **2/4、4/4、0/4**，SWE **0/4、0/4、0/4**，Devstral **3/4、1/4、0/4**。按原定每类至少2/4门槛，无合格候选；未启动经验分配训练。去重worker成本5.945 GPU小时，996次真实新采样，正式筛选零更新。[综合详细报告](docs/experiments/software-model-selection-v030-v032-final.md)与[机器数据](docs/experiments/software-model-selection-v030-v032-final.json)汇总逐槽成绩、版本谱系、失败机制、技术资格、成本和结论边界。
+
+无参说明、原生错误首因、精确resident token预约和终态说明已修订；两旧SWE请求的真实tokenizer重算确认新预算可放行，但不代表工作改善。v0.32新GPU补验数值／反向与恢复通过，第三条工具选择未过操作门，故未启动新12槽。旧r2的0/12和全部历史失败保持，未宣称参数训练或分配收益。详见[终止审计](docs/experiments/software-termination-audit-v031r2.md)与[修复实测](docs/experiments/software-harness-recovery-v032-summary.md)。
 
 此前SWE r2路径补验和原12槽记录保持：[路径修订协议](docs/experiments/software-path-recovery-v031r2-protocol.md)、[当时启动记录](docs/experiments/software-path-recovery-v031r2-launch.md)和[已结束运行报告](docs/experiments/software-path-recovery-v031r2.md)。新轮短补验继承原数值正证据，未重复近16K压力资格。
 

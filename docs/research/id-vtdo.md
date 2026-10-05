@@ -1,6 +1,8 @@
 # ID-VTDO 当前研究设计与实现状态
 
-当前修订为[v0.32执行接口恢复](../experiments/software-harness-recovery-v032-protocol.md)：截至北京时间2026-10-05 00:36，旧SWE r2已正常闭合12槽、完整交付0/12；[终止审计](../experiments/software-termination-audit-v031r2.md)区分格式错误上限、保守token预约和成员主动等待，没有资源崩溃。新版本修复公开无参说明、错误首因、精确resident预约及终止说明。GPU4的新补验前两条操作通过，第三条模型选错工具；三条数值／反向与完整恢复均通过，但整体准入未过，新正式业务槽未启动，GPU4已释放。GPU6原Devstral继续，闭合11/12、成功4槽。详见[本次实测终态](../experiments/software-harness-recovery-v032-summary.md)。原近16K、诊断更新和恢复证据按原common继承，未重做压力资格；旧成绩均保持。仍无最终三模型选择、参数训练或分配收益结论。
+本轮v0.30—v0.32已结案：最后一个Devstral worker于北京时间2026-10-05 00:54:47正常结束。36条独立正式开发经历全部闭合，9B／SWE r2／Devstral的API、修复、O1分类结果分别为2/4、4/4、0/4；0/4、0/4、0/4；3/4、1/4、0/4。全部不满足原分类门，无共同载体入选，未执行B/G-raw/I-P或独立确认。详见[综合实验报告](../experiments/software-model-selection-v030-v032-final.md)与[逐槽及成本机器汇总](../experiments/software-model-selection-v030-v032-final.json)。去重worker成本5.945 GPU小时，真实新采样996次；正式筛选零更新，三次可逆技术诊断更新均恢复原common，没有参数训练或分配收益结论。
+
+[v0.32接口修订](../experiments/software-harness-recovery-v032-protocol.md)已完成无参说明、错误首因、精确resident预约和终态说明；新短补验数值与恢复通过，但第三条工具选择失败，未启动新12槽。两旧SWE请求的新tokenizer预约可放行不等于业务会成功；r2实际0/12及其他旧结果不重判。技术数值路径、完整业务交付与分配效应仍需分别验证。
 
 历史v0.30-r1恢复（2026-10-04晚，已于20:48结束）：9B已完成12槽（API2/4、修复4/4、O1 0/4）；两个新模型下载完整，修复零采样序列化失败后进入资格，但数值门未过，整轮无合格入选组合。见[恢复记录](../experiments/software-model-selection-v030-recovery.md)。以下早期启动记录只说明历史实施过程。
 
@@ -19,7 +21,7 @@
 | 原生模板与SDK | 18个模型／案例组合、72次脚本化请求通过；实际tokenizer与WorldCore错误回流 | 模型生成、行为概率、近16K训练或工作能力通过 |
 | 技术更新与恢复实现 | SWE/Devstral原近16K反向、诊断更新与恢复通过；SWE v032三条完整数值检查也通过，但第三条指定操作失败导致整体新准入未过 | 数值可微或诊断准入带来业务提升／参数训练收益 |
 | 一阶分配规则 | 对数N、显式历史／覆盖双锚、G-raw／G-lift／I-P接口及CPU数值控制 | 已执行真实贡献试训、分配更新或完整V1.3 |
-| 三候选正式运行 | 9B保留12槽；SWE r2为0/12，新v032业务未启动；Devstral在GPU6继续，00:36已闭合11/12、成功4槽 | 已有最终候选排名、参数训练收益或ID-VTDO增量 |
+| 三候选正式运行 | 36槽已闭合，分类结果见综合报告；三候选O1均0/4，无合格入选组合；新v032业务未启动 | 已选出后续共同载体、参数训练收益或ID-VTDO增量 |
 
 规则基线、脚本化SDK请求、CPU小模型参数控制、真实候选模型运行和正式参数学习分别记账。[最终CPU集成报告](../experiments/software-model-selection-v030-cpu.md)记录71项测试及Ruff通过；[原生模板资格报告](../experiments/software-native-templates-v030.md)说明18组合与72次请求的实际范围，其中真实模型调用为0，没有采样token_trace或可训练rollout。[开发池说明](../../examples/software-sources-v030/README.md)与其资格原件固定源码、合同和正反控制。
 
