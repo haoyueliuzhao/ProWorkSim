@@ -1,6 +1,10 @@
 # ID-VTDO 当前研究设计与实现状态
 
-本轮v0.30—v0.32已结案：最后一个Devstral worker于北京时间2026-10-05 00:54:47正常结束。36条独立正式开发经历全部闭合，9B／SWE r2／Devstral的API、修复、O1分类结果分别为2/4、4/4、0/4；0/4、0/4、0/4；3/4、1/4、0/4。全部不满足原分类门，无共同载体入选，未执行B/G-raw/I-P或独立确认。详见[综合实验报告](../experiments/software-model-selection-v030-v032-final.md)与[逐槽及成本机器汇总](../experiments/software-model-selection-v030-v032-final.json)。去重worker成本5.945 GPU小时，真实新采样996次；正式筛选零更新，三次可逆技术诊断更新均恢复原common，没有参数训练或分配收益结论。
+当前v0.33依据[新审计](../reference/audit-v032-next-v033.md)实施[同根目标S/T有限诊断](../experiments/software-paired-o1-v033-protocol.md)：9B与Devstral×两个O1根目标×S/T×两个seed，共16条且只运行一次，团队总预算相同，空任务表与自主组织保持。普通格式错误消耗机会后反馈继续，提交备注可选；执行身份／权限／记录错误独立阻断。继承未变数值实现及原common的学习接入证据，不再重复资格题、搜索模型或复测SWE。实际状态和结果以[自动报告](../experiments/software-paired-o1-v033.md)为准。
+
+新协议分开判断执行可信、学习接入、工作行为和分配支持。任一模型8槽全部可信且T至少1槽完整交付，即可按事前次序确定后续新训练来源的局部支持采集候选；不追认旧筛选入选，不要求通用团队高成功率。全T为零则转向领域负担更小、保留真实依赖的新根目标。这16条和旧36条均不进入训练；B/G/I仍须基于新来源当前经验的实际方法、频数和可辨识梯度，并在实际支持出现后冻结公平可承担的试训维度。尚无本轮参数学习或分配增量结论。
+
+历史v0.30—v0.32已结案：最后一个Devstral worker于北京时间2026-10-05 00:54:47正常结束。36条独立正式开发经历全部闭合，9B／SWE r2／Devstral的API、修复、O1分类结果分别为2/4、4/4、0/4；0/4、0/4、0/4；3/4、1/4、0/4。全部不满足原分类门，无共同载体入选，未执行B/G-raw/I-P或独立确认。详见[综合实验报告](../experiments/software-model-selection-v030-v032-final.md)与[逐槽及成本机器汇总](../experiments/software-model-selection-v030-v032-final.json)。去重worker成本5.945 GPU小时，真实新采样996次；正式筛选零更新，三次可逆技术诊断更新均恢复原common，没有参数训练或分配收益结论。后补[逐卡区间并集](../experiments/gpu-occupancy-v030-v032.md)为已记录区间7.346618占卡小时，reservation-only为1.401620小时；未知区间不猜测为零。
 
 [v0.32接口修订](../experiments/software-harness-recovery-v032-protocol.md)已完成无参说明、错误首因、精确resident预约和终态说明；新短补验数值与恢复通过，但第三条工具选择失败，未启动新12槽。两旧SWE请求的新tokenizer预约可放行不等于业务会成功；r2实际0/12及其他旧结果不重判。技术数值路径、完整业务交付与分配效应仍需分别验证。
 
@@ -16,6 +20,7 @@
 
 | 对象 | 当前完成范围 | 不能据此声称 |
 |---|---|---|
+| v0.33同根目标S/T诊断 | 新统一接口、真实单／双副本、同团队总预算与有限16槽协议；运行状态另见自动报告 | CPU脚本控制等于模型成功、两个seed等于稳定团队优势或新训练支持 |
 | 六个新开发合同 | 一个固定MIT Marshmallow仓库；6份参考解公开／独立检查全过，20个坏控制均拒绝 | 六独立来源、真实模型成功或可训练支持 |
 | O1工作世界 | 共同根目标、空任务表、自主创建／修订任务和责任、版本化依赖与真实集成 | 已观察到真实候选模型自主有效协作 |
 | 原生模板与SDK | 18个模型／案例组合、72次脚本化请求通过；实际tokenizer与WorldCore错误回流 | 模型生成、行为概率、近16K训练或工作能力通过 |
@@ -25,7 +30,7 @@
 
 规则基线、脚本化SDK请求、CPU小模型参数控制、真实候选模型运行和正式参数学习分别记账。[最终CPU集成报告](../experiments/software-model-selection-v030-cpu.md)记录71项测试及Ruff通过；[原生模板资格报告](../experiments/software-native-templates-v030.md)说明18组合与72次请求的实际范围，其中真实模型调用为0，没有采样token_trace或可训练rollout。[开发池说明](../../examples/software-sources-v030/README.md)与其资格原件固定源码、合同和正反控制。
 
-## 科学问题与本轮选型的位置
+## 科学问题与本轮行为诊断的位置
 
 算法主要检验：在同一完整学习起点、同批当前经历、基础损失、可重配范围和评价条件下，结构化分配是否优于基础分配B及一般成员—轨迹重加权G-raw。设完整学习状态为 `S=(actor, critic, actor_optimizer, critic_optimizer, declared RNG)`，当前原始联合经历为D，基础更新算子为U，独立确认效用为J_test：
 
@@ -38,8 +43,8 @@
 
 ```mermaid
 flowchart LR
-  SELECT[当前阶段：有限模型与O1开发选型] --> FIX[固定共同模型 harness 与数值配方]
-  FIX --> WORK[重新采集O1当前策略工作]
+  SELECT[当前阶段：同根目标S/T有限诊断] --> FIX[有限局部可行性与新来源冻结]
+  FIX --> WORK[新训练来源采集O1当前策略工作]
   WORK --> SUPPORT[核验完整有效支持]
   SUPPORT --> B[基础 B]
   SUPPORT --> G[一般成员轨迹 G-raw]

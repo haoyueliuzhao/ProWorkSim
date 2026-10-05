@@ -19,6 +19,7 @@ from .staff_runtime import PolicyBoundaryError
 from .storage import atomic_write, digest, json_bytes
 
 ADAPTER_VERSION = "model-policy-v0.17"
+FORMAT_FEEDBACK_BUDGETED_V033 = "format_feedback_budgeted_v033"
 CONTROL_TOOLS = (
     {
         "name": "staff_wait",
@@ -142,10 +143,15 @@ def normalize_config(config):
         raise ValueError("Unknown explicitly selected model action protocol")
     if result["context_policy"] not in {"full_history", "latest_observation"}:
         raise ValueError("Unknown explicitly selected model context policy")
-    if result["format_error_policy"] not in {"stop", "format_feedback_continue"}:
+    if result["format_error_policy"] not in {"stop", "format_feedback_continue", FORMAT_FEEDBACK_BUDGETED_V033}:
         raise ValueError("Unknown explicitly selected model format-error policy")
-    for name, value in result["format_limits"].items():
-        _integer(value, "format_limits." + name)
+    if result["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
+        # This explicit new protocol has no independent format-error retirement
+        # threshold. Counts remain observations; ordinary budgets still apply.
+        result["format_limits"] = {"max_total": None, "max_consecutive": None}
+    else:
+        for name, value in result["format_limits"].items():
+            _integer(value, "format_limits." + name)
     if result["thinking"] is not None and type(result["thinking"]) is not bool:
         raise ValueError("thinking must be boolean or None (parameter omitted)")
     if result["reasoning_effort"] not in {None, "low", "high", "max"}:
@@ -181,6 +187,19 @@ def normalize_config(config):
         raise ValueError("Conservative input miss rate must cover cache hit rate")
     json_bytes(result)
     return result
+
+
+def format_recovery_instruction(config):
+    if config["format_error_policy"] != FORMAT_FEEDBACK_BUDGETED_V033:
+        return ""
+    return (
+        "\nNew protocol v0.33: an ordinary syntax or public argument-schema rejection consumes "
+        "one decision and its actual model tokens, executes no action, and supplies true feedback "
+        "for a later opportunity. Repeated ordinary format errors do not separately retire a worker; "
+        "the fixed shared decision, attempt and token budgets still apply. There is no same-call "
+        "retry or automatic correction. Identity, permission and execution-record failures remain "
+        "blocking. Format feedback is not a request to wait or end your work.\n"
+    )
 
 
 class ModelPolicy:
@@ -239,14 +258,18 @@ class ModelPolicy:
             parser_failure or exception_diagnostic(ValueError(reason), stage="adapter_structure"),
             adapter="native_model_policy_v017",
         )
+        if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
+            native = details["parse_diagnostics"]["native_parser"].get("failure") or {}
+            reason = native.get("reason") or reason
         counts = memory.setdefault("format_errors", {"total": 0, "consecutive": 0})
         counts["total"] += 1
         counts["consecutive"] += 1
         limits = self.config["format_limits"]
-        reached = [
+        budgeted = self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033
+        reached = [] if budgeted else [
             name for name in ("total", "consecutive") if counts[name] >= limits["max_" + name]
         ]
-        continues = self.config["format_error_policy"] == "format_feedback_continue" and not reached
+        continues = self.config["format_error_policy"] != "stop" and not reached
         self._emit(
             "model_call",
             {
@@ -280,7 +303,7 @@ class ModelPolicy:
                 {"index": index, "sha256": digest(json_bytes(message))}
             )
         feedback = {
-            "version": "public-format-feedback-v0.17",
+            "version": "public-format-feedback-v0.33" if budgeted else "public-format-feedback-v0.17",
             "model_call_id": association["call_id"],
             "status": "decision_rejected",
             "reason": reason,
@@ -289,6 +312,8 @@ class ModelPolicy:
             "decision_consumed": True,
             "format_errors": copy.deepcopy(counts),
             "format_limits": copy.deepcopy(limits),
+            "format_error_policy": self.config["format_error_policy"],
+            "format_limits_enforced": not budgeted,
             "continues_on_later_opportunity": continues,
             "contract": (
                 'Return exactly one JSON object: {"kind":"act","action":"PUBLIC_TOOL_NAME","arguments":{}} '
@@ -297,7 +322,7 @@ class ModelPolicy:
                 "No extra fields, arrays, Markdown, native calls or multiple decisions."
                 if self.config["action_protocol"] == "single_decision_json"
                 else "Return exactly one native function call using the current public tool definition. "
-                "Multiple calls are all rejected. Use staff_wait or staff_done with a reason for control."
+                "Multiple calls are all rejected. This is correctable feedback, not an instruction to wait or end work."
             ),
             **details,
         }
@@ -322,6 +347,7 @@ class ModelPolicy:
         return {
             "kind": "protocol_rejection",
             "reason": reason,
+            "executed": False,
             "memory": memory,
             "model_call_id": association["call_id"],
             "decision_id": association["decision_id"],
@@ -620,6 +646,7 @@ class ModelPolicy:
                     + json.dumps(self.config["format_limits"], sort_keys=True)
                     + ".\n"
                 )
+            memory["messages"][0]["content"] += format_recovery_instruction(self.config)
         pending = memory.pop("pending_tool", None)
         if pending:
             if (

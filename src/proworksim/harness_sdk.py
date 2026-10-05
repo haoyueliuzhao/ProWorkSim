@@ -28,12 +28,13 @@ from openhands.sdk.llm.utils.metrics import MetricsSnapshot, TokenUsage
 from openhands.sdk.tool import Tool, ToolExecutor, register_tool
 from pydantic import PrivateAttr
 
-from .model_policy import CONTROL_TOOLS, ModelPolicy, _strict_json, normalize_config
+from .model_policy import (CONTROL_TOOLS, FORMAT_FEEDBACK_BUDGETED_V033, ModelPolicy,
+                           _strict_json, format_recovery_instruction, normalize_config)
 from .format_diagnostics import exception_diagnostic, feedback_diagnostics, schema_diagnostic
 from .staff_runtime import PolicyBoundaryError
 from .storage import digest, json_bytes
 
-HARNESS_VERSION = "openhands-managed-worker-v0.31-r3"
+HARNESS_VERSION = "openhands-managed-worker-v0.33"
 SDK_VERSION = "1.49.6"
 SDK_COMMIT = "fcc102a697874d54a357e36004e02c95040dbdc0"
 SYSTEM = """You are an independently scheduled worker inside a managed professional world.
@@ -149,11 +150,22 @@ class HarnessWorker:
         directory=None,
         system_prompt=SYSTEM,
         context_selection="latest_observation_last4_tool_rounds",
+        team_budget=None,
     ):
         if version("openhands-sdk") != SDK_VERSION:
             raise RuntimeError(f"This adapter requires openhands-sdk=={SDK_VERSION}")
         self.role_id = role_id
         self.config = normalize_config(config)
+        self.team_budget = team_budget
+        if team_budget is not None:
+            if self.config["format_error_policy"] != FORMAT_FEEDBACK_BUDGETED_V033:
+                raise ValueError("A shared team budget requires the explicit v0.33 interface protocol")
+            if role_id not in team_budget.snapshot()["members"]:
+                raise ValueError("SDK worker is not in the declared shared team budget")
+        system_prompt += format_recovery_instruction(self.config)
+        if team_budget is not None:
+            system_prompt += "\nShared episode allowances (not per-member grants): " + json.dumps(
+                team_budget.snapshot()["limits"], sort_keys=True) + ".\n"
         if self.config["action_protocol"] != "native_tools":
             raise ValueError("SDK worker requires each model's native tool interface")
         if self.config["retry"]["max_attempts"] != 1:
@@ -282,7 +294,11 @@ class HarnessWorker:
             self.conversation.pause()
 
     def _fail(self, status, reason, **details):
-        error = PolicyBoundaryError(status, reason, memory=self.snapshot(), details=details)
+        error_type = PolicyBoundaryError
+        if status not in PolicyBoundaryError.STATUSES:
+            from .team_budget_v033 import V033PolicyBoundaryError
+            error_type = V033PolicyBoundaryError
+        error = error_type(status, reason, memory=self.snapshot(), details=details)
         self._boundary_error = error
         raise error
 
@@ -398,6 +414,8 @@ class HarnessWorker:
         )
         try:
             self._accountant._admit(memory, reservation, self._association["call_id"])
+            if self.team_budget is not None:
+                self.team_budget.reserve(self.role_id, self._association["call_id"], reservation)
         except Exception:
             if prepared is not None:
                 self.transport.discard_prepared_request(request)
@@ -415,7 +433,10 @@ class HarnessWorker:
             "timeout_seconds": self.config["timeout_seconds"],
         }
         self._emit("model_attempt", attempt)
+        if self.team_budget is not None:
+            self.team_budget.begin_attempt(self.role_id, self._association["call_id"])
         started = time.monotonic()
+        body = None
         try:
             response = self.transport.complete(
                 copy.deepcopy(request), timeout_seconds=self.config["timeout_seconds"]
@@ -428,18 +449,35 @@ class HarnessWorker:
                 raise ValueError("Transport lacks its raw HTTP envelope")
             attempt["response"] = copy.deepcopy(response)
             body = response.get("body")
-            attempt["accounting"] = self._accountant._charge(memory, body, reservation)
             attempt["status"] = (
                 "success"
                 if 200 <= response["http_status"] < 300
                 and isinstance(body, dict)
-                and attempt["accounting"]["usage_status"] == "reported"
                 else "http_error"
             )
         except Exception as error:
+            attempt["status"] = (
+                "execution_integrity_error"
+                if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033
+                and isinstance(error, (ValueError, TypeError, KeyError)) else "service_error")
+            attempt["error"] = {"type": type(error).__name__, "message": str(error)}
+            body = None
+        # Charge each attempted call once, outside the transport-exception path.
+        # A settlement failure must not trigger a second fallback charge.
+        attempt["accounting"] = self._accountant._charge(memory, body, reservation)
+        if attempt["accounting"]["usage_status"] != "reported" and attempt["status"] == "success":
             attempt["status"] = "service_error"
-            attempt["error"] = {"type": type(error).__name__}
-            attempt["accounting"] = self._accountant._charge(memory, None, reservation)
+        if self.team_budget is not None:
+            try:
+                attempt["team_accounting"] = self.team_budget.settle(
+                    self.role_id, self._association["call_id"], body)
+            except PolicyBoundaryError as error:
+                attempt["status"] = error.status
+                attempt["team_accounting_error"] = copy.deepcopy(error.details)
+                attempt.update(stage="finished", ended_at=datetime.now(timezone.utc).isoformat(),
+                               wall_seconds=time.monotonic() - started, will_retry=False)
+                self._emit("model_attempt", attempt)
+                self._fail(error.status, str(error), **error.details)
         attempt.update(
             stage="finished",
             ended_at=datetime.now(timezone.utc).isoformat(),
@@ -449,9 +487,10 @@ class HarnessWorker:
         self._emit("model_attempt", attempt)
         if attempt["status"] != "success":
             self._fail(
-                "model_service_error",
+                "execution_integrity_error" if attempt["status"] == "execution_integrity_error" else "model_service_error",
                 "One SDK transport attempt did not complete",
                 model_call_id=self._association["call_id"],
+                transport_error=attempt.get("error"),
             )
         cap = self.config["budget"]
         if (
@@ -480,6 +519,9 @@ class HarnessWorker:
             if len(choices) != 1 or choices[0].get("finish_reason") not in {"stop", "tool_calls"}:
                 raise ValueError("One complete nontruncated choice is required")
             message = choices[0]["message"]
+            if (self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033
+                    and message.get("role") != "assistant"):
+                self._fail("execution_integrity_error", "Model response role is not the admitted assistant")
             if message.get("role") == "assistant" and not message.get("tool_calls"):
                 parser_stage = "adapter_json_control"
                 control = _strict_json(message.get("content", ""))
@@ -520,13 +562,20 @@ class HarnessWorker:
                 or not isinstance(call.get("id"), str)
                 or not call["id"]
             ):
+                if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
+                    self._fail("execution_integrity_error", "Invalid native tool-call identity")
                 raise ValueError("Invalid native tool call identity")
             function = call["function"]
             name = function["name"]
             if name not in self.schemas:
+                if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
+                    self._fail("model_permission_error", "Tool is outside this role's authorized gateway")
                 raise ValueError("Tool name is not in this role's managed gateway")
             parser_stage = "adapter_json_arguments"
             arguments = _strict_json(function["arguments"])
+            if (self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033
+                    and isinstance(arguments, dict) and set(arguments) & {"request_key", "action", "security_risk"}):
+                self._fail("execution_integrity_error", "Reserved runtime or SDK fields are forbidden")
             parser_stage = "public_schema"
             self.schemas[name].validate(arguments)
             parser_stage = "adapter_structure"
@@ -535,9 +584,13 @@ class HarnessWorker:
                 "action",
                 "security_risk",
             }:
+                if isinstance(arguments, dict) and self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
+                    self._fail("execution_integrity_error", "Reserved runtime or SDK fields are forbidden")
                 raise ValueError("Reserved runtime or SDK fields are forbidden")
             if name in {"staff_wait", "staff_done"} and not arguments["reason"]:
                 raise ValueError("Worker controls require a nonempty reason")
+        except PolicyBoundaryError:
+            raise
         except (ValueError, TypeError, KeyError, IndexError) as error:
             self._fail(
                 "model_format_error",
@@ -547,6 +600,8 @@ class HarnessWorker:
             )
         except Exception as error:
             # JSON Schema ValidationError includes potentially large user values.
+            if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033 and not hasattr(error, "validator"):
+                self._fail("execution_integrity_error", "Unexpected adapter failure", validation_type=type(error).__name__)
             self._fail(
                 "model_format_error",
                 "Arguments violate the public tool schema",
@@ -560,7 +615,7 @@ class HarnessWorker:
             )
         if call["id"] in self._assistant_messages:
             self._fail(
-                "model_format_error",
+                "execution_integrity_error" if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033 else "model_format_error",
                 "Tool call id was reused in this conversation",
                 model_call_id=self._association["call_id"],
             )
@@ -634,6 +689,8 @@ class HarnessWorker:
         }
         before = len(self._sdk_events)
         try:
+            if self.team_budget is not None:
+                self.team_budget.consume_decision(self.role_id, call_id)
             observation_text = json.dumps(
                 {"role_task": self.config["task"], "observation": public_observation},
                 ensure_ascii=False,
@@ -688,6 +745,8 @@ class HarnessWorker:
                 raise self._boundary_error from None
             raise
         finally:
+            if self.team_budget is not None:
+                self.team_budget.cleanup(self.role_id, call_id)
             self._in_step = False
 
     def _format_rejection(self, error):
@@ -702,10 +761,11 @@ class HarnessWorker:
         )
         native_failure = diagnostics["native_parser"].get("failure") or {}
         reason = native_failure.get("reason") or str(error)
-        reached = [
+        budgeted = self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033
+        reached = [] if budgeted else [
             name for name, count in self.format_errors.items() if count >= limits["max_" + name]
         ]
-        continues = self.config["format_error_policy"] == "format_feedback_continue" and not reached
+        continues = self.config["format_error_policy"] != "stop" and not reached
         self._emit(
             "model_format_error",
             {
@@ -717,9 +777,9 @@ class HarnessWorker:
                 "parse_diagnostics": diagnostics,
             },
         )
-        if self.config["format_error_policy"] == "format_feedback_continue":
+        if self.config["format_error_policy"] != "stop":
             feedback = {
-                "version": "public-format-feedback-v0.31-r3",
+                "version": "public-format-feedback-v0.33" if budgeted else "public-format-feedback-v0.31-r3",
                 "model_call_id": self._association["call_id"],
                 "original_response_id": (self._last_body or {}).get("id"),
                 "original_response_sha256": digest(json_bytes(self._last_body)),
@@ -729,6 +789,8 @@ class HarnessWorker:
                 "decision_consumed": True,
                 "format_errors": self.format_errors,
                 "format_limits": limits,
+                "format_error_policy": self.config["format_error_policy"],
+                "format_limits_enforced": not budgeted,
                 "continues_on_later_opportunity": continues,
                 "raw_response_location": "model_response ledger, unchanged",
                 "parse_diagnostics": diagnostics,
@@ -788,6 +850,7 @@ class HarnessWorker:
                 "model_revision": self.config["model_revision"],
                 "identity_epoch": self._identity_epoch,
                 "format_errors": self.format_errors,
+                "team_budget": self.team_budget.snapshot() if self.team_budget is not None else None,
                 "response_cache": "none",
                 "sdk_kv_cache": "none",
                 "context_selection": self.context_selection,

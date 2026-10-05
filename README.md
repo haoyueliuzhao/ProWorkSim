@@ -1,5 +1,13 @@
 # ProWorkSim
 
+## v0.33：同一O1根目标的单／双执行诊断
+
+按[新审计](docs/reference/audit-v032-next-v033.md)冻结[16条有限配对协议](docs/experiments/software-paired-o1-v033-protocol.md)：仅当前9B与Devstral，在相同ledger／settings根目标上比较单执行者S与双成员T，各两个固定seed。两条件共享相同团队总额度：128次决定、500000实际调用token、32次测试；T不按人数翻倍。空任务表、自主组织、两个私有副本及显式集成保留，S获得团队合法初始信息并集。
+
+本轮统一普通格式错误的真实反馈和预算恢复，将只作备注的提交message改为可选；身份、权限及关键记录问题单独阻断。继承原common及已完成的完整数值／16K／更新恢复证据，不重复三题资格或新增候选。运行状态与S/T配对结果见[自动报告](docs/experiments/software-paired-o1-v033.md)；未开始／技术未知不记为业务失败。执行可信、学习接入、工作行为、分配支持四层分开；本轮无参数更新，开发轨迹不能转为训练支持。
+
+全部诊断结束后按事前规则确定新训练来源的局部支持采集候选；所有T仍为零则设计领域负担更小、仍保留真实API—消费者依赖的新根目标。本16条只运行一次，旧筛选无赢家和全部失败保持。[历史GPU占用核算](docs/experiments/gpu-occupancy-v030-v032.md)按每张卡对实际worker／预约区间取并集，已记录区间合计7.346618小时，另保留未知区间。
+
 ## v0.30—v0.32 已结案：36槽闭合，无合格入选组合
 
 最后一个Devstral worker已于北京时间2026-10-05 00:54:47正常结束。原9B、SWE r2和Devstral v0.31各有12槽实际结果：API／修复／O1分别为9B **2/4、4/4、0/4**，SWE **0/4、0/4、0/4**，Devstral **3/4、1/4、0/4**。按原定每类至少2/4门槛，无合格候选；未启动经验分配训练。去重worker成本5.945 GPU小时，996次真实新采样，正式筛选零更新。[综合详细报告](docs/experiments/software-model-selection-v030-v032-final.md)与[机器数据](docs/experiments/software-model-selection-v030-v032-final.json)汇总逐槽成绩、版本谱系、失败机制、技术资格、成本和结论边界。
