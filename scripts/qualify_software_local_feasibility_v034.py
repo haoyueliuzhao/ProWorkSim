@@ -39,7 +39,7 @@ def qualify(data_root, controls, output):
         summaries[name] = {"checks": checks, "scope": value.get("scope"),
                            "coverage_notice": value.get("coverage_notice")}
     presentation = presentation_binding(data_root)
-    audit = read_json(presentation["audit_report"]["path"])
+    audit = read_json(checked(presentation["audit_report"]))
     route_budget = read_json(checked(presentation["reference_route_budget"]))
     if (audit.get("passed") is not True or audit.get("model_calls") != 0
             or audit.get("gpu_used") is not False or audit.get("weights_loaded") is not False
