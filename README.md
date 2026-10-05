@@ -1,5 +1,13 @@
 # ProWorkSim
 
+## v0.34 已启动监督队列：两个新根目标、8条T开发经历
+
+北京时间2026-10-06 01:00:43启动，冻结执行提交`522f3331…`。9B与Devstral各执行两个新root×两个seed，全部为T，沿用原common和团队128决定／500000 token／32测试预算，阶段内零更新。01:03启动快照中两模型均等待空闲GPU，新增模型调用0；实际后续状态见[运行报告](docs/experiments/software-local-feasibility-v034.md)／[机器汇总](docs/experiments/software-local-feasibility-v034.json)。队列结束后自动归档、提交并推送。
+
+新directory与name-index合同保留真实Marshmallow API—消费者依赖、空任务表和完整独立验收。P0完成8种程序控制与4条SDK参考路线；旧16个固定实际请求的合同去重离线计量少12.4%，另将公开测试反馈精简作为独立的新呈现契约。最终参考路线的条件native预算均通过，但这些CPU证据不等于模型成功或参数收益。必要增量控制及Ruff通过；没有重采旧16槽、新模型搜索或新增训练资格。[P0详细证据](docs/experiments/software-local-feasibility-v034-p0.md)、[完整协议](docs/experiments/software-local-feasibility-v034-protocol.md)、[启动记录](docs/experiments/software-local-feasibility-v034-launch.md)保留范围与失败历史。
+
+P1成功仅用于局部载体规划，开发轨迹不转作训练；后继P2训练用途来源与支持、P3公平B／G-raw／I-P实际试训清单须依据本批结果另行冻结。当前没有分配算法效果结论。
+
 ## v0.33 已结案：同根目标S/T共16槽，完整交付0/16
 
 北京时间2026-10-05 21:23:20全部闭合。9B和Devstral在相同ledger／settings根目标、相同团队总预算下完成S/T各两seed；每模型S/T均为0/4，八个配对均两侧未通过。16槽全部记录可信，无技术未知；6份固定提交均通过公开7项检查，但独立内容均未通过，另10条未提交且内容／过程保持未知。详见[完整实验报告](docs/experiments/software-paired-o1-v033-final.md)和[最终机器证据](docs/experiments/software-paired-o1-v033-final.json)。
