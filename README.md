@@ -6,6 +6,8 @@
 
 按用户继续实验指令实施[记录修复与接续协议](docs/experiments/software-paired-o1-v033-recovery-protocol.md)：从旧原件严格证明未发生生成，离线重导出四条经历，再按原顺序只执行十二个未开始槽。世界、提示、工具、预算、采样和数值路径保持，四条已发生经历不重采；接续状态与完整逻辑16槽结果见[新运行报告](docs/experiments/software-paired-o1-v033-recovery.md)。
 
+修复与正式离线恢复已通过：原四条记录均可信，业务验收仍为R=0，原归档全树hash不变。接续队列已于北京时间2026-10-05 15:37:52启动；[启动快照](docs/experiments/software-paired-o1-v033-recovery-launch.md)时所有GPU均忙，剩余12条均未开始，结束后自动归档并推送。生产源码除记录解释和跳过已执行前缀外，其余194个文件与原冻结版本字节一致。
+
 按[新审计](docs/reference/audit-v032-next-v033.md)冻结[16条有限配对协议](docs/experiments/software-paired-o1-v033-protocol.md)：仅当前9B与Devstral，在相同ledger／settings根目标上比较单执行者S与双成员T，各两个固定seed。两条件共享相同团队总额度：128次决定、500000实际调用token、32次测试；T不按人数翻倍。空任务表、自主组织、两个私有副本及显式集成保留，S获得团队合法初始信息并集。
 
 本轮统一普通格式错误的真实反馈和预算恢复，将只作备注的提交message改为可选；身份、权限及关键记录问题单独阻断。继承原common及已完成的完整数值／16K／更新恢复证据，不重复三题资格或新增候选。运行状态与S/T配对结果见[自动报告](docs/experiments/software-paired-o1-v033.md)；未开始／技术未知不记为业务失败。执行可信、学习接入、工作行为、分配支持四层分开；本轮无参数更新，开发轨迹不能转为训练支持。
