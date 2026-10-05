@@ -1,0 +1,208 @@
+{
+  "authority": "independent_development_inputs_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-directory-schema-load",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "load",
+        "args": [
+          [
+            {
+              "name": " Willow ",
+              "quantity": "0009"
+            },
+            {
+              "name": "Birch",
+              "quantity": 0
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "class": "RecordSchema",
+        "kwargs": {
+          "many": true
+        },
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "Willow",
+            "quantity": 9
+          },
+          {
+            "name": "Birch",
+            "quantity": 0
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.load": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-directory-schema-dump",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "dump",
+        "args": [
+          {
+            "name": "White Fir",
+            "quantity": 17
+          }
+        ],
+        "check_input_unchanged": true,
+        "class": "RecordSchema",
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "name": "White Fir",
+          "quantity": 17
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-directory-batch",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "catalog",
+        "args": [
+          [
+            {
+              "name": " South Cedar ",
+              "quantity": "011"
+            },
+            {
+              "name": "Larch",
+              "quantity": 6
+            },
+            {
+              "name": " South Cedar ",
+              "quantity": "011"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "load"
+          ],
+          [
+            "models",
+            "RecordSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [
+            {
+              "name": "South Cedar",
+              "quantity": 11
+            },
+            {
+              "name": "Larch",
+              "quantity": 6
+            },
+            {
+              "name": "South Cedar",
+              "quantity": 11
+            }
+          ],
+          "total_quantity": 28
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.load": true,
+          "models.RecordSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-directory-zero-and-upper",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "catalog",
+        "args": [
+          [
+            {
+              "name": "Pond Ash",
+              "quantity": "0"
+            },
+            {
+              "name": "Beech",
+              "quantity": "1000"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "load"
+          ],
+          [
+            "models",
+            "RecordSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [
+            {
+              "name": "Pond Ash",
+              "quantity": 0
+            },
+            {
+              "name": "Beech",
+              "quantity": 1000
+            }
+          ],
+          "total_quantity": 1000
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.load": true,
+          "models.RecordSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

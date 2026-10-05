@@ -1,0 +1,215 @@
+{
+  "authority": "independent_development_inputs_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-names-schema-load",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "load",
+        "args": [
+          [
+            {
+              "name": " Sun Cedar "
+            },
+            {
+              "name": "BEECH"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "class": "NameSchema",
+        "kwargs": {
+          "many": true
+        },
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "sun cedar"
+          },
+          {
+            "name": "beech"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-names-schema-dump",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "dump",
+        "args": [
+          {
+            "name": "north larch"
+          }
+        ],
+        "check_input_unchanged": true,
+        "class": "NameSchema",
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "name": "north larch"
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-names-search",
+      "group": "consumer",
+      "request": {
+        "module": "search",
+        "function": "find_matches",
+        "args": [
+          [
+            " Silver  Fir ",
+            "ASH",
+            "silver  fir",
+            " ash ",
+            "Pond Elm"
+          ],
+          " AsH "
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ],
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          1,
+          3
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true,
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-names-export",
+      "group": "consumer",
+      "request": {
+        "module": "exporter",
+        "function": "export_names",
+        "args": [
+          [
+            " Silver  Fir ",
+            "ASH",
+            "silver  fir",
+            " ash ",
+            "Pond Elm"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ],
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          "silver  fir",
+          "ash",
+          "silver  fir",
+          "ash",
+          "pond elm"
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true,
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-names-no-match",
+      "group": "consumer",
+      "request": {
+        "module": "search",
+        "function": "find_matches",
+        "args": [
+          [
+            " Silver  Fir ",
+            "ASH",
+            "silver  fir",
+            " ash ",
+            "Pond Elm"
+          ],
+          "silver fir"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ],
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true,
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

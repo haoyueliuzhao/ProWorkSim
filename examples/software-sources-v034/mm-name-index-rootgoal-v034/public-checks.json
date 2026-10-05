@@ -1,0 +1,246 @@
+{
+  "authority": "actor_visible_semantic_examples",
+  "cases": [
+    {
+      "case_id": "public-names-schema-load",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "load",
+        "args": [
+          {
+            "name": " Red  Elm "
+          }
+        ],
+        "check_input_unchanged": true,
+        "class": "NameSchema",
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "name": "red  elm"
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-names-schema-dump",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "dump",
+        "args": [
+          [
+            {
+              "name": "oak"
+            },
+            {
+              "name": "blue pine"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "class": "NameSchema",
+        "kwargs": {
+          "many": true
+        },
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "oak"
+          },
+          {
+            "name": "blue pine"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-names-search",
+      "group": "consumer",
+      "request": {
+        "module": "search",
+        "function": "find_matches",
+        "args": [
+          [
+            " Maple ",
+            "OAK",
+            "maple",
+            "Blue Pine"
+          ],
+          " MAPLE "
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ],
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          0,
+          2
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true,
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-names-export",
+      "group": "consumer",
+      "request": {
+        "module": "exporter",
+        "function": "export_names",
+        "args": [
+          [
+            " Maple ",
+            "OAK",
+            "maple",
+            "Blue Pine"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ],
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          "maple",
+          "oak",
+          "maple",
+          "blue pine"
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true,
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-names-no-match",
+      "group": "consumer",
+      "request": {
+        "module": "search",
+        "function": "find_matches",
+        "args": [
+          [
+            " Maple ",
+            "OAK",
+            "maple",
+            "Blue Pine"
+          ],
+          "Birch"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "NameSchema",
+            "load"
+          ],
+          [
+            "models",
+            "NameSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.NameSchema.load": true,
+          "models.NameSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-names-search-empty",
+      "group": "consumer",
+      "request": {
+        "module": "search",
+        "function": "find_matches",
+        "args": [
+          [],
+          "Oak"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "public-names-export-empty",
+      "group": "consumer",
+      "request": {
+        "module": "exporter",
+        "function": "export_names",
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true
+      }
+    }
+  ]
+}

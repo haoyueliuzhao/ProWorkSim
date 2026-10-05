@@ -1,0 +1,173 @@
+{
+  "authority": "actor_visible_semantic_examples",
+  "cases": [
+    {
+      "case_id": "public-directory-schema-load",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "load",
+        "args": [
+          {
+            "name": " Cedar ",
+            "quantity": "004"
+          }
+        ],
+        "check_input_unchanged": true,
+        "class": "RecordSchema",
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "load"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "name": "Cedar",
+          "quantity": 4
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.load": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-directory-schema-dump",
+      "group": "reusable_api",
+      "request": {
+        "module": "models",
+        "function": "dump",
+        "args": [
+          [
+            {
+              "name": "Red Elm",
+              "quantity": 0
+            },
+            {
+              "name": "Aspen",
+              "quantity": 1000
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "class": "RecordSchema",
+        "kwargs": {
+          "many": true
+        },
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "Red Elm",
+            "quantity": 0
+          },
+          {
+            "name": "Aspen",
+            "quantity": 1000
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-directory-batch-order-and-duplicates",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "catalog",
+        "args": [
+          [
+            {
+              "name": " Pine ",
+              "quantity": "02"
+            },
+            {
+              "name": "Oak",
+              "quantity": 3
+            },
+            {
+              "name": " Pine ",
+              "quantity": "02"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "models",
+            "RecordSchema",
+            "load"
+          ],
+          [
+            "models",
+            "RecordSchema",
+            "dump"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [
+            {
+              "name": "Pine",
+              "quantity": 2
+            },
+            {
+              "name": "Oak",
+              "quantity": 3
+            },
+            {
+              "name": "Pine",
+              "quantity": 2
+            }
+          ],
+          "total_quantity": 7
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "models.RecordSchema.load": true,
+          "models.RecordSchema.dump": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-directory-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "catalog",
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [],
+          "total_quantity": 0
+        },
+        "input_unchanged": true
+      }
+    }
+  ]
+}
