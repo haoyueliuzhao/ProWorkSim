@@ -2,7 +2,9 @@
 
 ## v0.33：同一O1根目标的单／双执行诊断
 
-监督队列已于北京时间2026-10-05 11:12:35启动；[启动快照](docs/experiments/software-paired-o1-v033-launch.md)时所有GPU均忙，两模型均等待，16条未开始，尚无新业务结果。必要CPU控制及全项目Ruff通过，完成后自动更新并推送运行报告。
+原运行已于北京时间2026-10-05 14:56:34因记录判定缺陷停止：实际执行4槽，其中2个S槽已知R=0，2个T槽的生成前共享预算拒绝被误认成缺失response；剩余12槽未开始。原guard和common恢复均通过，实际138次模型调用、1665658 token、0.639925 GPU小时，零参数更新。[原自动报告](docs/experiments/software-paired-o1-v033.md)及原异常保持。
+
+按用户继续实验指令实施[记录修复与接续协议](docs/experiments/software-paired-o1-v033-recovery-protocol.md)：从旧原件严格证明未发生生成，离线重导出四条经历，再按原顺序只执行十二个未开始槽。世界、提示、工具、预算、采样和数值路径保持，四条已发生经历不重采；接续状态与完整逻辑16槽结果见[新运行报告](docs/experiments/software-paired-o1-v033-recovery.md)。
 
 按[新审计](docs/reference/audit-v032-next-v033.md)冻结[16条有限配对协议](docs/experiments/software-paired-o1-v033-protocol.md)：仅当前9B与Devstral，在相同ledger／settings根目标上比较单执行者S与双成员T，各两个固定seed。两条件共享相同团队总额度：128次决定、500000实际调用token、32次测试；T不按人数翻倍。空任务表、自主组织、两个私有副本及显式集成保留，S获得团队合法初始信息并集。
 

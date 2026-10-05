@@ -338,9 +338,18 @@ def _validate_window(spec):
     return spec["slots"]
 
 
-def collect_software_window(owner, window_spec, output_dir, *, on_slot=None):
+def validate_completed_slot_ids(completed_slot_ids=()):
+    """Only the two sealed v0.33 prefix episodes may be retained, never replayed."""
+    value = tuple(completed_slot_ids)
+    if value not in ((), tuple(row["slot_id"] for row in inventory()[:2])):
+        raise ValueError("Continuation requires exactly the original completed two-slot prefix")
+    return value
+
+
+def collect_software_window(owner, window_spec, output_dir, *, on_slot=None, completed_slot_ids=()):
     """Freeze a complete declared purpose-specific window; export every attempt."""
     rows = _validate_window(window_spec)
+    completed = validate_completed_slot_ids(completed_slot_ids)
     if owner.window_id != window_spec["window_id"]:
         raise ValueError("Current owner must enter this exact software window before collection")
     output = Path(output_dir)
@@ -384,22 +393,33 @@ def collect_software_window(owner, window_spec, output_dir, *, on_slot=None):
                 proof = prove_initial_pair(paired["S"]["prepared"], paired["T"]["prepared"])
                 pairs.append({**proof, "sampling_seed": seed, "slot_ids": {kind: item["row"]["slot_id"] for kind, item in paired.items()}})
         atomic_write(output / "initial-pair-proofs.json", json_bytes(pairs))
+        executing = items[len(completed):]
+        execution_budget = {"max_slots": len(executing),
+                            "max_model_calls": len(executing) * TEAM_LIMITS["max_attempts"]}
+        if completed:
+            atomic_write(output / "continuation.json", json_bytes({
+                "version": "same-root-st-continuation-v0.33r1",
+                "retained_completed_slot_ids": list(completed),
+                "new_slot_ids": [item["row"]["slot_id"] for item in executing],
+                "validation_only_prebuilt_slot_ids": list(completed),
+                "new_episode_count": len(executing), "new_execution_budget": execution_budget,
+                "scope": "All eight initial worlds support the original four pair proofs; only the six suffix slots begin episodes, reseed, sample, or export new experience."}))
         gamma = {"collection_version": VERSION, "harness": "openhands_v16", "interface": INTERFACE_VERSION,
                  "source": code_identity(), "source_usage": window_spec["usage"],
                  "collection_mode": window_spec["mode"], "recipe": copy.deepcopy(owner.recipe),
                  "interface_revision": INTERFACE_REVISION, "sdk_context_selection": SDK_CONTEXT_SELECTION,
                  "context_projection": getattr(owner, "software_context_policy", "latest_observation_last4_tool_rounds"),
                  "external_tick_per_sweep": 0,
-                 "scheduling_protocol": SCHEDULER, "budget": copy.deepcopy(window_spec["budget"]),
-                 "slot_sampling_seeds": {row["slot_id"]: row["sampling_seed"] for row in rows},
-                 "fixed_slot_cases": [item["slot_spec"]["xi_fingerprint"] for item in items],
+                 "scheduling_protocol": SCHEDULER, "budget": execution_budget,
+                 "slot_sampling_seeds": {item["row"]["slot_id"]: item["row"]["sampling_seed"] for item in executing},
+                 "fixed_slot_cases": [item["slot_spec"]["xi_fingerprint"] for item in executing],
                  "optimizer_update_allowed": False, "method_classification_performed": False,
                  "support_computation_performed": False, "min_class_count_has_research_meaning": False}
         declaration = declare_window(window_spec["window_id"], actor_identity=identity, gamma_identity=gamma,
-                                     slot_specs=[item["slot_spec"] for item in items], min_class_count=window_spec["min_class_count"])
+                                     slot_specs=[item["slot_spec"] for item in executing], min_class_count=window_spec["min_class_count"])
         atomic_write(output / "declaration.json", json_bytes(declaration))
         entries, summaries, records = [], [], []
-        for item in items:
+        for item in executing:
             row, prepared, folder = item["row"], item["prepared"], item["folder"]
             runtime, captured = item["runtime"], item["captured"]
             if owner.freeze_identity() != identity:
@@ -520,6 +540,7 @@ def collect_software_window(owner, window_spec, output_dir, *, on_slot=None):
             raise ValueError("Software development collection changed the actor identity")
         atomic_write(output / "summary.json", json_bytes({"version": VERSION, "usage": window_spec["usage"],
                      "actor_identity": identity, "slots": summaries,
+                     "retained_completed_slot_ids": list(completed), "new_episode_count": len(summaries),
                      "training_eligible": False, "optimizer_update_allowed": False,
                      "method_classification_performed": False, "support_computation_performed": False,
                      "scope": "Frozen model/interface screening only. Original member records are archived; no development record is optimizer material."}))
@@ -532,14 +553,15 @@ def collect_software_window(owner, window_spec, output_dir, *, on_slot=None):
                 item["closed"] = True
 
 
-def collect(owner, spec, output, worker_output, *, common_dir=None, on_slot=None):
-    """One immutable eight-slot window, streaming progress, then exact common restore."""
+def collect(owner, spec, output, worker_output, *, common_dir=None, on_slot=None, completed_slot_ids=()):
+    """Execute the original inventory or its authorized suffix; restore common exactly."""
     from scripts.software_model_selection_v030 import CollectionOwner
     from scripts.software_development_v028 import DurableTransport, task
     from .software_context_v028 import SoftwareContextTransport
     from .online_training import tensor_tree_digest
     from .storage import read_json
 
+    completed = validate_completed_slot_ids(completed_slot_ids)
     output = Path(output)
     before = owner.capture_evaluation_state()
     identity = owner.freeze_identity()
@@ -558,7 +580,7 @@ def collect(owner, spec, output, worker_output, *, common_dir=None, on_slot=None
         if on_slot:
             on_slot(event, row, folder)
     try:
-        entries = collect_software_window(facade, spec, output, on_slot=boundary)
+        entries = collect_software_window(facade, spec, output, on_slot=boundary, completed_slot_ids=completed)
         owner.finish_evaluation(entries, output / "frozen-collection-close")
     finally:
         facade.transport.inner = None

@@ -10,6 +10,7 @@ import math
 from .storage import digest, json_bytes
 
 MEMBER_VIEW_VERSION = "member-view-v0.13"
+SHARED_ADMISSION_PROOF_VERSION = "shared-team-no-generation-v0.33r1"
 
 
 def _tokens(response):
@@ -97,6 +98,276 @@ def _known_direct_context_stop(attempts, responses, events, call_id, metadata, p
     return attempt
 
 
+def _sha256_text(value):
+    return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
+
+
+def _known_personal_budget_row(ledger, row, rollout, identity):
+    """The personal exact-token guard runs before shared reserve, still unsampled."""
+    call_id, member = row["call_id"], row["member"]
+    if (row.get("attempt_started") is not False
+            or any(key in row for key in ("charge", "reservation", "rejected_reservation"))):
+        return False
+    events = rollout["events"]
+    starts = [event for event in events if event.get("kind") == "model_call"
+              and event["payload"].get("stage") == "started" and event["payload"].get("call_id") == call_id]
+    stops = [event for event in events if event.get("kind") == "model_budget_stop"
+             and event["payload"].get("call_id") == call_id]
+    boundaries = [event for event in events if event.get("kind") == "model_boundary_error"
+                  and event["payload"].get("model_call_id") == call_id]
+    if len(starts) != 1 or len(stops) != 1 or len(boundaries) != 1:
+        return False
+    start, stop, boundary = starts[0], stops[0], boundaries[0]
+    metadata, refusal = start["payload"], stop["payload"]
+    config = rollout["manifest"]["policies"][member]["config"]
+    reservation = metadata.get("reservation", {})
+    prepared = reservation.get("preparation", {})
+    if (any(event.get("worker_id") != member for event in (start, stop, boundary))
+            or not (start["sequence"] < stop["sequence"] < boundary["sequence"])
+            or metadata.get("worker_id") != member or metadata.get("decision_id") != call_id
+            or not metadata.get("opportunity_id") or boundary["payload"].get("opportunity_id") != metadata["opportunity_id"]
+            or boundary["payload"].get("status") != "model_budget_exhausted"
+            or refusal.get("limits") != ["max_total_tokens_exact_reservation"]
+            or boundary["payload"].get("limits") != refusal["limits"]
+            or metadata.get("config") != config or metadata.get("weight_identity") != identity
+            or config.get("weight_identity") != identity or config.get("model_revision") != identity.get("policy_version")
+            or metadata.get("model_revision") != identity.get("policy_version")
+            or config.get("backend_id") != "resident_direct" or metadata.get("backend_id") != "resident_direct"
+            or config.get("format_error_policy") != "format_feedback_budgeted_v033"
+            or refusal.get("reservation") != reservation or reservation.get("reservation_kind") != "exact_resident_prompt"
+            or prepared.get("version") != "resident-request-budget-v0.31r3"
+            or prepared.get("preparation_sha256") != digest(json_bytes({key: value for key, value in prepared.items()
+                                                                      if key != "preparation_sha256"}))
+            or any(not _sha256_text(prepared.get(key)) for key in (
+                "original_request_sha256", "selected_request_sha256", "rendered_prompt_sha256", "input_ids_sha256", "recipe_sha256"))
+            or prepared.get("original_request_sha256") != metadata.get("request_sha256")
+            or metadata.get("context_selection", {}).get("request_sha256") != metadata.get("request_sha256")
+            or prepared.get("actor_identity") != identity or prepared.get("window_id") != ledger["team_id"]
+            or prepared.get("context_limit") != config.get("max_context_tokens")
+            or prepared.get("reserved_output_tokens") != config.get("max_output_tokens")
+            or any(type(prepared.get(key)) is not int or prepared[key] <= 0
+                   for key in ("prompt_tokens", "reserved_output_tokens", "context_limit"))
+            or reservation.get("input_token_reservation") != prepared["prompt_tokens"]
+            or reservation.get("output_token_reservation") != prepared["reserved_output_tokens"]
+            or type(reservation.get("token_reservation")) is not int
+            or reservation["token_reservation"] != prepared["prompt_tokens"] + prepared["reserved_output_tokens"]
+            or type(prepared.get("fits")) is not bool
+            or prepared["fits"] != (reservation["token_reservation"] <= prepared["context_limit"])):
+        return False
+    for event in events:
+        value = event["payload"]
+        if not isinstance(value, dict):
+            continue
+        linked = {value.get("call_id"), value.get("model_call_id"), value.get("decision_id")}
+        if isinstance(value.get("decision"), dict):
+            linked.update(value["decision"].get(key) for key in ("call_id", "model_call_id", "decision_id"))
+        if call_id in linked and event.get("kind") in {
+                "model_attempt", "model_response", "tool_call", "harness_tool_call", "model_action_link",
+                "model_tool_result", "model_control", "policy_decision"}:
+            return False
+    paid = [value["charge"] for value in ledger["records"].values()
+            if value["member"] == member and value.get("status") == "settled"]
+    meter = refusal.get("meter", {})
+    expected = {"decisions": sum(value["member"] == member for value in ledger["records"].values()),
+                "http_attempts": len(paid), "unknown_usage_attempts": 0,
+                "budget_accounted_tokens": sum(value["charged_tokens"] for value in paid),
+                **{"reported_" + key: sum(value["reported_usage"][key] for value in paid)
+                   for key in ("prompt_tokens", "completion_tokens", "total_tokens")}}
+    cap = config.get("budget", {}).get("max_total_tokens")
+    return (all(type(meter.get(key)) is int and meter[key] == value for key, value in expected.items())
+            and type(cap) is int and cap > 0
+            and meter["budget_accounted_tokens"] + reservation["token_reservation"] > cap
+            and (ledger.get("binding") is None or ledger["binding"] == {
+                key: prepared[key] for key in ("actor_identity", "window_id", "recipe_sha256")}))
+
+
+def _sealed_team_ledger(ledger, rollout, identity):
+    """Read only a closed, charge-backed v033 ledger; never restore/mutate it."""
+    if not isinstance(ledger, dict):
+        return False
+    payload = {key: value for key, value in ledger.items() if key != "state_sha256"}
+    members = set(rollout["members"])
+    if (ledger.get("version") != "shared-team-budget-v0.33"
+            or ledger.get("state_sha256") != digest(json_bytes(payload))
+            or ledger.get("team_id") != rollout["window"].get("window_id")
+            or ledger.get("require_exact_resident") is not True or ledger.get("integrity_failure") is not None
+            or not isinstance(ledger.get("members"), list) or len(ledger["members"]) != len(members)
+            or set(ledger["members"]) != members or not isinstance(ledger.get("records"), dict)):
+        return False
+    limits = ledger.get("limits", {})
+    if (set(limits) != {"max_decisions", "max_attempts", "max_total_tokens"}
+            or any(type(value) is not int or value <= 0 for value in limits.values())):
+        return False
+    charged, attempts = 0, 0
+    for call_id, row in ledger["records"].items():
+        if (not isinstance(row, dict) or row.get("call_id") != call_id or row.get("member") not in members
+                or type(row.get("attempt_started")) is not bool or row.get("integrity_error") is not None):
+            return False
+        if row.get("status") == "admission_rejected":
+            if row["attempt_started"] or "charge" in row or "reservation" in row:
+                return False
+        elif row.get("status") == "decision_consumed":
+            if not _known_personal_budget_row(ledger, row, rollout, identity):
+                return False
+        elif row.get("status") == "settled" and row["attempt_started"]:
+            charge = row.get("charge", {})
+            responses = [event for event in rollout["events"] if event.get("kind") == "model_response"
+                         and event.get("worker_id") == row["member"] and event["payload"].get("call_id") == call_id]
+            if len(responses) != 1:
+                return False
+            body = responses[0]["payload"].get("response", {})
+            usage = body.get("usage", {})
+            if (charge.get("usage_status") != "reported_actual_trace"
+                    or charge.get("response_body_sha256") != digest(json_bytes(body))
+                    or charge.get("response_id") != body.get("id")
+                    or charge.get("reported_usage") != usage
+                    or any(type(usage.get(key)) is not int or usage[key] < 0 for key in (
+                        "prompt_tokens", "completion_tokens", "total_tokens"))
+                    or usage["total_tokens"] != usage["prompt_tokens"] + usage["completion_tokens"]
+                    or type(charge.get("charged_tokens")) is not int
+                    or charge["charged_tokens"] != usage["total_tokens"]
+                    or body.get("actor_identity") != identity
+                    or body.get("online_window_id") != ledger["team_id"]):
+                return False
+            attempts += 1
+            charged += charge["charged_tokens"]
+        else:
+            # In-flight or uncertain attempts cannot prove a closed no-generation
+            # exception; their missing response/usage stays an actual problem.
+            return False
+    expected = {"decisions": len(ledger["records"]), "attempts": attempts,
+                "charged_tokens": charged, "held_tokens": 0,
+                "remaining_decisions": limits["max_decisions"] - len(ledger["records"]),
+                "remaining_attempts": limits["max_attempts"] - attempts,
+                "available_tokens": limits["max_total_tokens"] - charged}
+    return all(type(ledger.get(key)) is int and ledger[key] == value and value >= 0
+               for key, value in expected.items())
+
+
+def _known_shared_admission_stop(rollout, start, member_id):
+    """Prove an original pre-generation rejection from three archived records.
+
+    The started request seal, same-opportunity boundary ledger, and final
+    episode ledger must agree. No synthetic budget-stop event, response,
+    re-tokenized input, or guessed missing attempt is introduced.
+    """
+    try:
+        events, metadata = rollout["events"], start["payload"]
+        call_id, opportunity = metadata["call_id"], metadata["opportunity_id"]
+        policy = rollout["manifest"]["policies"][member_id]
+        config, identity = policy["config"], policy["config"]["weight_identity"]
+        if (metadata.get("worker_id") != member_id or metadata.get("decision_id") != call_id
+                or not isinstance(opportunity, str) or not opportunity
+                or not isinstance(identity, dict) or identity.get("version") != "shared-actor-identity-v0.13"
+                or metadata.get("weight_identity") != identity
+                or metadata.get("model_revision") != identity.get("policy_version")
+                or config.get("model_revision") != identity.get("policy_version")
+                or config.get("backend_id") != "resident_direct" or metadata.get("backend_id") != "resident_direct"
+                or config.get("format_error_policy") != "format_feedback_budgeted_v033"
+                or metadata.get("config") != config
+                or rollout["window"].get("team_policy_fingerprint") != digest(json_bytes(rollout["manifest"]["policies"]))):
+            return None
+        starts = [event for event in events if event.get("kind") == "model_call"
+                  and event["payload"].get("call_id") == call_id and event["payload"].get("stage") == "started"]
+        if len(starts) != 1 or starts[0] != start:
+            return None
+        if sum(event.get("kind") == "model_call" and event.get("worker_id") == member_id
+               and event["payload"].get("stage") == "started"
+               and event["payload"].get("opportunity_id") == opportunity for event in events) != 1:
+            return None
+        for event in events:
+            value = event["payload"]
+            if not isinstance(value, dict):
+                continue
+            associated = {value.get("call_id"), value.get("model_call_id"), value.get("decision_id")}
+            decision = value.get("decision")
+            if isinstance(decision, dict):
+                associated.update(decision.get(key) for key in ("call_id", "model_call_id", "decision_id"))
+            if call_id in associated and event.get("kind") in {
+                    "model_attempt", "model_response", "tool_call", "harness_tool_call", "model_action_link",
+                    "model_tool_result", "model_control", "policy_decision"}:
+                return None
+        boundaries = [event for event in events if event.get("kind") == "model_boundary_error"
+                      and event.get("worker_id") == member_id and event["payload"].get("opportunity_id") == opportunity]
+        endings = [event for event in events if event.get("kind") == "run_boundary"]
+        if len(boundaries) != 1 or len(endings) != 1:
+            return None
+        boundary, end = boundaries[0], endings[0]
+        if not (start["sequence"] < boundary["sequence"] < end["sequence"]):
+            return None
+        termination = rollout["manifest"].get("termination")
+        if (rollout["manifest"].get("status") != "closed" or termination != end["payload"]
+                or termination.get("status") not in {"bounded_work_closed", "workers_done", "blocked_no_reachable_events"}
+                or termination.get("execution_integrity_failure") is not None
+                or termination.get("role_stops", {}).get(member_id) != boundary["payload"].get("status")):
+            return None
+        ledger = boundary["payload"].get("team_budget")
+        final_wrapper = termination.get("team_budget", {})
+        final = final_wrapper.get("model")
+        if (final_wrapper.get("world_instance_id") != rollout["manifest"].get("identity", {}).get("instance_id")
+                or not _sealed_team_ledger(ledger, rollout, identity)
+                or not _sealed_team_ledger(final, rollout, identity)
+                or ledger["limits"] != final["limits"]
+                or any(final["records"].get(key) != value for key, value in ledger["records"].items())):
+            return None
+        row = ledger["records"].get(call_id, {})
+        reservation = metadata.get("reservation", {})
+        prepared = reservation.get("preparation", {})
+        if (row.get("member") != member_id or row.get("call_id") != call_id
+                or row.get("status") != "admission_rejected" or row.get("attempt_started") is not False
+                or row.get("rejected_reservation") != reservation or "charge" in row or "reservation" in row
+                or reservation.get("reservation_kind") != "exact_resident_prompt"
+                or any(type(reservation.get(key)) is not int or reservation[key] <= 0 for key in (
+                    "request_bytes", "input_token_reservation", "output_token_reservation", "token_reservation"))
+                or prepared.get("version") != "resident-request-budget-v0.31r3"
+                or prepared.get("preparation_sha256") != digest(json_bytes({key: value for key, value in prepared.items()
+                                                                          if key != "preparation_sha256"}))
+                or any(not _sha256_text(prepared.get(key)) for key in (
+                    "original_request_sha256", "selected_request_sha256", "rendered_prompt_sha256",
+                    "input_ids_sha256", "recipe_sha256"))
+                or prepared.get("original_request_sha256") != metadata.get("request_sha256")
+                or metadata.get("context_selection", {}).get("request_sha256") != metadata.get("request_sha256")
+                or prepared.get("actor_identity") != identity
+                or prepared.get("window_id") != rollout["window"]["window_id"]
+                or prepared.get("context_limit") != config.get("max_context_tokens")
+                or prepared.get("reserved_output_tokens") != config.get("max_output_tokens")
+                or any(type(prepared.get(key)) is not int or prepared[key] <= 0
+                       for key in ("prompt_tokens", "reserved_output_tokens", "context_limit"))
+                or prepared["reserved_output_tokens"] >= prepared["context_limit"]
+                or reservation.get("input_token_reservation") != prepared["prompt_tokens"]
+                or reservation.get("output_token_reservation") != prepared["reserved_output_tokens"]
+                or reservation.get("token_reservation") != prepared["prompt_tokens"] + prepared["reserved_output_tokens"]
+                or type(prepared.get("fits")) is not bool
+                or prepared["fits"] != (reservation["token_reservation"] <= prepared["context_limit"])):
+            return None
+        binding = {key: prepared[key] for key in ("actor_identity", "window_id", "recipe_sha256")}
+        if any(value.get("binding") is not None and value["binding"] != binding for value in (ledger, final)):
+            return None
+        limits = []
+        if not prepared["fits"]:
+            if boundary["payload"].get("status") != "model_budget_exhausted" or any(
+                    value.get("budget_kind") != "context_capacity" for value in (row, boundary["payload"])):
+                return None
+            limits = ["context_capacity"]
+        else:
+            if boundary["payload"].get("status") != "team_budget_exhausted":
+                return None
+            if ledger["attempts"] >= ledger["limits"]["max_attempts"]:
+                limits.append("team_max_attempts")
+            if reservation["token_reservation"] > ledger["available_tokens"]:
+                limits.append("team_max_total_tokens")
+        if not limits or row.get("admission_limits") != limits or boundary["payload"].get("limits") != limits:
+            return None
+        return {"version": SHARED_ADMISSION_PROOF_VERSION, "limits": limits,
+                "boundary_event_sequence": boundary["sequence"], "final_boundary_event_sequence": end["sequence"],
+                "boundary_ledger_sha256": ledger["state_sha256"], "final_ledger_sha256": final["state_sha256"],
+                "preparation_sha256": prepared["preparation_sha256"], "request_sha256": metadata["request_sha256"],
+                "generation_attempts": 0, "tokens_charged": 0, "held_tokens": 0,
+                "scope": "Existing request/boundary/final-ledger evidence only; no generated response or tokens exist for this rejected decision"}
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None
+
+
 def member_view(rollout, member_id):
     if member_id not in rollout["members"]:
         raise ValueError("Unknown member")
@@ -157,6 +428,13 @@ def member_view(rollout, member_id):
             ],
         }
         if len(successes) != 1 or len(responses) != 1:
+            shared_stop = _known_shared_admission_stop(rollout, start, member_id)
+            if shared_stop is not None:
+                record.update(generation_status="not_started_shared_admission_rejection", actor_required=False,
+                              non_generation_contract=SHARED_ADMISSION_PROOF_VERSION,
+                              non_generation_evidence=shared_stop)
+                decisions.append(record)
+                continue
             budget_stopped = not attempts and any(
                 event["kind"] == "model_budget_stop" and event["payload"].get("call_id") == call_id
                 for event in events
