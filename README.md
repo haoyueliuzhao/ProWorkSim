@@ -1,12 +1,14 @@
 # ProWorkSim
 
-## v0.35 已启动P2监督队列：固定9B、一个新训练情境、16槽
+## v0.35 P2已结案：15/16完整成功，冻结Mapper仅形成单类支持
 
-北京时间2026-10-06 17:11:53启动，执行提交`ccf756459…`。固定原9B完整3／3 common、v0.34呈现Γ、member_a先手和16个事前seed，使用新sqlparse训练合同；沿用团队128决定／500000 token／32测试预算，P2阶段零更新。17:15启动快照中等待空闲GPU，新增9B调用0。实际后续状态见[运行报告](docs/experiments/software-support-v035.md)／[机器汇总](docs/experiments/software-support-v035.json)，结束自动归档、提交推送。
+北京时间2026-10-06 21:22:54全部闭合，16条记录均可信；同一新sqlparse训练情境取得15份完整通过的最终固定交付，另1槽未提交。固定原9B完整3／3 common、v0.34呈现Γ、member_a先手和16个事前seed，沿用团队128决定／500000 token／32测试预算。详见[详细结案报告](docs/experiments/software-support-v035-final.md)／[详细机器证据](docs/experiments/software-support-v035-final.json)；[原自动报告](docs/experiments/software-support-v035.md)／[原机器账](docs/experiments/software-support-v035.json)保留。
+
+冻结Mapper将10条映射为`own_tree_delivery`，另5条成功经历因历史冲突导入与连续文件保留条件不满足而保持unmapped；其中3条最终生产文件逐字等于伙伴patch，不能把单类支持解释为没有伙伴交互。两成员各M=16、n+=10、v=0.625，I-P类别组成自由度0；按事前门结束，未补采或启动共享B、G-raw／I-P试训及独立确认。共701次真实调用、7286778 token、77次run_tests，worker占用3.297644 GPU小时，排队另列；完整common恢复，本轮actor／critic新增更新均为0。
 
 训练、贡献开发、独立确认分为1＋2＋2个新root，旧题与Marshmallow开发轨迹不改标。一次P1只读复核确认9B两条成功均为自有交付链，不能当成两类支持；新Mapper绑定实际selected输入与固定产物祖先，后台细迹不补入成员信息或训练目标。新学习接口消费原token／行为概率，分配桥复用既有logN和B／G-raw／I-P规则，保留原始分母与失败残余。[完整协议](docs/experiments/software-support-v035-protocol.md)、[准备证据](docs/experiments/software-support-v035-preparation.md)、[方法复核](docs/experiments/software-method-review-v035.md)及[启动记录](docs/experiments/software-support-v035-launch.md)给出CPU控制和证据范围。
 
-P2结束分别报告无支持、单类、多类频数不足及形式自由度，固定16槽后不补采。若有支持，任何贡献反馈前另冻实际n+／K、类内核、全部方向和公平试训清单；P2不会自动启动未冻结P3。当前尚无9B新增更新、真实贡献估计或分配收益结论。
+本批G-raw在原始分支上仍有形式方向，但没有达到协议要求的共同多类支持块；未生成P3实际清单，真实贡献与I−B／I−G保持未测。详细报告区分公开／私有有限检查、成员自测异常、20次提交与15个最终验收版本，以及静态训练材料完整性与真实参数学习收益。
 
 ## v0.34 已结案：4/8完整成功，9B作为P2局部载体
 
