@@ -1,10 +1,10 @@
 # ProWorkSim
 
-## v0.36：修订冲突恢复表示，准备新16槽与条件完整分配实验
+## v0.36 已启动监督队列：新16槽与条件完整分配实验
 
 按[审计](docs/reference/audit-v035-next-v036.md)保留v035原结案，沿用同9B完整3／3 common和同训练root；新Mapper区分`local_lineage_delivery`与`evidenced_peer_product_delivery`，允许有时序与生产单元证据的冲突恢复，同时拒绝无关／no-op／缺信息和不可追溯覆盖。成员自测采用新的结构化完成证据，原容量去重、基础学习器和分配公式保持。旧16条仅作影子开发诊断，不进入新支持。
 
-[冻结协议](docs/experiments/software-support-v036-protocol.md)预登记16新seed、4root×4seed开发与独立确认面板。用户已明确批准条件自动推进：新支持合格后先冻结完整实际方向，再共同B真实消费与成本测量，随后全部G-raw／I-P试训、三次正式更新及独立确认。最大592条在线经历和36次完整更新是条件上界，不是已执行规模；未通过任一门时保留实际状态，不追加样本或修改奖励。源码与CPU控制完成后将通过隔离工作树启动，运行状态另行归档。
+[冻结协议](docs/experiments/software-support-v036-protocol.md)预登记16新seed、4root×4seed开发与独立确认面板。用户已明确批准条件自动推进：新支持合格后先冻结完整实际方向，再共同B真实消费与成本测量，随后全部G-raw／I-P试训、三次正式更新及独立确认。最大592条在线经历和36次完整更新是条件上界，不是已执行规模；未通过任一门时保留实际状态，不追加样本或修改奖励。北京时间2026-10-07 00:51:29已从隔离clean提交`e26ab99…`启动；启动快照仍等待空闲GPU，新增9B调用0。见[启动记录](docs/experiments/software-support-v036-launch.md)、[P2运行报告](docs/experiments/software-support-v036.md)和[P3运行报告](docs/experiments/software-allocation-v036.md)。
 
 ## v0.35 P2已结案：15/16完整成功，冻结Mapper仅形成单类支持
 
