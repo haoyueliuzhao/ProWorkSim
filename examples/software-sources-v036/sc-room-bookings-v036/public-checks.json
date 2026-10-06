@@ -1,0 +1,219 @@
+{
+  "authority": "actor_visible_finite_examples_under_complete_public_contract",
+  "cases": [
+    {
+      "case_id": "public-valid-record",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_booking",
+        "args": [
+          {
+            "room": "oak",
+            "start": 2,
+            "end": 5
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "room": "oak",
+          "start": 2,
+          "end": 5
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-zero-span",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_booking",
+        "args": [
+          {
+            "room": "oak",
+            "start": 7,
+            "end": 7
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-negative-endpoint",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_booking",
+        "args": [
+          {
+            "room": "pine",
+            "start": -1,
+            "end": 2
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-overlap-adjacency-other-room",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "schedule_bookings",
+        "args": [
+          [
+            {
+              "room": "oak",
+              "start": 2,
+              "end": 5
+            },
+            {
+              "room": "oak",
+              "start": 4,
+              "end": 6
+            },
+            {
+              "room": "oak",
+              "start": 5,
+              "end": 7
+            },
+            {
+              "room": "pine",
+              "start": 3,
+              "end": 6
+            },
+            {
+              "room": "oak",
+              "start": 24,
+              "end": 25
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_booking"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "room": "oak",
+              "start": 2,
+              "end": 5
+            },
+            {
+              "room": "oak",
+              "start": 5,
+              "end": 7
+            },
+            {
+              "room": "pine",
+              "start": 3,
+              "end": 6
+            }
+          ],
+          "rejected_indices": [
+            1,
+            4
+          ],
+          "hours": 8
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_booking": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "schedule_bookings",
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_booking"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [],
+          "rejected_indices": [],
+          "hours": 0
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": false,
+          "rules.validate_booking": false
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

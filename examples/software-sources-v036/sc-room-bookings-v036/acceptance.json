@@ -1,0 +1,312 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "private-full-day",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_booking",
+        "args": [
+          {
+            "room": "elm",
+            "start": 0,
+            "end": 24
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "room": "elm",
+          "start": 0,
+          "end": 24
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-reversed",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_booking",
+        "args": [
+          {
+            "room": "fir",
+            "start": 5,
+            "end": 2
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-outside-day",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_booking",
+        "args": [
+          {
+            "room": "birch",
+            "start": 22,
+            "end": 26
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-earlier-later-nested-room-separation",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "schedule_bookings",
+        "args": [
+          [
+            {
+              "room": "ash",
+              "start": 9,
+              "end": 12
+            },
+            {
+              "room": "ash",
+              "start": 0,
+              "end": 9
+            },
+            {
+              "room": "ash",
+              "start": 11,
+              "end": 13
+            },
+            {
+              "room": "fir",
+              "start": 11,
+              "end": 13
+            },
+            {
+              "room": "ash",
+              "start": 8,
+              "end": 10
+            },
+            {
+              "room": "ash",
+              "start": 12,
+              "end": 14
+            },
+            {
+              "room": "elm",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "room": "fir",
+              "start": 20,
+              "end": 24
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_booking"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "room": "ash",
+              "start": 9,
+              "end": 12
+            },
+            {
+              "room": "ash",
+              "start": 0,
+              "end": 9
+            },
+            {
+              "room": "fir",
+              "start": 11,
+              "end": 13
+            },
+            {
+              "room": "ash",
+              "start": 12,
+              "end": 14
+            },
+            {
+              "room": "fir",
+              "start": 20,
+              "end": 24
+            }
+          ],
+          "rejected_indices": [
+            2,
+            4,
+            6
+          ],
+          "hours": 20
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_booking": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-fresh-call",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "schedule_bookings",
+        "args": [
+          [
+            {
+              "room": "ash",
+              "start": 1,
+              "end": 2
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_booking"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "room": "ash",
+              "start": 1,
+              "end": 2
+            }
+          ],
+          "rejected_indices": [],
+          "hours": 1
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_booking": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-duplicate",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "schedule_bookings",
+        "args": [
+          [
+            {
+              "room": "elm",
+              "start": 3,
+              "end": 4
+            },
+            {
+              "room": "elm",
+              "start": 3,
+              "end": 4
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_booking"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "room": "elm",
+              "start": 3,
+              "end": 4
+            }
+          ],
+          "rejected_indices": [
+            1
+          ],
+          "hours": 1
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_booking": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

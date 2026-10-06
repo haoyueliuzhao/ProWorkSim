@@ -1,0 +1,191 @@
+{
+  "authority": "actor_visible_finite_examples_under_complete_public_contract",
+  "cases": [
+    {
+      "case_id": "public-reader-duplicates",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "readings",
+        "args": [
+          "reading oak 4\nreading pine 7\nreading oak 2"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "oak",
+            "value": 4
+          },
+          {
+            "name": "pine",
+            "value": 7
+          },
+          {
+            "name": "oak",
+            "value": 2
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-reader-empty",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "readings",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-last-value-not-sum",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "latest_readings",
+        "args": [
+          "reading oak 4\nreading pine 7\nreading oak 2"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "readings"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "latest": [
+            {
+              "name": "oak",
+              "value": 2
+            },
+            {
+              "name": "pine",
+              "value": 7
+            }
+          ],
+          "total": 9
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.readings": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-fresh-call",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "latest_readings",
+        "args": [
+          "reading birch 10\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "readings"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "latest": [
+            {
+              "name": "birch",
+              "value": 10
+            }
+          ],
+          "total": 10
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.readings": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-empty-after-data",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "latest_readings",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "readings"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "latest": [],
+          "total": 0
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.readings": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "authority": "actor_visible_finite_examples_under_complete_public_contract",
+  "cases": [
+    {
+      "case_id": "public-grouped-items",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "work_items",
+        "args": [
+          "group oak\nitem cut 2\nitem paint 3\ngroup pine\nitem pack 1"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "group": "oak",
+            "item": "cut",
+            "minutes": 2
+          },
+          {
+            "group": "oak",
+            "item": "paint",
+            "minutes": 3
+          },
+          {
+            "group": "pine",
+            "item": "pack",
+            "minutes": 1
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-empty-items",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "work_items",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-prefix-times-reset-between-groups",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          "group oak\nitem cut 2\nitem paint 3\ngroup pine\nitem pack 1"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "group": "oak",
+              "item": "cut",
+              "start": 0,
+              "finish": 2
+            },
+            {
+              "group": "oak",
+              "item": "paint",
+              "start": 2,
+              "finish": 5
+            },
+            {
+              "group": "pine",
+              "item": "pack",
+              "start": 0,
+              "finish": 1
+            }
+          ],
+          "totals": [
+            {
+              "group": "oak",
+              "minutes": 5
+            },
+            {
+              "group": "pine",
+              "minutes": 1
+            }
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-fresh-zero-step",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          "group birch\nitem wait 0\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "group": "birch",
+              "item": "wait",
+              "start": 0,
+              "finish": 0
+            }
+          ],
+          "totals": [
+            {
+              "group": "birch",
+              "minutes": 0
+            }
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-empty-after-data",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [],
+          "totals": []
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,282 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "private-grouped-duplicate-zero-items",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "work_items",
+        "args": [
+          "group elm\nitem sort 0\nitem sort 12\nitem pack 3\ngroup ash\nitem scan 10\nitem wrap 0\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "group": "elm",
+            "item": "sort",
+            "minutes": 0
+          },
+          {
+            "group": "elm",
+            "item": "sort",
+            "minutes": 12
+          },
+          {
+            "group": "elm",
+            "item": "pack",
+            "minutes": 3
+          },
+          {
+            "group": "ash",
+            "item": "scan",
+            "minutes": 10
+          },
+          {
+            "group": "ash",
+            "item": "wrap",
+            "minutes": 0
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-prefix-duplicate-items-multidigit-and-zero",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          "group elm\nitem sort 0\nitem sort 12\nitem pack 3\ngroup ash\nitem scan 10\nitem wrap 0\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "group": "elm",
+              "item": "sort",
+              "start": 0,
+              "finish": 0
+            },
+            {
+              "group": "elm",
+              "item": "sort",
+              "start": 0,
+              "finish": 12
+            },
+            {
+              "group": "elm",
+              "item": "pack",
+              "start": 12,
+              "finish": 15
+            },
+            {
+              "group": "ash",
+              "item": "scan",
+              "start": 0,
+              "finish": 10
+            },
+            {
+              "group": "ash",
+              "item": "wrap",
+              "start": 10,
+              "finish": 10
+            }
+          ],
+          "totals": [
+            {
+              "group": "elm",
+              "minutes": 15
+            },
+            {
+              "group": "ash",
+              "minutes": 10
+            }
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-fresh-call-resets-group",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          "group elm\nitem pack 4"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "group": "elm",
+              "item": "pack",
+              "start": 0,
+              "finish": 4
+            }
+          ],
+          "totals": [
+            {
+              "group": "elm",
+              "minutes": 4
+            }
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-three-group-input-order-not-sorted",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          "group fir\nitem x 1\ngroup ash\nitem x 2\ngroup elm\nitem x 3"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "group": "fir",
+              "item": "x",
+              "start": 0,
+              "finish": 1
+            },
+            {
+              "group": "ash",
+              "item": "x",
+              "start": 0,
+              "finish": 2
+            },
+            {
+              "group": "elm",
+              "item": "x",
+              "start": 0,
+              "finish": 3
+            }
+          ],
+          "totals": [
+            {
+              "group": "fir",
+              "minutes": 1
+            },
+            {
+              "group": "ash",
+              "minutes": 2
+            },
+            {
+              "group": "elm",
+              "minutes": 3
+            }
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-empty-after-three-groups",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "work_timeline",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "work_items"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [],
+          "totals": []
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.work_items": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

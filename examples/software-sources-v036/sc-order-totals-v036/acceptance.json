@@ -1,0 +1,368 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "private-zero-price-and-large-discount-valid",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_order",
+        "args": [
+          {
+            "lines": [
+              {
+                "sku": "fir",
+                "quantity": 2,
+                "unit_price": 0
+              }
+            ],
+            "discount": 99
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "lines": [
+            {
+              "sku": "fir",
+              "quantity": 2,
+              "unit_price": 0
+            }
+          ],
+          "discount": 99
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-negative-price",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_order",
+        "args": [
+          {
+            "lines": [
+              {
+                "sku": "birch",
+                "quantity": 1,
+                "unit_price": -3
+              }
+            ],
+            "discount": 0
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-repeated-lines-exact-integer-amounts",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "price_order",
+        "args": [
+          {
+            "lines": [
+              {
+                "sku": "ash",
+                "quantity": 2,
+                "unit_price": 7
+              },
+              {
+                "sku": "ash",
+                "quantity": 1,
+                "unit_price": 3
+              },
+              {
+                "sku": "elm",
+                "quantity": 5,
+                "unit_price": 0
+              }
+            ],
+            "discount": 6
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_order"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "lines": [
+            {
+              "sku": "ash",
+              "quantity": 2,
+              "unit_price": 7,
+              "amount": 14
+            },
+            {
+              "sku": "ash",
+              "quantity": 1,
+              "unit_price": 3,
+              "amount": 3
+            },
+            {
+              "sku": "elm",
+              "quantity": 5,
+              "unit_price": 0,
+              "amount": 0
+            }
+          ],
+          "subtotal": 17,
+          "discount": 6,
+          "due": 11
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_order": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-invalid-middle-rejects-entire-order",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "price_order",
+        "args": [
+          {
+            "lines": [
+              {
+                "sku": "ash",
+                "quantity": 1,
+                "unit_price": 5
+              },
+              {
+                "sku": "elm",
+                "quantity": 0,
+                "unit_price": 2
+              },
+              {
+                "sku": "fir",
+                "quantity": 2,
+                "unit_price": 4
+              }
+            ],
+            "discount": 0
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_order"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": false,
+          "lines": [],
+          "subtotal": 0,
+          "discount": 0,
+          "due": 0
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_order": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-over-discount-clamps-zero",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "price_order",
+        "args": [
+          {
+            "lines": [
+              {
+                "sku": "elm",
+                "quantity": 1,
+                "unit_price": 3
+              }
+            ],
+            "discount": 100
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_order"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "lines": [
+            {
+              "sku": "elm",
+              "quantity": 1,
+              "unit_price": 3,
+              "amount": 3
+            }
+          ],
+          "subtotal": 3,
+          "discount": 100,
+          "due": 0
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_order": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-fresh-call",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "price_order",
+        "args": [
+          {
+            "lines": [
+              {
+                "sku": "fir",
+                "quantity": 1,
+                "unit_price": 9
+              }
+            ],
+            "discount": 2
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_order"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "lines": [
+            {
+              "sku": "fir",
+              "quantity": 1,
+              "unit_price": 9,
+              "amount": 9
+            }
+          ],
+          "subtotal": 9,
+          "discount": 2,
+          "due": 7
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_order": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "private-empty-positive-discount",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "price_order",
+        "args": [
+          {
+            "lines": [],
+            "discount": 4
+          }
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_order"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "lines": [],
+          "subtotal": 0,
+          "discount": 4,
+          "due": 0
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_order": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

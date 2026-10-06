@@ -48,7 +48,7 @@ class ExplicitTokenFixture(RouteProgramOwner):
         return response
 
 
-def test_actual_continuation_projection_keeps_failed_own_tokens_and_M1(tmp_path):
+def test_actual_continuation_projection_keeps_failed_own_tokens_and_M1_without_optimizer_targets(tmp_path):
     if not world.PIN_PATH.exists() or not (world.DEFAULT_ASSETS/'manifest.json').exists():
         pytest.skip('Pinned new v025 material required')
     catalog = world.registry()
@@ -69,7 +69,7 @@ def test_actual_continuation_projection_keeps_failed_own_tokens_and_M1(tmp_path)
         gamma_identity={'harness': admission['harness'], 'purpose': admission['purpose'],
                         'seeds': [s['seed'] for s in catalog['continuation_slots']], 'explicit_cpu_fixture': True}, slot_specs=specs)
     validate_window_declaration(declaration, admission)
-    entries = []
+    entries, retained_decisions = [], []
     for slot, folder, prepared, runtime, capture in pending:
         episode = folder/'episode'
         begin_episode(prepared.world, episode, experience=runtime.recorder.snapshot(), work_nodes=['TEAM::build'],
@@ -82,17 +82,22 @@ def test_actual_continuation_projection_keeps_failed_own_tokens_and_M1(tmp_path)
         assert entry['reward']['reward'] == 0 and not entry['rollout']['work_validity']['value']
         assert entry['mapping']['status'] == 'unmapped'
         for view in proof['member_views'].values():
+            assert view['complete_actor_trajectory']
+            retained_decisions.extend(view['decisions'])
             for decision in view['decisions']:
                 assert decision['loss_mask'] == [0, 0, 1, 1]
         entries.append(entry)
+    assert len(retained_decisions) == 4
+    assert sum(len(decision['tokens']['output_ids']) for decision in retained_decisions) == 8
     diag = diagnose_support(entries, declaration)
     assert diag['raw_slot_count'] == 2 and diag['raw_slots_per_situation'] == 1
     assert diag['selected_block'] is None and diag['optimizer_update_allowed'] is False
-    assert all(block['M'] == 1 and not block['b'] and all(block['base_actor_mask'].values())
+    assert all(block['M'] == 1 and not block['b'] and not any(block['base_actor_mask'].values())
                for support in diag['supports_by_xi'].values() for block in support['blocks'].values())
     prepared = prepare_window(entries, owners[0].freeze_identity(), 'v025-next-base', owners[0].recipe)
-    assert prepared['slot_count'] == 2 and len(prepared['decisions']) == 4
-    assert all(row['actor_denominator'] == 2*2*2 for row in prepared['decisions'])
+    # The declared continuation purpose retains evidence but forbids optimization.
+    assert prepared['slot_count'] == 2 and prepared['decisions'] == []
+    assert all('declared_scope_forbids_optimizer_update' in row['exclusions'] for row in prepared['slots'])
     records = records_from_entries(entries)
     assert all(r['rollout'] is e['rollout'] for r, e in zip(records, entries))
     with pytest.raises(ValueError, match='purpose|inventory'):
