@@ -1,6 +1,6 @@
 # v0.34 P1 新根目标的有限团队可行性批次
 
-状态：`waiting`；源码：`522f3331c87cae4f7070f6cc798624bad44dc564`；原件：`/data1/zhuxinrui/projects/ProWorkSim/runs/software-local-feasibility-v034`。
+状态：`complete`；源码：`522f3331c87cae4f7070f6cc798624bad44dc564`；原件：`/data1/zhuxinrui/projects/ProWorkSim/runs/software-local-feasibility-v034`。
 
 本阶段仅有现有 9B 与 Devstral、两个新 O1 根目标、两个固定 seed，共八条 T 经历。旧 v033 的十六槽不重跑，也不合入本轮分母；本轮没有 S 条件、新模型下载或 SWE 重测。
 
@@ -10,30 +10,30 @@ P0 继承原 common 与真实数值接入证据，只执行新目标与呈现的
 
 | 模型 | 根目标 | seed | 先手 | 完整 R | 提交 | 内容正确 | 规定过程满足 | 过程观测完整 | 状态 |
 |---|---|---:|---|---:|---|---|---|---|---|
-| qwen3.5-9b | mm-directory-rootgoal-v034 | 202610060701 | member_a | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| qwen3.5-9b | mm-name-index-rootgoal-v034 | 202610060701 | member_a | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| qwen3.5-9b | mm-name-index-rootgoal-v034 | 202610060702 | member_b | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| qwen3.5-9b | mm-directory-rootgoal-v034 | 202610060702 | member_b | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| devstral-small-2507 | mm-directory-rootgoal-v034 | 202610060701 | member_a | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| devstral-small-2507 | mm-name-index-rootgoal-v034 | 202610060701 | member_a | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| devstral-small-2507 | mm-name-index-rootgoal-v034 | 202610060702 | member_b | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
-| devstral-small-2507 | mm-directory-rootgoal-v034 | 202610060702 | member_b | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | 未知/未开始 | not_started |
+| qwen3.5-9b | mm-directory-rootgoal-v034 | 202610060701 | member_a | 1 | True | True | True | True | closed |
+| qwen3.5-9b | mm-name-index-rootgoal-v034 | 202610060701 | member_a | 0 | False | 未知/未开始 | 未知/未开始 | 未知/未开始 | closed |
+| qwen3.5-9b | mm-name-index-rootgoal-v034 | 202610060702 | member_b | 1 | True | True | True | True | closed |
+| qwen3.5-9b | mm-directory-rootgoal-v034 | 202610060702 | member_b | 0 | True | False | True | True | closed |
+| devstral-small-2507 | mm-directory-rootgoal-v034 | 202610060701 | member_a | 1 | True | True | True | True | closed |
+| devstral-small-2507 | mm-name-index-rootgoal-v034 | 202610060701 | member_a | 0 | False | 未知/未开始 | 未知/未开始 | 未知/未开始 | closed |
+| devstral-small-2507 | mm-name-index-rootgoal-v034 | 202610060702 | member_b | 0 | False | 未知/未开始 | 未知/未开始 | 未知/未开始 | closed |
+| devstral-small-2507 | mm-directory-rootgoal-v034 | 202610060702 | member_b | 1 | True | True | True | True | closed |
 
 过程要求满足与过程观测完整分列：未证明满足不等于已证明完全没有调用 API。未知和未开始不补零；未提交的工作区不另行补验后替换原结果。
 
 | 模型 | 完整成功／已知 | 成功根目标数 | 四槽全量实际 token | 已提交 | common／执行可信 |
 |---|---:|---:|---:|---:|---|
-| qwen3.5-9b | 0/0 | 0 | None | 0 | False |
-| devstral-small-2507 | 0/0 | 0 | None | 0 | False |
+| qwen3.5-9b | 2/4 | 2 | 1981827 | 3 | True |
+| devstral-small-2507 | 2/4 | 1 | 1908379 | 2 | True |
 
-局部载体决策：`pending`；候选：`None`。
+局部载体决策：`local_carrier_identified_for_p2_design`；候选：`qwen3.5-9b`。
 入选须同模型四槽全部已知可信、预算用量完整、原 common 完整恢复且至少一条完整 R=1。多候选依次比较完整成功数、成功根目标覆盖数、全部四槽实际 token 总量，最后用固定 9B→Devstral 顺序。没有只统计成功子集的成本。
 
 一条成功仅提供本地有限可行性，不是稳定能力认证、旧选型赢家或当前训练支持。全部业务失败则关闭固定批次，不围绕这些槽逐句改提示重跑；无候选且有技术未知时保留独立未知状态。
 
 P2 仍须冻结用途隔离的新训练来源、当前策略窗口及依据全体有效产出率与精度确定的重复数，不能把本批开发轨迹改标为训练。P3 须按真实 n+、K 和贡献开发成本另冻公平的 B／G-raw／I-P 预算，共享 B 一次且不临时删除原始分支探测方向；G-lift 只作辅助对照。没有自动启动未冻结训练或试训，也没有预承诺固定训练重复数。
 
-本阶段新 worker 成本：0.000000000 GPU 秒；逐卡区间并集：0.000000 秒（0.000000000 GPU 小时）；当前运行中：0.000000 秒。
+本阶段新 worker 成本：5022.742567539 GPU 秒；逐卡区间并集：5022.742568 秒（1.395206269 GPU 小时）；当前运行中：0.000000 秒。
 上述只计本阶段已分配单卡 worker 墙钟，排队等待、P0 CPU 工作和旧实验 GPU 成本未混入。累计 GPU／worker／统一墙钟上限仍为空，单任务与内存、产物保护门保留。
 
 本轮没有参数训练或 ID-VTDO 分配效果结论；新小任务高于旧任务也只说明载体与呈现改变，不能替代同一载体上的独立 B/G/I 学习增量。
