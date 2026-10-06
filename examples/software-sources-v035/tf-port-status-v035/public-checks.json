@@ -1,0 +1,115 @@
+{
+  "authority": "actor_visible_complete_semantics",
+  "cases": [
+    {
+      "case_id": "public-port-adapter",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "port_records",
+        "args": [
+          "port oak up\nport pine down\nport oak up"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "oak",
+            "state": "up"
+          },
+          {
+            "name": "pine",
+            "state": "down"
+          },
+          {
+            "name": "oak",
+            "state": "up"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-port-report",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "port_report",
+        "args": [
+          "port oak up\nport pine down\nport oak up"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "port_records"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [
+            {
+              "name": "oak",
+              "state": "up"
+            },
+            {
+              "name": "pine",
+              "state": "down"
+            },
+            {
+              "name": "oak",
+              "state": "up"
+            }
+          ],
+          "up": 2,
+          "down": 1
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.port_records": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-port-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "port_report",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [],
+          "up": 0,
+          "down": 0
+        },
+        "input_unchanged": true
+      }
+    }
+  ]
+}

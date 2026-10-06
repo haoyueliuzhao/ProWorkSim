@@ -1,0 +1,155 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-job-upper-bound",
+      "group": "shared_api",
+      "request": {
+        "module": "policy",
+        "function": "validate_job",
+        "args": [
+          {
+            "queue": "batch",
+            "priority": 3
+          },
+          [
+            "batch",
+            "quick"
+          ],
+          3
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "queue": "batch",
+          "priority": 3
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-job-rejected-priority",
+      "group": "shared_api",
+      "request": {
+        "module": "policy",
+        "function": "validate_job",
+        "args": [
+          {
+            "queue": "batch",
+            "priority": 4
+          },
+          [
+            "batch",
+            "quick"
+          ],
+          3
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-job-report",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "review_jobs",
+        "args": [
+          [
+            {
+              "queue": "quick",
+              "priority": 0
+            },
+            {
+              "queue": "lost",
+              "priority": 0
+            },
+            {
+              "queue": "batch",
+              "priority": 3
+            },
+            {
+              "queue": "quick",
+              "priority": 5
+            },
+            {
+              "queue": "quick",
+              "priority": 0
+            }
+          ],
+          [
+            "batch",
+            "quick"
+          ],
+          3
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "policy",
+            "validate_job"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "queue": "quick",
+              "priority": 0
+            },
+            {
+              "queue": "batch",
+              "priority": 3
+            },
+            {
+              "queue": "quick",
+              "priority": 0
+            }
+          ],
+          "rejected_indices": [
+            1,
+            3
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "policy.validate_job": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

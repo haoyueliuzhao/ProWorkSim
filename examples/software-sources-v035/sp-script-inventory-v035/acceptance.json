@@ -1,0 +1,177 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-script-reader",
+      "group": "shared_api",
+      "request": {
+        "module": "reader",
+        "function": "statement_records",
+        "args": [
+          "UPDATE events SET note = 'x;y';\nSELECT 'plain' FROM events"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "sqlparse",
+            "split"
+          ],
+          [
+            "sqlparse",
+            "parse"
+          ],
+          [
+            "sqlparse.sql",
+            "Statement.get_type"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "text": "UPDATE events SET note = 'x;y';",
+            "kind": "UPDATE"
+          },
+          {
+            "text": "SELECT 'plain' FROM events",
+            "kind": "SELECT"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "sqlparse.split": true,
+          "sqlparse.parse": true,
+          "sqlparse.sql.Statement.get_type": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-script-report",
+      "group": "consumer",
+      "request": {
+        "module": "report",
+        "function": "summarize",
+        "args": [
+          "update boxes SET value = 4; SELECT code FROM boxes WHERE id = 3; delete FROM boxes; SELECT code FROM boxes WHERE id = 3;"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "sqlparse",
+            "split"
+          ],
+          [
+            "sqlparse",
+            "parse"
+          ],
+          [
+            "sqlparse.sql",
+            "Statement.get_type"
+          ],
+          [
+            "reader",
+            "statement_records"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "statements": [
+            {
+              "text": "update boxes SET value = 4;",
+              "kind": "UPDATE"
+            },
+            {
+              "text": "SELECT code FROM boxes WHERE id = 3;",
+              "kind": "SELECT"
+            },
+            {
+              "text": "delete FROM boxes;",
+              "kind": "DELETE"
+            },
+            {
+              "text": "SELECT code FROM boxes WHERE id = 3;",
+              "kind": "SELECT"
+            }
+          ],
+          "counts": {
+            "SELECT": 2,
+            "UPDATE": 1,
+            "DELETE": 1
+          },
+          "total": 4
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "sqlparse.split": true,
+          "sqlparse.parse": true,
+          "sqlparse.sql.Statement.get_type": true,
+          "reader.statement_records": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-script-last-semicolon-optional",
+      "group": "consumer",
+      "request": {
+        "module": "report",
+        "function": "summarize",
+        "args": [
+          "UPDATE events SET note = 'x;y';\nSELECT 'plain' FROM events"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "sqlparse",
+            "split"
+          ],
+          [
+            "sqlparse",
+            "parse"
+          ],
+          [
+            "sqlparse.sql",
+            "Statement.get_type"
+          ],
+          [
+            "reader",
+            "statement_records"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "statements": [
+            {
+              "text": "UPDATE events SET note = 'x;y';",
+              "kind": "UPDATE"
+            },
+            {
+              "text": "SELECT 'plain' FROM events",
+              "kind": "SELECT"
+            }
+          ],
+          "counts": {
+            "SELECT": 1,
+            "UPDATE": 1,
+            "DELETE": 0
+          },
+          "total": 2
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "sqlparse.split": true,
+          "sqlparse.parse": true,
+          "sqlparse.sql.Statement.get_type": true,
+          "reader.statement_records": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

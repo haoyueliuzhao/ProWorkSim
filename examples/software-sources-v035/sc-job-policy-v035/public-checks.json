@@ -1,0 +1,168 @@
+{
+  "authority": "actor_visible_complete_semantics",
+  "cases": [
+    {
+      "case_id": "public-job-allowed",
+      "group": "shared_api",
+      "request": {
+        "module": "policy",
+        "function": "validate_job",
+        "args": [
+          {
+            "queue": "fast",
+            "priority": 2
+          },
+          [
+            "fast"
+          ],
+          2
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "queue": "fast",
+          "priority": 2
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-job-rejected-queue",
+      "group": "shared_api",
+      "request": {
+        "module": "policy",
+        "function": "validate_job",
+        "args": [
+          {
+            "queue": "slow",
+            "priority": 1
+          },
+          [
+            "fast"
+          ],
+          2
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-job-report",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "review_jobs",
+        "args": [
+          [
+            {
+              "queue": "fast",
+              "priority": 2
+            },
+            {
+              "queue": "slow",
+              "priority": 1
+            },
+            {
+              "queue": "fast",
+              "priority": 4
+            },
+            {
+              "queue": "fast",
+              "priority": 2
+            }
+          ],
+          [
+            "fast"
+          ],
+          2
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "policy",
+            "validate_job"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [
+            {
+              "queue": "fast",
+              "priority": 2
+            },
+            {
+              "queue": "fast",
+              "priority": 2
+            }
+          ],
+          "rejected_indices": [
+            1,
+            2
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "policy.validate_job": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-job-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "review_jobs",
+        "args": [
+          [],
+          [
+            "fast"
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "accepted": [],
+          "rejected_indices": []
+        },
+        "input_unchanged": true
+      }
+    }
+  ]
+}

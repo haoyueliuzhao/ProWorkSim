@@ -1,0 +1,130 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-batch-adapter",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "batch_values",
+        "args": [
+          "batch elm\nvalue 0\nvalue 5\nbatch ash\nvalue 1\nbatch elm\nvalue 5\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "batch": "elm",
+            "value": 0
+          },
+          {
+            "batch": "elm",
+            "value": 5
+          },
+          {
+            "batch": "ash",
+            "value": 1
+          },
+          {
+            "batch": "elm",
+            "value": 5
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-batch-totals",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "batch_totals",
+        "args": [
+          "batch elm\nvalue 0\nvalue 5\nbatch ash\nvalue 1\nbatch elm\nvalue 5\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "batch_values"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "batch": "elm",
+            "count": 3,
+            "total": 10
+          },
+          {
+            "batch": "ash",
+            "count": 1,
+            "total": 1
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.batch_values": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-batch-fresh-call",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "batch_totals",
+        "args": [
+          "batch fir\nvalue 9"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "batch_values"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "batch": "fir",
+            "count": 1,
+            "total": 9
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.batch_values": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

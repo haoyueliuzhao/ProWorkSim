@@ -1,0 +1,152 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-command-validation",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_commands",
+        "args": [
+          [
+            {
+              "op": "drop",
+              "name": "fir"
+            },
+            {
+              "op": "change",
+              "name": "elm"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": null,
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-command-apply",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_commands",
+        "args": [
+          [
+            "fir",
+            "elm"
+          ],
+          [
+            {
+              "op": "drop",
+              "name": "absent"
+            },
+            {
+              "op": "put",
+              "name": "cedar"
+            },
+            {
+              "op": "drop",
+              "name": "fir"
+            },
+            {
+              "op": "put",
+              "name": "ash"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_commands"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "active": [
+            "ash",
+            "cedar",
+            "elm"
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_commands": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-command-atomic-reject",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_commands",
+        "args": [
+          [
+            "fir",
+            "elm"
+          ],
+          [
+            {
+              "op": "drop",
+              "name": "fir"
+            },
+            {
+              "op": "change",
+              "name": "elm"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_commands"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": false,
+          "active": [
+            "elm",
+            "fir"
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_commands": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

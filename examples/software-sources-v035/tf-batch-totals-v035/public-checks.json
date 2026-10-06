@@ -1,0 +1,122 @@
+{
+  "authority": "actor_visible_complete_semantics",
+  "cases": [
+    {
+      "case_id": "public-batch-adapter",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "batch_values",
+        "args": [
+          "batch oak\nvalue 2\nbatch pine\nvalue 3\nbatch oak\nvalue 2"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "batch": "oak",
+            "value": 2
+          },
+          {
+            "batch": "pine",
+            "value": 3
+          },
+          {
+            "batch": "oak",
+            "value": 2
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-batch-totals",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "batch_totals",
+        "args": [
+          "batch oak\nvalue 2\nbatch pine\nvalue 3\nbatch oak\nvalue 2"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "batch_values"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "batch": "oak",
+            "count": 2,
+            "total": 4
+          },
+          {
+            "batch": "pine",
+            "count": 1,
+            "total": 3
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.batch_values": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-batch-no-values",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "batch_totals",
+        "args": [
+          "batch oak\nbatch pine\n"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "public-batch-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "batch_totals",
+        "args": [
+          ""
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [],
+        "input_unchanged": true
+      }
+    }
+  ]
+}

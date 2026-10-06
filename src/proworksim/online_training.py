@@ -249,6 +249,10 @@ class DirectContextLimit(ValueError):
 
 def validate_actor_composition(entries, prepared, composition):
     """Admit a bound allocation without changing the shared base loss or masks."""
+    from .experience_allocation_v035 import VERSION as current_version, validate_allocation as current_allocation
+
+    if isinstance(composition, dict) and composition.get("version") == current_version:
+        return current_allocation(entries, prepared, composition)
     from .experience_allocation_v027 import VERSION as allocation_version, validate_allocation
 
     if isinstance(composition, dict) and composition.get("version") == allocation_version:

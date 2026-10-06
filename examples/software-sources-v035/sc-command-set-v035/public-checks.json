@@ -1,0 +1,187 @@
+{
+  "authority": "actor_visible_complete_semantics",
+  "cases": [
+    {
+      "case_id": "public-command-validation",
+      "group": "shared_api",
+      "request": {
+        "module": "rules",
+        "function": "validate_commands",
+        "args": [
+          [
+            {
+              "op": "put",
+              "name": "pine"
+            },
+            {
+              "op": "drop",
+              "name": "oak"
+            },
+            {
+              "op": "put",
+              "name": "pine"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "op": "put",
+            "name": "pine"
+          },
+          {
+            "op": "drop",
+            "name": "oak"
+          },
+          {
+            "op": "put",
+            "name": "pine"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-command-apply",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_commands",
+        "args": [
+          [
+            "oak"
+          ],
+          [
+            {
+              "op": "put",
+              "name": "pine"
+            },
+            {
+              "op": "drop",
+              "name": "oak"
+            },
+            {
+              "op": "put",
+              "name": "pine"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_commands"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "active": [
+            "pine"
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_commands": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-command-atomic-reject",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_commands",
+        "args": [
+          [
+            "oak"
+          ],
+          [
+            {
+              "op": "put",
+              "name": "pine"
+            },
+            {
+              "op": "erase",
+              "name": "oak"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "rules",
+            "validate_commands"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": false,
+          "active": [
+            "oak"
+          ]
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "schema.Schema.validate": true,
+          "rules.validate_commands": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-command-empty",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "apply_commands",
+        "args": [
+          [
+            "pine",
+            "oak"
+          ],
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "ok": true,
+          "active": [
+            "oak",
+            "pine"
+          ]
+        },
+        "input_unchanged": true
+      }
+    }
+  ]
+}

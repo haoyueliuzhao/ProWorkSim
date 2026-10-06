@@ -1,0 +1,135 @@
+{
+  "authority": "task_private_complete_acceptance_not_actor_visible",
+  "cases": [
+    {
+      "case_id": "independent-port-adapter",
+      "group": "shared_api",
+      "request": {
+        "module": "adapter",
+        "function": "port_records",
+        "args": [
+          "port ash down\nport elm down\nport ash up\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "name": "ash",
+            "state": "down"
+          },
+          {
+            "name": "elm",
+            "state": "down"
+          },
+          {
+            "name": "ash",
+            "state": "up"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-port-report",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "port_report",
+        "args": [
+          "port ash down\nport elm down\nport ash up\n"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "port_records"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [
+            {
+              "name": "ash",
+              "state": "down"
+            },
+            {
+              "name": "elm",
+              "state": "down"
+            },
+            {
+              "name": "ash",
+              "state": "up"
+            }
+          ],
+          "up": 1,
+          "down": 2
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.port_records": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "independent-port-fresh-call",
+      "group": "consumer",
+      "request": {
+        "module": "consumer",
+        "function": "port_report",
+        "args": [
+          "port fir up"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "textfsm",
+            "TextFSM.ParseText"
+          ],
+          [
+            "adapter",
+            "port_records"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "records": [
+            {
+              "name": "fir",
+              "state": "up"
+            }
+          ],
+          "up": 1,
+          "down": 0
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "textfsm.TextFSM.ParseText": true,
+          "adapter.port_records": true
+        },
+        "source_api_observation_complete": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "authority": "actor_visible_complete_semantics",
+  "cases": [
+    {
+      "case_id": "public-script-reader",
+      "group": "shared_api",
+      "request": {
+        "module": "reader",
+        "function": "statement_records",
+        "args": [
+          "  SELECT label FROM bins;\nUPDATE bins SET flag = 1;  "
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "sqlparse",
+            "split"
+          ],
+          [
+            "sqlparse",
+            "parse"
+          ],
+          [
+            "sqlparse.sql",
+            "Statement.get_type"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          {
+            "text": "SELECT label FROM bins;",
+            "kind": "SELECT"
+          },
+          {
+            "text": "UPDATE bins SET flag = 1;",
+            "kind": "UPDATE"
+          }
+        ],
+        "input_unchanged": true,
+        "source_api_used": {
+          "sqlparse.split": true,
+          "sqlparse.parse": true,
+          "sqlparse.sql.Statement.get_type": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-script-report-and-quoted-semicolon",
+      "group": "consumer",
+      "request": {
+        "module": "report",
+        "function": "summarize",
+        "args": [
+          "select 'a;b' FROM logs; DELETE FROM logs WHERE id = 2; select 'a;b' FROM logs;"
+        ],
+        "check_input_unchanged": true,
+        "trace": [
+          [
+            "sqlparse",
+            "split"
+          ],
+          [
+            "sqlparse",
+            "parse"
+          ],
+          [
+            "sqlparse.sql",
+            "Statement.get_type"
+          ],
+          [
+            "reader",
+            "statement_records"
+          ]
+        ]
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "statements": [
+            {
+              "text": "select 'a;b' FROM logs;",
+              "kind": "SELECT"
+            },
+            {
+              "text": "DELETE FROM logs WHERE id = 2;",
+              "kind": "DELETE"
+            },
+            {
+              "text": "select 'a;b' FROM logs;",
+              "kind": "SELECT"
+            }
+          ],
+          "counts": {
+            "SELECT": 2,
+            "UPDATE": 0,
+            "DELETE": 1
+          },
+          "total": 3
+        },
+        "input_unchanged": true,
+        "source_api_used": {
+          "sqlparse.split": true,
+          "sqlparse.parse": true,
+          "sqlparse.sql.Statement.get_type": true,
+          "reader.statement_records": true
+        },
+        "source_api_observation_complete": true
+      }
+    },
+    {
+      "case_id": "public-script-empty",
+      "group": "consumer",
+      "request": {
+        "module": "report",
+        "function": "summarize",
+        "args": [
+          " \n "
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "statements": [],
+          "counts": {
+            "SELECT": 0,
+            "UPDATE": 0,
+            "DELETE": 0
+          },
+          "total": 0
+        },
+        "input_unchanged": true
+      }
+    }
+  ]
+}
