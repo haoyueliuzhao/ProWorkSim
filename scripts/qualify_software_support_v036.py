@@ -20,7 +20,9 @@ def qualify(data_root, controls, output):
     controls = Path(controls).resolve()
     evidence, coverage, files = {}, {}, {}
     for name in ("sources", "member-tests", "methods", "integration", "execution", "cold-archive", "final-static"):
-        path = controls / ("final-static.json" if name == "final-static" else name + "/checks.json")
+        relative_receipt = ("final-static.json" if name == "final-static" else
+                            "methods/qualification-checks.json" if name == "methods" else name + "/checks.json")
+        path = controls / relative_receipt
         value = read_json(path)
         checks = value.get("checks", [])
         if (not checks or any(row.get("returncode") != 0 for row in checks)
