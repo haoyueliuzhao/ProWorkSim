@@ -1,0 +1,24 @@
+{
+  "slot_index": 8,
+  "headline": "A 创建任务却由 B 先认领；B 独立交付，A 导入修复后仍无法发布，最后等待一个已发生的提交",
+  "division_of_work": [
+    "A 在自己的树写 reader.py [seq 172]、report.py [seq 240]；B 也分别写 reader.py [seq 189]、report.py [seq 257]，另增加 test_member.py [seq 288]。两人都在做完整实现，B 还编写成员测试；没有预先按两个生产文件拆分任务的实际动作。",
+    "A/v3 与 B/v4 都实际运行并通过当时的 run_tests [seq 305] [seq 322]。两人随后都以 root_goal 作为 task_id 发布，均收到 Unknown task [seq 339] [seq 356]，说明实现和测试先发生，任务登记并未同步完成。",
+    "A 创建 my_work_task，描述完成 reader.py/report.py，创建回执 owner=null [seq 373]；B 在下一次机会先认领成功 [seq 390]，A 随后的 claim_task 被拒绝，理由为已经被认领 [seq 407]。因此，任务创建者是 A，实际 owner 是 B，这不是 A 已完成认领后的委派或所有权转移。"
+  ],
+  "collaboration": [
+    "B 在自己认领的 my_work_task 下固定发布 patch-1：B/v4，changed_paths 含 reader.py、report.py、test_member.py，included_patch_ids=[] [seq 424]；B 随后提交 delivery-1/v4 [seq 458]，这是最终有效交付的主链。",
+    "A 在 B 提交前实际导入 patch-1 [seq 441]，回执写明 reader.py/report.py 冲突、status=conflict_markers_written、included_patch_ids=[patch-1]。A 读出了自己导入后两个文件的冲突内容 [seq 475] [seq 509]，重写 reader.py [seq 526]、report.py [seq 543]，A/v6 测试通过 [seq 560]。不能把这段交互说成完全没有同伴材料，也不能把冲突导入回执说成无冲突合并。",
+    "A 试图在 my_work_task 下固定自己的 v6，两次都因非 owner 被拒绝 [seq 577] [seq 645]；重复导入同一补丁也被拒绝 [seq 594]。两次 submit_integration 返回必须先发布当前精确工作版本 [seq 611] [seq 662]。A 对 B 补丁的导入和本地测试并未改变 task owner，也未替代 A/v6 的固定发布。",
+    "B 在提交后执行 staff_done [seq 492]。A 最后执行 staff_wait，理由是等待 B 提交或新事件 [seq 679]；但原动作顺序显示 B 的 delivery-1 早已在 [seq 458] 被受理。这个等待理由只能作为 A 的陈述记录，不能改写为环境中尚无提交。"
+  ],
+  "outcome": [
+    "原封存 assessment.json 的最终有效交付是 B 的 delivery-1/v4，included_patch_ids=[]，完整 R=1；本次只引用原结果。A/v6 的修复没有成为第二份有效固定交付。",
+    "终止原因是 B completed，A worker_waiting 且没有可达的新唤醒事件；不是共享 token 预算耗尽。A 的实际 staff_wait 动作见 [seq 679]，B 的完成动作见 [seq 492]。"
+  ],
+  "audit_focus": [
+    "把创建、认领、认领被拒三个回执连续阅读 [seq 373] [seq 390] [seq 407]，核查‘任务由谁建’与‘任务归谁’没有混写。",
+    "比较 A 的等待理由 [seq 679] 与 B 实际提交 [seq 458]；不要用模型的最后一句说明代替事件事实，也不要把这一现象直接解释成某种不可见内部认知机制。",
+    "最终 B 的固定交付不含 A 的补丁；A 后来的导入、冲突修复与发布失败属于支线 [seq 441] [seq 526] [seq 543] [seq 577] [seq 645]。"
+  ]
+}

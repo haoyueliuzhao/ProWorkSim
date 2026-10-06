@@ -1,0 +1,24 @@
+{
+  "slot_index": 13,
+  "headline": "双方各自实现两模块；A先认领并提交，B从冲突导入修复后另建发布任务完成第二份提交",
+  "division_of_work": [
+    "B先写reader [seq 164]和report [seq 198]，初次测试公开业务未通过 [seq 232]；它在report补入from reader import statement_records [seq 266]后通过公开业务与上游检查 [seq 300]。A也独立写reader [seq 215]和report [seq 283]，自己的公开检查通过 [seq 317]。双方都修改了两个生产文件，没有实际的一人一模块分工。",
+    "B、A各以root_goal尝试固定产物，先后收到Unknown task [seq 334][seq 351]。B创建task_complete_reader_report，描述包含两模块 [seq 368]；A先认领 [seq 385]，B随后认领被拒 [seq 402]。这些任务动作发生在两份工作树已经通过公开检查之后。",
+    "B后续另建task_member_b_submission，明确用于固定自己的当前版本并提交 [seq 671]，自行认领 [seq 688]。这没有转移A的原任务owner；是新增发布职责。"
+  ],
+  "collaboration": [
+    "A先发布patch-1/A-v3 [seq 419]。B将它导入自己已修改的v4，生成B-v5，并在reader.py和report.py写入冲突标记 [seq 436]。A提交delivery-1 [seq 453]并staff_done [seq 487]；没有显式send_message或handoff_patch，伙伴内容通过固定patch和实际导入进入B的工作过程。",
+    "B分别读取带冲突的reader [seq 470]和report [seq 504]，随后重写两文件 [seq 521][seq 538]，得到B-v7；该版本公开业务及上游检查通过，成员测试未运行 [seq 555]。导入和冲突处理是最终交付链的一部分，不是只存在于未评分的另一副本。",
+    "B在提交消息中自述保留incoming patch版本，但该提交仍被拒为当前版本尚无fixed patch [seq 589]。之后按A的原任务发布被拒为非owner [seq 606]，再次导入patch-1也被拒为already integrated [seq 637]。自述的实现完成不能代替发布与权限回执。",
+    "B创建并认领新发布任务 [seq 671][seq 688]后，发布patch-2/B-v7，included_patch_ids=[patch-1] [seq 722]；这才成功提交delivery-2 [seq 739]。"
+  ],
+  "outcome": [
+    "最后交付为B-v7、delivery-2 [seq 739]。原assessment对最后固定版本记录R=1、公开4/4、任务私有3/3；较早A-v3的delivery-1 [seq 453]只是在当时受理为待独立验收，不能计成额外完整验收成功。",
+    "A先完成 [seq 487]，B第二次提交后完成 [seq 756]，最终边界为双方completed [seq 761]。"
+  ],
+  "audit_focus": [
+    "先核对B第一次report缺少导入 [seq 198]、公开失败 [seq 232]、补导入 [seq 266]和测试通过 [seq 300]；这发生在伙伴patch出现之前，不应把全部后续正确性归于伙伴。",
+    "再核对A生产写入 [seq 215][seq 283]、B见到的冲突内容 [seq 470][seq 504]与B重写 [seq 521][seq 538]。B关于保留incoming的声明 [seq 589]应与实际源码及版本链共同审计，而不作为单独的因果采用证明。",
+    "任务由B创建但由A先认领 [seq 368][seq 385]，与最后交付者B [seq 739]是三个不同事实；不要用某个task_id或最后署名替代完整工作关系。"
+  ]
+}

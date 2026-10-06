@@ -1,0 +1,25 @@
+{
+  "slot_index": 15,
+  "headline": "双方各自重复实现却共同误设report接口；公开失败持续，反复改reader后预算停止，无任务、固定产物或提交",
+  "division_of_work": [
+    "A先写reader [seq 113]、report [seq 147]和成员测试 [seq 181]；B也写reader [seq 266]、report [seq 300]及成员测试 [seq 334]。两个成员都承担了两模块和自测，没有形成互补任务分工；全程没有create_task、claim_task、delegate_task或已登记owner。",
+    "两人的report实际都实现为summarize(records)，直接遍历record并调用record.get，而合同要求summarize(script)内部消费reader.statement_records。A的写入 [seq 147]与B的写入 [seq 300]都没有调用reader。这是已保存源码中的接口差异，不是根据最终R0猜测原因。",
+    "成员自测也沿用了这个接口：A测试调用summarize(statement_records(script)) [seq 181]；B测试调用summarize([])或summarize(records) [seq 334]。自编测试的调用约定与公开合同不同，因此不能把其stdout的OK当作合同接口已满足。",
+    "实际成功编辑共A 8次、B 10次，其中reader分别6次和8次；report各只有最初一次写入 [seq 147][seq 300]。后段主要继续改reader，未见针对公开report错误的report修改。A还两次重复写入完全相同reader内容，被拒为File content did not change [seq 385][seq 651]。"
+  ],
+  "collaboration": [
+    "原轨迹没有send_message、handoff_patch、fix_patch、integrate_patch或submit_integration调用，没有形成可审计的固定伙伴产物传递链。两边共享团队预算，但编辑、读取、测试都围绕各自私有文件；不能把相似错误或相同任务目标当成信息已互通的证据。",
+    "A读自身reader及库源码 [seq 48][seq 79]，B读自身reader/report与库源码 [seq 96][seq 130][seq 164][seq 198]；B读取不存在的sqlparse/engine.py被拒 [seq 232]。这些是本地查询，均不是读取伙伴发布内容。",
+    "最后公开失败之后仍是本地reader改写：B在[seq 600][seq 634][seq 668]继续写reader，A在[seq 617]继续写reader，并分别读取本地文件 [seq 685][seq 702]。没有新的测试、任务或交付动作把这些最后版本纳入验收。"
+  ],
+  "outcome": [
+    "共7次run_tests：A [seq 215][seq 283][seq 419][seq 583]，B [seq 368][seq 470][seq 566]，整体均passed=False。最后被测试的A-v8与B-v8公开业务都是1/3：reader案例通过，非空report及空白输入report均抛出AttributeError: 'str' object has no attribute 'get' [seq 566][seq 583]；非空report观测中reader/sqlparse使用标志为False。",
+    "最后两次成员脚本stdout分别为B Ran 13 tests / OK [seq 566]、A Ran 12 tests / OK [seq 583]，但原成员组均因driver_completed=False保持failed。这里既有自测完成标记问题，也有独立可见的公开report业务失败；不能用成员stdout覆盖后者。",
+    "A和B下一次生成分别被团队token预约门拒绝 [seq 714][seq 722]，run_boundary为双方team_budget_exhausted [seq 723]。归档最终无固定patch、无提交，原R=0，content_correct、required_process_satisfied和process_observation_complete均为null；本摘要没有对最后A-v9/B-v11可变工作区追加验收。"
+  ],
+  "audit_focus": [
+    "优先对照report实际写入 [seq 147][seq 300]、自测调用接口 [seq 181][seq 334]与公开失败返回 [seq 566][seq 583]。错误接口已经在代码及测试参数中可见；本摘要不推断模型的隐含动机或是否理解了反馈。",
+    "审计反馈后的修改目标：持续报错的是report，后续真实编辑却集中于reader [seq 600][seq 617][seq 634][seq 668]。这些是轨迹事实，不据此补算最后版本的内容分或宣称只差一次提交。",
+    "严格区分最后被测试的v8和未复测的后续私有版本。无任务、无固定产物、无提交的事实不能被探索性自测或stdout OK替代，最后预算关闭 [seq 723]也不是额外验收事件。"
+  ]
+}

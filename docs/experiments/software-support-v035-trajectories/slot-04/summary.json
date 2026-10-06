@@ -1,0 +1,22 @@
+{
+  "slot_index": 4,
+  "headline": "A独立双模块实现后提交；B支线导入并在公开契约与自己的列表输入测试之间反复改report，最终测试通过但发布受阻、预算耗尽。",
+  "division_of_work": [
+    "A写reader.py和report.py [seq 116] [seq 150]，v3公开检查通过 [seq 184]。B读取库代码 [seq 133] [seq 167] 后另写两个模块 [seq 201] [seq 235]，首测公开业务失败 [seq 269]，再添加自己的test_member.py [seq 303]。没有按模块划分的任务分工。",
+    "A用root_goal固定产物被拒 [seq 218]，于是创建覆盖整个SQL inventory的sql_inventory任务 [seq 252]，自行认领 [seq 286]，固定v3为patch-1 [seq 320]。任务建立晚于A的双模块实现和首次通过。"
+  ],
+  "collaboration": [
+    "A复测v3仍公开通过 [seq 354]，提交delivery-1 [seq 385]，随后staff_done [seq 419]。B导入A patch-1到v5，明确产生两模块冲突 [seq 402]；读取工作文件 [seq 436] [seq 453] [seq 470] 后重写reader.py和report.py [seq 487] [seq 504]。这是B支线的实际导入与修订，不在A交付v3祖先链。",
+    "B v7公开业务通过但成员执行组失败 [seq 521]：自写脚本把records列表传给report.summarize，而实现按script字符串处理。B随后改report.py [seq 555]，出现成员组通过、公开业务失败 [seq 572]；再改report.py [seq 589]，又出现公开业务通过、成员组失败 [seq 640]。",
+    "B最后将summarize改为字符串则调用reader、否则接收列表 [seq 691]，v10三个测试组均通过 [seq 708]。但使用A拥有的sql_inventory固定当前版本被拒 [seq 725]；B接着直接列出并读取A的固定patch，比较report.py [seq 742] [seq 759] [seq 776]，没有成功发布或提交自己的v10。"
+  ],
+  "outcome": [
+    "原封存完整评分R=1，唯一受理交付为A delivery-1、v3 [seq 385]。B后来的字符串/列表兼容改动 [seq 691] 与测试通过 [seq 708] 不属于被评分交付。",
+    "终态bounded_work_closed：A completed，B team_budget_exhausted [seq 789]。B还发生一次截断输出格式错误 [seq 369]、一次重复导入拒绝 [seq 606]；没有隐去这些未成功动作。"
+  ],
+  "audit_focus": [
+    "对照公开契约要求summarize(script)与B成员脚本实际传入列表 [seq 521]：成员自设测试通过不自动等于契约通过，两个组在 [seq 572] 和 [seq 640] 给出相反结果。",
+    "区分B工作区读取与直接读取固定伙伴文件：导入后的工作树读 [seq 436] [seq 453] 含合并结果，带patch_id的read_file [seq 759] 指向A固定v3；不能把二者当同一来源。",
+    "未发生显式工作消息、delegate_task或handoff；真实可证交互是公共任务/patch元数据、导入回执和读取。A最终交付正确不能证明B支线因果贡献或完整验收结果。"
+  ]
+}

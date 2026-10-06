@@ -1,0 +1,24 @@
+{
+  "slot_index": 10,
+  "headline": "B 先独立交付，A 导入冲突并改写双文件及测试，再创建自己的收尾任务形成最终 delivery-2",
+  "division_of_work": [
+    "B 先写 reader.py [seq 133]、report.py [seq 167]，A 也在自己的私有树写 reader.py [seq 184]、report.py [seq 218]，并写 test_member.py [seq 252]。实际早期工作是双方都实现双文件，A 另做成员测试，不是从一开始便约定‘B 实现、A 只提交’。",
+    "B/v3 的公开测试通过 [seq 201]，以 root_goal 发布却返回 Unknown task [seq 235]。B 随后创建 task_impl_reader_report [seq 269] 并认领 [seq 303]；A 尝试认领同一任务被拒 [seq 320]，尝试以该任务发布也被 ownership 门拒绝 [seq 354]。",
+    "A 初次带成员脚本的 run_tests [seq 286] 中两个公开组通过，但 member_tests 失败，汇总 passed=false。A 最终后来创建的是 task_final_submit [seq 660] 并自行认领 [seq 677]；任务名为收尾提交，但 A 在此前已经实施生产代码和测试的修改。"
+  ],
+  "collaboration": [
+    "B 在自己认领的任务下发布 patch-1：B/v3，changed_paths=reader.py、report.py，included_patch_ids=[] [seq 337]；随后提交 delivery-1/v3 [seq 371]，再 staff_done [seq 405]。这是最初有效交付，后来被 A 的更新交付取代为最新评定对象。",
+    "A 实际导入 patch-1 [seq 388]，回执 ok=true，但两个生产文件均冲突，status=conflict_markers_written，形成 A/v5，included_patch_ids=[patch-1]。A 随后读本地 reader.py/report.py [seq 422] [seq 439]，并明确以 patch_id=patch-1 读取 B 固定补丁中的 reader.py [seq 456]。这条固定源码读取比仅看到补丁元数据更具体，但不能据此自动断定整个最终程序等于 B 的原补丁。",
+    "A 重写 reader.py [seq 473]、report.py [seq 490]、test_member.py [seq 507]，形成 A/v8；run_tests 返回公开组和成员测试均通过 [seq 524]，后续同版本再测试也通过 [seq 609]。因此，最终 A 的作用包含实际生产代码修订和测试修订，不是单纯点击提交。",
+    "A 多次尝试以 B 所有的 task_impl_reader_report 发布而被拒 [seq 541] [seq 626]，再次认领被拒 [seq 575]；两次未固定当前工作版本的提交被拒 [seq 558] [seq 643]。A 最后创建并认领 task_final_submit [seq 660] [seq 677]，成功发布 patch-2，固定 A/v8，changed_paths 含 reader.py、report.py、test_member.py，included_patch_ids=[patch-1] [seq 694]；随后成功提交 delivery-2/v8 [seq 711]。这条后续路径进入最终交付链。"
+  ],
+  "outcome": [
+    "最新有效固定交付是 A 的 delivery-2/v8 [seq 711]，不是 B 更早的 delivery-1/v3 [seq 371]。封存 assessment.json 的完整 R=1 对应 A/v8；本次沿用原评定，未重跑验收。",
+    "B、A 分别执行 staff_done [seq 405] [seq 728]，最终双 completed [seq 733]。末尾‘B 实现、A 创建最终提交任务’的说明 [seq 728] 只覆盖角色叙述的一部分；两人早期双文件编辑、A 的冲突修复和成员测试改写均有实际动作证据。"
+  ],
+  "audit_focus": [
+    "区分 B 最初的 task_impl_reader_report [seq 269] [seq 303] 与 A 最后创建的 task_final_submit [seq 660] [seq 677]；多次 ownership 和发布门拒绝是中间交互的重要部分，不能从最终成功反推当时已授权或已发布。",
+    "联读冲突导入 [seq 388]、对 B 固定 reader.py 的显式读取 [seq 456]、A 的三个文件重写 [seq 473] [seq 490] [seq 507]；这是材料交互和修订链，而不是可直接从任务标题得到的贡献划分。",
+    "对照前后成员测试 [seq 286] [seq 524] 与两次交付 [seq 371] [seq 711]，确认摘要保留了最终采用哪个版本，且没有把早期失败测试改写为全程通过。"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "slot_index": 9,
+  "headline": "先各自实现，后由 B 导入 A 的冲突补丁并改写；B 另建“验证”任务完成最终交付，但其成员测试仍失败",
+  "division_of_work": [
+    "A 写自己的 reader.py [seq 116]、report.py [seq 150]，B 也写自己的 reader.py [seq 167]、report.py [seq 201]，并两次写 test_member.py [seq 235] [seq 303]。实际不是一开始就由 A 负责生产实现、B 只负责验证；B 也提交过两个生产文件的实现。",
+    "A 的公开测试通过 [seq 184]，但以 root_goal 发布被拒绝为 Unknown task [seq 218]。A 随后创建 inventory_task [seq 252] 并认领 [seq 286]，才成功发布 patch-1 [seq 320]。任务描述涵盖 reader.statement_records 与 report.summarize 的完整实现。",
+    "B 后来创建的 verify_task 文字是‘验证 A 的 patch-1’ [seq 626]，并认领 [seq 643]；但在此之前，B 已亲自重写导入后的 reader.py [seq 473]、report.py [seq 507]。这个后置任务标题不能抹去 B 的生产代码修改。"
+  ],
+  "collaboration": [
+    "A 的 patch-1 固定 A/v3，changed_paths 为 reader.py、report.py，included_patch_ids=[] [seq 320]。A 再测试通过 [seq 354] 后提交 delivery-1/v3 [seq 388]，随后 staff_done [seq 422]；这是第一份有效固定交付，但不是最终评定采用的最新交付。",
+    "B 在自己的双文件实现和成员测试已经存在时导入 patch-1 [seq 371]。操作执行成功，但 reader.py、report.py 都出现冲突，status=conflict_markers_written，形成 B/v6 且 included_patch_ids=[patch-1]。B 读取本地合并结果 [seq 405] [seq 439] [seq 456]，重写 reader.py [seq 473]；又读取含冲突标记的 report.py [seq 490] 并重写 [seq 507]，形成 B/v8。这里有真实导入及后续修订，不能仅凭 included_patch_ids 声称最终两个生产文件保持 A 原补丁不变。",
+    "B 的 v8 run_tests 实际被执行 [seq 524]，其中 upstream_regressions/public_normal 为 passed，但 member_tests 为 failed，因此返回的汇总 passed=false。B 后续多次说明‘公开测试通过’ [seq 541] [seq 575] [seq 609] 与这两个公开组相符，却不能被扩大成成员测试也通过。",
+    "B 沿用 A 的 inventory_task 发布时被 ownership 门拒绝 [seq 541] [seq 609]，重复导入被拒绝 [seq 558]，未发布当前版本的提交也被拒绝 [seq 575]。之后 B 另建并认领 verify_task [seq 626] [seq 643]，成功发布 patch-2，固定 B/v8，changed_paths 含 reader.py、report.py、test_member.py，included_patch_ids=[patch-1] [seq 660]，再成功提交 delivery-2/v8 [seq 677]。这条导入后修改与独立任务发布的路径进入了最终交付链。"
+  ],
+  "outcome": [
+    "最新有效固定交付为 B 的 delivery-2/v8 [seq 677]，而非 A 的 delivery-1/v3 [seq 388]。封存 assessment.json 对该最终交付给出完整 R=1；本次没有重新运行测试或修改原评分。",
+    "A、B 分别执行 staff_done [seq 422] [seq 694]，最终正常双 completed。B 在结束说明中称 patch-1 提供核心实现、patch-2 提供验证 [seq 694]；这是成员的角色概括，实际动作还包括 B 的早期独立双文件实现、导入冲突、两个生产文件改写和失败的成员测试。"
+  ],
+  "audit_focus": [
+    "重点核对‘verify_task’的创建时点 [seq 626] 与 B 生产文件写入 [seq 167] [seq 201] [seq 473] [seq 507]，避免按任务名把所有 B 的动作写成只读验证。",
+    "不要混淆 B/v8 的 run_tests 汇总 false、两个公开组通过和封存最终独立 R=1 [seq 524]；它们对应不同检查范围，本文只如实保留这组事实。",
+    "从 A/patch-1 [seq 320] 到 B 的冲突导入 [seq 371]、本地改写 [seq 473] [seq 507]、patch-2 [seq 660]、delivery-2 [seq 677] 顺序审计；补丁标记、成员自述和最终保留了哪些具体代码应分别核查。"
+  ]
+}

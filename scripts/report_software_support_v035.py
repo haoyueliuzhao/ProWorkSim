@@ -57,6 +57,35 @@ def build(root, analyses, destination):
     for a, m, d in zip(accounting["slots"], methods["episodes"], delivery["slots"]):
         assert a["slot_id"] == m["slot_id"] == d["slot_id"]
         assert a["R"] == m["original_R"] == d["assessment"]["R"]
+    # The earlier analysis called top-level run_tests.passed a public pass.
+    # Correct derived counts using the portable real-trajectory group records;
+    # retain the unchanged older analysis as a separately hashed source.
+    audit_root = root / "docs/experiments/software-support-v035-trajectories"
+    audit_index = read(audit_root / "index.json")
+    assert audit_index["public_pass_erratum"]["correct_public_pass_count"] == 10
+    corrections = []
+    for episode in methods["episodes"]:
+        manifest = read(audit_root / f"slot-{episode['slot_index']:02d}/manifest.json")
+        for member, activity in episode["per_member_activity"].items():
+            tests = manifest["members"][member]["test_results"]
+            old = activity["public_test_passes"]
+            overall = sum(t["passed"] is True for t in tests)
+            public = sum(all(t["groups"][g]["passed"] is True for g in ("public_normal", "upstream_regressions")) for t in tests)
+            assert old == overall and activity["test_runs"] == len(tests)
+            activity.update({"public_test_passes": public, "overall_test_passes": overall,
+                "public_normal_passes": sum(t["groups"]["public_normal"]["passed"] is True for t in tests),
+                "upstream_passes": sum(t["groups"]["upstream_regressions"]["passed"] is True for t in tests)})
+            if old != public:
+                corrections.append({"slot_index": episode["slot_index"], "member": member,
+                    "old_mislabeled_public_passes": old, "correct_public_passes": public,
+                    "overall_passes": overall, "evidence": tests})
+    methods["summary"]["mapped_other_member_with_any_public_pass"] = 10
+    methods["summary"]["mapped_other_member_with_any_overall_pass"] = 9
+    methods["derived_test_count_erratum"] = {
+        "previous_report_commit": "9662d65", "corrections": corrections,
+        "scope": "Only derived test-count semantics corrected. Public pass now requires both public_normal and upstream_regressions; overall passes include member tests. Original run records, R and frozen Mapper unchanged.",
+        "original_analysis_file_changed": False,
+        "trajectory_index": reference(audit_root / "index.json", root)}
     summary = accounting["summary"]
     derived = {"input_fraction": summary["input_tokens"] / summary["total_charged_tokens"],
         "mean_actual_total_tokens_per_call": summary["total_charged_tokens"] / summary["sampled_calls"],
@@ -91,6 +120,7 @@ def build(root, analyses, destination):
         "training_material_binding": actual / "training-material-binding.json",
         "protocol": root / "docs/experiments/software-support-v035-protocol.md",
         "preparation": root / "docs/experiments/software-support-v035-preparation.json",
+        "trajectory_audit_index": audit_root / "index.json",
         **{name + "_analysis": analyses / (name + ".json") for name in ("accounting", "methods", "delivery")},
         "generator": Path(__file__).resolve(),
     }.items()}

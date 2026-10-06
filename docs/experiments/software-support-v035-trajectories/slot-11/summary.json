@@ -1,0 +1,23 @@
+{
+  "slot_index": 11,
+  "headline": "双方各写两模块；B先交付，A导入后修复冲突并另建发布任务，最终交付来自A",
+  "division_of_work": [
+    "A、B没有形成一人reader、一人report的实际分工。B先写reader.py [seq 127]和report.py [seq 195]，其v3公开业务与上游检查通过、成员测试未运行 [seq 229]；A读合同和库源码后，也分别写reader.py [seq 246]、report.py [seq 280]，A-v3公开业务0/3 [seq 314]。两个成员都在自己的副本内实现完整两模块。",
+    "B在代码和公开测试之后才建立执行任务。它先以root_goal为task_id发布，被拒为Unknown task [seq 263]；随后创建sql_inventory_task，描述同时覆盖reader与report [seq 297]，自己认领 [seq 331]。这不是运行开始时已有的任务分配。",
+    "A后续也没有取得B的原任务：用sql_inventory_task发布被拒为非当前owner [seq 671]，认领又被拒为已有人认领 [seq 688]。A最后创建member_a_final_task，职责是完成并提交当前版本 [seq 719]，再自行认领 [seq 736]。"
+  ],
+  "collaboration": [
+    "可见产物传递起于B发布patch-1，绑定B-v3且同时改变两个生产文件 [seq 365]；B先提交delivery-1 [seq 399]。A随后把patch-1导入自己的v4，回执明确生成A-v5并在reader.py、report.py写入冲突标记 [seq 416]。B通过staff_done退出 [seq 433]，A继续工作。未出现显式send_message或handoff_patch；协作证据是固定发布、实际导入与后续代码处理。",
+    "A多次读取自己带冲突的reader副本 [seq 450][seq 467][seq 484][seq 501]，并曾再次导入同一patch，被拒为already integrated [seq 518]。之后它又读取冲突文件 [seq 535][seq 552]，重写reader [seq 569]，读取report冲突 [seq 586][seq 603]并重写report [seq 620]，形成A-v7；该版本的公开业务与上游检查通过 [seq 637]。这些动作发生在最终交付的版本链中，不只是旁支活动。",
+    "A的最初report把参数当作records直接遍历，并不调用reader [seq 280]；冲突处理后的report改为summarize(script)并调用reader.statement_records(script) [seq 620]。可直接审阅两次真实write_file参数以及中间合并内容，不必从任务名称推断它做了什么。",
+    "公开检查通过不等于已经固定当前版本：A提交时声称v7已发布，但实际被拒为缺少此版本的fixed patch [seq 654]。在原任务owner检查失败后，A通过新任务发布patch-2，绑定A-v7并保留included_patch_ids=[patch-1] [seq 753]；再次测试 [seq 770]，才成功提交delivery-2 [seq 787]。"
+  ],
+  "outcome": [
+    "最后被受理的固定交付是A-v7、delivery-2 [seq 787]，归档assessment对这一最后版本给出R=1、公开4/4、任务私有3/3。B此前的delivery-1仅在提交时收到pending independent acceptance [seq 399]，不能把最终R1扩写成两个版本都经过独立验收。",
+    "B已在[seq 433]完成；A成功提交后，下一次生成被团队token预约门拒绝 [seq 799]，最终边界为B completed、A team_budget_exhausted [seq 800]。A并非没有交付便耗尽预算。"
+  ],
+  "audit_focus": [
+    "对照A的失败版report [seq 280]、冲突read_file [seq 586][seq 603]与修复写入 [seq 620]，审计接口修复与伙伴代码呈现之间的实际关系；内容相同或最后通过都不能单独证明唯一作者或因果贡献。",
+    "区分三个门：B原任务的owner、A当前文件版本的fixed patch、最终submit受理。A在[seq 654][seq 671][seq 688]分别受阻，另建发布任务后才完成[seq 753][seq 787]。不要把原任务标题或提交消息当成这些门已满足的证据。"
+  ]
+}

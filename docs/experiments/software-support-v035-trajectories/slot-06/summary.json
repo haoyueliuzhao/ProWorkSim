@@ -1,0 +1,24 @@
+{
+  "slot_index": 6,
+  "headline": "双方各自实现双文件；B 发布并交付，A 导入冲突后改写通过公开测试，但未形成第二份有效交付",
+  "division_of_work": [
+    "member_a 在自己的私有树先后写 reader.py [seq 110]、report.py [seq 178]，member_b 也在自己的私有树写同两份生产文件 [seq 229] [seq 263]。这段实际工作是并行的完整实现，日志中没有把 reader/report 分派给不同成员的 task/delegate 操作。",
+    "B 的 v3 公开测试通过 [seq 297]，但用 root_goal 作为 task_id 发布补丁被拒绝，错误为 Unknown task [seq 331]。B 随后才创建 sql_inventory_task，描述同时涵盖 reader.statement_records 与 report.summarize [seq 365]，再认领成为 owner [seq 399]；任务登记发生在实现和测试之后。",
+    "A 的早期公开测试未通过 [seq 212] [seq 382]，并多次修订 reader.py [seq 348] [seq 450]。B 未向 A 委派这项工作；A 后来试图认领 B 已占有的 sql_inventory_task，返回 Task has already been claimed [seq 705]。"
+  ],
+  "collaboration": [
+    "B 用自己认领的任务发布 patch-1，固定 B/v3，changed_paths 为 reader.py、report.py，included_patch_ids 为空 [seq 433]；随后提交 delivery-1，固定的仍是 B/v3，动作成功受理但回执是 pending_independent_acceptance [seq 467]。这是最终有效交付所在的主链。",
+    "A 实际调用 integrate_patch(patch-1) [seq 484]；回执 ok=true，但 status=conflict_markers_written，reader.py、report.py 均有冲突，生成 A/v6，并记录 included_patch_ids=[patch-1]。ok=true 在此只表示导入操作执行了，不能写成无冲突合并成功。",
+    "A 随后读取自己的冲突工作树 [seq 518] [seq 535] [seq 552]，重写 reader.py [seq 569]、report.py [seq 586]，形成 A/v8，公开测试通过 [seq 603]。这些是实际发生的导入后修订，不是仅口头表示使用了 B 的补丁；但此支线没有成为最终固定交付。",
+    "A 以 B 所有的 sql_inventory_task 发布被拒绝 [seq 620] [seq 773]；两次 submit_integration 因未发布当前精确工作版本的固定补丁被拒绝 [seq 637] [seq 688]。重复 integrate_patch 又返回 already been integrated [seq 722]。因此，A 对旧 patch-1 的持有、导入和测试通过，都没有替代当前 A/v8 的发布义务。"
+  ],
+  "outcome": [
+    "B 在成功提交后执行 staff_done [seq 501]；A 后续因共享 token 预算无法再开始生成，最终边界为 B completed、A team_budget_exhausted [seq 803]。A 未产生第二份被受理的交付。",
+    "封存 assessment.json 的最新有效交付是 B 的 delivery-1/v3，included_patch_ids=[]，完整 R=1；本次沿用原评定，没有重新运行验收。A 的导入、冲突修复及失败发布尝试属于交付后的支线，不能反写成 B 最终交付曾依赖 A 的修改。"
+  ],
+  "audit_focus": [
+    "对照任务产生时点 [seq 365] 与两人的生产文件编辑 [seq 110] [seq 178] [seq 229] [seq 263]，避免按后来的 task owner 把先前所有代码工作归给 B。",
+    "分别审查真实导入回执 [seq 484]、A 后续改写 [seq 569] [seq 586]、最终 B 交付 [seq 467]；存在同伴材料交互，不等于这条交互进入最终交付链。",
+    "A 在提交说明中称已集成并满足要求 [seq 637] [seq 688]，应与被拒回执一起阅读；模型声明不能替代成功固定发布和成功提交。"
+  ]
+}

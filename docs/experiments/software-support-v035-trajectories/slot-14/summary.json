@@ -1,0 +1,24 @@
+{
+  "slot_index": 14,
+  "headline": "B完成唯一固定交付；A也实现并修复三文件导入冲突，但其通过测试的支线未能再次固定提交",
+  "division_of_work": [
+    "B写reader [seq 164]、修改report [seq 198]并写成员测试 [seq 232]；A也分别写reader [seq 215]、report [seq 249]和成员测试 [seq 283]。实际是两人在私有副本中都处理两模块与测试，而非一个实现、一个只做审核。",
+    "B修正成员测试中的括号/索引语法错误 [seq 334]。A在自己的公开业务失败 [seq 317]后读取report [seq 351]并修改 [seq 385]，之后公开业务与上游组通过，但成员组仍failed [seq 419]。B的公开业务与上游组也已通过，而成员组持续failed [seq 368][seq 538]。",
+    "任务晚于这些实现动作：B尝试以root_goal发布被拒 [seq 436]，随后创建sql_inventory [seq 470]并认领 [seq 504]。A试图把task.sql_inventory当文件写入，被拒为非可编辑路径 [seq 487]；A认领同一任务也被拒为已认领 [seq 521]。没有证据表明任务记录被该write_file篡改或责任已经转给A。"
+  ],
+  "collaboration": [
+    "A曾在尚无当前fixed patch时提交，并在消息中称所有测试通过，实际被拒 [seq 453]。B后来固定patch-1/B-v5 [seq 572]；A导入它，得到A-v6，回执明确reader.py、report.py、test_member.py三文件都有冲突 [seq 589]。B随后成功提交唯一delivery-1 [seq 606]并staff_done [seq 640]。",
+    "A读取三个带冲突的文件 [seq 623][seq 657][seq 674]，分别重写reader、report、成员测试 [seq 691][seq 708][seq 725]，形成A-v9，随后公开业务、上游和成员测试全部通过 [seq 742]。这是实质伙伴导入与冲突处理，但发生在A的支线；最后被评分的仍是B-v5，不含这条A导入祖先链。",
+    "A尝试用B拥有的sql_inventory固定A-v9，被owner门拒绝 [seq 759]；再次导入patch-1又被拒为already integrated [seq 776]。A没有随后成功新建发布任务、固定patch或提交。整个轨迹没有显式send_message或handoff_patch，实际交互由发布、导入、读取和权限回执构成。"
+  ],
+  "outcome": [
+    "唯一受理的交付是B-v5 [seq 606]，原assessment对此给出R=1、公开4/4、任务私有3/3。不能把A-v9在[seq 742]通过的工具测试当成A也完成了一份固定独立验收。",
+    "B最终提交所绑定的run_tests [seq 538]整体passed=False：公开业务与上游组通过，但成员脚本driver_completed=False，即使returncode=0、输出为Ran 12 tests / OK。保留这两个层次的原标记；submit受理和正式合同验收成功不等于该次成员工具测试整体为绿。",
+    "B已完成 [seq 640]；A在支线继续读文件后 [seq 793]被团队token预约拒绝 [seq 805]，最终边界为B completed、A team_budget_exhausted [seq 806]。"
+  ],
+  "audit_focus": [
+    "把最终B-v5谱系 [seq 572][seq 606]与A的导入/修复支线 [seq 589][seq 691][seq 708][seq 725]分开。最终无伙伴导入祖先不表示A闲置或没有实际伙伴交互，也不能把A的修复自动归入最终交付。",
+    "核对A的提交声明 [seq 453]、B的成员测试输出与正式状态 [seq 538]、A后续全部通过的测试 [seq 742]，避免把不同成员、不同版本和不同层级的passed合并。",
+    "重点保留task.sql_inventory写入拒绝 [seq 487]、任务认领拒绝 [seq 521]、固定权限拒绝 [seq 759]；这些回执说明实际责任边界，不能根据模型声明假定任务被转移。"
+  ]
+}

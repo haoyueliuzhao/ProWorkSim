@@ -1,0 +1,24 @@
+{
+  "slot_index": 7,
+  "headline": "A 自行发布交付；B 实际读取 A 的固定补丁并修复自己的冲突树，但新发布任务来不及认领便预算停止",
+  "division_of_work": [
+    "A 先在 harness work_note 中记录自己要实现 reader.py 与 report.py 的计划 [seq 13]，随后写两个文件 [seq 47] [seq 78]。这条笔记是工作台计划，不是向 B 发出的分工指令，也不是共享任务的所有权登记。",
+    "B 读取契约、初始 reader.py 与 sqlparse 源码后 [seq 95] [seq 129] [seq 163] [seq 197]，也在自己的私有树写 reader.py、report.py [seq 231] [seq 265]。两人早期都在实现完整双文件功能，并非 A 负责解析而 B 只负责汇总。",
+    "A 经过早期测试失败 [seq 112] [seq 282] 后修正 report.py [seq 350]，v5 的公开测试通过 [seq 384]，此后才创建 publish_fixed_patch [seq 418]、认领 [seq 452]。B 同期修订 reader.py/report.py [seq 333] [seq 367] [seq 469]，其 v5 公开测试仍失败 [seq 401]。"
+  ],
+  "collaboration": [
+    "A 在自己认领的 publish_fixed_patch 下发布 patch-1，固定 A/v5，changed_paths=reader.py、report.py，included_patch_ids=[] [seq 486]；随后提交 delivery-1，固定的仍是 A/v5 [seq 520]。A 的提交链不包含 B 的补丁或导入。",
+    "B 导入 patch-1 时，回执为 ok=true、conflict_markers_written，reader.py 与 report.py 均冲突，生成 B/v7，included_patch_ids=[patch-1] [seq 503]；紧接着测试未通过 [seq 537]。这是真实材料导入，但不是已经解决冲突的合并。",
+    "B 先读自身 reader.py 中的冲突标记 [seq 571]，再明确以 patch_id=patch-1 列文件 [seq 588]、读取 A 固定补丁中的 reader.py [seq 605] 和 report.py [seq 639]，随后分别重写自己的文件 [seq 622] [seq 656]。B/v9 的公开测试通过 [seq 673]。这里有明确的固定同伴源码读取证据，不能把交互简化成只看到 patch 名称。",
+    "B 仍尝试用 A 所有的 publish_fixed_patch 发布自己的 v9，被 ownership 门拒绝 [seq 690] [seq 758]；两次提交也因没有发布当前精确版本而被拒绝 [seq 707] [seq 775]。直到最后才创建独立的 publish_member_b_patch [seq 792]，回执 owner=null；之后没有成功认领、固定发布或有效提交。"
+  ],
+  "outcome": [
+    "A 在 delivery-1 被受理后执行 staff_done [seq 554]。B 创建新任务后，下一次生成因 team_max_total_tokens 被拒绝 [seq 804]，没有把修复后的 B/v9 封成新的交付。",
+    "原封存 assessment.json 评定的是 A 的 delivery-1/v5，完整 R=1，included_patch_ids=[]；本次未重算。B 的固定源码读取与冲突修复真实存在，但属于该最终交付之外的支线。"
+  ],
+  "audit_focus": [
+    "区分 A 的 work_note [seq 13]、后来创建的共享任务 [seq 418]，以及 B 的实际双文件编辑 [seq 231] [seq 265]，不要把一段自述计划写成已协商的分工。",
+    "重点联读 B 的 patch_id 定向读取 [seq 605] [seq 639] 与后续本地写入 [seq 622] [seq 656]；这些足以证明发生同伴材料交互，但不能单凭动作名断言最终文件逐字节保留了原补丁。",
+    "测试通过 [seq 673]、included_patch_ids 中存在 patch-1 [seq 503]、新任务创建成功 [seq 792]，都不等于 B 已经完成固定发布；检查 owner=null 和随后预算拒绝 [seq 804]。"
+  ]
+}

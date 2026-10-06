@@ -1,0 +1,23 @@
+{
+  "slot_index": 12,
+  "headline": "双方先各自实现并通过公开检查；B创建的任务被A先认领，B导入A产物后修复并成为最后交付者",
+  "division_of_work": [
+    "双方都独立编辑两个生产模块：A写reader [seq 82]、report [seq 116]，B写reader [seq 99]、report [seq 133]。A还编写test_member.py [seq 150]。B-v3先通过公开业务及上游检查，成员测试未运行 [seq 167]；A-v4随后连同成员测试一起通过 [seq 184]。这些代码与测试都早于任务创建。",
+    "B与A先后尝试按root_goal发布，均因Unknown task被拒 [seq 201][seq 218]。B随后创建同时覆盖reader和report的task_implement_reader_report [seq 235]，但A先认领了它 [seq 252]；B再认领时被拒为already claimed [seq 269]。任务创建者和实际owner因此不同，不能把B的任务描述当作B已获分工。",
+    "后段B为自己的最终发布另建task_publish_final_patch [seq 623]并认领 [seq 640]；它没有通过委派或任务交接接管A的原任务。原任务和新发布任务要与双方已经完成的实际编辑分开看。"
+  ],
+  "collaboration": [
+    "A发布patch-1，固定A-v4，内容包括reader.py、report.py和test_member.py [seq 286]。B立即导入，生成B-v4；回执指出两个生产文件存在冲突，included_patch_ids保留patch-1 [seq 303]。A随后提交自己的delivery-1 [seq 320]并staff_done [seq 354]。没有显式send_message或handoff_patch，实际信息与产物流动通过公开固定patch及导入实现。",
+    "B在未清理冲突的v4上先运行测试，公开业务0/3，诊断包括reader.py/report.py第1行SyntaxError，成员测试也失败 [seq 337]。之后B多次读取冲突reader [seq 371][seq 402][seq 419]，重写reader [seq 436]，读取report冲突 [seq 453]并重写report [seq 470]。B-v6的公开业务、上游及成员测试通过 [seq 487]。该导入与修复进入了最后交付的祖先链。",
+    "B试图沿用A已认领的任务发布，被owner门拒绝 [seq 504]；直接提交又因当前v6未固定而被拒 [seq 521]。再次导入相同patch被拒 [seq 538]，再次提交仍被拒 [seq 555]；再用原任务发布 [seq 589]及return_task [seq 606]也均因非owner失败。这些真实失败回执不能从最终成功中省略。",
+    "B最终创建并认领自己的发布任务 [seq 623][seq 640]，用它固定patch-2/B-v6，包含patch-1 [seq 657]，再成功提交delivery-2 [seq 674]。这条路径是导入后解决冲突、补齐当前版本发布资格；不是环境预分配的一次顺畅交接。"
+  ],
+  "outcome": [
+    "最后固定交付为B-v6、delivery-2 [seq 674]，原assessment仅对这一最后版本给出R=1、公开4/4、任务私有3/3。A的较早delivery-1 [seq 320]没有因此被补判为另一份独立验收成功。",
+    "A在首次提交后完成 [seq 354]，B在第二次提交后完成 [seq 691]；最终run_boundary为双方completed [seq 696]。"
+  ],
+  "audit_focus": [
+    "审计任务建立与代码工作的先后：两边都已写两模块并通过公开检查 [seq 82][seq 99][seq 116][seq 133][seq 167][seq 184]，之后才出现B创建、A先认领的任务 [seq 235][seq 252]。这支持重复实现的事实，不支持事前模块分工的推定。",
+    "对照导入冲突回执 [seq 303]、立即测试的语法失败 [seq 337]、修复写入 [seq 436][seq 470]和最终含patch-1的固定版本 [seq 657]。最后通过不能把历史导入状态改写为无冲突，也不能把A任务被B接管作为事实。"
+  ]
+}

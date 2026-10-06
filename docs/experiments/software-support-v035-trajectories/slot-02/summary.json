@@ -1,0 +1,23 @@
+{
+  "slot_index": 2,
+  "headline": "B先实现并创建发布任务，A认领先提交；B导入后公开检查持续通过，但成员执行组仍判失败，最终因共享预算耗尽而结束。",
+  "division_of_work": [
+    "A先检索/阅读sqlparse入口及get_type实现 [seq 113] [seq 147] [seq 181] [seq 215]，并重复读取同一代码区间 [seq 249] [seq 283]，随后写两个生产模块 [seq 317] [seq 351]。B更早写reader.py、report.py和成员脚本 [seq 198] [seq 232] [seq 266]。双方都有完整双模块实现活动。",
+    "A v3测试返回公开业务与上游组通过、member_tests未运行 [seq 385]。B v4则公开业务与上游组通过，但member_tests判失败，顶层passed=false [seq 300]；之后重写完全相同成员脚本被拒“File content did not change” [seq 334]。",
+    "B用root_goal发布被拒 [seq 368]，再创建task_publish_patch，描述是发布固定产物并提交 [seq 402]；A先认领 [seq 419]，B随后认领被拒 [seq 436]。这项发布任务的创建者为B，拥有者和成功交付者为A。"
+  ],
+  "collaboration": [
+    "A固定自己的v3为patch-1 [seq 453]，提交delivery-1 [seq 487]，随后staff_done [seq 521]。B把patch-1导入自己的v5，回执为两模块冲突 [seq 470]；该导入不在A最终v3的祖先链。",
+    "B读取冲突reader.py [seq 504] [seq 538]，重写reader.py [seq 555]，再读并重写report.py [seq 572] [seq 589]。之后三次run_tests的公开业务与上游组仍通过，但成员执行组失败、顶层不通过 [seq 606] [seq 657] [seq 756]。",
+    "B重复导入被拒 [seq 640]，提交因未发布当前版本被拒 [seq 674]，另一次工具参数违反schema [seq 689]。原动作无成功B固定patch、无任务转交、无显式工作消息或handoff；B最后继续读取和测试，未主动staff_done。"
+  ],
+  "outcome": [
+    "原封存完整评分R=1，评分交付为A delivery-1、v3 [seq 487]；B已修订到v7却没有受理交付 [seq 674]。终态bounded_work_closed：A completed，B team_budget_exhausted [seq 769]。",
+    "B四次公开业务/上游检查均通过 [seq 300] [seq 606] [seq 657] [seq 756]；四次顶层passed均为false。不能把顶层不通过改写成“B从未通过公开业务检查”。"
+  ],
+  "audit_focus": [
+    "成员执行组的细节必须保留：首个回执stdout显示“Ran 18 tests”及“OK”，returncode=0，却driver_completed=false、member_tests.passed=false [seq 300]。这是归档的执行组判定，不能写成18个断言失败，也不能仅凭stdout宣布该组通过。",
+    "比较A最终交付与B后续支线 [seq 487] [seq 555] [seq 589]：B的实际实现和修订并未被纳入A的交付树。",
+    "最后测试回执确实存在 [seq 756]，但本槽随后因预算终止 [seq 769]；工具已返回不等于已在下一次模型输入中呈现并被使用。"
+  ]
+}
