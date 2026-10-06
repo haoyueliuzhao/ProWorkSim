@@ -1,12 +1,20 @@
 # ProWorkSim
 
-## v0.34 已启动监督队列：两个新根目标、8条T开发经历
+## v0.35 已启动P2监督队列：固定9B、一个新训练情境、16槽
 
-北京时间2026-10-06 01:00:43启动，冻结执行提交`522f3331…`。9B与Devstral各执行两个新root×两个seed，全部为T，沿用原common和团队128决定／500000 token／32测试预算，阶段内零更新。01:03启动快照中两模型均等待空闲GPU，新增模型调用0；实际后续状态见[运行报告](docs/experiments/software-local-feasibility-v034.md)／[机器汇总](docs/experiments/software-local-feasibility-v034.json)。队列结束后自动归档、提交并推送。
+北京时间2026-10-06 17:11:53启动，执行提交`ccf756459…`。固定原9B完整3／3 common、v0.34呈现Γ、member_a先手和16个事前seed，使用新sqlparse训练合同；沿用团队128决定／500000 token／32测试预算，P2阶段零更新。17:15启动快照中等待空闲GPU，新增9B调用0。实际后续状态见[运行报告](docs/experiments/software-support-v035.md)／[机器汇总](docs/experiments/software-support-v035.json)，结束自动归档、提交推送。
 
-新directory与name-index合同保留真实Marshmallow API—消费者依赖、空任务表和完整独立验收。P0完成8种程序控制与4条SDK参考路线；旧16个固定实际请求的合同去重离线计量少12.4%，另将公开测试反馈精简作为独立的新呈现契约。最终参考路线的条件native预算均通过，但这些CPU证据不等于模型成功或参数收益。必要增量控制及Ruff通过；没有重采旧16槽、新模型搜索或新增训练资格。[P0详细证据](docs/experiments/software-local-feasibility-v034-p0.md)、[完整协议](docs/experiments/software-local-feasibility-v034-protocol.md)、[启动记录](docs/experiments/software-local-feasibility-v034-launch.md)保留范围与失败历史。
+训练、贡献开发、独立确认分为1＋2＋2个新root，旧题与Marshmallow开发轨迹不改标。一次P1只读复核确认9B两条成功均为自有交付链，不能当成两类支持；新Mapper绑定实际selected输入与固定产物祖先，后台细迹不补入成员信息或训练目标。新学习接口消费原token／行为概率，分配桥复用既有logN和B／G-raw／I-P规则，保留原始分母与失败残余。[完整协议](docs/experiments/software-support-v035-protocol.md)、[准备证据](docs/experiments/software-support-v035-preparation.md)、[方法复核](docs/experiments/software-method-review-v035.md)及[启动记录](docs/experiments/software-support-v035-launch.md)给出CPU控制和证据范围。
 
-P1成功仅用于局部载体规划，开发轨迹不转作训练；后继P2训练用途来源与支持、P3公平B／G-raw／I-P实际试训清单须依据本批结果另行冻结。当前没有分配算法效果结论。
+P2结束分别报告无支持、单类、多类频数不足及形式自由度，固定16槽后不补采。若有支持，任何贡献反馈前另冻实际n+／K、类内核、全部方向和公平试训清单；P2不会自动启动未冻结P3。当前尚无9B新增更新、真实贡献估计或分配收益结论。
+
+## v0.34 已结案：4/8完整成功，9B作为P2局部载体
+
+北京时间2026-10-06 14:30:21全部闭合，8条记录均可信，无技术未知。9B与Devstral各完整成功2/4，成功覆盖根目标分别为2与1，因此按事前第二排序项选择9B；9B四槽1981827 token高于Devstral的1908379，不是因更省成本胜出。五份固定提交中四份内容通过，一份内容失败；三条未提交内容与过程仍未知。详见[完整运行报告](docs/experiments/software-local-feasibility-v034.md)／[机器汇总](docs/experiments/software-local-feasibility-v034.json)。
+
+共380次决定、371次实际调用、3890206 token、63次run_tests，逐卡worker并集1.395206 GPU小时，排队不计GPU成本；新增优化步骤0。两模型完整common均恢复。新低领域负担目标与新呈现共同变化，不能将成功单独归因提示压缩；有限成功不是稳定能力认证或两类支持。
+
+原合同、程序路线、窄输入核查和启动范围见[P0证据](docs/experiments/software-local-feasibility-v034-p0.md)、[冻结协议](docs/experiments/software-local-feasibility-v034-protocol.md)及[启动快照](docs/experiments/software-local-feasibility-v034-launch.md)。旧16槽和全部历史成绩保持。
 
 ## v0.33 已结案：同根目标S/T共16槽，完整交付0/16
 
