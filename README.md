@@ -1,5 +1,11 @@
 # ProWorkSim
 
+## v0.37 精确加权梯度缓存：保留当前 B，闭合后接续完整清单
+
+为减少 v0.36 从同一完整 common 重复反传的成本，新增独立缓存执行器：只复用相同原决策、相同精确 loss 权重实际反传得到的梯度，保持原顺序累积和各候选的裁剪／AdamW 更新。27 试训的理论反传键数由18,414降为4,338；这不是端到端实测加速，480条开发／独立确认评估仍完整执行。当前原 B 没有逐行梯度缓存，先保留其完成并导入结果，随后26试训需要4,300个新键，正式更新还需38–492个新键，旧B成本另列。
+
+[优化协议](docs/experiments/software-gradient-cache-v037-protocol.md)记录耗时原因、明确拒绝的BF16叶端乘权捷径、逐位数值控制、精确缓存边界和56／56／6GiB共享卡保护。原B训练与评估完成、成功退出并无损归档后才交接；不重采P2、不重跑已闭合B、不减少冻结方向、不改变原学习数值源码。准备与测试证据见[准备记录](docs/experiments/software-gradient-cache-v037-preparation.md)；持续接管与新执行状态见[运行记录](docs/experiments/software-allocation-v037.md)。
+
 ## v0.36 已启动监督队列：新16槽与条件完整分配实验
 
 按[审计](docs/reference/audit-v035-next-v036.md)保留v035原结案，沿用同9B完整3／3 common和同训练root；新Mapper区分`local_lineage_delivery`与`evidenced_peer_product_delivery`，允许有时序与生产单元证据的冲突恢复，同时拒绝无关／no-op／缺信息和不可追溯覆盖。成员自测采用新的结构化完成证据，原容量去重、基础学习器和分配公式保持。旧16条仅作影子开发诊断，不进入新支持。
