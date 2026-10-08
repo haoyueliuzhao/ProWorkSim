@@ -35,10 +35,10 @@ P2只采集，不执行参数更新、贡献开发或独立确认。新来源与
 原始可用训练材料：682 条本人决定、6964120 输入token、161827 本人输出目标token；最大真实序列 15906 token，总输入＋输出序列规模 7125947。
 这只是静态真实材料规模，不是一次完整更新耗时。训练输入必须与原selected请求及原input IDs一致，目标仅为本人原output IDs与行为概率；不补回被公开反馈投影删除的信息。
 
-后续状态：`ready_for_postcollection_freeze`；首合格成员块：`['sp-script-inventory-v035::condition=T::active=member_a,member_b::first=member_a', 'member_a']`。
+后续状态：`P3_full_trials_interrupted`；首合格成员块：`['sp-script-inventory-v035::condition=T::active=member_a,member_b::first=member_a', 'member_a']`。
 无支持、只有一类、多类频数不足与形式自由度存在但梯度尚未验证分别记录。全部原16槽保持基础分母，可信失败／unmapped／低频及未选成员维持基础损失，不删样本后重新平均。
 
-按当前n+/K计算的条件化后继规模：`{'n_positive': 13, 'K': 2, 'unique_trial_updates': 27, 'development_episodes': 432, 'formal_updates': 3, 'independent_confirmation_episodes': 48, 'frozen_or_executed': False, 'measured_window_update_seconds': None}`。
+按当前n+/K计算的条件化后继规模：`{'n_positive': 13, 'K': 2, 'unique_trial_updates': 27, 'development_episodes': 432, 'formal_updates': 3, 'independent_confirmation_episodes': 48, 'frozen_or_executed': True, 'measured_window_update_seconds': 92126.64815449715}`。
 任何贡献反馈前还须另冻类内核、完整探测方向与步长、唯一试训表、共同B复用、正式更新和公平预算。事前面板是4贡献根目标×4seed与另4确认根目标×4seed；P2未执行。真实概率／目标消费及完整反传合并进共同B试训。已有静态分配自由度不等于梯度或配置效果已可辨识。
 
 分配接口逐字复用v035绑定及既有logN、历史／覆盖双KL和B/G-raw/I-P求解器；不改数值更新，不把旧G-lift冒称G-raw。
