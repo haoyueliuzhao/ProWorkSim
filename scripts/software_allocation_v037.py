@@ -38,6 +38,9 @@ from scripts.software_development_v028 import task
 
 VERSION = "software-allocation-execution-v0.37"
 SOURCE = Path(__file__).resolve().parents[1]
+# User's physical-device restriction, independent of CUDA's local renumbering.
+# Historical P2/P3 plans retain their original device lists as audit evidence.
+GPU_ORDER = (3, 4, 5, 7)
 LIMITS = {**copy.deepcopy(support.LIMITS), "max_parallel_model_instances": 4,
           "minimum_free_gpu_mib": 56 * 1024, "own_gpu_memory_mib": 56 * 1024,
           "minimum_live_free_gpu_mib": 6 * 1024, "shared_gpu_capacity_allowed": True,
@@ -249,7 +252,7 @@ def prepare(parent_root, root, *, imported_B=None, qualification=None):
         "parent_source": parent["source"], "inherited_source_files": inherited,
         "numeric_source_manifest_sha256": digest(json_bytes(inherited)),
         "inventories": parent["inventories"], "limits": copy.deepcopy(LIMITS),
-        "gpu_preference": list(support.GPU_ORDER), "runtime_dependency_path": parent["runtime_dependency_path"],
+        "gpu_preference": list(GPU_ORDER), "runtime_dependency_path": parent["runtime_dependency_path"],
         "prior_artifact_roots": support.dense._artifact_roots([*parent["prior_artifact_roots"], parent_root]),
         "actual_inventory": freeze["actual_inventory"], "imported_B": imported, "shared_cache_root": str(root / "gradient-cache"),
         "automatic_execution_authorization": "User requested runtime optimization and previously authorized completion of the entire frozen allocation experiment and automatic commit/push.",
@@ -269,7 +272,7 @@ def frozen(root):
     plan = read_json(root / "plan.json")
     if (plan.get("version") != VERSION or plan.get("source") != code_identity()
             or plan["source"].get("code_dirty") is not False or plan.get("source_root") != str(SOURCE)
-            or plan.get("limits") != LIMITS or plan.get("gpu_preference") != list(support.GPU_ORDER)
+            or plan.get("limits") != LIMITS or plan.get("gpu_preference") != list(GPU_ORDER)
             or plan.get("shared_cache_root") != str(root / "gradient-cache")
             or not plan.get("automatic_execution_authorization")
             or plan.get("P2_resampled") is not False or plan.get("full_inventory_retained") is not True):
@@ -308,7 +311,7 @@ def available_cards(plan, sample, excluded=()):
             index, free, total, utilization = int(index), float(free), float(total), float(utilization)
             if not all(math.isfinite(v) for v in (free, total, utilization)):
                 return []
-            if (index in plan["gpu_preference"] and index not in excluded and "A100" in name
+            if (index in GPU_ORDER and index in plan["gpu_preference"] and index not in excluded and "A100" in name
                     and total >= 81920 and plan["limits"]["minimum_free_gpu_mib"] <= free <= total
                     and 0 <= utilization <= 100):
                 cards.append({"index": index, "uuid": uuid, "free_mib": free,
@@ -402,6 +405,8 @@ def validate_panel(rows, inventory):
 
 
 def run_worker(run_root, worker, output):
+    if os.environ.get("CUDA_VISIBLE_DEVICES") not in set(map(str, GPU_ORDER)):
+        raise ValueError("Exactly one permitted physical GPU from 3, 4, 5, 7 is required")
     from proworksim.deterministic_work_v024 import DeterministicCandidateActor
     from proworksim.online_training import tensor_tree_digest
     from proworksim.software_learning_v036 import migrate_software_owner, restore_common
@@ -423,8 +428,6 @@ def run_worker(run_root, worker, output):
         raise ValueError("Measure and review the real shared B before further trials")
     if formal and not (root / "selection.json").exists():
         raise ValueError("All paired developer outcomes must close before formal selection")
-    if os.environ.get("CUDA_VISIBLE_DEVICES") not in set(map(str, support.GPU_ORDER)):
-        raise ValueError("Exactly one declared assigned physical GPU is required")
     output.mkdir(parents=True, exist_ok=False)
     report = {"version": VERSION, "worker": worker, "candidate_id": key, "formal": formal,
         "status": "loading", "started_at": time.time(), "source_before": code_identity(),
@@ -801,6 +804,7 @@ def results(root):
         "all_trial_actor_gradients_equal": len(actor_gradients) == 1 if complete_geometry else None,
         "scope": "Exact stored pre-clip gradient tensor equality, not a utility or causal-contribution estimate; incomplete directions remain unmeasured."}
     return {"version": VERSION, "status": state["status"] if state else "not_started", "source": plan["source"], "imported_B": plan.get("imported_B"),
+        "allowed_physical_gpus": plan["gpu_preference"],
         "support": {"reused_without_sampling": True, "parent_root": plan["parent_root"], "parent_freeze": plan["parent_freeze"]}, "freeze": freeze, "shared_B_cost_review": read(root / "shared-B-cost-review.json"),
         "selection": read(root / "selection.json"), "workers": workers, "cost": cost, "update_geometry": geometry,
         "independent_paired_units": paired,
@@ -817,6 +821,7 @@ def report(root, destination):
     write(destination / "software-allocation-v037.json", value)
     lines = ["# v0.37 原冻结清单的精确加权梯度复用执行", "",
         f"状态：`{value['status']}`；源码：`{value['source']['code_commit']}`。", "",
+        f"允许的物理GPU：`{value['allowed_physical_gpus']}`；没有合格显存时等待，不转用其他卡。", "",
         "复用v036已经闭合的16槽支持和完整冻结清单，不重采P2。若共同B来自原运行，保留原记录并单列旧GPU成本，且不将其计作新反向或新优化器步；其原始逐行梯度未保存，不能据此声称新缓存已填充。每个试训及正式三分支均恢复相同完整common；只复用同一原行、同一精确权重和同一完整状态下的原始反向结果。实际反向次数与缓存应用次数分别记录。开发和确认各4个root×4个seed，原始16槽、失败／unmapped残余及本人分母保持。", "",
         "| worker | 状态 | actor/critic新增步 | 更新秒 | 实际反向/命中/应用 | 配对面板已知 |", "|---|---|---|---:|---|---|"]
     for name, row in value["workers"].items():

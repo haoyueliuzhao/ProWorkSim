@@ -61,6 +61,27 @@ def test_device_reserve_stops_only_current_bound_worker_without_targeting_other_
     assert runner.live_free_stop_reason({"gpus": {"returncode": 1}}, 5) is None
 
 
+def test_only_user_permitted_physical_cards_can_be_selected_even_with_broad_plan():
+    assert runner.GPU_ORDER == (3, 4, 5, 7)
+    plan = {"gpu_preference": list(range(8)), "limits": runner.LIMITS}
+    rows = "\n".join(f"{i}, g{i}, NVIDIA A100-SXM4-80GB, 81000, 81920, 0" for i in range(8))
+    assert [c["index"] for c in runner.available_cards(plan, sample(rows))] == [3, 4, 5, 7]
+    for i in runner.GPU_ORDER:
+        rows = rows.replace(f"{i}, g{i}, NVIDIA A100-SXM4-80GB, 81000", f"{i}, g{i}, NVIDIA A100-SXM4-80GB, 1000")
+    # Empty non-permitted cards never become a fallback when allowed cards fill.
+    assert runner.available_cards(plan, sample(rows)) == []
+
+
+@pytest.mark.parametrize("device", ["0", "1", "2", "6", "3,4", ""])
+def test_worker_rejects_nonpermitted_or_multidevice_assignment_before_loading(tmp_path, monkeypatch, device):
+    monkeypatch.setattr(runner, "frozen", lambda root: ({}, {"allocation": {"candidates": {"B": {}}}}))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", device)
+    output = tmp_path / "never-created"
+    with pytest.raises(ValueError, match="permitted physical GPU"):
+        runner.run_worker(tmp_path, "trial-B", output)
+    assert not output.exists()
+
+
 def test_stage_order_retains_every_frozen_direction_and_unknown_blocks_formal(tmp_path, monkeypatch):
     plan = allocation()
     freeze = {"allocation": plan}
@@ -148,7 +169,8 @@ def test_receipt_requires_same_common_and_new_source(tmp_path):
 
 def test_new_cost_reports_actual_misses_and_does_not_fill_unknown_effects(tmp_path):
     write(tmp_path / "plan.json", {"source": {"code_commit": "control"},
-        "parent_root": "original-v036", "parent_freeze": {}, "inventories": {"confirmation": []}})
+        "parent_root": "original-v036", "parent_freeze": {}, "inventories": {"confirmation": []},
+        "gpu_preference": list(runner.GPU_ORDER)})
     write(tmp_path / "p3-supervisor.json", {"status": "running", "states": {
         "trial-B": {"status": "running"}, "trial-G0": {"status": "running"}}})
     counts = [(682, 0), (20, 662)]
@@ -198,7 +220,8 @@ def test_imported_B_keeps_original_source_and_is_not_counted_as_new_work(tmp_pat
     root = tmp_path / "new"
     imported = {"folder": str(old), "source": {"code_commit": "old"}, "original_worker_gpu_seconds": 999}
     write(root / "plan.json", {"source": {"code_commit": "new"}, "parent_root": str(tmp_path / "old"),
-        "parent_freeze": {}, "imported_B": imported, "inventories": {"confirmation": []}})
+        "parent_freeze": {}, "imported_B": imported, "inventories": {"confirmation": []},
+        "gpu_preference": list(runner.GPU_ORDER)})
     write(root / "p3-supervisor.json", {"status": "running", "states": {
         "trial-B": {"status": "complete", "imported": True, "attempted": False},
         "trial-other": {"status": "running"}}})
