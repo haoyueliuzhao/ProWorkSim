@@ -253,7 +253,7 @@ def run_worker(root, worker, output):
     finally:
         if owner is not None:
             report.update(actor_steps=owner.actor_steps, critic_steps=owner.critic_steps,
-                new_actor_steps=owner.actor_steps - 3, new_critic_steps=owner.critic_steps - 3,
+                new_actor_steps=max(0, owner.actor_steps - 3), new_critic_steps=max(0, owner.critic_steps - 3),
                 final_actor_identity=owner._make_identity(),
                 actor_identity_unchanged=owner._make_identity() == plan["expected_actor_identity"])
         report.update(ended_at=time.time(), source_after=code_identity())

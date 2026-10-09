@@ -2,7 +2,7 @@
 
 ## 当前状态：转向24条冻结模型组织开发（2026-10-09）
 
-用户已要求参照[新审计](docs/reference/audit-v037-next-v038.md)修订并开展后续实验：以原3/3 common actor进行四个schema根×O1/O2/O3×两个新seed，共24条组织开发；无新反向或参数更新。新入口支持空任务表、明确责任转交、任意合法成员通信和有限动态出生/退出，各成员共用原预算。见[冻结协议与实现说明](docs/experiments/software-organization-v038-protocol.md)及[旧32槽组织行为审计](docs/experiments/software-organization-v038-prior-audit.md)。
+用户已要求参照[新审计](docs/reference/audit-v037-next-v038.md)修订并开展后续实验：以原3/3 common actor进行四个schema根×O1/O2/O3×两个新seed，共24条组织开发；无新反向或参数更新。新入口支持空任务表、明确责任转交、任意合法成员通信和有限动态出生/退出，各成员共用原预算。见[冻结协议与实现说明](docs/experiments/software-organization-v038-protocol.md)、[旧32槽组织行为审计](docs/experiments/software-organization-v038-prior-audit.md)及[准备与检查结果](docs/experiments/software-organization-v038-preparation.md)。
 
 共同B已完成682条反传及一次actor／critic更新，开发评估5/16；其余26试训、3次正式更新、48条独立确认和v037缓存生产验证继续暂停，旧队列不重启。已完成结果与全部记录保留。项目只允许使用物理GPU **3、4、5、7**。详见[停止与GPU约束记录](docs/experiments/software-allocation-v037-audit-hold-20261008.md)。以下v036/v037启动说明为历史记录。
 
