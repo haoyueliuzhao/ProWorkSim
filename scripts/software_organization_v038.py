@@ -26,10 +26,11 @@ from proworksim.storage import digest, json_bytes, read_json
 from scripts import software_support_v036 as support
 from scripts.software_allocation_v037 import available_cards, inherited_source_manifest, live_free_stop_reason
 from scripts.run_bounded_v022 import artifact_bytes, rss
-from scripts.run_ne_v021 import checked, lock, read, reference, write
+from scripts.run_ne_v021 import lock, read, reference, write
 from scripts.software_development_v028 import task
 
 VERSION = "software-organization-execution-v0.38"
+checked = support.checked
 SOURCE = Path(__file__).resolve().parents[1]
 GPU_ORDER = (3, 4, 5, 7)
 SEEDS = (202610090101, 202610090102)

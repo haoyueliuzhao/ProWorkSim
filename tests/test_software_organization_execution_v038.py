@@ -1,5 +1,6 @@
 """Finite inventory, reporting and GPU-boundary CPU controls; no model or telemetry."""
 from collections import Counter
+import hashlib
 import os
 
 import pytest
@@ -167,3 +168,22 @@ def test_worker_environment_replaces_inherited_gpu_selection_with_one_allowed_ca
 def test_worker_environment_rejects_nonpermitted_or_ambiguous_assignment(gpu):
     with pytest.raises(ValueError, match="Only physical GPUs 3,4,5,7"):
         runner.worker_env({"runtime_dependency_path": "/cpu-fixture/runtime"}, gpu)
+
+
+@pytest.mark.parametrize("change", ["unchanged", "wrong_size", "changed_content"])
+def test_checkpoint_reference_accepts_optional_exact_bytes_and_rejects_corruption(tmp_path, change):
+    path = tmp_path / "common-state.bin"
+    original = b"original-common-state"
+    path.write_bytes(original)
+    reference = {"path": str(path), "sha256": hashlib.sha256(original).hexdigest(),
+                 "bytes": len(original)}
+    if change == "wrong_size":
+        reference["bytes"] += 1
+    elif change == "changed_content":
+        # Same size isolates the digest binding from the optional size check.
+        path.write_bytes(b"X" + original[1:])
+    if change == "unchanged":
+        assert runner.checked(reference) == path
+    else:
+        with pytest.raises(ValueError, match="Frozen artifact content or size changed"):
+            runner.checked(reference)
