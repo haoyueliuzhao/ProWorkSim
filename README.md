@@ -4,6 +4,8 @@
 
 用户已要求参照[新审计](docs/reference/audit-v037-next-v038.md)修订并开展后续实验：以原3/3 common actor进行四个schema根×O1/O2/O3×两个新seed，共24条组织开发；无新反向或参数更新。新入口支持空任务表、明确责任转交、任意合法成员通信和有限动态出生/退出，各成员共用原预算。见[冻结协议与实现说明](docs/experiments/software-organization-v038-protocol.md)、[旧32槽组织行为审计](docs/experiments/software-organization-v038-prior-audit.md)及[准备与检查结果](docs/experiments/software-organization-v038-preparation.md)。
 
+北京时间2026-10-09 09:49:46已从隔离clean提交`955681e`启动持久监督；四个worker分别使用GPU 3、4、5、7，均已恢复原common并产生真实调用。53项组织CPU控制与Ruff通过；默认全量回归的12个既有环境失败定向复核全部通过。见[启动快照](docs/experiments/software-organization-v038-launch.md)及[运行报告](docs/experiments/software-organization-v038.md)。未闭合结果不填零，闭合后自动生成并提交、推送结果。
+
 共同B已完成682条反传及一次actor／critic更新，开发评估5/16；其余26试训、3次正式更新、48条独立确认和v037缓存生产验证继续暂停，旧队列不重启。已完成结果与全部记录保留。项目只允许使用物理GPU **3、4、5、7**。详见[停止与GPU约束记录](docs/experiments/software-allocation-v037-audit-hold-20261008.md)。以下v036/v037启动说明为历史记录。
 
 [本轮完整实验报告](docs/experiments/software-support-v036-v037-report.md)与[机器证据](docs/experiments/software-support-v036-v037-report.json)汇总P2的14/16与双类支持、共同B真实更新、开发16条逐槽结果、31.136217真实9B worker GPU小时、缓存优化正反控制及未执行范围；明确区分真实参数变化、有限交付和未测效用增量。
