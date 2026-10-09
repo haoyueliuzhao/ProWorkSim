@@ -1,10 +1,14 @@
 # ProWorkSim
 
-## 当前状态：v0.40已完成修订与CPU准备，冻结16条后续实验（2026-10-09）
+## 当前状态：v0.40的16槽已结束，全部未提交，受上下文容量限制（2026-10-10）
 
-按新审计，v0.40修正可信原始记录下执行前未知工具名的分类：零执行、保留费用与真实拒绝反馈，成员可在下一收费机会自行纠正；不自动把work_done改名，禁止controller请求和真实完整性故障仍按各自边界处理。两个承接态record-views/catalog变体提供真实公开诊断，比较shared/split初始证据与base/team共同交付说明，原9B 3/3 common冻结，共16条，全部允许自主增员而不设置外生出生。
+北京时间2026-10-10 **00:02:52**，预登记16槽全部闭合，正式R均为0、技术未知0。两承接态root的shared/split诊断与base/team说明四条件各4条；主实验没有增员、消息、任务、固定patch或提交。**32名成员均因单请求context容量被生成前拒绝，并非耗尽500000-token共享池**，不能将全零结果解释为模型没有协作能力。详见[本轮完整报告](docs/experiments/software-organization-v040-final.md)和[机器证据](docs/experiments/software-organization-v040-final.json)。
 
-[冻结协议](docs/experiments/software-organization-v040-protocol.md)、[任务与诊断](docs/experiments/software-organization-v040-tasks.md)、[准备记录](docs/experiments/software-organization-v040-preparation.md)记录52项CPU通过和全项目Ruff通过。准备阶段尚无新模型调用；实际启动另记。旧v039成绩、技术未知与两未启动槽不改，旧训练/确认/缓存生产继续暂停，GPU仅3、4、5、7。
+新增初始诊断在保留的first/latest observation中重复出现。已审查的ST例子两次请求各超context上限29/24 token，仅完成两次调用；全批119次调用、1,495,039 token、17次公开测试，两次公开通过但均无后续实际输入消费回执或固定交付。工作使用链为0/16。重复文本独立token成本及去重后结果未测，没有改提示后重采。
+
+未知工具名新政策完成52项CPU控制，真实本批没有触发该分支。16份护栏及4个原3/3 common恢复通过，新增反向/参数更新0；实际GPU3、4、5、7共0.472740 worker小时。用户本轮额外空闲GPU授权已记录，实际没有待分配块而未使用额外卡。旧v039未知与未启动槽、旧训练/确认/缓存生产暂停状态均保留。
+
+方法与原件：[冻结协议](docs/experiments/software-organization-v040-protocol.md)、[任务与诊断](docs/experiments/software-organization-v040-tasks.md)、[准备记录](docs/experiments/software-organization-v040-preparation.md)、[自动终态](docs/experiments/software-organization-v040.md)。本批没有自动后继或追加样本。
 
 ## v0.39已结束，21条已知、1条技术未知、2条未启动（2026-10-09）
 
