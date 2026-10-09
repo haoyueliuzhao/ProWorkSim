@@ -322,6 +322,17 @@ class HarnessWorker:
             },
         )
 
+    def _reject_unknown_tool(self, name):
+        """Versioned workers may classify a pre-execution name rejection.
+
+        The default retains the historical v033 permission boundary. Overrides
+        must reject the original action rather than substitute or execute one.
+        Native call identity is checked before this hook is reached.
+        """
+        if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
+            self._fail("model_permission_error", "Tool is outside this role's authorized gateway")
+        raise ValueError("Tool name is not in this role's managed gateway")
+
     def _complete(self, messages, tools):
         self._completions += 1
         if self._completions != 1:
@@ -568,9 +579,7 @@ class HarnessWorker:
             function = call["function"]
             name = function["name"]
             if name not in self.schemas:
-                if self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033:
-                    self._fail("model_permission_error", "Tool is outside this role's authorized gateway")
-                raise ValueError("Tool name is not in this role's managed gateway")
+                self._reject_unknown_tool(name)
             parser_stage = "adapter_json_arguments"
             arguments = _strict_json(function["arguments"])
             if (self.config["format_error_policy"] == FORMAT_FEEDBACK_BUDGETED_V033

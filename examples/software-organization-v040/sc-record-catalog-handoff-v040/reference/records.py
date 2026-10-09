@@ -1,0 +1,18 @@
+import re
+from schema import And, Or, Schema, SchemaError
+
+
+def build_catalog(rows):
+    name = And(str, lambda value: re.fullmatch(r"[a-z]+", value) is not None)
+    try:
+        validated = Schema([{"key": name, "value": Or(str, int, bool, type(None))}]).validate(rows)
+    except SchemaError:
+        return None
+    keys, values = [], []
+    for row in validated:
+        if row["key"] not in keys:
+            keys.append(row["key"])
+            values.append(row["value"])
+        else:
+            values[keys.index(row["key"])] = row["value"]
+    return {"keys": keys, "values": values}

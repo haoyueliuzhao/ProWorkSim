@@ -1,0 +1,483 @@
+{
+  "cases": [
+    {
+      "case_id": "catalog-private-types",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "keys": [
+            "oak",
+            "ash",
+            "elm"
+          ],
+          "values": [
+            "",
+            null,
+            0
+          ]
+        }
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            {
+              "key": "oak",
+              "value": "old"
+            },
+            {
+              "key": "ash",
+              "value": null
+            },
+            {
+              "key": "elm",
+              "value": false
+            },
+            {
+              "key": "oak",
+              "value": ""
+            },
+            {
+              "key": "elm",
+              "value": 0
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "build_catalog",
+        "module": "records",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-order",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "ok": true,
+          "rows": [
+            {
+              "key": "oak",
+              "value": ""
+            },
+            {
+              "key": "ash",
+              "value": null
+            },
+            {
+              "key": "elm",
+              "value": 0
+            }
+          ]
+        }
+      },
+      "group": "consumer_report",
+      "request": {
+        "args": [
+          [
+            {
+              "key": "oak",
+              "value": "old"
+            },
+            {
+              "key": "ash",
+              "value": null
+            },
+            {
+              "key": "elm",
+              "value": false
+            },
+            {
+              "key": "oak",
+              "value": ""
+            },
+            {
+              "key": "elm",
+              "value": 0
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "catalog_rows",
+        "module": "report",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-null-missing",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [
+            {
+              "found": true,
+              "key": "ash",
+              "value": null
+            },
+            {
+              "found": false,
+              "key": "pine",
+              "value": null
+            },
+            {
+              "found": true,
+              "key": "elm",
+              "value": 0
+            },
+            {
+              "found": true,
+              "key": "oak",
+              "value": ""
+            },
+            {
+              "found": true,
+              "key": "elm",
+              "value": 0
+            }
+          ],
+          "ok": true
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [
+            {
+              "key": "oak",
+              "value": "old"
+            },
+            {
+              "key": "ash",
+              "value": null
+            },
+            {
+              "key": "elm",
+              "value": false
+            },
+            {
+              "key": "oak",
+              "value": ""
+            },
+            {
+              "key": "elm",
+              "value": 0
+            }
+          ],
+          [
+            "ash",
+            "pine",
+            "elm",
+            "oak",
+            "elm"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "lookup_many",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-bool",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "keys": [
+            "x",
+            "y"
+          ],
+          "values": [
+            true,
+            false
+          ]
+        }
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            {
+              "key": "x",
+              "value": true
+            },
+            {
+              "key": "y",
+              "value": false
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "build_catalog",
+        "module": "records",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-empty",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "ok": true,
+          "rows": []
+        }
+      },
+      "group": "consumer_report",
+      "request": {
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "catalog_rows",
+        "module": "report",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-empty-both",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [],
+          "ok": true
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [],
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "lookup_many",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-atomic-reject",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "ok": false,
+          "rows": []
+        }
+      },
+      "group": "consumer_report",
+      "request": {
+        "args": [
+          [
+            {
+              "key": "ok",
+              "value": 1
+            },
+            {
+              "key": "not_ok",
+              "value": 2
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "catalog_rows",
+        "module": "report",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-invalid-empty-query",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [],
+          "ok": false
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [
+            {
+              "key": " ",
+              "value": null
+            }
+          ],
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "lookup_many",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "catalog-private-second-call",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_catalog": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [
+            {
+              "found": false,
+              "key": "oak",
+              "value": null
+            },
+            {
+              "found": true,
+              "key": "q",
+              "value": 9
+            }
+          ],
+          "ok": true
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [
+            {
+              "key": "q",
+              "value": 9
+            }
+          ],
+          [
+            "oak",
+            "q"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "lookup_many",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_catalog"
+          ]
+        ]
+      }
+    }
+  ],
+  "original_case_id": "sc-record-catalog-v039",
+  "purpose": "organization_development",
+  "task_id": "sc-record-catalog-handoff-v040",
+  "variant": "handoff_existing_branch_v040",
+  "version": "software-organization-task-fixtures-v0.39",
+  "visibility": "parent_only"
+}

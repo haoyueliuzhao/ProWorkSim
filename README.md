@@ -1,6 +1,12 @@
 # ProWorkSim
 
-## 当前状态：v0.39已结束，21条已知、1条技术未知、2条未启动（2026-10-09）
+## 当前状态：v0.40已完成修订与CPU准备，冻结16条后续实验（2026-10-09）
+
+按新审计，v0.40修正可信原始记录下执行前未知工具名的分类：零执行、保留费用与真实拒绝反馈，成员可在下一收费机会自行纠正；不自动把work_done改名，禁止controller请求和真实完整性故障仍按各自边界处理。两个承接态record-views/catalog变体提供真实公开诊断，比较shared/split初始证据与base/team共同交付说明，原9B 3/3 common冻结，共16条，全部允许自主增员而不设置外生出生。
+
+[冻结协议](docs/experiments/software-organization-v040-protocol.md)、[任务与诊断](docs/experiments/software-organization-v040-tasks.md)、[准备记录](docs/experiments/software-organization-v040-preparation.md)记录52项CPU通过和全项目Ruff通过。准备阶段尚无新模型调用；实际启动另记。旧v039成绩、技术未知与两未启动槽不改，旧训练/确认/缓存生产继续暂停，GPU仅3、4、5、7。
+
+## v0.39已结束，21条已知、1条技术未知、2条未启动（2026-10-09）
 
 北京时间 **17:17:55**，v0.39本批监督结束。主24槽中实际执行22条：21条结果已知，其中5条完整合格交付、16条未提交；另1条技术未知，2条按同root停止规则未启动。F2为2成功/7已知，A3为2/7，X3为1/7，各自仍保留原8槽分母，完整平均R不填零。两次独立接口诊断均通过，单列不并入业务成功率。详见[本轮详细报告](docs/experiments/software-organization-v039-final.md)和[机器明细](docs/experiments/software-organization-v039-final.json)。
 
