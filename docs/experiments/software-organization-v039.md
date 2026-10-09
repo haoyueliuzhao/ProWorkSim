@@ -1,6 +1,6 @@
 # v0.39 冻结模型自主组织开发
 
-状态：`waiting`；主库存24条，已知结果`0/24`；接口诊断另计2条，闭合`0/2`。源码`5159c13011d000e2949bc5e6b379463f63eeb9ef`。
+状态：`closed_with_unknowns`；主库存24条，已知结果`0/24`；接口诊断另计2条，闭合`0/2`。源码`5159c13011d000e2949bc5e6b379463f63eeb9ef`。
 
 原9B 3/3 common、四个全新schema应用根目标、16K上下文/2048输出。F2固定两人与A3自然动态组构成16条主比较；X3的8条是外生中性成员辅助对照。主实验每条共同预算128决定/128attempt/500000实际token/32次测试，诊断每条12/12/150000/32。仅物理GPU 3、4、5、7。旧26次Contribution试训、正式更新、TextFSM确认与缓存生产测试继续暂停。
 
@@ -76,7 +76,7 @@
 
 主24槽控制器成本（嵌套计时，不再叠加GPU时间）：`{'world_actions': 0, 'world_transaction_wall_seconds': 0, 'session_creation_wall_seconds': 0, 'initial_workspace_bytes': 0, 'model_calls': 0, 'generated_tokens': 0}`。
 
-独立诊断闭合usage：`{'decisions': 0, 'attempts': 0, 'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0, 'output_bearing_calls': 0, 'budget_charged_tokens': 0, 'uncertain_usage_attempts': 0}`；测试`0`；已结束worker GPU秒`0`、运行中`0`。
+独立诊断闭合usage：`{'decisions': 0, 'attempts': 0, 'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0, 'output_bearing_calls': 0, 'budget_charged_tokens': 0, 'uncertain_usage_attempts': 0}`；测试`0`；已结束worker GPU秒`29.630422592163086`、运行中`0`。
 
 独立诊断控制器成本（嵌套计时，不再叠加GPU时间）：`{'world_actions': 0, 'world_transaction_wall_seconds': 0, 'session_creation_wall_seconds': 0, 'initial_workspace_bytes': 0, 'model_calls': 0, 'generated_tokens': 0}`。
 
