@@ -6,6 +6,8 @@
 
 [本轮完整实验报告](docs/experiments/software-support-v036-v037-report.md)与[机器证据](docs/experiments/software-support-v036-v037-report.json)汇总P2的14/16与双类支持、共同B真实更新、开发16条逐槽结果、31.136217真实9B worker GPU小时、缓存优化正反控制及未执行范围；明确区分真实参数变化、有限交付和未测效用增量。
 
+[自主组织汇报材料](docs/experiments/software-organization-v036-briefing.md)与[对应讲稿](docs/experiments/software-organization-v036-speaking-notes.md)选取同一根任务的5个精简案例，展示后置职责形成、重复工作、集中交付和未登记仍行动；区分机制允许的范围与16槽真实观察，保留原始事件定位，无需阅读完整轨迹。
+
 ## v0.37 精确加权梯度缓存：保留当前 B，闭合后接续完整清单
 
 为减少 v0.36 从同一完整 common 重复反传的成本，新增独立缓存执行器：只复用相同原决策、相同精确 loss 权重实际反传得到的梯度，保持原顺序累积和各候选的裁剪／AdamW 更新。27 试训的理论反传键数由18,414降为4,338；这不是端到端实测加速，480条开发／独立确认评估仍完整执行。当前原 B 没有逐行梯度缓存，先保留其完成并导入结果，随后26试训需要4,300个新键，正式更新还需38–492个新键，旧B成本另列。
