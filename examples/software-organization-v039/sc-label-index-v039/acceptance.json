@@ -1,0 +1,282 @@
+{
+  "cases": [
+    {
+      "case_id": "labels-private-tabs",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": [
+          "mint",
+          "sage",
+          "mint"
+        ]
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            "\tMint\n",
+            "SAGE",
+            "mint"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "normalize_labels",
+        "module": "labels",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "labels-private-punctuation",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": null
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            "one",
+            "bad-name"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "normalize_labels",
+        "module": "labels",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "labels-private-blank",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": null
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            "\t"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "normalize_labels",
+        "module": "labels",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-private-order",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "names": [
+            "zed",
+            "ash",
+            "moss"
+          ],
+          "ok": true,
+          "positions": [
+            0,
+            1,
+            0,
+            2,
+            1
+          ]
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            "ZED",
+            " ash ",
+            "zed",
+            "Moss",
+            "ASH"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-private-one",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "names": [
+            "x"
+          ],
+          "ok": true,
+          "positions": [
+            0
+          ]
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            " x "
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-private-digit",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "names": [],
+          "ok": false,
+          "positions": []
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            "a",
+            "b2",
+            "a"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-private-repeated-normalization",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "ok": true,
+          "names": [
+            "oak"
+          ],
+          "positions": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            " Oak ",
+            "oak",
+            "OAK"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    }
+  ],
+  "purpose": "organization_development",
+  "task_id": "sc-label-index-v039",
+  "version": "software-organization-task-fixtures-v0.39",
+  "visibility": "parent_only"
+}

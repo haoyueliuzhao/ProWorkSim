@@ -1,0 +1,248 @@
+{
+  "cases": [
+    {
+      "case_id": "columns-order",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": [
+          "y",
+          "x"
+        ]
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            "y",
+            "x"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "validate_columns",
+        "module": "columns",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "columns-duplicate",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": null
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            "x",
+            "x"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "validate_columns",
+        "module": "columns",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "columns-empty",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": []
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "validate_columns",
+        "module": "columns",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "projection-missing",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "columns.validate_columns": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "columns": [
+            "y",
+            "x"
+          ],
+          "ok": true,
+          "rows": [
+            [
+              null,
+              1
+            ],
+            [
+              false,
+              0
+            ]
+          ]
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            {
+              "x": 1
+            },
+            {
+              "x": 0,
+              "y": false
+            }
+          ],
+          [
+            "y",
+            "x"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "project_rows",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "columns",
+            "validate_columns"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "projection-empty-selection",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "columns.validate_columns": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "columns": [],
+          "ok": true,
+          "rows": [
+            [],
+            []
+          ]
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            {
+              "x": 1
+            },
+            {
+              "y": 2
+            }
+          ],
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "project_rows",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "columns",
+            "validate_columns"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "projection-invalid",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "columns.validate_columns": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "columns": [],
+          "ok": false,
+          "rows": []
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            {
+              "x": 1
+            }
+          ],
+          [
+            "X"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "project_rows",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "columns",
+            "validate_columns"
+          ]
+        ]
+      }
+    }
+  ],
+  "purpose": "organization_development",
+  "task_id": "sc-row-projection-v039",
+  "version": "software-organization-task-fixtures-v0.39",
+  "visibility": "public"
+}

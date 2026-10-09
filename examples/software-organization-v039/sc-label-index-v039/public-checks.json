@@ -1,0 +1,222 @@
+{
+  "cases": [
+    {
+      "case_id": "labels-normalize",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": [
+          "red",
+          "blue",
+          "red"
+        ]
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            " Red ",
+            "BLUE",
+            "red"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "normalize_labels",
+        "module": "labels",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "labels-empty",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": []
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "normalize_labels",
+        "module": "labels",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "labels-invalid",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": null
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            "red",
+            "two words"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "normalize_labels",
+        "module": "labels",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-stable",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "names": [
+            "red",
+            "blue"
+          ],
+          "ok": true,
+          "positions": [
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            " Red ",
+            "BLUE",
+            "red"
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-empty",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "names": [],
+          "ok": true,
+          "positions": []
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "index-reject",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "labels.normalize_labels": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "names": [],
+          "ok": false,
+          "positions": []
+        }
+      },
+      "group": "consumer",
+      "request": {
+        "args": [
+          [
+            "ok",
+            "  "
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "index_labels",
+        "module": "consumer",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "labels",
+            "normalize_labels"
+          ]
+        ]
+      }
+    }
+  ],
+  "purpose": "organization_development",
+  "task_id": "sc-label-index-v039",
+  "version": "software-organization-task-fixtures-v0.39",
+  "visibility": "public"
+}

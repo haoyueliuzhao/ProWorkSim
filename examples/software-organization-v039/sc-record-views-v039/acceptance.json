@@ -1,0 +1,459 @@
+{
+  "cases": [
+    {
+      "case_id": "records-private-order",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": [
+          {
+            "group": "west",
+            "name": "zed",
+            "position": 0
+          },
+          {
+            "group": "east",
+            "name": "ash",
+            "position": 1
+          },
+          {
+            "group": "west",
+            "name": "moss",
+            "position": 2
+          },
+          {
+            "group": "east",
+            "name": "ash",
+            "position": 3
+          }
+        ]
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          [
+            {
+              "group": " West ",
+              "name": "Zed"
+            },
+            {
+              "group": "east",
+              "name": " ash "
+            },
+            {
+              "group": "west",
+              "name": "MOSS"
+            },
+            {
+              "group": "east",
+              "name": "ash"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "build_records",
+        "module": "records",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "report-private-order",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "groups": [
+            {
+              "group": "west",
+              "names": [
+                "zed",
+                "moss"
+              ]
+            },
+            {
+              "group": "east",
+              "names": [
+                "ash",
+                "ash"
+              ]
+            }
+          ],
+          "ok": true
+        }
+      },
+      "group": "consumer_report",
+      "request": {
+        "args": [
+          [
+            {
+              "group": " West ",
+              "name": "Zed"
+            },
+            {
+              "group": "east",
+              "name": " ash "
+            },
+            {
+              "group": "west",
+              "name": "MOSS"
+            },
+            {
+              "group": "east",
+              "name": "ash"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "group_report",
+        "module": "report",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "query-private-positions",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [
+            {
+              "name": "ash",
+              "position": 1
+            },
+            {
+              "name": "ash",
+              "position": 3
+            }
+          ],
+          "ok": true
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [
+            {
+              "group": " West ",
+              "name": "Zed"
+            },
+            {
+              "group": "east",
+              "name": " ash "
+            },
+            {
+              "group": "west",
+              "name": "MOSS"
+            },
+            {
+              "group": "east",
+              "name": "ash"
+            }
+          ],
+          "east"
+        ],
+        "check_input_unchanged": true,
+        "function": "select_group",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "report-private-atomic-reject",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "groups": [],
+          "ok": false
+        }
+      },
+      "group": "consumer_report",
+      "request": {
+        "args": [
+          [
+            {
+              "group": "west",
+              "name": "ok"
+            },
+            {
+              "group": "east",
+              "name": "not-ok"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "group_report",
+        "module": "report",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "query-private-global-reject",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [],
+          "ok": false
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [
+            {
+              "group": "west",
+              "name": "ok"
+            },
+            {
+              "group": "east",
+              "name": "bad2"
+            }
+          ],
+          "west"
+        ],
+        "check_input_unchanged": true,
+        "function": "select_group",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "records-private-empty",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "schema.Schema.validate": true
+        },
+        "value": []
+      },
+      "group": "shared_api",
+      "request": {
+        "args": [
+          []
+        ],
+        "check_input_unchanged": true,
+        "function": "build_records",
+        "module": "records",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "query-private-empty",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [],
+          "ok": true
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [],
+          "west"
+        ],
+        "check_input_unchanged": true,
+        "function": "select_group",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "report-private-repeat",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "groups": [
+            {
+              "group": "z",
+              "names": [
+                "a",
+                "a"
+              ]
+            }
+          ],
+          "ok": true
+        }
+      },
+      "group": "consumer_report",
+      "request": {
+        "args": [
+          [
+            {
+              "group": "Z",
+              "name": " A "
+            },
+            {
+              "group": "z",
+              "name": "a"
+            }
+          ]
+        ],
+        "check_input_unchanged": true,
+        "function": "group_report",
+        "module": "report",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    },
+    {
+      "case_id": "query-private-no-match",
+      "expected": {
+        "input_unchanged": true,
+        "kind": "return",
+        "source_api_observation_complete": true,
+        "source_api_used": {
+          "records.build_records": true,
+          "schema.Schema.validate": true
+        },
+        "value": {
+          "matches": [],
+          "ok": true
+        }
+      },
+      "group": "consumer_query",
+      "request": {
+        "args": [
+          [
+            {
+              "group": " West ",
+              "name": "Zed"
+            },
+            {
+              "group": "east",
+              "name": " ash "
+            },
+            {
+              "group": "west",
+              "name": "MOSS"
+            },
+            {
+              "group": "east",
+              "name": "ash"
+            }
+          ],
+          "north"
+        ],
+        "check_input_unchanged": true,
+        "function": "select_group",
+        "module": "query",
+        "trace": [
+          [
+            "schema",
+            "Schema.validate"
+          ],
+          [
+            "records",
+            "build_records"
+          ]
+        ]
+      }
+    }
+  ],
+  "purpose": "organization_development",
+  "task_id": "sc-record-views-v039",
+  "version": "software-organization-task-fixtures-v0.39",
+  "visibility": "parent_only"
+}
