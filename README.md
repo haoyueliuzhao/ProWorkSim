@@ -10,7 +10,7 @@
 
 [本轮完整实验报告](docs/experiments/software-support-v036-v037-report.md)与[机器证据](docs/experiments/software-support-v036-v037-report.json)汇总P2的14/16与双类支持、共同B真实更新、开发16条逐槽结果、31.136217真实9B worker GPU小时、缓存优化正反控制及未执行范围；明确区分真实参数变化、有限交付和未测效用增量。
 
-[自主组织汇报材料](docs/experiments/software-organization-v036-briefing.md)以“任务由模型自行拆分、职责通过工具操作形成”为开篇总纲，随后介绍共同SQL任务，以第13号槽展开主案例，用第00/05号槽对照责任安排，再用第14/12号槽说明集中交付与未交付；最后回到完整16槽统计。[对应讲稿](docs/experiments/software-organization-v036-speaking-notes.md)按相同章节组织，原始事件与验收定位集中放在主稿末尾的证据索引。
+[自主组织汇报材料](docs/experiments/software-organization-v036-briefing.md)按创建、认领、转交、调整和沟通说明任务与职责的形成机制。五个真实案例都先说明体现什么，再呈现关键动作与对应机制，围绕“机制允许自主组织，也允许重复工作、集中完成或先执行后登记”展开。[对应讲稿](docs/experiments/software-organization-v036-speaking-notes.md)使用相同结构和表述，原始事件、验收定位与完整16槽统计保留在主稿末尾的证据索引。
 
 ## v0.37 精确加权梯度缓存：保留当前 B，闭合后接续完整清单
 
