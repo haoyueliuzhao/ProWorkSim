@@ -1,10 +1,10 @@
 # ProWorkSim
 
-## 当前状态：按审计实施 v0.39 冻结组织开发（2026-10-09）
+## 当前状态：v0.39 持久实验队列已启动，等待允许GPU容量（2026-10-09）
 
 v0.39新增四个组织开发root，冻结F2固定两人／A3自然增员各8条主比较，加X3外生中性成员8条辅助对照。X3只在第8次团队决定后尝试一次中性出生，自然终止、容量满或预算不足则保留跳过；全24槽保留。两次有提示接口诊断另计，先冻结全部清单再运行，不把诊断创建或控制器创建当成自然招募。主实验继续使用原9B 3/3 common与128决定／128attempt／500000 token／32测试预算，不恢复学习。
 
-旧O3八槽的47份抽样实际输入均呈现完整组织工具与预算，33份格式拒绝已逐文审查，未发现明确spawn/message提议被格式挡住；2份完成式摘要的退出意图仍不确定。新修订只统一等待说明，并增加有来源标记的外生控制和工作后果记录。见[v0.39冻结协议](docs/experiments/software-organization-v039-protocol.md)、[实际接口审计](docs/experiments/software-organization-v039-interface-audit.md)及[新任务与CPU正反控制](docs/experiments/software-organization-v039-tasks.md)。实现、检查、启动和闭合状态分别记录，不把预登记当作已完成结果。
+旧O3八槽的47份抽样实际输入均呈现完整组织工具与预算，33份格式拒绝已逐文审查，未发现明确spawn/message提议被格式挡住；2份完成式摘要的退出意图仍不确定。新修订只统一等待说明，并增加有来源标记的外生控制和工作后果记录。见[v0.39冻结协议](docs/experiments/software-organization-v039-protocol.md)、[实际接口审计](docs/experiments/software-organization-v039-interface-audit.md)及[新任务与CPU正反控制](docs/experiments/software-organization-v039-tasks.md)。[准备检查](docs/experiments/software-organization-v039-preparation.md)56项CPU通过、Ruff通过，执行提交`5159c13`已冻结并推送。北京时间12:29:25启动持久监督进程；[启动快照](docs/experiments/software-organization-v039-launch.md)中允许卡均未达到56GiB空闲门槛，尚无新模型调用，按约束等待。资源满足后自动先诊断再主实验，并在结束后更新、提交和推送[全库存报告](docs/experiments/software-organization-v039.md)。
 
 ## v0.38 的24条组织开发已结案（2026-10-09）
 
