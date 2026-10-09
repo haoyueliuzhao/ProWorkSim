@@ -1,14 +1,14 @@
 # ProWorkSim
 
-## 当前状态：转向24条冻结模型组织开发（2026-10-09）
+## 当前状态：v0.38 的24条组织开发已结案（2026-10-09）
 
-用户已要求参照[新审计](docs/reference/audit-v037-next-v038.md)修订并开展后续实验：以原3/3 common actor进行四个schema根×O1/O2/O3×两个新seed，共24条组织开发；无新反向或参数更新。新入口支持空任务表、明确责任转交、任意合法成员通信和有限动态出生/退出，各成员共用原预算。见[冻结协议与实现说明](docs/experiments/software-organization-v038-protocol.md)、[旧32槽组织行为审计](docs/experiments/software-organization-v038-prior-audit.md)及[准备与检查结果](docs/experiments/software-organization-v038-preparation.md)。
+北京时间2026-10-09 **10:44:55**，24条冻结模型组织开发全部闭合，无技术未知。O1固定2人成功 **3/8**，O2固定4人 **1/8**，O3初始2人的动态条件 **3/8**；7条有固定交付且验收通过，17条未提交。O3没有增员调用或新增成员，不能把本轮差异解释为动态招募收益。详见[本轮完整实验报告](docs/experiments/software-organization-v038-final.md)和[机器证据](docs/experiments/software-organization-v038-final.json)。
 
-北京时间2026-10-09 09:49:46已从隔离clean提交`955681e`启动持久监督；四个worker分别使用GPU 3、4、5、7，均已恢复原common并产生真实调用。53项组织CPU控制与Ruff通过；默认全量回归的12个既有环境失败定向复核全部通过。见[启动快照](docs/experiments/software-organization-v038-launch.md)及[运行报告](docs/experiments/software-organization-v038.md)。未闭合结果不填零，闭合后自动生成并提交、推送结果。
+本轮使用原3/3 common actor、四个已用schema根目标和两个新seed，共972次真实调用、11,643,563个token、95次测试，累计3.115410 GPU-worker小时；监督墙钟55分8秒。物理GPU仅3、4、5、7，24条冻结护栏通过，新增反向及actor/critic更新均为0。机制提供自主任务、明确转交和有限出生/退出，实际仅有1次任务创建与认领，7个成功槽均未建任务。见[冻结协议](docs/experiments/software-organization-v038-protocol.md)、[准备与检查结果](docs/experiments/software-organization-v038-preparation.md)、[启动快照](docs/experiments/software-organization-v038-launch.md)与[原自动结案报告](docs/experiments/software-organization-v038.md)。
 
 共同B已完成682条反传及一次actor／critic更新，开发评估5/16；其余26试训、3次正式更新、48条独立确认和v037缓存生产验证继续暂停，旧队列不重启。已完成结果与全部记录保留。项目只允许使用物理GPU **3、4、5、7**。详见[停止与GPU约束记录](docs/experiments/software-allocation-v037-audit-hold-20261008.md)。以下v036/v037启动说明为历史记录。
 
-[本轮完整实验报告](docs/experiments/software-support-v036-v037-report.md)与[机器证据](docs/experiments/software-support-v036-v037-report.json)汇总P2的14/16与双类支持、共同B真实更新、开发16条逐槽结果、31.136217真实9B worker GPU小时、缓存优化正反控制及未执行范围；明确区分真实参数变化、有限交付和未测效用增量。
+[v0.36/v0.37阶段报告](docs/experiments/software-support-v036-v037-report.md)与[对应机器证据](docs/experiments/software-support-v036-v037-report.json)汇总P2的14/16与双类支持、共同B真实更新、开发16条逐槽结果、31.136217真实9B worker GPU小时、缓存优化正反控制及未执行范围；明确区分真实参数变化、有限交付和未测效用增量。
 
 [自主组织汇报材料](docs/experiments/software-organization-v036-briefing.md)按创建、认领、转交、调整和沟通说明任务与职责的形成机制。五个真实案例都先说明体现什么，再呈现关键动作与对应机制，围绕“机制允许自主组织，也允许重复工作、集中完成或先执行后登记”展开。[对应讲稿](docs/experiments/software-organization-v036-speaking-notes.md)使用相同结构和表述，原始事件、验收定位与完整16槽统计保留在主稿末尾的证据索引。
 
