@@ -1,52 +1,52 @@
 # v0.38 冻结模型自主组织开发
 
-状态：`running`；原始库存24条，已知结果`0/24`。源码`955681ec86fd570ce65ce0fd8f9d42d2f7b358f0`。
+状态：`complete`；原始库存24条，已知结果`24/24`。源码`955681ec86fd570ce65ce0fd8f9d42d2f7b358f0`。
 
 原3/3 common actor、四个已用schema根目标、O1/O2/O3各8条，统一共享预算。仅物理GPU 3、4、5、7可调度。原26次试训、正式更新、TextFSM确认与缓存生产测试继续暂停。
 
 | 条件 | 已知/计划 | 已知成功 | 已知提交 | 有新增出生的已知槽 | 全8槽平均R |
 |---|---:|---:|---:|---:|---:|
-| O1 | 0/8 | 0 | 0 | 0 | None |
-| O2 | 0/8 | 0 | 0 | 0 | None |
-| O3 | 0/8 | 0 | 0 | 0 | None |
+| O1 | 8/8 | 3 | 3 | 0 | 0.375 |
+| O2 | 8/8 | 1 | 1 | 0 | 0.125 |
+| O3 | 8/8 | 3 | 3 | 0 | 0.375 |
 
 | root | O1成功/已知/计划 | O2成功/已知/计划 | O3成功/已知/计划 |
 |---|---|---|---|
-| sc-job-policy-v035-orgdev-v038 | 0/0/2 | 0/0/2 | 0/0/2 |
-| sc-command-set-v035-orgdev-v038 | 0/0/2 | 0/0/2 | 0/0/2 |
-| sc-room-bookings-v036-orgdev-v038 | 0/0/2 | 0/0/2 | 0/0/2 |
-| sc-order-totals-v036-orgdev-v038 | 0/0/2 | 0/0/2 | 0/0/2 |
+| sc-job-policy-v035-orgdev-v038 | 2/2/2 | 0/2/2 | 1/2/2 |
+| sc-command-set-v035-orgdev-v038 | 0/2/2 | 0/2/2 | 0/2/2 |
+| sc-room-bookings-v036-orgdev-v038 | 1/2/2 | 1/2/2 | 1/2/2 |
+| sc-order-totals-v036-orgdev-v038 | 0/2/2 | 0/2/2 | 1/2/2 |
 
-完整配对平均差：`{'O3_minus_O1': None, 'O3_minus_O2': None}`。None表示尚未闭合，不填零。
+完整配对平均差：`{'O3_minus_O1': 0.0, 'O3_minus_O2': 0.25}`。None表示尚未闭合，不填零。
 
 新增actor/critic步：`0/0`；新增反向：`0`。
 
 | slot | 状态 | R | 提交 | 有输出调用 | 输入/输出token | 初始/累计/输出参与人数 | 秒 |
 |---|---|---:|---|---:|---|---|---:|
-| org-r0-O1-s0 | running | None | None | None | None/None | None/None/None | None |
-| org-r0-O2-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r0-O3-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r0-O2-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r0-O3-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r0-O1-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r1-O3-s0 | running | None | None | None | None/None | None/None/None | None |
-| org-r1-O1-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r1-O2-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r1-O1-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r1-O2-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r1-O3-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r2-O2-s0 | running | None | None | None | None/None | None/None/None | None |
-| org-r2-O3-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r2-O1-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r2-O3-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r2-O1-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r2-O2-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r3-O1-s0 | running | None | None | None | None/None | None/None/None | None |
-| org-r3-O2-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r3-O3-s0 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r3-O2-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r3-O3-s1 | not_started | None | None | None | None/None | None/None/None | None |
-| org-r3-O1-s1 | not_started | None | None | None | None/None | None/None/None | None |
+| org-r0-O1-s0 | closed | 1 | True | 41 | 486836/6549 | 2/2/2 | 403.1569912433624 |
+| org-r0-O2-s0 | closed | 0 | False | 42 | 481077/10074 | 4/4/4 | 542.5770862102509 |
+| org-r0-O3-s0 | closed | 0 | False | 39 | 480260/5274 | 2/2/2 | 331.81117510795593 |
+| org-r0-O2-s1 | closed | 0 | False | 43 | 491576/5978 | 4/4/4 | 365.9415440559387 |
+| org-r0-O3-s1 | closed | 1 | True | 29 | 339175/8335 | 2/2/2 | 439.8457074165344 |
+| org-r0-O1-s1 | closed | 1 | True | 39 | 465249/6425 | 2/2/2 | 385.2220952510834 |
+| org-r1-O3-s0 | closed | 0 | False | 40 | 482134/8730 | 2/2/2 | 484.29355812072754 |
+| org-r1-O1-s0 | closed | 0 | False | 41 | 484405/9559 | 2/2/2 | 514.9259209632874 |
+| org-r1-O2-s0 | closed | 0 | False | 42 | 480069/8825 | 4/4/4 | 482.0179901123047 |
+| org-r1-O1-s1 | closed | 0 | False | 40 | 480000/9676 | 2/2/2 | 516.7651348114014 |
+| org-r1-O2-s1 | closed | 0 | False | 42 | 481310/12986 | 4/4/4 | 673.8606884479523 |
+| org-r1-O3-s1 | closed | 0 | False | 42 | 487185/8359 | 2/2/2 | 487.96347999572754 |
+| org-r2-O2-s0 | closed | 0 | False | 42 | 477273/12091 | 4/4/4 | 630.3183958530426 |
+| org-r2-O3-s0 | closed | 1 | True | 41 | 479292/8426 | 2/2/2 | 467.0447623729706 |
+| org-r2-O1-s0 | closed | 1 | True | 40 | 485366/6437 | 2/2/2 | 382.1227123737335 |
+| org-r2-O3-s1 | closed | 0 | False | 41 | 482801/11118 | 2/2/2 | 581.0437395572662 |
+| org-r2-O1-s1 | closed | 0 | False | 40 | 482624/5880 | 2/2/2 | 360.7872838973999 |
+| org-r2-O2-s1 | closed | 1 | True | 41 | 481946/8576 | 4/4/4 | 478.80713987350464 |
+| org-r3-O1-s0 | closed | 0 | False | 41 | 491110/5908 | 2/2/2 | 374.6230185031891 |
+| org-r3-O2-s0 | closed | 0 | False | 42 | 488210/7397 | 4/4/4 | 424.5612268447876 |
+| org-r3-O3-s0 | closed | 0 | False | 42 | 485746/7145 | 2/2/2 | 413.5577976703644 |
+| org-r3-O2-s1 | closed | 0 | False | 42 | 488436/5072 | 4/4/4 | 323.6060779094696 |
+| org-r3-O3-s1 | closed | 1 | True | 40 | 489833/8260 | 2/2/2 | 464.29205083847046 |
+| org-r3-O1-s1 | closed | 0 | False | 40 | 478754/5816 | 2/2/2 | 353.17482137680054 |
 
 逐成员调用、真实输出与控制机会、selected输入、出生/退出、预算、任务和固定版本证据保存在原始episode目录；完整路径及护栏回执见同名JSON。技术未知保留原槽，不自动重试、不补验可变工作区。
 
