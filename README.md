@@ -1,10 +1,12 @@
 # ProWorkSim
 
-## 当前状态：v0.39 持久实验队列已启动，等待允许GPU容量（2026-10-09）
+## 当前状态：v0.39恢复队列已启动，等待允许GPU容量（2026-10-09）
 
 v0.39新增四个组织开发root，冻结F2固定两人／A3自然增员各8条主比较，加X3外生中性成员8条辅助对照。X3只在第8次团队决定后尝试一次中性出生，自然终止、容量满或预算不足则保留跳过；全24槽保留。两次有提示接口诊断另计，先冻结全部清单再运行，不把诊断创建或控制器创建当成自然招募。主实验继续使用原9B 3/3 common与128决定／128attempt／500000 token／32测试预算，不恢复学习。
 
-旧O3八槽的47份抽样实际输入均呈现完整组织工具与预算，33份格式拒绝已逐文审查，未发现明确spawn/message提议被格式挡住；2份完成式摘要的退出意图仍不确定。新修订只统一等待说明，并增加有来源标记的外生控制和工作后果记录。见[v0.39冻结协议](docs/experiments/software-organization-v039-protocol.md)、[实际接口审计](docs/experiments/software-organization-v039-interface-audit.md)及[新任务与CPU正反控制](docs/experiments/software-organization-v039-tasks.md)。[准备检查](docs/experiments/software-organization-v039-preparation.md)56项CPU通过、Ruff通过，执行提交`5159c13`已冻结并推送。北京时间12:29:25启动持久监督进程；[启动快照](docs/experiments/software-organization-v039-launch.md)中允许卡均未达到56GiB空闲门槛，尚无新模型调用，按约束等待。资源满足后自动先诊断再主实验，并在结束后更新、提交和推送[全库存报告](docs/experiments/software-organization-v039.md)。
+原尝试在GPU4加载权重时触发6GiB空闲保留护栏，已核实没有进入任何episode或模型生成；原 **29.6304 GPU秒** 加载成本及全部记录保留。用户再次要求立即验证后，于北京时间 **15:41:23** 使用同字节计划和冻结提交`5159c13`启动独立恢复监督（PID `248758`）。[恢复启动记录](docs/experiments/software-organization-v039-recovery-launch.md)显示允许卡当前约17–25GiB空闲，均低于原56GiB启动门；队列持续等待，尚未开始模型验证。容量连续60秒满足原条件后自动先诊断再主实验，未放宽护栏、增加样本或重采诊断。
+
+旧O3八槽的47份抽样实际输入均呈现完整组织工具与预算，33份格式拒绝已逐文审查，未发现明确spawn/message提议被格式挡住；2份完成式摘要的退出意图仍不确定。新修订只统一等待说明，并增加有来源标记的外生控制和工作后果记录。见[v0.39冻结协议](docs/experiments/software-organization-v039-protocol.md)、[实际接口审计](docs/experiments/software-organization-v039-interface-audit.md)、[新任务与CPU正反控制](docs/experiments/software-organization-v039-tasks.md)及[56项CPU准备检查](docs/experiments/software-organization-v039-preparation.md)。原[启动快照](docs/experiments/software-organization-v039-launch.md)作为历史记录保留；恢复结束后将自动更新、提交和推送[全库存报告](docs/experiments/software-organization-v039.md)。
 
 ## v0.38 的24条组织开发已结案（2026-10-09）
 
@@ -17,6 +19,8 @@ v0.39新增四个组织开发root，冻结F2固定两人／A3自然增员各8条
 [v0.36/v0.37阶段报告](docs/experiments/software-support-v036-v037-report.md)与[对应机器证据](docs/experiments/software-support-v036-v037-report.json)汇总P2的14/16与双类支持、共同B真实更新、开发16条逐槽结果、31.136217真实9B worker GPU小时、缓存优化正反控制及未执行范围；明确区分真实参数变化、有限交付和未测效用增量。
 
 [自主组织汇报材料](docs/experiments/software-organization-v036-briefing.md)按创建、认领、转交、调整和沟通说明任务与职责的形成机制。五个真实案例都先说明体现什么，再呈现关键动作与对应机制，围绕“机制允许自主组织，也允许重复工作、集中完成或先执行后登记”展开。[对应讲稿](docs/experiments/software-organization-v036-speaking-notes.md)使用相同结构和表述，原始事件、验收定位与完整16槽统计保留在主稿末尾的证据索引。
+
+[历史扩大搜索](docs/experiments/software-task-first-expanded-search-20261009.md)核查新增60条真实轨迹，27条先任务后编辑，其中15条双成员；历史正例不混入原v036的16槽统计。
 
 ## v0.37 精确加权梯度缓存：保留当前 B，闭合后接续完整清单
 
