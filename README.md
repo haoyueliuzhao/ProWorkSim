@@ -1,12 +1,14 @@
 # ProWorkSim
 
-## 当前状态：v0.39恢复队列已启动，等待允许GPU容量（2026-10-09）
+## 当前状态：v0.39已结束，21条已知、1条技术未知、2条未启动（2026-10-09）
 
-v0.39新增四个组织开发root，冻结F2固定两人／A3自然增员各8条主比较，加X3外生中性成员8条辅助对照。X3只在第8次团队决定后尝试一次中性出生，自然终止、容量满或预算不足则保留跳过；全24槽保留。两次有提示接口诊断另计，先冻结全部清单再运行，不把诊断创建或控制器创建当成自然招募。主实验继续使用原9B 3/3 common与128决定／128attempt／500000 token／32测试预算，不恢复学习。
+北京时间 **17:17:55**，v0.39本批监督结束。主24槽中实际执行22条：21条结果已知，其中5条完整合格交付、16条未提交；另1条技术未知，2条按同root停止规则未启动。F2为2成功/7已知，A3为2/7，X3为1/7，各自仍保留原8槽分母，完整平均R不填零。两次独立接口诊断均通过，单列不并入业务成功率。详见[本轮详细报告](docs/experiments/software-organization-v039-final.md)和[机器明细](docs/experiments/software-organization-v039-final.json)。
 
-原尝试在GPU4加载权重时触发6GiB空闲保留护栏，已核实没有进入任何episode或模型生成；原 **29.6304 GPU秒** 加载成本及全部记录保留。用户再次要求立即验证后，于北京时间 **15:41:23** 使用同字节计划和冻结提交`5159c13`启动独立恢复监督（PID `248758`）。[恢复启动记录](docs/experiments/software-organization-v039-recovery-launch.md)显示允许卡当前约17–25GiB空闲，均低于原56GiB启动门；队列持续等待，尚未开始模型验证。容量连续60秒满足原条件后自动先诊断再主实验，未放宽护栏、增加样本或重采诊断。
+主实验自然增员0；7个已执行X3槽均加入中性成员，7名都有真实输出，其中1名直接形成最后合格交付。伙伴在该提交之后确有整合，但没有确认伙伴采用新成员成果后形成最后交付的链条。主实验没有任务创建、认领或工作消息；这些结果不等于自然招募或训练收益。
 
-旧O3八槽的47份抽样实际输入均呈现完整组织工具与预算，33份格式拒绝已逐文审查，未发现明确spawn/message提议被格式挡住；2份完成式摘要的退出意图仍不确定。新修订只统一等待说明，并增加有来源标记的外生控制和工作后果记录。见[v0.39冻结协议](docs/experiments/software-organization-v039-protocol.md)、[实际接口审计](docs/experiments/software-organization-v039-interface-audit.md)、[新任务与CPU正反控制](docs/experiments/software-organization-v039-tasks.md)及[56项CPU准备检查](docs/experiments/software-organization-v039-preparation.md)。原[启动快照](docs/experiments/software-organization-v039-launch.md)作为历史记录保留；恢复结束后将自动更新、提交和推送[全库存报告](docs/experiments/software-organization-v039.md)。
+技术未知槽在已有固定提交后生成了未提供的`work_done`，触发冻结授权边界；原固定树验收通过，正式R仍保持未知。原自动报告与所有原件保留，本次没有重跑该槽或补跑剩余两槽。实际主调用866次、诊断23次，共10,767,713 token；含原零生成加载中止成本共 **3.394982 GPU-worker小时**，实际使用物理GPU3、4、5。24份执行护栏通过，actor/critic保持原3/3，新增反向和参数更新0。
+
+方法与过程：[冻结协议](docs/experiments/software-organization-v039-protocol.md)、[旧接口审计](docs/experiments/software-organization-v039-interface-audit.md)、[新任务与CPU控制](docs/experiments/software-organization-v039-tasks.md)、[准备检查](docs/experiments/software-organization-v039-preparation.md)、[恢复启动记录](docs/experiments/software-organization-v039-recovery-launch.md)、[自动终态报告](docs/experiments/software-organization-v039.md)。原26试训、3正式更新、48独立确认及缓存生产验证继续暂停，当前没有自动后继。
 
 ## v0.38 的24条组织开发已结案（2026-10-09）
 
