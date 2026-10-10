@@ -1,10 +1,12 @@
 # ProWorkSim
 
-## 当前状态：v0.44原16槽结案，v0.45首槽保留，原23槽接续中（2026-10-10）
+## v0.45：10/24槽收口，14槽未启动（2026-10-11）
 
 v0.44原16槽已全部闭合：9次完整成功、7槽未提交，无技术未知。批次停止范围修订已披露，真实context中断、未呈现反馈和历史门均保留；未证实跨成员成果使用。详见[完整报告](docs/experiments/software-organization-v044-completion-final.md)与[审计后的解释修订](docs/experiments/software-organization-v044-audit-v045-transition.md)。
 
-v0.45为原9B完整common3/3冻结模型的独立组织诊断：四个人工业务root、两个相关任务家族、两个seed，比较真实单成员S1、固定出生集合F2和动态人数O3，共24槽。首槽真实成功后，测量器旧接口标签检查触发暂停；原记录保留。严格版本绑定修订及33项宿主控制通过后，原23未启动槽于北京时间21:58:07从独立冻结源码接续，模型可见条件不变；[冻结协议](docs/experiments/software-organization-v045-protocol.md)列明清单、预算、五阶段成果测量和停止条件。[接续协议与原门保留说明](docs/experiments/software-organization-v045-resume-protocol.md)记录本轮必要修订。额外C/A探针与训练均未启用，旧Contribution/更新/确认/缓存生产继续暂停。
+v0.45已按冻结测量门收口：原24槽实际执行10槽，6次完整成功、4槽未提交、正式R技术未知0，另14槽未启动，完整主比较仍为null。实际仅覆盖同一人工事件接口家族的LA/HA，不能宣称四root比较完成。共198决定、191次实际调用、2563352token、19次成员公开测试，物理GPU4/5合计1.705169 worker小时；无新增参数或反向更新。
+
+首槽接口标签误报经隔离测量修订后保留原记录并接续原库存；新停止来自HA/452/S1末次成员固定预算拒绝的反馈归因未被测量器覆盖。原件证实该请求已准备、未生成或收费，原feedback unknown和host measurement_pending保持；4次真实硬context与2次共享团队预约拒绝另列。6个有伙伴的已执行槽均无已证成果使用，4个S1无伙伴不适用；未增员。详见[本轮详细报告](docs/experiments/software-organization-v045-final.md)、[机器明细](docs/experiments/software-organization-v045-final.json)、[冻结协议](docs/experiments/software-organization-v045-protocol.md)与[必要接续修订](docs/experiments/software-organization-v045-resume-protocol.md)。额外C/A探针未启用，原14槽不自动续开，旧Contribution/更新/确认/缓存生产继续暂停。
 
 ## v0.44首块历史状态：4槽结束，退休分类遗漏使后12槽未启动
 
