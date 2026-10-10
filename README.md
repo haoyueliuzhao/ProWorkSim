@@ -1,12 +1,14 @@
 # ProWorkSim
 
-## 当前状态：v0.43冻结监督已启动，先执行catalog四条件首块（2026-10-10）
+## 当前状态：v0.43首块4槽完成，真实反馈硬容量门停止其余12槽（2026-10-10）
 
-按照新审计和用户开展实验的明确指令，保持全部v042模型可见分页/工具/说明/运行时不变，另建v043准入。原32历史复制件和370 CPU阶段的来源、信息权限及selected硬容量按原件精确复用；旧三份passed=false保留。1024-token protected余量改为风险诊断，全部30处不足位置保留。
+保持v042模型可见分页、工具、说明与运行时不变，新建分层准入；原CPU证据精确复用，旧三份passed=false保留，1024-token余量改为风险诊断。新准入/调度9项必要检查与Ruff通过后，以原9B完整common 3/3执行catalog首块PT→SB→ST→PB。
 
-新准入与调度9项必要检查及Ruff通过，未重分词或重跑旧CPU路线。新org43最多16槽，先catalog PT→SB→ST→PB四槽，实际机制门通过后接其余12；不按成功率、读页/消息或招募数放行。原9B 3/3冻结，GPU仅3/4/5/7；旧训练与确认队列继续暂停。独立冻结监督已启动；加载或等待状态不代表已取得模型结果，调用与成绩以实际记录为准。
+四槽正式R为1/0/0/1：PT、PB固定交付通过原验收；SB、ST未提交，出现4次真实反馈后的硬context拒绝。首块机制门因此停止其余12槽，原16槽全库存比较保持未测；没有热改、重采或按成功率筛选。
 
-详见[协议](docs/experiments/software-organization-v043-protocol.md)、[准备记录](docs/experiments/software-organization-v043-preparation.md)和[启动快照](docs/experiments/software-organization-v043-launch.md)。
+本轮108次模型调用、1410500 token、21次公开测试，18份报告的页面进入真实输入，4次主动读页（3次后续页、1次重读首页）；无报告完整读完，没有证实跨成员成果使用链。实际仅GPU3，worker占用1699.560秒。新增actor/critic/反向0，旧训练与确认队列继续暂停，无自动后继。
+
+详见[本轮详细结案](docs/experiments/software-organization-v043-final.md)、[机器审计汇总](docs/experiments/software-organization-v043-final.json)、[自动逐槽结果](docs/experiments/software-organization-v043.md)与[冻结协议](docs/experiments/software-organization-v043-protocol.md)。[准备记录](docs/experiments/software-organization-v043-preparation.md)和[启动快照](docs/experiments/software-organization-v043-launch.md)保持各自原时点状态。
 
 ## v0.42分页功能路线完成，工程余量门未通过，16模型槽未启动（2026-10-10）
 
