@@ -1,12 +1,14 @@
 # ProWorkSim
 
-## 当前状态：v0.44已冻结启动，先执行catalog四条件模型首块（2026-10-10）
+## 当前状态：v0.44首块4槽结束，退休分类遗漏使后12槽未启动（2026-10-10）
 
-按新审计，仅修订普通格式/公开schema拒绝的当前纠错正文和上下文生命周期：完整原件留档，最新未呈现错误保留，已呈现旧错误按合法调用历史化或被新拒绝替代。分页3072、初始信息与说明、工具/权限、16K/2048和原团队预算保持，新Γ不与org43拼接。
+新普通格式反馈生命周期与纠错正文已完成：112历史形状全部复现并通过新投影硬容量，最终8条CPU路线29请求通过，66项必要控制和Ruff通过。两次验证脚本状态断言失败及其全部CPU成本保留，反馈Γ未据容量结果调整。
 
-108个已生成请求＋4个旧硬拒绝共112形状全部复现，新投影112/112硬容量通过；最新未呈现错误和最新页保留。8条有限SDK状态路线最终29请求全部通过，1024余量继续仅诊断。两次CPU fixture状态断言失败及重复成本已完整保留。66项必要控制与全局Ruff通过；准备阶段模型/GPU/参数更新均0。
+原9B完整common3/3完成catalog首块PT→SB→ST→PB，正式R为1/0/0/0；仅PT最后固定提交通过原验收。144次真实调用、1892846 token、14次公开测试；6次未生成请求均为共享token预留不足，硬context拒绝0。13条普通错误都进入首次后续输入，5条被替代、8条历史化，12条有后续实际移除证据。未证实跨成员工作使用链。
 
-新org44共16槽、seed202610100441/442；先catalog PT→SB→ST→PB完整首块，机械门通过才放行后12槽。原9B完整common3/3，GPU仅3/4/5/7；旧训练与确认继续暂停。独立监督已启动，加载/等待不代表已取得模型输出；见[启动快照](docs/experiments/software-organization-v044-launch.md)。详见[冻结协议](docs/experiments/software-organization-v044-protocol.md)、[CPU准备报告](docs/experiments/software-organization-v044-preparation.md)、[机器证据](docs/experiments/software-organization-v044-preparation.json)和[旧工作测量窄修](docs/experiments/software-organization-v044-lifecycle.md)。
+原机械门false的唯一原因是测量器漏分PT成功的直接自退役，将尾部反馈归unknown；完整原件可确认正常自退役，不是上下文失败或反馈丢失。保持原门/原输入/原R，后12槽未启动，原16槽主比较未完整。实际仅GPU3、worker2806.306秒，actor/critic/反向新增0，旧训练/确认继续暂停，无自动后继。
+
+详见[本轮详细结案](docs/experiments/software-organization-v044-final.md)、[机器审计汇总](docs/experiments/software-organization-v044-final.json)、[自动逐槽报告](docs/experiments/software-organization-v044.md)、[冻结协议](docs/experiments/software-organization-v044-protocol.md)及[CPU准备记录](docs/experiments/software-organization-v044-preparation.md)。[启动快照](docs/experiments/software-organization-v044-launch.md)保持原时点状态。
 
 ## v0.43首块4槽完成，真实反馈硬容量门停止其余12槽（2026-10-10）
 
