@@ -1,6 +1,14 @@
 # ProWorkSim
 
-## 当前状态：v0.40的16槽已结束，全部未提交，受上下文容量限制（2026-10-10）
+## 当前状态：v0.41完成CPU准入实验，容量未通过，新16槽未启动（2026-10-10）
+
+按新审计实现同成员静态快照精确去重，并使用原9B实际tokenizer与原生渲染器验证完整反馈往返。两候选均保留：候选1历史前缀27/32 fit，核心路线4/16通过；候选2提升至31/32、12/16，另12条代表控制全部通过。但catalog shared四形状仍无法容纳完整失败测试返回，超626—728 token；最后一个历史前缀仍超60。
+
+30项必要CPU合同与Ruff通过，综合容量资格仍为false，故**未加载模型、未启动首块或16槽，模型调用/GPU-worker时间/参数更新均0**。未将CPU程序固定提交当成模型成功，未删反馈、扩context或追加seed。下一步需先冻结返回范围/精确分页协议；当前没有自动后继，旧训练与确认队列继续暂停。
+
+详见[本轮详细报告](docs/experiments/software-organization-v041.md)、[机器证据](docs/experiments/software-organization-v041.json)和[协议与准入终态](docs/experiments/software-organization-v041-protocol.md)。v040及以下记录保持原结果。
+
+## v0.40的16槽已结束，全部未提交，受上下文容量限制（2026-10-10）
 
 北京时间2026-10-10 **00:02:52**，预登记16槽全部闭合，正式R均为0、技术未知0。两承接态root的shared/split诊断与base/team说明四条件各4条；主实验没有增员、消息、任务、固定patch或提交。**32名成员均因单请求context容量被生成前拒绝，并非耗尽500000-token共享池**，不能将全零结果解释为模型没有协作能力。详见[本轮完整报告](docs/experiments/software-organization-v040-final.md)和[机器证据](docs/experiments/software-organization-v040-final.json)。
 
