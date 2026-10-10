@@ -1,0 +1,260 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-rule-migration-hb-v045",
+  "cases": [
+    {
+      "case_id": "legacy-equality-preserved",
+      "group": "preserved_api",
+      "request": {
+        "module": "migration_probe",
+        "function": "legacy_results",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": 1
+          },
+          [
+            {
+              "x": 1
+            },
+            {
+              "x": true
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          true,
+          false
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "migration-missing-versus-null",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": null
+          },
+          [
+            {},
+            {
+              "x": null
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "predicate",
+            "path": [
+              "x"
+            ],
+            "test": "eq",
+            "value": null
+          },
+          "results": [
+            false,
+            true
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "legacy-interval-preserved",
+      "group": "preserved_api",
+      "request": {
+        "module": "migration_probe",
+        "function": "legacy_results",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": 1,
+            "high": 3
+          },
+          [
+            {
+              "x": 1
+            },
+            {
+              "x": 3
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          true,
+          true
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "migration-nested-present-null",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "exists",
+            "path": "a.b"
+          },
+          [
+            {},
+            {
+              "a": {
+                "b": null
+              }
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "predicate",
+            "path": [
+              "a",
+              "b"
+            ],
+            "test": "exists"
+          },
+          "results": [
+            false,
+            true
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "migration-not-and",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "all",
+            "rules": [
+              {
+                "op": "exists",
+                "path": "a.b"
+              },
+              {
+                "op": "not",
+                "rule": {
+                  "op": "eq",
+                  "path": "a.b",
+                  "value": null
+                }
+              }
+            ]
+          },
+          [
+            {
+              "a": {
+                "b": null
+              }
+            },
+            {
+              "a": {
+                "b": 2
+              }
+            },
+            {}
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "all",
+            "children": [
+              {
+                "kind": "predicate",
+                "path": [
+                  "a",
+                  "b"
+                ],
+                "test": "exists"
+              },
+              {
+                "kind": "not",
+                "child": {
+                  "kind": "predicate",
+                  "path": [
+                    "a",
+                    "b"
+                  ],
+                  "test": "eq",
+                  "value": null
+                }
+              }
+            ]
+          },
+          "results": [
+            false,
+            true,
+            false
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "migration-error-source-path",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "any",
+            "rules": [
+              {
+                "op": "exists",
+                "path": "x"
+              },
+              {
+                "op": "eq",
+                "path": "a.b"
+              }
+            ]
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rules[1].value:missing",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

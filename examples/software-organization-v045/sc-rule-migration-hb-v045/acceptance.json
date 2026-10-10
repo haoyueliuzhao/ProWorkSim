@@ -1,0 +1,775 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-rule-migration-hb-v045",
+  "cases": [
+    {
+      "case_id": "private-scalar-types",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": 1
+          },
+          [
+            {
+              "x": true
+            },
+            {
+              "x": 1
+            },
+            {
+              "x": "1"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "predicate",
+            "path": [
+              "x"
+            ],
+            "test": "eq",
+            "value": 1
+          },
+          "results": [
+            false,
+            true,
+            false
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-negative-and-upper",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "between",
+            "path": "data.n",
+            "low": -2,
+            "high": 0
+          },
+          [
+            {
+              "data": {
+                "n": -2
+              }
+            },
+            {
+              "data": {
+                "n": 0
+              }
+            },
+            {
+              "data": {
+                "n": false
+              }
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "predicate",
+            "path": [
+              "data",
+              "n"
+            ],
+            "test": "between",
+            "bounds": [
+              -2,
+              0
+            ]
+          },
+          "results": [
+            true,
+            true,
+            false
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-null-intermediate",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "eq",
+            "path": "a.b",
+            "value": null
+          },
+          [
+            {
+              "a": null
+            },
+            {
+              "a": {}
+            },
+            {
+              "a": {
+                "b": null
+              }
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "predicate",
+            "path": [
+              "a",
+              "b"
+            ],
+            "test": "eq",
+            "value": null
+          },
+          "results": [
+            false,
+            false,
+            true
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-any-mixed",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "any",
+            "rules": [
+              {
+                "op": "eq",
+                "path": "x",
+                "value": "yes"
+              },
+              {
+                "op": "exists",
+                "path": "marker"
+              }
+            ]
+          },
+          [
+            {
+              "x": "yes"
+            },
+            {
+              "marker": null
+            },
+            {}
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "any",
+            "children": [
+              {
+                "kind": "predicate",
+                "path": [
+                  "x"
+                ],
+                "test": "eq",
+                "value": "yes"
+              },
+              {
+                "kind": "predicate",
+                "path": [
+                  "marker"
+                ],
+                "test": "exists"
+              }
+            ]
+          },
+          "results": [
+            true,
+            true,
+            false
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-missing-op-path",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "not",
+            "rule": {
+              "path": "x"
+            }
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rule.op:missing",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-interval-path",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "all",
+            "rules": [
+              {
+                "op": "exists",
+                "path": "x"
+              },
+              {
+                "op": "between",
+                "path": "x",
+                "low": 2,
+                "high": 1
+              }
+            ]
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rules[1].high:invalid_range",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-unknown-field",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": null,
+            "extra": 1
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.extra:unknown_field",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-nested-path",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "exists",
+            "path": "a..b"
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.path:invalid_path",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-v2-missing-not-null",
+      "group": "contract",
+      "request": {
+        "module": "rule_v2",
+        "function": "evaluate_v2",
+        "args": [
+          {
+            "kind": "predicate",
+            "path": [
+              "x"
+            ],
+            "test": "eq",
+            "value": null
+          },
+          {}
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": false,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-v2-present-null",
+      "group": "contract",
+      "request": {
+        "module": "rule_v2",
+        "function": "evaluate_v2",
+        "args": [
+          {
+            "kind": "predicate",
+            "path": [
+              "x"
+            ],
+            "test": "exists"
+          },
+          {
+            "x": null
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-v2-empty-path",
+      "group": "contract",
+      "request": {
+        "module": "rule_v2",
+        "function": "evaluate_v2",
+        "args": [
+          {
+            "kind": "predicate",
+            "path": [],
+            "test": "exists"
+          },
+          {}
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$:invalid_v2",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-depth-four-boundary",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "not",
+            "rule": {
+              "op": "not",
+              "rule": {
+                "op": "not",
+                "rule": {
+                  "op": "exists",
+                  "path": "x"
+                }
+              }
+            }
+          },
+          [
+            {
+              "x": null
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "not",
+            "child": {
+              "kind": "not",
+              "child": {
+                "kind": "not",
+                "child": {
+                  "kind": "predicate",
+                  "path": [
+                    "x"
+                  ],
+                  "test": "exists"
+                }
+              }
+            }
+          },
+          "results": [
+            false
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-depth-overflow",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "not",
+            "rule": {
+              "op": "not",
+              "rule": {
+                "op": "not",
+                "rule": {
+                  "op": "not",
+                  "rule": {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rule.rule.rule.rule:depth_limit",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-sixteen-node-boundary",
+      "group": "contract",
+      "request": {
+        "module": "migration_probe",
+        "function": "migrated_results",
+        "args": [
+          {
+            "op": "all",
+            "rules": [
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              }
+            ]
+          },
+          [
+            {
+              "x": null
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "rule": {
+            "kind": "all",
+            "children": [
+              {
+                "kind": "all",
+                "children": [
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  }
+                ]
+              },
+              {
+                "kind": "all",
+                "children": [
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  }
+                ]
+              },
+              {
+                "kind": "all",
+                "children": [
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  },
+                  {
+                    "kind": "predicate",
+                    "path": [
+                      "x"
+                    ],
+                    "test": "exists"
+                  }
+                ]
+              }
+            ]
+          },
+          "results": [
+            true
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-node-overflow",
+      "group": "contract",
+      "request": {
+        "module": "migration",
+        "function": "migrate_v1_to_v2",
+        "args": [
+          {
+            "op": "all",
+            "rules": [
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  },
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "rules": [
+                  {
+                    "op": "exists",
+                    "path": "x"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rules[3]:node_limit",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

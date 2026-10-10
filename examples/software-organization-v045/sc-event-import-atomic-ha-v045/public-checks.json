@@ -1,0 +1,476 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-event-import-atomic-ha-v045",
+  "cases": [
+    {
+      "case_id": "import-first-batch",
+      "group": "preserved_api",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            "totals": {
+              "a": 4
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "import-replay-idempotent",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            "totals": {
+              "a": 4
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "import-empty-batch",
+      "group": "preserved_api",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            []
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [],
+                "totals": {}
+              }
+            }
+          ],
+          "final": {
+            "events": [],
+            "totals": {}
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "import-higher-revision",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 2,
+                    "account": "a",
+                    "amount": -2
+                  }
+                ],
+                "totals": {
+                  "a": -2
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              }
+            ],
+            "totals": {
+              "a": -2
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "import-conflict-rollback",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              },
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 9
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": false,
+              "error": "batch[1]:revision_conflict",
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            "totals": {
+              "a": 4
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "import-stale-after-restore",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ]
+          ],
+          {
+            "events": [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            "totals": {
+              "b": 7
+            }
+          },
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  }
+                ],
+                "totals": {
+                  "b": 7
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            "totals": {
+              "b": 7
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "import-invalid-first",
+      "group": "preserved_api",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": true,
+                "account": "a",
+                "amount": 1
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": false,
+              "error": "batch[0].revision:integer_range",
+              "state": {
+                "events": [],
+                "totals": {}
+              }
+            }
+          ],
+          "final": {
+            "events": [],
+            "totals": {}
+          }
+        },
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

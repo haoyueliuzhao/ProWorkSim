@@ -1,0 +1,165 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-rule-range-local-lb-v045",
+  "cases": [
+    {
+      "case_id": "range-interior-preserved",
+      "group": "preserved_api",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": 1,
+            "high": 3
+          },
+          {
+            "x": 2
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "range-upper-inclusive",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": 1,
+            "high": 3
+          },
+          {
+            "x": 3
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "equality-null-preserved",
+      "group": "preserved_api",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": null
+          },
+          {}
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": false,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "range-singleton",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": 4,
+            "high": 4
+          },
+          {
+            "x": 4
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "range-nested-error-path",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "all",
+            "rules": [
+              {
+                "op": "eq",
+                "path": "x",
+                "value": 1
+              },
+              {
+                "op": "between",
+                "path": "x",
+                "low": 3,
+                "high": 1
+              }
+            ]
+          },
+          {
+            "x": 0
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rules[1].high:invalid_range",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "exists-null-preserved",
+      "group": "preserved_api",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "exists",
+            "path": "a.b"
+          },
+          {
+            "a": {
+              "b": null
+            }
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

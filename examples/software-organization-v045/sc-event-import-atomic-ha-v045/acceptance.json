@@ -1,0 +1,1342 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-event-import-atomic-ha-v045",
+  "cases": [
+    {
+      "case_id": "private-account-correction",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              },
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  },
+                  {
+                    "id": "f",
+                    "revision": 0,
+                    "account": "b",
+                    "amount": 3
+                  }
+                ],
+                "totals": {
+                  "a": 4,
+                  "b": 3
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  },
+                  {
+                    "id": "f",
+                    "revision": 0,
+                    "account": "b",
+                    "amount": 3
+                  }
+                ],
+                "totals": {
+                  "b": 10
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              },
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              }
+            ],
+            "totals": {
+              "b": 10
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-mixed-revisions",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              },
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  }
+                ],
+                "totals": {
+                  "b": 7
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  }
+                ],
+                "totals": {
+                  "b": 7
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            "totals": {
+              "b": 7
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-intrabatch-replacement",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              },
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              },
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  }
+                ],
+                "totals": {
+                  "b": 7
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            "totals": {
+              "b": 7
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-malformed-tail-rollback",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              },
+              {
+                "id": "bad",
+                "revision": 0,
+                "account": "a",
+                "amount": true
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": false,
+              "error": "batch[1].amount:integer_range",
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            "totals": {
+              "a": 4
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-conflict-no-leak-next-batch",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              },
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "b",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": false,
+              "error": "batch[1]:revision_conflict",
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 2,
+                    "account": "a",
+                    "amount": -2
+                  }
+                ],
+                "totals": {
+                  "a": -2
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              }
+            ],
+            "totals": {
+              "a": -2
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-checkpoint-suffix",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              },
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              }
+            ]
+          ],
+          null,
+          1
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 1,
+                    "account": "a",
+                    "amount": 4
+                  }
+                ],
+                "totals": {
+                  "a": 4
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  }
+                ],
+                "totals": {
+                  "b": 7
+                }
+              }
+            },
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e",
+                    "revision": 3,
+                    "account": "b",
+                    "amount": 7
+                  },
+                  {
+                    "id": "f",
+                    "revision": 0,
+                    "account": "b",
+                    "amount": 3
+                  }
+                ],
+                "totals": {
+                  "b": 10
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              },
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              }
+            ],
+            "totals": {
+              "b": 10
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-zero-account-kept",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "x",
+                "revision": 0,
+                "account": "zero",
+                "amount": 2
+              },
+              {
+                "id": "y",
+                "revision": 0,
+                "account": "zero",
+                "amount": -2
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "x",
+                    "revision": 0,
+                    "account": "zero",
+                    "amount": 2
+                  },
+                  {
+                    "id": "y",
+                    "revision": 0,
+                    "account": "zero",
+                    "amount": -2
+                  }
+                ],
+                "totals": {
+                  "zero": 0
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "x",
+                "revision": 0,
+                "account": "zero",
+                "amount": 2
+              },
+              {
+                "id": "y",
+                "revision": 0,
+                "account": "zero",
+                "amount": -2
+              }
+            ],
+            "totals": {
+              "zero": 0
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-max-eight-boundary",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e0",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e1",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e2",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e3",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e4",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e5",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e6",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e7",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              }
+            ],
+            [
+              {
+                "id": "ninth",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "e0",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e1",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e2",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e3",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e4",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e5",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e6",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e7",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  }
+                ],
+                "totals": {
+                  "a": 8
+                }
+              }
+            },
+            {
+              "ok": false,
+              "error": "batch[0]:store_capacity",
+              "state": {
+                "events": [
+                  {
+                    "id": "e0",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e1",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e2",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e3",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e4",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e5",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e6",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  },
+                  {
+                    "id": "e7",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": 1
+                  }
+                ],
+                "totals": {
+                  "a": 8
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "e0",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e1",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e2",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e3",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e4",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e5",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e6",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e7",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              }
+            ],
+            "totals": {
+              "a": 8
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-restore-reject-corrupt-total",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "restored",
+        "args": [
+          {
+            "events": [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            "totals": {
+              "a": 5
+            }
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "checkpoint:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-restore-reject-duplicate",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "restored",
+        "args": [
+          {
+            "events": [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              },
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              }
+            ],
+            "totals": {
+              "a": 8
+            }
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "checkpoint:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-replay-order",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "replayed",
+        "args": [
+          [
+            [
+              {
+                "id": "e",
+                "revision": 1,
+                "account": "a",
+                "amount": 4
+              },
+              {
+                "id": "f",
+                "revision": 0,
+                "account": "b",
+                "amount": 3
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 3,
+                "account": "b",
+                "amount": 7
+              }
+            ],
+            [
+              {
+                "id": "e",
+                "revision": 2,
+                "account": "a",
+                "amount": -2
+              }
+            ]
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "events": [
+            {
+              "id": "e",
+              "revision": 3,
+              "account": "b",
+              "amount": 7
+            },
+            {
+              "id": "f",
+              "revision": 0,
+              "account": "b",
+              "amount": 3
+            }
+          ],
+          "totals": {
+            "b": 10
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-batch-size",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "e0",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e1",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e2",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e3",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e4",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e5",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e6",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e7",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              },
+              {
+                "id": "e8",
+                "revision": 0,
+                "account": "a",
+                "amount": 1
+              }
+            ]
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": false,
+              "error": "batch:invalid_size",
+              "state": {
+                "events": [],
+                "totals": {}
+              }
+            }
+          ],
+          "final": {
+            "events": [],
+            "totals": {}
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-integer-boundary",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "max",
+                "revision": 1000,
+                "account": "a",
+                "amount": 1000
+              },
+              {
+                "id": "min",
+                "revision": 0,
+                "account": "a",
+                "amount": -1000
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": true,
+              "state": {
+                "events": [
+                  {
+                    "id": "max",
+                    "revision": 1000,
+                    "account": "a",
+                    "amount": 1000
+                  },
+                  {
+                    "id": "min",
+                    "revision": 0,
+                    "account": "a",
+                    "amount": -1000
+                  }
+                ],
+                "totals": {
+                  "a": 0
+                }
+              }
+            }
+          ],
+          "final": {
+            "events": [
+              {
+                "id": "max",
+                "revision": 1000,
+                "account": "a",
+                "amount": 1000
+              },
+              {
+                "id": "min",
+                "revision": 0,
+                "account": "a",
+                "amount": -1000
+              }
+            ],
+            "totals": {
+              "a": 0
+            }
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-revision-out-of-range",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "negative",
+                "revision": -1,
+                "account": "a",
+                "amount": 1
+              }
+            ],
+            [
+              {
+                "id": "large",
+                "revision": 1001,
+                "account": "a",
+                "amount": 1
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": false,
+              "error": "batch[0].revision:integer_range",
+              "state": {
+                "events": [],
+                "totals": {}
+              }
+            },
+            {
+              "ok": false,
+              "error": "batch[0].revision:integer_range",
+              "state": {
+                "events": [],
+                "totals": {}
+              }
+            }
+          ],
+          "final": {
+            "events": [],
+            "totals": {}
+          }
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-amount-out-of-range",
+      "group": "contract",
+      "request": {
+        "module": "event_probe",
+        "function": "exercise",
+        "args": [
+          [
+            [
+              {
+                "id": "large",
+                "revision": 0,
+                "account": "a",
+                "amount": 1001
+              }
+            ]
+          ],
+          null,
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "steps": [
+            {
+              "ok": false,
+              "error": "batch[0].amount:integer_range",
+              "state": {
+                "events": [],
+                "totals": {}
+              }
+            }
+          ],
+          "final": {
+            "events": [],
+            "totals": {}
+          }
+        },
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

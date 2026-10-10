@@ -1,0 +1,271 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-rule-range-local-lb-v045",
+  "cases": [
+    {
+      "case_id": "private-lower-bound",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": 1,
+            "high": 3
+          },
+          {
+            "x": 1
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-upper-negative",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": -4,
+            "high": -1
+          },
+          {
+            "x": -1
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-bool-not-integer",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "x",
+            "low": 0,
+            "high": 1
+          },
+          {
+            "x": true
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": false,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-missing-not-null",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": null
+          },
+          {}
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": false,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-type-strict-equality",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "eq",
+            "path": "x",
+            "value": 1
+          },
+          {
+            "x": true
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": false,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-nested-document-path",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "a.b",
+            "low": 0,
+            "high": 0
+          },
+          {
+            "a": {
+              "b": 0
+            }
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-nested-missing-path",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "between",
+            "path": "a.b",
+            "low": -1,
+            "high": 1
+          },
+          {
+            "a": null
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": false,
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-validate-after-true-any",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "any",
+            "rules": [
+              {
+                "op": "exists",
+                "path": "x"
+              },
+              {
+                "op": "not",
+                "rule": {
+                  "op": "between",
+                  "path": "x",
+                  "low": 2,
+                  "high": 1
+                }
+              }
+            ]
+          },
+          {
+            "x": 0
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rules[1].rule.high:invalid_range",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-bound-type",
+      "group": "contract",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "not",
+            "rule": {
+              "op": "between",
+              "path": "x",
+              "low": false,
+              "high": 1
+            }
+          },
+          {}
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "$.rule.low:integer_required",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-old-not-behavior",
+      "group": "preserved_api",
+      "request": {
+        "module": "rules",
+        "function": "evaluate",
+        "args": [
+          {
+            "op": "not",
+            "rule": {
+              "op": "exists",
+              "path": "absent"
+            }
+          },
+          {
+            "x": 3
+          }
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": true,
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

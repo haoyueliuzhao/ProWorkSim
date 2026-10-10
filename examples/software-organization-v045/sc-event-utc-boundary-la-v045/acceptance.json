@@ -1,0 +1,219 @@
+{
+  "version": "software-organization-tasks-v0.45",
+  "task_id": "sc-event-utc-boundary-la-v045",
+  "cases": [
+    {
+      "case_id": "private-offset-fourteen",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2000-01-01T00:00:00+14:00"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "1999-12-31",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-west-year-boundary",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2099-12-31T23:59:59-14:00"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "2100-01-01",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-half-hour",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-01-01T23:45:00-00:30"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "2026-01-02",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-exact-midnight",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-04-01T04:30:00+04:30"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "2026-04-01",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-0",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2023-02-29T12:00:00Z"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-1",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-01-01T24:00:00Z"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-2",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-01-01T00:00:00+14:01"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-3",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-01-01T00:00:00"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-4",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-01-01T00:00:60Z"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-5",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          "2026-01-01T00:00:00+01:99"
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-6",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          42
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "private-invalid-7",
+      "group": "contract",
+      "request": {
+        "module": "event_time",
+        "function": "utc_date_key",
+        "args": [
+          null
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "timestamp:invalid",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Separately specified finite request/expected tables; expected values were not obtained by executing the reference implementation."
+}

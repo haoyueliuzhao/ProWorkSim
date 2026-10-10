@@ -1,6 +1,12 @@
 # ProWorkSim
 
-## 当前状态：v0.44首块4槽结束，退休分类遗漏使后12槽未启动（2026-10-10）
+## 当前状态：v0.44原16槽结案，v0.45组织诊断准备中（2026-10-10）
+
+v0.44原16槽已全部闭合：9次完整成功、7槽未提交，无技术未知。批次停止范围修订已披露，真实context中断、未呈现反馈和历史门均保留；未证实跨成员成果使用。详见[完整报告](docs/experiments/software-organization-v044-completion-final.md)与[审计后的解释修订](docs/experiments/software-organization-v044-audit-v045-transition.md)。
+
+v0.45为原9B完整common3/3冻结模型的独立组织诊断：四个人工业务root、两个相关任务家族、两个seed，比较真实单成员S1、固定出生集合F2和动态人数O3，共24槽。正在完成有限CPU准入；[冻结协议](docs/experiments/software-organization-v045-protocol.md)列明清单、预算、五阶段成果测量和停止条件。额外C/A探针与训练均未启用，旧Contribution/更新/确认/缓存生产继续暂停。
+
+## v0.44首块历史状态：4槽结束，退休分类遗漏使后12槽未启动
 
 新普通格式反馈生命周期与纠错正文已完成：112历史形状全部复现并通过新投影硬容量，最终8条CPU路线29请求通过，66项必要控制和Ruff通过。两次验证脚本状态断言失败及其全部CPU成本保留，反馈Γ未据容量结果调整。
 
