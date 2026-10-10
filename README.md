@@ -1,12 +1,12 @@
 # ProWorkSim
 
-## 当前状态：v0.43分层准入已完成，准备catalog真实四条件首块（2026-10-10）
+## 当前状态：v0.43冻结监督已启动，先执行catalog四条件首块（2026-10-10）
 
 按照新审计和用户开展实验的明确指令，保持全部v042模型可见分页/工具/说明/运行时不变，另建v043准入。原32历史复制件和370 CPU阶段的来源、信息权限及selected硬容量按原件精确复用；旧三份passed=false保留。1024-token protected余量改为风险诊断，全部30处不足位置保留。
 
-新准入与调度9项必要检查及Ruff通过，未重分词或重跑旧CPU路线。新org43最多16槽，先catalog PT→SB→ST→PB四槽，实际机制门通过后接其余12；不按成功率、读页/消息或招募数放行。原9B 3/3冻结，GPU仅3/4/5/7；旧训练与确认队列继续暂停。本准备状态不代表已取得真实模型结果。
+新准入与调度9项必要检查及Ruff通过，未重分词或重跑旧CPU路线。新org43最多16槽，先catalog PT→SB→ST→PB四槽，实际机制门通过后接其余12；不按成功率、读页/消息或招募数放行。原9B 3/3冻结，GPU仅3/4/5/7；旧训练与确认队列继续暂停。独立冻结监督已启动；加载或等待状态不代表已取得模型结果，调用与成绩以实际记录为准。
 
-详见[协议](docs/experiments/software-organization-v043-protocol.md)和[准备记录](docs/experiments/software-organization-v043-preparation.md)。
+详见[协议](docs/experiments/software-organization-v043-protocol.md)、[准备记录](docs/experiments/software-organization-v043-preparation.md)和[启动快照](docs/experiments/software-organization-v043-launch.md)。
 
 ## v0.42分页功能路线完成，工程余量门未通过，16模型槽未启动（2026-10-10）
 
