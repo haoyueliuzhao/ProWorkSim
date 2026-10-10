@@ -1,6 +1,14 @@
 # ProWorkSim
 
-## 当前状态：v0.43首块4槽完成，真实反馈硬容量门停止其余12槽（2026-10-10）
+## 当前状态：v0.44新反馈协议CPU准入通过，准备冻结模型首块（2026-10-10）
+
+按新审计，仅修订普通格式/公开schema拒绝的当前纠错正文和上下文生命周期：完整原件留档，最新未呈现错误保留，已呈现旧错误按合法调用历史化或被新拒绝替代。分页3072、初始信息与说明、工具/权限、16K/2048和原团队预算保持，新Γ不与org43拼接。
+
+108个已生成请求＋4个旧硬拒绝共112形状全部复现，新投影112/112硬容量通过；最新未呈现错误和最新页保留。8条有限SDK状态路线最终29请求全部通过，1024余量继续仅诊断。两次CPU fixture状态断言失败及重复成本已完整保留。66项必要控制与全局Ruff通过；准备阶段模型/GPU/参数更新均0。
+
+新org44共16槽、seed202610100441/442；先catalog PT→SB→ST→PB完整首块，机械门通过才放行后12槽。原9B完整common3/3，GPU仅3/4/5/7；旧训练与确认继续暂停。详见[冻结协议](docs/experiments/software-organization-v044-protocol.md)、[CPU准备报告](docs/experiments/software-organization-v044-preparation.md)、[机器证据](docs/experiments/software-organization-v044-preparation.json)和[旧工作测量窄修](docs/experiments/software-organization-v044-lifecycle.md)。
+
+## v0.43首块4槽完成，真实反馈硬容量门停止其余12槽（2026-10-10）
 
 保持v042模型可见分页、工具、说明与运行时不变，新建分层准入；原CPU证据精确复用，旧三份passed=false保留，1024-token余量改为风险诊断。新准入/调度9项必要检查与Ruff通过后，以原9B完整common 3/3执行catalog首块PT→SB→ST→PB。
 
