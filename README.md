@@ -4,7 +4,7 @@
 
 新审计授权44个新槽：先在LA/HA/LB/HB四root比较S1/D2/D4/I2/I4/P2/P4七配置，每槽250k；再按事前锁定的S1/D4/I4/P4运行同root/seed的真实500k条件。总上限1500万实际token。D从1名成员开始自主增员，I按独立候选与计费选择执行，P按复核修订流水线执行；成员名额与resident模型数量分开记录。
 
-新增阶段权限与额度、精确固定候选采用、90分钟停止新请求和10分钟有界关闭。行政截止后的已知`R_joint`不回填`R_token`，未知实际费用不填0。131项不同CPU控制、Ruff与44条有来源绑定的材料正例通过；原目录重复呈现及可选合同重复读取引起的失败原件保留。原18432容量资格在数值路径保持时只读复用，不新增模型资格。正式模型尚未启动，首个真实调用将计入原44槽；不恢复v046未开槽或旧训练队列。详见[冻结协议](docs/experiments/software-organization-v047-protocol.md)、[准备记录](docs/experiments/software-organization-v047-preparation.md)与[机器凭据](docs/experiments/software-organization-v047-preparation.json)。
+新增阶段权限与额度、精确固定候选采用、90分钟停止新请求和10分钟有界关闭。行政截止后的已知`R_joint`不回填`R_token`，未知实际费用不填0。131项不同CPU控制、Ruff与44条有来源绑定的材料正例通过；原目录重复呈现及可选合同重复读取引起的失败原件保留。原18432容量资格在数值路径保持时只读复用，不新增模型资格。冻结`c3f3c4c4`已于2026-10-11 19:59（北京时间）启动原44槽，首worker获物理GPU4资源准入；逐槽记录费用、反馈与成果来源，阶段B待阶段A完成。运行中结果不用于追加或筛选库存，不恢复v046未开槽或旧训练队列。详见[冻结协议](docs/experiments/software-organization-v047-protocol.md)、[准备记录](docs/experiments/software-organization-v047-preparation.md)、[机器凭据](docs/experiments/software-organization-v047-preparation.json)与[启动记录](docs/experiments/software-organization-v047-launch.md)。
 
 ## v0.46：容量资格通过，正式四对未完成（2026-10-11）
 
