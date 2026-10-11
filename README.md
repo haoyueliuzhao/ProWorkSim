@@ -1,14 +1,34 @@
 # ProWorkSim
 
-## v0.45：原14槽接续已启动（2026-10-11）
+## v0.45：原24槽组织诊断全部闭合（2026-10-11）
 
-新审计授权的成员固定预算归因已修订，27项测量及41项宿主CPU控制、全项目Ruff与原件只读回执通过。原14槽从原plan按原seed/先手接续，新增上限700万token。09:08:57已用原SDK解释器在独立根启动；此前缺torch的宿主启动失败发生于模型/episode之前，5.0673秒占用及全部原件保留。状态与限制见[启动记录](docs/experiments/software-organization-v045-complete-launch.md)。详见[原14槽协议](docs/experiments/software-organization-v045-complete-protocol.md)和[准备记录](docs/experiments/software-organization-v045-complete-preparation.md)。
+成员固定预算先拒绝的宿主归因修订完成，27项测量反例、41项宿主CPU控制及全项目Ruff通过。冻结原9B完整common3/3与模型可见协议，按原plan接续唯一14个未开槽；原首槽1＋第一次接续9＋本次14合并为唯一24槽，未重跑、未换seed，旧结果与暂停记录保留。
 
-v0.44原16槽已全部闭合：9次完整成功、7槽未提交，无技术未知。批次停止范围修订已披露，真实context中断、未呈现反馈和历史门均保留；未证实跨成员成果使用。详见[完整报告](docs/experiments/software-organization-v044-completion-final.md)与[审计后的解释修订](docs/experiments/software-organization-v044-audit-v045-transition.md)。
+原24槽全部正式结果已知：12次完整成功、12槽未提交，无提交后验收失败或技术未知。LA/LB各6槽全部成功，HA/HB各6槽全部未提交；原八块等权F2−S1=0、O3−F2=0。四个人工root来自两个相关任务家族，这些结果不构成一般组织优势或训练收益。
+
+| 制度 | 成功/原分母 | 实际调用 | 实际token |
+| --- | --- | --- | --- |
+| S1 | 4/8 | 151 | 2,069,513 |
+| F2 | 4/8 | 225 | 3,038,435 |
+| O3 | 4/8 | 236 | 3,188,608 |
+
+共637决定、612次调用、8,296,556 token、42次成员公开测试。25次执行前拒绝分别为8次硬context、14次共享预算预约及3次成员固定预算；612份反馈中572份实际后续呈现，40份无后续原因明确。包含未加载模型的失败启动5.0673秒在内，三阶段worker分配合计4.929264小时，旧10槽成本只计一次；实际模型运行使用物理GPU4/5。
+
+冻结函数跟踪口径之外，LB/452/O3有一次源文件层面的非同值伙伴补丁有效应用；原成功交付在应用之前，接收者未再验证或提交，不能归为新增交付收益。LB/451/F2另有一条真实收到的状态消息，具体工作使用仍未证。原跟踪计数、三条结构unknown与一条语义pending保留；八个S1无伙伴不适用，全24出生0。
+
+预锁HA/HB四条F2中，两条满足容量诊断候选条件；没有支持取得便利性模块的具体摩擦证据。本轮未选择C+长度或启动额外探针，参数与反向更新均0，旧训练/Contribution/正式更新/独立确认/缓存生产继续暂停，无自动后继。
+
+详见[完整结案报告](docs/experiments/software-organization-v045-completion-final.md)、[机器明细](docs/experiments/software-organization-v045-completion-final.json)、[原14槽协议](docs/experiments/software-organization-v045-complete-protocol.md)、[准备记录](docs/experiments/software-organization-v045-complete-preparation.md)和[启动及失败保留](docs/experiments/software-organization-v045-complete-launch.md)。
+
+## v0.45前10槽历史状态（接续前）
 
 原10槽阶段已按冻结测量门收口：原24槽实际执行10槽，6次完整成功、4槽未提交、正式R技术未知0，另14槽未启动，完整主比较仍为null。实际仅覆盖同一人工事件接口家族的LA/HA，不能宣称四root比较完成。共198决定、191次实际调用、2563352token、19次成员公开测试，物理GPU4/5合计1.705169 worker小时；无新增参数或反向更新。
 
-首槽接口标签误报经隔离测量修订后保留原记录并接续原库存；新停止来自HA/452/S1末次成员固定预算拒绝的反馈归因未被测量器覆盖。原件证实该请求已准备、未生成或收费，原feedback unknown和host measurement_pending保持；4次真实硬context与2次共享团队预约拒绝另列。6个有伙伴的已执行槽均无已证成果使用，4个S1无伙伴不适用；未增员。详见[本轮详细报告](docs/experiments/software-organization-v045-final.md)、[机器明细](docs/experiments/software-organization-v045-final.json)、[冻结协议](docs/experiments/software-organization-v045-protocol.md)与[必要接续修订](docs/experiments/software-organization-v045-resume-protocol.md)。额外C/A探针未启用，其停止原件仍保留，旧Contribution/更新/确认/缓存生产继续暂停。
+首槽接口标签误报经隔离测量修订后保留原记录并接续原库存；新停止来自HA/452/S1末次成员固定预算拒绝的反馈归因未被测量器覆盖。原件证实该请求已准备、未生成或收费，原feedback unknown和host measurement_pending保持；4次真实硬context与2次共享团队预约拒绝另列。6个有伙伴的已执行槽均无已证成果使用，4个S1无伙伴不适用；未增员。详见[原10槽详细报告](docs/experiments/software-organization-v045-final.md)、[机器明细](docs/experiments/software-organization-v045-final.json)、[冻结协议](docs/experiments/software-organization-v045-protocol.md)与[必要接续修订](docs/experiments/software-organization-v045-resume-protocol.md)。当时额外C/A探针未启用，原暂停记录仍保留，旧Contribution/更新/确认/缓存生产继续暂停。
+
+## v0.44完整结案
+
+v0.44原16槽已全部闭合：9次完整成功、7槽未提交，无技术未知。批次停止范围修订已披露，真实context中断、未呈现反馈和历史门均保留；未证实跨成员成果使用。详见[完整报告](docs/experiments/software-organization-v044-completion-final.md)与[审计后的解释修订](docs/experiments/software-organization-v044-audit-v045-transition.md)。
 
 ## v0.44首块历史状态：4槽结束，退休分类遗漏使后12槽未启动
 
