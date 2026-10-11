@@ -1,8 +1,8 @@
 # ProWorkSim
 
-## v0.45：原14槽通过接续准入（2026-10-11）
+## v0.45：原14槽接续已启动（2026-10-11）
 
-新审计授权的成员固定预算归因已修订，27项测量及41项宿主CPU控制、全项目Ruff与原件只读回执通过。原14槽将从原plan按原seed/先手接续，新增上限700万token；当前准备阶段尚无新模型调用。详见[原14槽协议](docs/experiments/software-organization-v045-complete-protocol.md)和[准备记录](docs/experiments/software-organization-v045-complete-preparation.md)。
+新审计授权的成员固定预算归因已修订，27项测量及41项宿主CPU控制、全项目Ruff与原件只读回执通过。原14槽从原plan按原seed/先手接续，新增上限700万token。09:08:57已用原SDK解释器在独立根启动；此前缺torch的宿主启动失败发生于模型/episode之前，5.0673秒占用及全部原件保留。状态与限制见[启动记录](docs/experiments/software-organization-v045-complete-launch.md)。详见[原14槽协议](docs/experiments/software-organization-v045-complete-protocol.md)和[准备记录](docs/experiments/software-organization-v045-complete-preparation.md)。
 
 v0.44原16槽已全部闭合：9次完整成功、7槽未提交，无技术未知。批次停止范围修订已披露，真实context中断、未呈现反馈和历史门均保留；未证实跨成员成果使用。详见[完整报告](docs/experiments/software-organization-v044-completion-final.md)与[审计后的解释修订](docs/experiments/software-organization-v044-audit-v045-transition.md)。
 
