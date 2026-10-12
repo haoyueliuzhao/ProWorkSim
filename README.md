@@ -1,10 +1,23 @@
 # ProWorkSim
 
-## v0.47：架构、成员名额与预算先导（CPU准入通过）
+## v0.47：原44槽架构、成员名额与预算先导全部闭合（2026-10-12）
 
-新审计授权44个新槽：先在LA/HA/LB/HB四root比较S1/D2/D4/I2/I4/P2/P4七配置，每槽250k；再按事前锁定的S1/D4/I4/P4运行同root/seed的真实500k条件。总上限1500万实际token。D从1名成员开始自主增员，I按独立候选与计费选择执行，P按复核修订流水线执行；成员名额与resident模型数量分开记录。
+七配置、阶段权限与额度、精确固定候选采用及90分钟软截止/10分钟关闭边界已按新审计实现。131项不同CPU控制、Ruff和有限材料资格通过后，冻结原9B完整common 3/3完成28槽250k架构比较与事前锁定的16槽500k预算比较；没有依据A结果筛选B。
 
-新增阶段权限与额度、精确固定候选采用、90分钟停止新请求和10分钟有界关闭。行政截止后的已知`R_joint`不回填`R_token`，未知实际费用不填0。131项不同CPU控制、Ruff与44条有来源绑定的材料正例通过；原目录重复呈现及可选合同重复读取引起的失败原件保留。原18432容量资格在数值路径保持时只读复用，不新增模型资格。冻结`c3f3c4c4`已于2026-10-11 19:59（北京时间）启动原44槽，首worker获物理GPU4资源准入；逐槽记录费用、反馈与成果来源，阶段B待阶段A完成。运行中结果不用于追加或筛选库存，不恢复v046未开槽或旧训练队列。详见[冻结协议](docs/experiments/software-organization-v047-protocol.md)、[准备记录](docs/experiments/software-organization-v047-preparation.md)、[机器凭据](docs/experiments/software-organization-v047-preparation.json)与[启动记录](docs/experiments/software-organization-v047-launch.md)。
+原44槽正式结果全部已知：**9次完整成功、2槽提交后验收未完整通过、33槽未提交**，技术未知/行政删失/未启动均0。250k下S1平均完整费用最低，成功率与D2/D4/I2/P2并列1/4；四配置预算响应如下（每格固定四个人工root）：
+
+| 配置 | 250k成功 | 500k成功 | 250k平均实际token | 500k平均实际token |
+| --- | --- | --- | --- | --- |
+| S1 | 1/4 | 1/4 | 172,164.25 | 258,796.50 |
+| D4 | 1/4 | 2/4 | 209,434.25 | 317,645.25 |
+| I4 | 0/4 | 1/4 | 244,119.50 | 484,381.25 |
+| P4 | 0/4 | 0/4 | 234,162.75 | 445,538.00 |
+
+所有D2/D4实际仍为单成员，全44自主增员0；D4的差异不能归为实际多人协作收益。6次候选采用中5次带来非同值文件、1次采用前已同值；只有A/LA/I2形成非同值伙伴应用、同树公测通过与成功交付的完整链，仍不单独证明因果收益。冻结符号测量40 false/4 null保留。
+
+全批915决定、823次实际调用、12,239,903 token、59次成员公开测试，费用未知0。92次执行前拒绝为55阶段预算、24团队预约、10硬context、3成员fixed先拒绝，原前缀及未呈现反馈保留。实际仅物理GPU4/5，8worker总7.606957594 GPU小时，原生和测试子时长不重复相加。参数/反向更新0，无自动后继；旧v046及训练、Contribution、正式更新、独立确认和缓存生产队列保持暂停。
+
+详见[完整结案报告](docs/experiments/software-organization-v047-final.md)、[机器明细](docs/experiments/software-organization-v047-final.json)、[逐槽及预算表](docs/experiments/software-organization-v047-artifacts/tables.md)、[工作链明细](docs/experiments/software-organization-v047-artifacts/work-chain-compact.json)与[费用/资源凭据](docs/experiments/software-organization-v047-artifacts/final-cost-delivery.json)。[冻结协议](docs/experiments/software-organization-v047-protocol.md)、[准备记录](docs/experiments/software-organization-v047-preparation.md)和[启动快照](docs/experiments/software-organization-v047-launch.md)保留原时点事实。四个反复观察的人工root仅属两个任务家族，这些是有限先导描述，不是44个独立任务或训练收益。
 
 ## v0.46：容量资格通过，正式四对未完成（2026-10-11）
 
