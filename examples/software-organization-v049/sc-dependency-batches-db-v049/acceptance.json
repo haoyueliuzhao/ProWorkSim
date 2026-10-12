@@ -1,0 +1,468 @@
+{
+  "version": "software-organization-tasks-v0.49",
+  "task_id": "sc-dependency-batches-db-v049",
+  "cases": [
+    {
+      "case_id": "plan-frontier-barrier",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "b",
+              "needs": [
+                "a"
+              ]
+            },
+            {
+              "id": "c",
+              "needs": []
+            }
+          ],
+          3
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "a",
+            "c"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-lexical-ready",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "z",
+              "needs": []
+            },
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "b",
+              "needs": [
+                "a"
+              ]
+            }
+          ],
+          1
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ],
+          [
+            "z"
+          ]
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-twelve",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a11",
+              "needs": []
+            },
+            {
+              "id": "a10",
+              "needs": []
+            },
+            {
+              "id": "a09",
+              "needs": []
+            },
+            {
+              "id": "a08",
+              "needs": []
+            },
+            {
+              "id": "a07",
+              "needs": []
+            },
+            {
+              "id": "a06",
+              "needs": []
+            },
+            {
+              "id": "a05",
+              "needs": []
+            },
+            {
+              "id": "a04",
+              "needs": []
+            },
+            {
+              "id": "a03",
+              "needs": []
+            },
+            {
+              "id": "a02",
+              "needs": []
+            },
+            {
+              "id": "a01",
+              "needs": []
+            },
+            {
+              "id": "a00",
+              "needs": []
+            }
+          ],
+          8
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "a00",
+            "a01",
+            "a02",
+            "a03",
+            "a04",
+            "a05",
+            "a06",
+            "a07"
+          ],
+          [
+            "a08",
+            "a09",
+            "a10",
+            "a11"
+          ]
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-diamond",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "d",
+              "needs": [
+                "b",
+                "c"
+              ]
+            },
+            {
+              "id": "c",
+              "needs": [
+                "a"
+              ]
+            },
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "b",
+              "needs": [
+                "a"
+              ]
+            }
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "a"
+          ],
+          [
+            "b",
+            "c"
+          ],
+          [
+            "d"
+          ]
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-long-chain",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "c",
+              "needs": [
+                "b"
+              ]
+            },
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "b",
+              "needs": [
+                "a"
+              ]
+            }
+          ],
+          8
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ],
+          [
+            "c"
+          ]
+        ],
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-cycle",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": [
+                "b"
+              ]
+            },
+            {
+              "id": "b",
+              "needs": [
+                "a"
+              ]
+            }
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-duplicate-id",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "a",
+              "needs": []
+            }
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-duplicate-dependency",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "b",
+              "needs": [
+                "a",
+                "a"
+              ]
+            }
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-bool-capacity",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": []
+            }
+          ],
+          true
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-extra-field",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": [],
+              "extra": 0
+            }
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-empty",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "plan-hidden-cycle",
+      "group": "contract",
+      "request": {
+        "module": "planning",
+        "function": "plan_jobs",
+        "args": [
+          [
+            {
+              "id": "a",
+              "needs": []
+            },
+            {
+              "id": "b",
+              "needs": [
+                "c"
+              ]
+            },
+            {
+              "id": "c",
+              "needs": [
+                "b"
+              ]
+            }
+          ],
+          2
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "plan:invalid",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Controller-authored request/expected table specified before executing reference code; values were not generated by a reference execution."
+}

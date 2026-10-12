@@ -1,0 +1,7 @@
+# v049 bounded development task sources
+
+DA and DB are two new controller-authored business families: exact signed integer apportionment and dependency-frontier batch planning. They were authored for the v049 local learning window, with no external upstream repository or benchmark claim and no business-code or fixture derivation from the LA event-time or LB rule-interpreter training roots. Their common Python execution harness is shared infrastructure, not an independently sourced software stack. No independent-confirmation claim is made.
+
+The two new roots each have six public checks and twelve separately specified same-contract private checks. Private expected values were specified before reference execution. Initial programs are deliberately incomplete environment preparation, while reference programs and two named counterexamples per root are controller-only CPU witnesses. Neither a role split nor communication is an acceptance requirement. Contract, initial code, fixtures, witnesses, and generic driver identities are frozen in the manifest before model execution.
+
+The v049 module also exposes the original LA and LB business files without changing a byte. Their `policy_training` designation applies only to newly collected `v049-o1-learning-window-01` records. The original v045 sources, eligibility flags, old episodes, and assessments are unchanged and do not enter this new training pool.
