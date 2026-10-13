@@ -1,0 +1,238 @@
+{
+  "version": "software-learning-sources-v0.50",
+  "task_id": "sc-snapshot-text-patches-dd-v050",
+  "cases": [
+    {
+      "case_id": "patch-empty",
+      "group": "preserved_api",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abc",
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "abc",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-single",
+      "group": "preserved_api",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "r",
+              "start": 1,
+              "end": 3,
+              "expected": "bc",
+              "replacement": "X"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "aXd",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-snapshot",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcdef",
+          [
+            {
+              "id": "a",
+              "start": 0,
+              "end": 1,
+              "expected": "a",
+              "replacement": "XX"
+            },
+            {
+              "id": "z",
+              "start": 4,
+              "end": 6,
+              "expected": "ef",
+              "replacement": "Q"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "XXbcdQ",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-insert-order",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "ab",
+          [
+            {
+              "id": "a",
+              "start": 1,
+              "end": 1,
+              "expected": "",
+              "replacement": "A"
+            },
+            {
+              "id": "z",
+              "start": 1,
+              "end": 1,
+              "expected": "",
+              "replacement": "Z"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "aAZb",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-invalid-bool",
+      "group": "preserved_api",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "a",
+          [
+            {
+              "id": "r",
+              "start": false,
+              "end": 1,
+              "expected": "a",
+              "replacement": "X"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-stale",
+      "group": "preserved_api",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abc",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 1,
+              "expected": "z",
+              "replacement": "X"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:stale",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-overlap",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "a",
+              "start": 0,
+              "end": 3,
+              "expected": "abc",
+              "replacement": "X"
+            },
+            {
+              "id": "b",
+              "start": 2,
+              "end": 4,
+              "expected": "cd",
+              "replacement": "Y"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:conflict",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-boundary",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abc",
+          [
+            {
+              "id": "i",
+              "start": 1,
+              "end": 1,
+              "expected": "",
+              "replacement": "I"
+            },
+            {
+              "id": "r",
+              "start": 1,
+              "end": 2,
+              "expected": "b",
+              "replacement": "R"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "aIRc",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Controller-authored request/expected table specified before executing reference code; values were not generated by a reference execution."
+}

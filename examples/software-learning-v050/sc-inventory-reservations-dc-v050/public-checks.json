@@ -1,0 +1,317 @@
+{
+  "version": "software-learning-sources-v0.50",
+  "task_id": "sc-inventory-reservations-dc-v050",
+  "cases": [
+    {
+      "case_id": "inventory-empty",
+      "group": "preserved_api",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "b": 2,
+            "a": 0
+          },
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "available": [
+            {
+              "sku": "a",
+              "qty": 0
+            },
+            {
+              "sku": "b",
+              "qty": 2
+            }
+          ],
+          "reservations": []
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-single",
+      "group": "preserved_api",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": 8
+          },
+          [
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 3
+                }
+              ]
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "available": [
+            {
+              "sku": "a",
+              "qty": 5
+            }
+          ],
+          "reservations": [
+            {
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 3
+                }
+              ]
+            }
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-aggregate",
+      "group": "contract",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": 9
+          },
+          [
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 2
+                },
+                {
+                  "sku": "a",
+                  "qty": 3
+                }
+              ]
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "available": [
+            {
+              "sku": "a",
+              "qty": 4
+            }
+          ],
+          "reservations": [
+            {
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 5
+                }
+              ]
+            }
+          ]
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-cancel",
+      "group": "contract",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": 8
+          },
+          [
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 3
+                }
+              ]
+            },
+            {
+              "op": "cancel",
+              "id": "r"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": {
+          "available": [
+            {
+              "sku": "a",
+              "qty": 8
+            }
+          ],
+          "reservations": []
+        },
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-invalid-bool-stock",
+      "group": "preserved_api",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": true
+          },
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "inventory:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-invalid-sku",
+      "group": "preserved_api",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": 2
+          },
+          [
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "b",
+                  "qty": 1
+                }
+              ]
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "inventory:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-active-duplicate",
+      "group": "contract",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": 9
+          },
+          [
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 2
+                }
+              ]
+            },
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 1
+                }
+              ]
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "inventory:conflict",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "inventory-validate-before-conflict",
+      "group": "contract",
+      "request": {
+        "module": "inventory",
+        "function": "transact",
+        "args": [
+          {
+            "a": 0
+          },
+          [
+            {
+              "op": "reserve",
+              "id": "r",
+              "items": [
+                {
+                  "sku": "a",
+                  "qty": 1
+                }
+              ]
+            },
+            {
+              "op": "cancel",
+              "id": "x",
+              "extra": 1
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "inventory:invalid",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Controller-authored request/expected table specified before executing reference code; values were not generated by a reference execution."
+}

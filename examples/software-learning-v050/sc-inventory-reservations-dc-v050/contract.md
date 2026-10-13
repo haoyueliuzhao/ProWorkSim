@@ -1,0 +1,12 @@
+# Atomic inventory reservation batch
+
+Maintain `inventory.transact(stock, operations)`. `stock` is an exact Python dict containing 1..12 SKU names, each mapped to a strict integer quantity (bool is invalid) in 0..1000000. SKU names and reservation IDs are ASCII strings matching `[a-z][a-z0-9_]{0,15}`. `operations` is a list of 0..24 exact-key objects, in business execution order:
+
+* `{"op": "reserve", "id": ID, "items": [{"sku": SKU, "qty": Q}, ...]}`. `items` is a list of 1..12 exact-key objects. Each SKU must exist in the initial stock; each quantity is a strict integer in 1..1000000. Repeated SKU rows in the same reservation are legal and their quantities must be summed.
+* `{"op": "cancel", "id": ID}`. No other operation or extra key is legal.
+
+Validate the entire stock and every operation's shape, types, bounds and references to initial SKUs before executing any operation. Any such invalid data raises `ValueError("inventory:invalid")`, even if an earlier operation would have a business conflict. Then start from a copy of stock and no active reservations and execute in the listed order. Reserving an already active ID, insufficient available quantity for any aggregated SKU, or cancelling an ID that is not active raises `ValueError("inventory:conflict")`. Cancel returns all quantities of that active reservation and removes it. A cancelled ID may be reserved again later. Empty operations are legal. Never mutate either input or nested input objects, on success or failure; failures return no partial result.
+
+On success return exactly `{"available": [{"sku": SKU, "qty": Q}, ...], "reservations": [{"id": ID, "items": [{"sku": SKU, "qty": Q}, ...]}, ...]}`. Include all initial SKUs, even those with zero available quantity. Sort available rows by SKU, active reservations by ID, and each reservation's aggregated item rows by SKU. Omit cancelled reservations. Quantities are exact integers, not floats.
+
+Only inventory.py and the optional test_member.py are editable. Use the Python standard library only. Deliver a fixed version that has passed the public tests for that same file tree. The team receives one shared goal with no predefined work roles; collaboration is not required for acceptance. This is a new controller-authored bounded inventory transaction fixture for policy development, not an external benchmark, upstream bug, or derivative of the training task assets. All acceptance requirements are public here; private checks use different inputs under this same contract.

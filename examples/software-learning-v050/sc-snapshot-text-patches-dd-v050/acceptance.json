@@ -1,0 +1,622 @@
+{
+  "version": "software-learning-sources-v0.50",
+  "task_id": "sc-snapshot-text-patches-dd-v050",
+  "cases": [
+    {
+      "case_id": "patch-private-unicode",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "甲🙂乙丙",
+          [
+            {
+              "id": "b",
+              "start": 3,
+              "end": 4,
+              "expected": "丙",
+              "replacement": "!"
+            },
+            {
+              "id": "a",
+              "start": 1,
+              "end": 2,
+              "expected": "🙂",
+              "replacement": "XY"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "甲XY乙!",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-adjacent",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "b",
+              "start": 2,
+              "end": 4,
+              "expected": "cd",
+              "replacement": "Y"
+            },
+            {
+              "id": "a",
+              "start": 0,
+              "end": 2,
+              "expected": "ab",
+              "replacement": "X"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "XY",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-endpoints",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "end",
+              "start": 3,
+              "end": 3,
+              "expected": "",
+              "replacement": "]"
+            },
+            {
+              "id": "mid",
+              "start": 1,
+              "end": 3,
+              "expected": "bc",
+              "replacement": "M"
+            },
+            {
+              "id": "start",
+              "start": 1,
+              "end": 1,
+              "expected": "",
+              "replacement": "["
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "a[M]d",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-common-point",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "",
+          [
+            {
+              "id": "z",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": "Z"
+            },
+            {
+              "id": "b",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": "B"
+            },
+            {
+              "id": "a",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": "A"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "ABZ",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-deletions",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcdef",
+          [
+            {
+              "id": "last",
+              "start": 4,
+              "end": 6,
+              "expected": "ef",
+              "replacement": ""
+            },
+            {
+              "id": "first",
+              "start": 0,
+              "end": 2,
+              "expected": "ab",
+              "replacement": ""
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "cd",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-original-expected",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcde",
+          [
+            {
+              "id": "a",
+              "start": 0,
+              "end": 1,
+              "expected": "a",
+              "replacement": "LONG"
+            },
+            {
+              "id": "b",
+              "start": 3,
+              "end": 4,
+              "expected": "d",
+              "replacement": "Q"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "return",
+        "value": "LONGbcQe",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-interior-insert",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 4,
+              "expected": "abcd",
+              "replacement": ""
+            },
+            {
+              "id": "i",
+              "start": 2,
+              "end": 2,
+              "expected": "",
+              "replacement": "I"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:conflict",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-duplicate-id",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "ab",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 1,
+              "expected": "a",
+              "replacement": "A"
+            },
+            {
+              "id": "r",
+              "start": 1,
+              "end": 2,
+              "expected": "b",
+              "replacement": "B"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-bool-end",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "a",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": true,
+              "expected": "a",
+              "replacement": "A"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-extra-key",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "a",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 1,
+              "expected": "a",
+              "replacement": "A",
+              "extra": 1
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-out-of-range",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "a",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 2,
+              "expected": "a",
+              "replacement": ""
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-replacement-type",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "a",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 1,
+              "expected": "a",
+              "replacement": 3
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-document-bound",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          []
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-stale-before-conflict",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 3,
+              "expected": "abc",
+              "replacement": "R"
+            },
+            {
+              "id": "s",
+              "start": 1,
+              "end": 4,
+              "expected": "wrong",
+              "replacement": "S"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:stale",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-schema-before-stale",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "abcd",
+          [
+            {
+              "id": "r",
+              "start": 0,
+              "end": 1,
+              "expected": "wrong",
+              "replacement": "R"
+            },
+            {
+              "id": "s",
+              "start": -1,
+              "end": 2,
+              "expected": "",
+              "replacement": "S"
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    },
+    {
+      "case_id": "patch-private-patch-count",
+      "group": "contract",
+      "request": {
+        "module": "textpatch",
+        "function": "apply_batch",
+        "args": [
+          "",
+          [
+            {
+              "id": "i0",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i1",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i2",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i3",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i4",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i5",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i6",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i7",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i8",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i9",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i10",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i11",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i12",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i13",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i14",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i15",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            },
+            {
+              "id": "i16",
+              "start": 0,
+              "end": 0,
+              "expected": "",
+              "replacement": ""
+            }
+          ]
+        ],
+        "check_input_unchanged": true
+      },
+      "expected": {
+        "kind": "exception",
+        "type": "builtins.ValueError",
+        "text": "patch:invalid",
+        "input_unchanged": true
+      }
+    }
+  ],
+  "authorship": "Controller-authored request/expected table specified before executing reference code; values were not generated by a reference execution."
+}
