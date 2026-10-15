@@ -1,0 +1,443 @@
+{
+  "version": "software-learning-v050-r3-single-slot-source-review-v1",
+  "created_at_utc": "2026-10-15T14:03:42.737288+00:00",
+  "verdict": "No source-level requirement to retain cross-slot learner/RNG/session/workspace state was found. Single-slot splitting preserves the declared per-slot sampling and evaluation lifecycle in the audited path; it changes host scheduling, worker bookkeeping and resource exposure.",
+  "blocking_source_findings": [],
+  "scope": "Read-only source and frozen inventory inspection; no model, test, import of project runtime, GPU query, tensor read, sampling, or boundary rederivation.",
+  "facts": [
+    {
+      "id": "same_inventory",
+      "finding": "r3 maps i to original shard i//4 and within-shard offset i%4. original.worker_units deep-copies the original frozen unit and derives the identical unit_id + branch slot_id. All sixteen original Q development slots occur once; root, seed, first member, purpose and per-slot budget are not rewritten.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r3.py",
+          "line": 53
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r3.py",
+          "line": 62
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "id": "same_collect_function",
+      "finding": "r3 binds the unchanged original._collect function and changes only development inventory membership, worker_units and branch restore adapter for this path. Development stays True, so original collect_episode is called with manage_owner_window=True and the selected original sampling_seed. It does not turn development into an externally shared training window.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r3.py",
+          "line": 258
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+          "line": 237
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+          "line": 259
+        }
+      ]
+    },
+    {
+      "id": "exact_branch_restore",
+      "finding": "Each r3 development process loads the original qualified owner then restores its designated complete Q_plus or Q_minus checkpoint. Restored checkpoint summary, actor identity and actor/critic steps are checked. Q_plus is bound to the original completion receipt; Q_minus comes from the sole r3 updated checkpoint. This read-only review did not inspect or change the live Q_plus status.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r3.py",
+          "line": 226
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v049.py",
+          "line": 94
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 696
+        }
+      ]
+    },
+    {
+      "id": "per_episode_rng",
+      "finding": "Even in the original four-slot worker, every development episode captures idle state, begins organization-v050:<slot_id>, and calls owner.reseed(sampling_seed) before building its runtime. reseed invokes torch.manual_seed(seed), records CPU/CUDA RNG hashes, and does not choose a new seed. Episode finally closes the evaluation window and restores captured Torch CPU/CUDA RNG with finish_evaluation_guard; the outer worker guard repeats the unchanged-learning and restored-RNG checks. Therefore the next old slot did not intentionally inherit the previous slot's Torch sampling stream.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v050.py",
+          "line": 334
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v050.py",
+          "line": 355
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v050.py",
+          "line": 367
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v050.py",
+          "line": 462
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 447
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 650
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+          "line": 278
+        }
+      ]
+    },
+    {
+      "id": "learner_and_cache",
+      "finding": "Evaluation snapshots fingerprint actor, critic, both optimizers, policy revision, steps and critic-history flag; completion detects rather than rolls back a learner mutation. finish_evaluation performs no learning forward/backward/optimizer operation. begin_window and finish_evaluation clear generation cache; complete clears cache before and after every call. Actual CandidateActor generation creates a fresh sampling processor and calls model.generate with a fresh per-request cache scope. Head execution counters are detached diagnostics and do not determine sampling options.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 640
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 471
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 429
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+          "line": 527
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/candidate_runtime_v020.py",
+          "line": 214
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/candidate_runtime_v0201.py",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "id": "per_slot_world_and_sessions",
+      "finding": "original._collect calls _new_prepared for each slot at that slot's own directory. The builder requires a fresh root, deep-copies baseline bundles into private member objects, creates a fresh world and TestBudget, and recomputes initial diagnostic preparation. build_runtime creates a fresh O1TeamBudget, recorder, ports, workers and SDK conversation directories, resets the runtime cursor to first_member, and close_runtime closes every policy. No business workspace, member conversation, team budget, test budget or fairness cursor is reused from the previous old slot.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+          "line": 255
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+          "line": 192
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_v050.py",
+          "line": 260
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v050.py",
+          "line": 254
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v038.py",
+          "line": 201
+        }
+      ]
+    },
+    {
+      "id": "allocator_wrapper",
+      "finding": "The separate r3 reservation wrapper uses torch.empty uint8 allocations and releases all temporary tensors before a native call; it does not sample random tensors, reseed or alter native arguments/results. It wraps _generate_tokens and learning_logprobs and restores the owner attributes afterward. This supports absence of an intentional RNG change; allocation timing and resource-failure behavior do change under the disclosed resource policy.",
+      "locations": [
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resources_v050r3.py",
+          "line": 189
+        },
+        {
+          "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resources_v050r3.py",
+          "line": 262
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "This is a source-only review, not an executed equivalence test, model qualification, or bitwise/identical-token guarantee across GPUs, process lifetimes, scheduling, or allocator histories.",
+    "finish_evaluation_guard explicitly covers Torch CPU/CUDA RNG. It does not claim to snapshot Python/NumPy/global OS randomness; this review found no intentional non-Torch policy sampler in the audited owner path, but does not prove all SDK/dependency internals lack other randomness.",
+    "used_window_ids, current window IDs after closure, cache/head diagnostic counters, logs, UUIDs/timestamps, process IDs and storage paths are intentionally not rolled back. Old four-slot workers accumulate those bookkeeping values; new one-slot workers start from a fresh restored owner. The audited generation path uses the current identical slot window and recipe, rather than prior-slot counter values.",
+    "The original implementation already generated fresh world/episode storage identities and initial diagnostic receipts per slot. This review verifies independent construction and preservation of logical task material, not byte identity of all host metadata or rendered prompts in future executions.",
+    "Each episode still creates its own soft/hard deadline. More concurrent one-slot workers can change GPU contention, wall-clock cutoff exposure, and how many independently launched slots are already in flight when a global integrity pause occurs. This is a real scheduling/resource-policy difference and must be reported; it does not add/reseed scientific slots.",
+    "Hard deadline expiration may prevent the final in-process evaluation guard from completing; the existing runtime retains that interruption/unknown behavior. No successful guard is assumed for a killed or unfinished slot."
+  ],
+  "mapping": [
+    {
+      "new_worker": "dev-Q_plus-0",
+      "original_worker": "dev-Q_plus-0",
+      "offset_within_old_worker": 0,
+      "slot_id": "org50-dev-DA-s1-Q_plus",
+      "root": "DA",
+      "sampling_seed": 202610130601,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-1",
+      "original_worker": "dev-Q_plus-0",
+      "offset_within_old_worker": 1,
+      "slot_id": "org50-dev-DA-s2-Q_plus",
+      "root": "DA",
+      "sampling_seed": 202610130602,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-2",
+      "original_worker": "dev-Q_plus-0",
+      "offset_within_old_worker": 2,
+      "slot_id": "org50-dev-DB-s1-Q_plus",
+      "root": "DB",
+      "sampling_seed": 202610130603,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-3",
+      "original_worker": "dev-Q_plus-0",
+      "offset_within_old_worker": 3,
+      "slot_id": "org50-dev-DB-s2-Q_plus",
+      "root": "DB",
+      "sampling_seed": 202610130604,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-4",
+      "original_worker": "dev-Q_plus-1",
+      "offset_within_old_worker": 0,
+      "slot_id": "org50-dev-DC-s1-Q_plus",
+      "root": "DC",
+      "sampling_seed": 202610130605,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-5",
+      "original_worker": "dev-Q_plus-1",
+      "offset_within_old_worker": 1,
+      "slot_id": "org50-dev-DC-s2-Q_plus",
+      "root": "DC",
+      "sampling_seed": 202610130606,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-6",
+      "original_worker": "dev-Q_plus-1",
+      "offset_within_old_worker": 2,
+      "slot_id": "org50-dev-DD-s1-Q_plus",
+      "root": "DD",
+      "sampling_seed": 202610130607,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_plus-7",
+      "original_worker": "dev-Q_plus-1",
+      "offset_within_old_worker": 3,
+      "slot_id": "org50-dev-DD-s2-Q_plus",
+      "root": "DD",
+      "sampling_seed": 202610130608,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-0",
+      "original_worker": "dev-Q_minus-0",
+      "offset_within_old_worker": 0,
+      "slot_id": "org50-dev-DA-s1-Q_minus",
+      "root": "DA",
+      "sampling_seed": 202610130601,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-1",
+      "original_worker": "dev-Q_minus-0",
+      "offset_within_old_worker": 1,
+      "slot_id": "org50-dev-DA-s2-Q_minus",
+      "root": "DA",
+      "sampling_seed": 202610130602,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-2",
+      "original_worker": "dev-Q_minus-0",
+      "offset_within_old_worker": 2,
+      "slot_id": "org50-dev-DB-s1-Q_minus",
+      "root": "DB",
+      "sampling_seed": 202610130603,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-3",
+      "original_worker": "dev-Q_minus-0",
+      "offset_within_old_worker": 3,
+      "slot_id": "org50-dev-DB-s2-Q_minus",
+      "root": "DB",
+      "sampling_seed": 202610130604,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-4",
+      "original_worker": "dev-Q_minus-1",
+      "offset_within_old_worker": 0,
+      "slot_id": "org50-dev-DC-s1-Q_minus",
+      "root": "DC",
+      "sampling_seed": 202610130605,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-5",
+      "original_worker": "dev-Q_minus-1",
+      "offset_within_old_worker": 1,
+      "slot_id": "org50-dev-DC-s2-Q_minus",
+      "root": "DC",
+      "sampling_seed": 202610130606,
+      "first_member": "member_001",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-6",
+      "original_worker": "dev-Q_minus-1",
+      "offset_within_old_worker": 2,
+      "slot_id": "org50-dev-DD-s1-Q_minus",
+      "root": "DD",
+      "sampling_seed": 202610130607,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    },
+    {
+      "new_worker": "dev-Q_minus-7",
+      "original_worker": "dev-Q_minus-1",
+      "offset_within_old_worker": 3,
+      "slot_id": "org50-dev-DD-s2-Q_minus",
+      "root": "DD",
+      "sampling_seed": 202610130608,
+      "first_member": "member_002",
+      "purpose": "policy_development",
+      "generation_token_cap": 500000
+    }
+  ],
+  "mapping_count": 16,
+  "source_evidence": [
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r3.py",
+      "sha256": "3b9a20bee695656de1d3e38f72a03ef7e9e084d206a652589d0ac7c94ad73419",
+      "bytes": 19570
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r2.py",
+      "sha256": "0113716867d7591dd29c3586b129f3668ac34d495198abf5d351470868acde27",
+      "bytes": 25795,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+      "sha256": "9b218af97cbfe3694ad74eac24e58eeda91189d48182d776a62d3c8c873cbc51",
+      "bytes": 32498,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v049.py",
+      "sha256": "9b6fa4d57996144306ac7cafa4724cb5d59f9ca751d2bcdd7c436e50aa03b3f6",
+      "bytes": 25805,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resources_v050r3.py",
+      "sha256": "9b1ae6ae34ec4337b072793d0d7cad666d3b290651e7e9b1bd621a815fd2287a",
+      "bytes": 14069
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v050.py",
+      "sha256": "af5d67910b4a56b9c4b99bbe3355dab15843261c4a5bfb684bbb45344f203fb2",
+      "bytes": 30530,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_runtime_v038.py",
+      "sha256": "d9cf2e5f1a9f7d21ced7dc3ea7f4fad2081f2dcdf724cea914a3b3cebe643e89",
+      "bytes": 30087,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/software_organization_v050.py",
+      "sha256": "8f305fcb0ebf94225a06d44dd7314b075c542fcbea8c2eb83c55544fb2b8eb56",
+      "bytes": 24987,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+      "sha256": "c9264e59054831ed80a82cb02b6a5c1e9ef3b42a0adf072ba511e6b95d6d8c07",
+      "bytes": 61817,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_collection.py",
+      "sha256": "94d31562bae7092b3cfdd15b2bf30e70033d136ba6c75a44c17ed7d216050b9c",
+      "bytes": 13959,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/deterministic_work_v024.py",
+      "sha256": "6aed17c3a4a49cef8d22dae929f60c8ef1db5ab70f603715f1de28765ca01703",
+      "bytes": 7095,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/collaboration_actor_v022.py",
+      "sha256": "387e7ea646720f4ec832be89ed1e3f4ca0986965d069d546d17789176bc456db",
+      "bytes": 520,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/candidate_runtime_v0201.py",
+      "sha256": "4077d9df24cc8b95e4f6b837fcc40256908fd163cb4a1e666b70348140d68d53",
+      "bytes": 5842,
+      "same_bytes_as_r2_source": true
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r3-source/src/proworksim/candidate_runtime_v020.py",
+      "sha256": "f298af46be2efba3fe900fa04002e5b6f0855e4bb9ce61f684ee440d37c0ecea",
+      "bytes": 12434,
+      "same_bytes_as_r2_source": true
+    }
+  ],
+  "new_model_calls": 0,
+  "new_tests_executed": 0,
+  "new_actual_backward_calls": 0,
+  "source_files_changed": false,
+  "live_Qplus_status_read": false
+}

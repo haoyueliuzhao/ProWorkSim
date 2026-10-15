@@ -1,0 +1,264 @@
+{
+  "version": "software-learning-v050r3-resource-integration-readonly-review",
+  "created_at_utc": "2026-10-15T14:03:43.992537+00:00",
+  "source_root": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source",
+  "scope": "Read-only integration review; compute-budget derivation and scientific protocol independently reviewed by root agent. Resource helper authored by this reviewer; host/supervisor integration independently read.",
+  "passed": true,
+  "blocking_findings": [],
+  "fixed_findings": [
+    {
+      "id": "launch_receipt_binding",
+      "initial_gap": "Environment binding self-validation lacked equality with supervisor and launch receipts.",
+      "resolution": "host.runtime_reservation now checks all three before original worker entry; reviewer read final source."
+    }
+  ],
+  "checks": [
+    {
+      "id": "preload_capacity",
+      "status": "passed_readonly_review",
+      "finding": "Supervisor admits actual free >=46080 MiB; resource target is fixed from launch free minus1024 MiB, bounded45056..73728 MiB. Worker reserves before the unchanged v049 loader. Private available_cards binding credits only exact own PID/UUID pre-reservation; the original measured sample is not mutated.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "_load_owner",
+          "line": 267
+        },
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "available_cards",
+          "line": 63
+        },
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "preload_cards",
+          "line": 136
+        }
+      ]
+    },
+    {
+      "id": "launch_receipt_binding",
+      "status": "passed_readonly_review_after_narrow_fix",
+      "finding": "Runtime compares environment reservation to supervisor state and pre-Popen launch record, GPU index/UUID, exact worker command, source cwd, original worker and planned units before CUDA/model load. The initially missing cross-record agreement was independently confirmed and host agent added runtime_reservation.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "runtime_reservation",
+          "line": 276
+        },
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "run_worker",
+          "line": 302
+        }
+      ]
+    },
+    {
+      "id": "native_and_rng",
+      "status": "passed_readonly_review",
+      "finding": "Resource wrapper invokes original bound learning_logprobs/_generate_tokens exactly once with unchanged arguments/results. Temporary uint8 allocations are released before calls; no explicit empty_cache/manual_seed/synchronize. Post-forward hook only reads counters, so it cannot hold ballast while backward awaits. Original update/collection and RNG guards remain.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "fill_cache",
+          "line": 189
+        },
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "native_cache_context",
+          "line": 262
+        },
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "run_worker",
+          "line": 302
+        },
+        {
+          "path": "src/proworksim/online_training.py",
+          "function": "finish_evaluation_guard",
+          "line": 650
+        }
+      ]
+    },
+    {
+      "id": "startup_wait",
+      "status": "passed_readonly_review",
+      "finding": "Pure preload capacity/OOM wait writes reservation_wait; supervisor bypasses task-time guard for this kind but retains RSS. Disk, PID/GPU telemetry and telemetry120s grace remain. Success writes a fresh loading time. Training-compute receipt is not created until update preparation, so resource wait has no training-time debit; worker walltime still includes it.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "reserve_before_load",
+          "line": 216
+        },
+        {
+          "path": "scripts/software_learning_resume_supervisor_v050r3.py",
+          "function": "task_stop_reason",
+          "line": 31
+        },
+        {
+          "path": "scripts/software_learning_resume_supervisor_v050r3.py",
+          "function": "supervise",
+          "line": 127
+        }
+      ]
+    },
+    {
+      "id": "no_old_memory_or_concurrency_cap",
+      "status": "passed_readonly_review",
+      "finding": "Actual supervisor passes own_memory_limit_mib=None; TelemetryGuard explicitly skips only own-memory limit when None. No live_free_stop_reason dispatch, no60s stability gate, no3resident gate. Query executor uses len(active); distinct physical cards and scientific dependencies govern dispatch.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resume_supervisor_v050r3.py",
+          "function": "supervise",
+          "line": 127
+        },
+        {
+          "path": "src/proworksim/resource_monitor_v025.py",
+          "function": "observe",
+          "line": 126
+        },
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "resource_policy",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "id": "17_workers_and_dependencies",
+      "status": "passed_readonly_review",
+      "finding": "Inventory is one Q_minus recomputation plus eight Q_plus and eight Q_minus single-slot development workers. Integer index//4 maps original shard and index%4 maps original unit. Q_plus dev waits exact external completion; Q_minus dev waits local complete update. No old collection/B/S_star development/update-Q_plus is admitted.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "original_worker",
+          "line": 53
+        },
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "worker_units",
+          "line": 62
+        },
+        {
+          "path": "scripts/software_learning_resume_supervisor_v050r3.py",
+          "function": "eligible_workers",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "id": "external_Qplus_ownership",
+      "status": "passed_readonly_review",
+      "finding": "Observer delegates read-only r2 observation against original r1. External GPU excluded until exact completion and process exit. Only r3 Popen workers enter active; request_stop enforces owned name/PID/state; inherited stop checks start_ticks then stops the owned process group created with start_new_session=True. No external/foreign process signal path found.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "observe_external",
+          "line": 222
+        },
+        {
+          "path": "scripts/software_learning_resume_v050r3.py",
+          "function": "_external_plan",
+          "line": 217
+        },
+        {
+          "path": "scripts/software_learning_resume_supervisor_v050r3.py",
+          "function": "request_stop",
+          "line": 97
+        },
+        {
+          "path": "scripts/continue_model_selection_v031.py",
+          "function": "_stop_worker",
+          "line": 248
+        },
+        {
+          "path": "scripts/run_ne_v021.py",
+          "function": "stop_owned",
+          "line": 143
+        }
+      ]
+    },
+    {
+      "id": "oom_and_deadline_boundary",
+      "status": "passed_readonly_review",
+      "finding": "Only pre-model allocation OOM is retried. Postload/native resource or model OOM propagates as execution error. Training supervisor now preserves30s reclamation reserve only for unfinished compute receipts and uses actual ended_at for completed receipts; this does not apply to reservation_wait without compute receipt.",
+      "locations": [
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "reserve_before_load",
+          "line": 216
+        },
+        {
+          "path": "scripts/software_learning_resources_v050r3.py",
+          "function": "native_cache_context",
+          "line": 262
+        },
+        {
+          "path": "scripts/software_learning_resume_supervisor_v050r3.py",
+          "function": "training_stop_reason",
+          "line": 81
+        }
+      ]
+    }
+  ],
+  "reviewed_source_files": [
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_v050r3.py",
+      "sha256": "3b9a20bee695656de1d3e38f72a03ef7e9e084d206a652589d0ac7c94ad73419",
+      "bytes": 19570
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_supervisor_v050r3.py",
+      "sha256": "b2731150d36b7c1349f016748e10380bb34c305d970233fc8a51b3f9a2774785",
+      "bytes": 17763
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resources_v050r3.py",
+      "sha256": "9b1ae6ae34ec4337b072793d0d7cad666d3b290651e7e9b1bd621a815fd2287a",
+      "bytes": 14069
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_resume_compute_v050r3.py",
+      "sha256": "59f6ad5f5996167c57ec298cc1b8ca1cce10a572cd394242822748089af7ba41",
+      "bytes": 27493
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/src/proworksim/resource_monitor_v025.py",
+      "sha256": "060ee5921c7a7cdf3c8e2471e2228ee4d4adc501472d4cedda9f7fe90df2766b",
+      "bytes": 14286
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v049.py",
+      "sha256": "9b6fa4d57996144306ac7cafa4724cb5d59f9ca751d2bcdd7c436e50aa03b3f6",
+      "bytes": 25805
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/software_learning_v050.py",
+      "sha256": "9b218af97cbfe3694ad74eac24e58eeda91189d48182d776a62d3c8c873cbc51",
+      "bytes": 32498
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/src/proworksim/online_training.py",
+      "sha256": "c9264e59054831ed80a82cb02b6a5c1e9ef3b42a0adf072ba511e6b95d6d8c07",
+      "bytes": 61817
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/continue_model_selection_v031.py",
+      "sha256": "58e804a0d0e8462c22e307f1428f14b2a108734c0304f6ae04fcb4d7556a2860",
+      "bytes": 28239
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-learning-v050/resume-r3-source/scripts/run_ne_v021.py",
+      "sha256": "023e57127826c390d7cd960791a03e9b9c66c265dda617ae9b5f5a4fc1bc5017",
+      "bytes": 15387
+    }
+  ],
+  "new_test_executions": 0,
+  "new_model_calls": 0,
+  "new_gpu_workers": 0,
+  "torch_imports": 0,
+  "limitations": [
+    "No real CUDA allocator/model execution was performed in this review; reusable reservation is a resource strategy, not a guarantee against subsequent OOM.",
+    "No source edit was made by this review; reviewed hashes must be rechecked if the files change.",
+    "Existing CPU test source was read; test results are separately recorded and were not rerun for this review."
+  ]
+}

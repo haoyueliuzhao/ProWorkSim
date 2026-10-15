@@ -1,0 +1,448 @@
+{
+  "version": "software-learning-v050-qminus-r3-boundary-proof-v1",
+  "created_at_utc": "2026-10-15T13:43:25.426929+00:00",
+  "scope": "CPU-only accounting of two stopped attempts of the same scientific Q_minus branch; no model, tensor load, tokenizer, GPU query, sampling, or parameter update. Aggregate-144h redistribution is a separately disclosed candidate, not a claim that original 48h branch semantics hold.",
+  "attempts": [
+    {
+      "attempt": "r1",
+      "physical_gpu": 3,
+      "pid": 3124128,
+      "terminal_reason": "shared_device_free_memory_reserve",
+      "exit_code": -9,
+      "last_gpu_free_mib": 4698.0,
+      "old_running_free_floor_mib": 6144,
+      "compute_started_at": 1792002724.686521,
+      "conservative_compute_ended_at": 1792044614.6065538,
+      "compute_seconds_charged_upper": 41889.92003273964,
+      "includes_stop_drain": true,
+      "worker_elapsed_seconds_separate": 42106.40163946152,
+      "forward_started": 835,
+      "forward_completed": 835,
+      "no_grad_forward_started": 643,
+      "gradient_forward_started": 192,
+      "actor_backward_completed_lower": 191,
+      "critic_backward_completed_lower": 191,
+      "actor_backward_charged_upper": 192,
+      "critic_backward_charged_upper": 192,
+      "last_row_backward_exact": null,
+      "optimizer_calls_proven_per_actor_or_critic": 0,
+      "partial_checkpoint_available": false,
+      "tensor_filenames_and_sizes_only": [
+        {
+          "path": "update/shared-before.pt",
+          "bytes": 13441106
+        }
+      ],
+      "last_task": {
+        "task": "learning-backward-or-bookkeeping-000835",
+        "kind": "training_step",
+        "started_at": 1792044467.832187,
+        "pid": 3124128
+      },
+      "final_receipt_missing": true,
+      "outer_status_is_stale": true
+    },
+    {
+      "attempt": "r2",
+      "physical_gpu": 4,
+      "pid": 77177,
+      "terminal_reason": "shared_device_free_memory_reserve",
+      "exit_code": -9,
+      "last_gpu_free_mib": 6110.0,
+      "old_running_free_floor_mib": 6144,
+      "compute_started_at": 1792047749.9954946,
+      "conservative_compute_ended_at": 1792070446.669287,
+      "compute_seconds_charged_upper": 22696.673792362213,
+      "includes_stop_drain": true,
+      "worker_elapsed_seconds_separate": 22922.355456113815,
+      "forward_started": 689,
+      "forward_completed": 689,
+      "no_grad_forward_started": 643,
+      "gradient_forward_started": 46,
+      "actor_backward_completed_lower": 45,
+      "critic_backward_completed_lower": 45,
+      "actor_backward_charged_upper": 46,
+      "critic_backward_charged_upper": 46,
+      "last_row_backward_exact": null,
+      "optimizer_calls_proven_per_actor_or_critic": 0,
+      "partial_checkpoint_available": false,
+      "tensor_filenames_and_sizes_only": [
+        {
+          "path": "update/shared-before.pt",
+          "bytes": 13441106
+        }
+      ],
+      "last_task": {
+        "task": "learning-backward-or-bookkeeping-000689",
+        "kind": "training_step",
+        "started_at": 1792070393.3872576,
+        "pid": 77177
+      },
+      "final_receipt_missing": true,
+      "outer_status_is_stale": true
+    }
+  ],
+  "optimizer_zero_reason": "Frozen unchanged H1 calls actor/critic optimizer.step only after all 643 gradient rows. Every actor-enabled row first requires a durable counted gradient forward. Each attempt stopped with fewer than 643 started gradient forwards, so neither optimizer is reachable. Last partial row may have no, partial, or completed backward before receipt; charge each actor and critic its started-row upper bound.",
+  "exact_resume": {
+    "available": false,
+    "only_snapshots": "Both attempts retain only update/shared-before.pt, saved before no-grad behavior pass. _state_bundle has weights, optimizer and RNG, but no accumulated gradients or loop cursor. gradients-before-clip.pt is saved only after all rows and is absent.",
+    "tensor_contents_read": false,
+    "required_recomputation_boundary": "Original complete S_star 4/4, all original 643 rows, original direction/epsilon/q_minus composition, original critic normalization and H1 numerical path. Do not resume at row 192 or 46 or concatenate their gradients.",
+    "S_star_checkpoint": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-learning-v049-resume-r1/update-B/actual/checkpoint/checkpoint.json",
+      "sha256": "b7e69820d705377804e4fc9afc329b8206e9cda532518d74ee99b686291d851f"
+    },
+    "loaded_state_receipts_identical": true,
+    "composition_bytes_identical": true,
+    "learning_binding_receipts_identical": true,
+    "partial_rows_exact_counts": null
+  },
+  "same_branch_counts": {
+    "admitted_rows_per_attempt": 643,
+    "historical_forward_started": 1524,
+    "historical_forward_completed": 1524,
+    "historical_actor_backward_completed_lower": 236,
+    "historical_critic_backward_completed_lower": 236,
+    "historical_backward_upper_per_actor_or_critic": 238,
+    "new_full_forward_upper": 1292,
+    "new_full_backward_upper_per_actor_or_critic": 643,
+    "aggregate_forward_upper": 2816,
+    "aggregate_forward_cap": 6150,
+    "aggregate_backward_upper_per_actor_or_critic": 881,
+    "aggregate_backward_cap_per_actor_or_critic": 3072,
+    "historical_optimizer_per_actor_or_critic": 0,
+    "new_optimizer_upper_per_actor_or_critic": 1,
+    "aggregate_optimizer_cap_per_actor_or_critic": 1,
+    "fits": true
+  },
+  "original_48h_branch_policy": {
+    "cap_seconds": 172800,
+    "historical_compute_seconds_charged_upper": 64586.59382510185,
+    "remaining_seconds": 108213.40617489815,
+    "safe_integer_remaining_seconds": 108213,
+    "remaining_hours": 30.05927949302726,
+    "third_attempt_time_fits_proven": false,
+    "B_full_reference_seconds": 111012.14107847214,
+    "B_full_exceeds_remaining_seconds": 2798.73490357399,
+    "worker_seconds_separate_not_additive_to_compute": true
+  },
+  "aggregate_144h_redistribution_candidate": {
+    "status": "protocol_candidate_explicit_per_branch_time_policy_change",
+    "original_aggregate_cap_seconds": 518400,
+    "B_complete_actual_interval_seconds": 111012.14107847214,
+    "Q_plus_reserved_seconds": 172800,
+    "Q_plus_reserve_policy": "Reserve its entire original 48h, not current elapsed or predicted remainder. No unused Q_plus budget reclaimed. Existing worker not changed.",
+    "Q_minus_historical_charged_seconds_upper": 64586.59382510185,
+    "new_Q_minus_interval_upper_seconds": 170001.265096426,
+    "safe_integer_new_Q_minus_interval_seconds": 170001,
+    "new_Q_minus_interval_upper_hours": 47.22257363789611,
+    "Q_minus_total_old_plus_new_upper_seconds": 234587.85892152786,
+    "Q_minus_total_old_plus_new_upper_hours": 65.16329414486886,
+    "original_Q_minus_branch_cap_seconds": 172800,
+    "amount_reallocated_from_B_unused_seconds": 61787.85892152786,
+    "original_branch_48h_would_be_exceeded": true,
+    "sum_B_Qplus_reserved_Qminus_all_attempts_seconds": 518400.0,
+    "aggregate_144h_not_increased": true,
+    "forward_backward_optimizer_generation_limits_unchanged": true,
+    "time_semantics": "Training compute intervals only, matching frozen r2 accounting. Historical killed-attempt intervals include conservative stop-drain endpoints. Separately report wall worker/setup durations; do not add overlapping worker and training intervals.",
+    "remaining_admission_condition": "New protocol and guard must freeze this redistribution explicitly and count both old Qminus attempts once. This proof itself starts nothing and grants no new scientific samples or optimizer steps."
+  },
+  "timing_risk": {
+    "observed_phase_extrapolations": [
+      {
+        "attempt": "r1",
+        "samples": 6068,
+        "first_gradient_forward": {
+          "task_started_at": 1792014257.6748476,
+          "first_observed_at": 1792014258.3729742
+        },
+        "last_gradient_forward": {
+          "task_started_at": 1792044426.1615424,
+          "first_observed_at": 1792044430.2790885
+        },
+        "completed_rows_between_starts": 191,
+        "pre_gradient_interval_seconds": 11532.98832654953,
+        "observed_average_seconds_per_complete_gradient_row": 157.9501921194386,
+        "linear_full_643_row_interval_seconds_excluding_finalization": 113094.96185934855,
+        "linear_full_hours_excluding_finalization": 31.415267183152373
+      },
+      {
+        "attempt": "r2",
+        "samples": 3334,
+        "first_gradient_forward": {
+          "task_started_at": 1792064222.0547957,
+          "first_observed_at": 1792064222.228852
+        },
+        "last_gradient_forward": {
+          "task_started_at": 1792070360.6724935,
+          "first_observed_at": 1792070365.261012
+        },
+        "completed_rows_between_starts": 45,
+        "pre_gradient_interval_seconds": 16472.059301137924,
+        "observed_average_seconds_per_complete_gradient_row": 136.41372661590577,
+        "linear_full_643_row_interval_seconds_excluding_finalization": 104186.08551516534,
+        "linear_full_hours_excluding_finalization": 28.94057930976815
+      }
+    ],
+    "B_complete_interval_hours": 30.83670585513115,
+    "warning": "The linear extrapolations assume all later rows run at the observed average of a short earlier prefix; later sequence lengths and contention differ. They exclude finalization/post-update/checkpoint time and are not a completion guarantee. B also captures support gradients, so it is a comparable workload, not an exact Qminus timing prediction. Original 30.059h remainder is less than B full time and the r1 extrapolation; the r2 extrapolation only narrowly fits before finalization. Even the redistributed candidate needs actual time guards."
+  },
+  "source_checks": {
+    "artifacts/software-learning-v050/resume-r2-source/src/proworksim/online_training.py": {
+      "observed_sha256": "c9264e59054831ed80a82cb02b6a5c1e9ef3b42a0adf072ba511e6b95d6d8c07",
+      "expected_sha256": "c9264e59054831ed80a82cb02b6a5c1e9ef3b42a0adf072ba511e6b95d6d8c07",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v049.py": {
+      "observed_sha256": "ff223fd6c38bb6ca95cf3607fdef765f9ea9e74869e177556c44593f63826f7e",
+      "expected_sha256": "ff223fd6c38bb6ca95cf3607fdef765f9ea9e74869e177556c44593f63826f7e",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v049r1.py": {
+      "observed_sha256": "64efce40d5a9b90f3f64eb95be886dba84be6b18f0dd683c26d5890fd47213fc",
+      "expected_sha256": "64efce40d5a9b90f3f64eb95be886dba84be6b18f0dd683c26d5890fd47213fc",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v050.py": {
+      "observed_sha256": "6dbfdef0d6212ebb3d094c8694068c7284c4890dc782c77889a1ffdafa3d751f",
+      "expected_sha256": "6dbfdef0d6212ebb3d094c8694068c7284c4890dc782c77889a1ffdafa3d751f",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v050r1.py": {
+      "observed_sha256": "d12f3cb672f4e6806db246050529e1cf7144064f8df743bb210ddaa7b7c74400",
+      "expected_sha256": "d12f3cb672f4e6806db246050529e1cf7144064f8df743bb210ddaa7b7c74400",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_member_views_v050.py": {
+      "observed_sha256": "aee1470a853a249d34cd152d249224d92f94713ae874986a9adfcb7883c0c0c6",
+      "expected_sha256": "aee1470a853a249d34cd152d249224d92f94713ae874986a9adfcb7883c0c0c6",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/scripts/software_learning_v050.py": {
+      "observed_sha256": "9b218af97cbfe3694ad74eac24e58eeda91189d48182d776a62d3c8c873cbc51",
+      "expected_sha256": "9b218af97cbfe3694ad74eac24e58eeda91189d48182d776a62d3c8c873cbc51",
+      "matches": true
+    },
+    "artifacts/software-learning-v050/resume-r2-source/scripts/software_learning_resume_v050r1.py": {
+      "observed_sha256": "a83e02c62b5e9e415283f34143b0c69eea61a6250db4bc012a18f3b8dc561ce8",
+      "expected_sha256": "a83e02c62b5e9e415283f34143b0c69eea61a6250db4bc012a18f3b8dc561ce8",
+      "matches": true
+    }
+  },
+  "verification": {
+    "stdlib_only": true,
+    "models_or_tokenizers_imported": false,
+    "tensor_files_opened": [],
+    "new_gpu_queries": 0,
+    "new_model_calls": 0,
+    "new_backward_calls": 0,
+    "source_edits": 0,
+    "git_mutations": 0,
+    "existing_history_rewritten": false,
+    "large_material_json_reencoded_or_rehashed": false,
+    "material_identity_basis": "Existing frozen replay/binding receipts and prior r2 proof; small composition/loaded-state/source JSON and source bytes independently matched. No billion-byte entries or tensor payload opened."
+  },
+  "evidence": [
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/training-compute.json",
+      "sha256": "0ae7c765fc89b6d97fca3fd1fe8c6e9a5e2800b66c4f205e927d305fe87b3475",
+      "bytes": 403
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update/report.json",
+      "sha256": "1ece3ee518de4d47849271679193abccc8bf6c4400a4919fcc68fbc2fb9c7e87",
+      "bytes": 40924
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/task.json",
+      "sha256": "acb2a2a0563ee09c1d70e2acd9a17576780b80d193af00a5040bde12cc068a37",
+      "bytes": 136
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/report.json",
+      "sha256": "f66d636a4ea601ec1e57a18d2a78a469d28d419d1d87f1ffc5853b46448fff25",
+      "bytes": 446
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/loaded-state.json",
+      "sha256": "513de29dfa64e3ec4e86b0f3ce50818fb24f34779fcedd158b5f26b68f9c5e8e",
+      "bytes": 1856
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/composition-before-update.json",
+      "sha256": "63464618e30c3567c6c24edbd5ff1b84f608b165a1cffeb3c41e11d204aa438a",
+      "bytes": 284545
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update/composition.json",
+      "sha256": "63464618e30c3567c6c24edbd5ff1b84f608b165a1cffeb3c41e11d204aa438a",
+      "bytes": 284545
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update-v050-learning-binding.json",
+      "sha256": "3bc344defe95dc558643e708bcde6024cc6ec0611a8d6050baaffc112201c3f7",
+      "bytes": 1205
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update-original-updater-binding.json",
+      "sha256": "c9c25776ec35b562ef275b38e18e204fedd0e27b5e1801b16288379f643bb0e3",
+      "bytes": 894
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/mechanism-stops/update-Q_minus-supervisor.json",
+      "sha256": "c5b80572a8f064945ec19f87f156cf64d38d8e003f2edd2d166f5b9ae46a040a",
+      "bytes": 1465
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/host-stop-actions/update-Q_minus.json",
+      "sha256": "5e15e9c82e89d37adf36c52c2361f1dfde5bacffdaa0af6da0bc77b35e87fbfa",
+      "bytes": 570
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/resources.jsonl",
+      "sha256": "6eefcd23c5b8423eb4a1f433b585ce44e224a4da32f2a6a6be6e8429f4e5a78e",
+      "bytes": 25060502
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/training-compute.json",
+      "sha256": "3311e8f8b383cca22a23105d0d9cd9f3b069b03dbde812c4988f737002c6fcb2",
+      "bytes": 980
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/update/report.json",
+      "sha256": "39a878bee36836a8b114ca8d9b032dab757a76c0a19cb4eb8e70fcfda138b6bd",
+      "bytes": 40923
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/task.json",
+      "sha256": "4663f923deec45faa36d7fc2c4788cdf9163e15f990f3e2a4511b63250980b11",
+      "bytes": 135
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/report.json",
+      "sha256": "997fc99d22b57e9a78153d49b9f39f2a8e0626903200e20738c8daf373d94e70",
+      "bytes": 444
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/loaded-state.json",
+      "sha256": "513de29dfa64e3ec4e86b0f3ce50818fb24f34779fcedd158b5f26b68f9c5e8e",
+      "bytes": 1856
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/composition-before-update.json",
+      "sha256": "63464618e30c3567c6c24edbd5ff1b84f608b165a1cffeb3c41e11d204aa438a",
+      "bytes": 284545
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/update/composition.json",
+      "sha256": "63464618e30c3567c6c24edbd5ff1b84f608b165a1cffeb3c41e11d204aa438a",
+      "bytes": 284545
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/update-v050-learning-binding.json",
+      "sha256": "3bc344defe95dc558643e708bcde6024cc6ec0611a8d6050baaffc112201c3f7",
+      "bytes": 1205
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/update-original-updater-binding.json",
+      "sha256": "81c007c84bacdf737f5f1b741ee6c12a6a3715e7c9f802b7d9e6ebaf33e56554",
+      "bytes": 944
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/mechanism-stops/update-Q_minus-supervisor.json",
+      "sha256": "b227c96a83ff20912e9b8fd0f5cf9d7084230671f6deceeb28d52dff1a4f9f84",
+      "bytes": 1612
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/host-stop-actions/update-Q_minus.json",
+      "sha256": "72e621569e9e8be6ff6096f70a302ae21dfdc7c2ec65209449646bdae3eef9f4",
+      "bytes": 566
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/resources.jsonl",
+      "sha256": "b29baf9815884a00b0916ccff6d92d3514d42e8d2da1ed94d76609117ee42f58",
+      "bytes": 15097040
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/src/proworksim/online_training.py",
+      "sha256": "c9264e59054831ed80a82cb02b6a5c1e9ef3b42a0adf072ba511e6b95d6d8c07",
+      "bytes": 61817
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v049.py",
+      "sha256": "ff223fd6c38bb6ca95cf3607fdef765f9ea9e74869e177556c44593f63826f7e",
+      "bytes": 27840
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v049r1.py",
+      "sha256": "64efce40d5a9b90f3f64eb95be886dba84be6b18f0dd683c26d5890fd47213fc",
+      "bytes": 7773
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v050.py",
+      "sha256": "6dbfdef0d6212ebb3d094c8694068c7284c4890dc782c77889a1ffdafa3d751f",
+      "bytes": 10150
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_learning_v050r1.py",
+      "sha256": "d12f3cb672f4e6806db246050529e1cf7144064f8df743bb210ddaa7b7c74400",
+      "bytes": 5318
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/src/proworksim/software_member_views_v050.py",
+      "sha256": "aee1470a853a249d34cd152d249224d92f94713ae874986a9adfcb7883c0c0c6",
+      "bytes": 3001
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/scripts/software_learning_v050.py",
+      "sha256": "9b218af97cbfe3694ad74eac24e58eeda91189d48182d776a62d3c8c873cbc51",
+      "bytes": 32498
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/scripts/software_learning_resume_v050r1.py",
+      "sha256": "a83e02c62b5e9e415283f34143b0c69eea61a6250db4bc012a18f3b8dc561ce8",
+      "bytes": 24506
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/plan.json",
+      "sha256": "d97ad4d096904ccad5c46f3413040937c2418cee863311da065971a5740ec7e9",
+      "bytes": 268748
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/plan.json",
+      "sha256": "17d10ff3fd5af2034dcdd9191d3cbb2daa6999ceef4cf66d9d1ab05b420e4485",
+      "bytes": 312701
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r2/update-Q_minus/actual/recompute-binding.json",
+      "sha256": "2f331c7a08bea5b176b259e6687795e103c1c6788de3f855d258a9533cb7e461",
+      "bytes": 7771
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-B/actual/training-compute.json",
+      "sha256": "1d2cd1ced5ae8292f5d164f198655ae1ecda0896269bcf4e9cab7b187826eae1",
+      "bytes": 461
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-B/actual/report.json",
+      "sha256": "dac9a9edc05e79a3ef60f1465cb3787923a25fb5eb066755636dcb346e629a0a",
+      "bytes": 2563
+    },
+    {
+      "path": "runs/software-learning-v049-resume-r1/update-B/actual/checkpoint/checkpoint.json",
+      "sha256": "b7e69820d705377804e4fc9afc329b8206e9cda532518d74ee99b686291d851f",
+      "bytes": 1037
+    },
+    {
+      "path": "artifacts/software-learning-v050/analysis/qminus-r2-boundary-proof.json",
+      "sha256": "535cc2e9370e42f2261b5bf8122d21ac4aacda93f142004725b17ce84e4c6ee9",
+      "bytes": 15876
+    },
+    {
+      "path": "artifacts/software-learning-v050/resume-r2-source/scripts/software_learning_resume_compute_v050r2.py",
+      "sha256": "6ea6a908840bacb26adad02e08b1dbc3c9661e3dea8a0ec891d8dc65797e5407",
+      "bytes": 17345
+    }
+  ],
+  "payload_sha256": "c713d3f428960e49c698b380f597fec8c8a29de51de08db93ca9205d56f1dca7"
+}
