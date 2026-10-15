@@ -1,0 +1,78 @@
+.......................F                                                 [100%]
+=================================== FAILURES ===================================
+______ test_finite_fake_supervisor_waits60s_prefers4_and_counts_external _______
+
+tmp_path = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-1806/test_finite_fake_supervisor_wa0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73ca3d256c30>
+
+    def test_finite_fake_supervisor_waits60s_prefers4_and_counts_external(tmp_path, monkeypatch):
+        plan = {**inventory_plan(), "source": {"fixture": True}, "parent_plan": {}, "prior_artifact_roots": [],
+            "native_python": "/fixture/python", "runtime_dependency_path": "/fixture/deps",
+            "external_Q_plus": {"pid": 100, "gpu": 2}}
+        monkeypatch.setattr(host, "frozen", lambda unused: plan)
+        monkeypatch.setattr(host, "observe_external", lambda *a, **k: {"status": "running", "resident_count": 1, "excluded_gpu": 2})
+        monkeypatch.setattr(supervisor, "artifact_bytes", lambda p: 0)
+        monkeypatch.setattr(supervisor.shutil, "disk_usage", lambda p: SimpleNamespace(free=10**15))
+        clock = {"now": 0.0}
+        monkeypatch.setattr(supervisor.time, "time", lambda: clock["now"])
+        monkeypatch.setattr(supervisor.time, "sleep", lambda unused: clock.update(now=clock["now"] + 30))
+        monkeypatch.setattr(supervisor, "allowed_resources", lambda: {"fixture": True})
+        observed = []
+        monkeypatch.setattr(supervisor, "available_cards", lambda plan, sample, excluded:
+            observed.append(list(excluded)) or [{"index": 4, "uuid": "gpu4"}])
+        monkeypatch.setattr(supervisor, "worker_identity", lambda pid: {"start_ticks": 500, "alive": True})
+        launches = []
+        class Process:
+            pid = 200
+            returncode = 1
+            def poll(self):
+                return self.returncode
+            def wait(self, timeout):
+                return self.returncode
+        def popen(argv, **kwargs):
+            launches.append((list(argv), kwargs["cwd"], kwargs["env"]["PYTHONPATH"], clock["now"]))
+            return Process()
+        monkeypatch.setattr(supervisor.subprocess, "Popen", popen)
+        # An immediate fake failure stops unopened work; no GPU or external signal occurs.
+>       result = supervisor.supervise(tmp_path)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_software_learning_resume_v050r2.py:271: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/software_learning_resume_supervisor_v050r2.py:243: in supervise
+    samples = {n: f.result() for n, f in futures.items()}
+                  ^^^^^^^^^^
+/home/zhuxinrui/datatmp/miniconda3/lib/python3.14/concurrent/futures/_base.py:447: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/home/zhuxinrui/datatmp/miniconda3/lib/python3.14/concurrent/futures/_base.py:396: in __get_result
+    raise self._exception
+/home/zhuxinrui/datatmp/miniconda3/lib/python3.14/concurrent/futures/thread.py:86: in run
+    result = ctx.run(self.task)
+             ^^^^^^^^^^^^^^^^^^
+/home/zhuxinrui/datatmp/miniconda3/lib/python3.14/concurrent/futures/thread.py:73: in run
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+src/proworksim/resource_monitor_v025.py:71: in target_resources
+    sample['gpus'] = _query(GPU_QUERY, gpu_index_or_uuid, gpu_timeout_seconds, runner=runner, clock=clock)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/resource_monitor_v025.py:45: in _query
+    completed = runner(command, text=True, capture_output=True, timeout=timeout_seconds, check=False)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/zhuxinrui/datatmp/miniconda3/lib/python3.14/subprocess.py:555: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+argv = ['nvidia-smi', '--id=4', '--query-gpu=index,uuid,name,memory.free,memory.total,utilization.gpu', '--format=csv,noheader,nounits']
+kwargs = {'text': True, 'stdout': -1, 'stderr': -1}
+
+    def popen(argv, **kwargs):
+>       launches.append((list(argv), kwargs["cwd"], kwargs["env"]["PYTHONPATH"], clock["now"]))
+                                     ^^^^^^^^^^^^^
+E       KeyError: 'cwd'
+
+tests/test_software_learning_resume_v050r2.py:267: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_software_learning_resume_v050r2.py::test_finite_fake_supervisor_waits60s_prefers4_and_counts_external
+1 failed, 23 passed in 0.37s

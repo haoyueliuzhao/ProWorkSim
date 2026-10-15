@@ -1,0 +1,340 @@
+{
+  "version": "software-learning-v050-qminus-r2-boundary-proof-v1",
+  "created_at": "2026-10-15T06:41:35.923667+00:00",
+  "scope": "Read-only audit of stopped original Q_minus; new files only in analysis. No torch import, tensor/checkpoint reads, tokenization, model calls or tests.",
+  "verdict": {
+    "read_only_boundary_proof_passed": true,
+    "scientific_scope_blocker_identified": false,
+    "exact_mid_backward_resume_available": false,
+    "authorized_recovery_kind": "One isolated new attempt recomputing the same unique Q_minus from the original complete S_star4/4; retain old stop and cost; no B rerun or Q_plus mutation.",
+    "not_a_new_direction_or_extra_scientific_branch": true,
+    "runtime_preconditions_not_certified_here": [
+      "New attempt must enforce the remaining original branch interval and aggregate compute caps, not reset 48 hours.",
+      "New source/inventory bindings and resource guards, including 60-second GPU4 stability, must pass before loading.",
+      "This audit does not guarantee runtime completion, numerical bitwise equivalence across devices, or a positive development result."
+    ]
+  },
+  "checks": {
+    "source_files_match_frozen_plan": true,
+    "H1_source_matches_runtime_binding": true,
+    "original_H1_code_object_binding": true,
+    "old_start_exact_Sstar_4_4": true,
+    "Sstar_checkpoint_json_hash_matches": true,
+    "direction_seals_valid": true,
+    "composition_seal_valid": true,
+    "direction_minus_weights_identical": true,
+    "composition_binds_original_direction": true,
+    "composition_binds_original_entries": true,
+    "same_643_admission_rows": true,
+    "all_643_composition_rows_bound": true,
+    "actor_identity_same": true,
+    "critic_unreweighted_and_original_normalization": true,
+    "native_boundary_counts_match": true,
+    "last_report_boundary_match": true,
+    "host_stop_binding": true
+  },
+  "source_checks": {
+    "scripts/software_learning_v050.py": true,
+    "scripts/software_learning_resume_v050r1.py": true,
+    "src/proworksim/online_training.py": true,
+    "src/proworksim/software_learning_v050.py": true,
+    "src/proworksim/software_learning_v049.py": true
+  },
+  "old_boundary": {
+    "worker": "update-Q_minus",
+    "pid": 3124128,
+    "physical_gpu": 3,
+    "terminal_host_kind": "execution_fault",
+    "terminal_host_reason": "shared_device_free_memory_reserve",
+    "exit_code": -9,
+    "worker_started_at": 1792002508.2049143,
+    "ended_at": 1792044614.6065538,
+    "completed_actor_and_critic_backward_rows": 191,
+    "row_192_forward_completed": true,
+    "row_192": {
+      "slot_id": "org50-train-LA-r10",
+      "member_id": "member_001",
+      "call_id": "model-5f10106ee2f8a3d44c02d838",
+      "actor_denominator": 332832,
+      "critic_denominator": 1056
+    },
+    "row_192_actor_backward_started": null,
+    "row_192_actor_backward_completed": null,
+    "row_192_critic_backward_started": null,
+    "row_192_critic_backward_completed": null,
+    "row_192_uncertainty": "After native forward return, actor/critic backward may be unstarted, partial, or completed without the per-row receipt. Do not encode the row as zero work or as completed.",
+    "old_actor_backward_invocations_upper_bound": 192,
+    "old_critic_backward_invocations_upper_bound": 192,
+    "actor_optimizer_calls_proven": 0,
+    "critic_optimizer_calls_proven": 0,
+    "optimizer_zero_proof": "Frozen H1 executes both optimizer.step calls only after all 643 loop rows, every actor-enabled row first makes a counted native grad forward, and each completed row persists report. Only 192 grad forwards were started and completed; the latest task remains row 192 backward/bookkeeping. Thus the optimizer code is unreachable, independently of the stale outer status and zero counters.",
+    "training_compute_receipt": {
+      "started_at": 1792002724.686521,
+      "ended_at": null,
+      "maximum_seconds": 172800,
+      "admitted_rows": 643,
+      "forward_upper": 1292,
+      "actor_backward_upper": 643,
+      "critic_backward_upper": 643,
+      "actor_steps_upper": 1,
+      "critic_steps_upper": 1,
+      "native_forward_started": 835,
+      "native_forward_completed": 835,
+      "native_gradient_forward_started": 192,
+      "native_no_grad_forward_started": 643
+    },
+    "last_resource_gpu_stdout": "3, GPU-004a2d75-6298-df4d-7b95-103bc6c1b02a, NVIDIA A100-SXM4-80GB, 4698, 81920, 89\n",
+    "last_resource_processes_stdout": "GPU-004a2d75-6298-df4d-7b95-103bc6c1b02a, 3124128, 41994, /data1/zhuxinrui/projects/ProWorkSim/runs/v016-sdk/resident-venv/bin/python\nGPU-004a2d75-6298-df4d-7b95-103bc6c1b02a, 3970835, 17172, /data1/zhuxinrui/projects/Data-Synthesis/trusted_data_synthesis/.venv/bin/python\nGPU-004a2d75-6298-df4d-7b95-103bc6c1b02a, 4191885, 17026, VLLM::Worker_TP1\n",
+    "outer_report_status_is_not_terminal": "loading; process killed before finally receipt; use supervisor/host-stop evidence for actual terminal state"
+  },
+  "no_exact_resume_point": {
+    "metadata_only_non_json_inventory": [
+      {
+        "path": "update/shared-before.pt",
+        "bytes": 13441106
+      }
+    ],
+    "files_opened_as_tensors": [],
+    "only_shared_before_exists": true,
+    "no_updated_checkpoint_directory": true,
+    "no_accumulated_gradients_checkpoint": true,
+    "source_reason": "shared-before.pt is saved before the no-grad probability pass; _state_bundle includes states and RNG but no accumulated parameter gradients or loop cursor. gradients-before-clip.pt is written only after the full loop. No row-191/192 gradient+RNG+cursor checkpoint exists. No tensor contents were inspected."
+  },
+  "frozen_binding": {
+    "S_star": {
+      "checkpoint_ref": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-learning-v049-resume-r1/update-B/actual/checkpoint/checkpoint.json",
+        "sha256": "b7e69820d705377804e4fc9afc329b8206e9cda532518d74ee99b686291d851f",
+        "bytes": 1037
+      },
+      "state_tensor_digest": "ff8c828bcc475132d6d6bbddad3a114da62ace9da9c905e560d7d7c5a3cefc39",
+      "learning_protected_digest": "381f449250709b4cc2f4c21fa6efc3d65d44e8b098aa946cc137c2d9d3b13e0c",
+      "actor_identity": {
+        "version": "shared-actor-identity-v0.13",
+        "policy_version": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+        "adapter_sha256": "06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+        "base_manifest_sha256": "030031b27513e399360f26a8db31746e719bb15a3d2f4d68874c1dba3ccc60a6",
+        "inference_profile_sha256": "b7aebd3ce0119fa6e4067524c255cef29f1816adc361d2ed0a93f21f83844252"
+      },
+      "recipe_sha256": "c5050ff85d285b203b5ee0fa0566d91da03644b8f0b39ea531ac29216c39408a",
+      "member_coordinate_mapping": {
+        "member_a": "member_001",
+        "member_b": "member_002",
+        "software_inactive": "software_inactive"
+      },
+      "actor_steps": 4,
+      "critic_steps": 4,
+      "checkpoint_written": false,
+      "new_parameter_updates": 0
+    },
+    "selected_direction": {
+      "root": "LA",
+      "xi_id": "sc-event-utc-boundary-la-v045::O1::active=member_001,member_002::first=member_001",
+      "member_id": "member_001",
+      "category": "local_lineage_delivery",
+      "b": {
+        "evidenced_peer_product_delivery": 0.42857142857142855,
+        "local_lineage_delivery": 0.5714285714285714
+      },
+      "direction": {
+        "evidenced_peer_product_delivery": -0.42857142857142855,
+        "local_lineage_delivery": 0.4285714285714286
+      },
+      "rho": 0.4666666666666667,
+      "epsilon": 0.1,
+      "mixture_gradient_l2_norm": 0.007746008657106765,
+      "mixture_gradient_sha256": "eeb37d9fca90d177841138b919198efca7f1f96ddcef60a28e9144490b76c2f2",
+      "class_mean_gradient_l2_norms": {
+        "evidenced_peer_product_delivery": 0.0020549040059267307,
+        "local_lineage_delivery": 0.001585816300414448
+      },
+      "gradient_unit": "Sum over original eligible slots of (d[class]/b[class])*actual_B_slot_member_gradient. B gradients already include 1/(24*2*member_output_tokens); no root or minibatch renormalization.",
+      "class_mean_equivalence": "n_eligible * sum_class d[class] * mean_original_B_gradient_in_class",
+      "diagnostic_arithmetic": "CPU float64 copies of original B leaf gradients; original training tensors and gradients unchanged",
+      "q_plus": {
+        "evidenced_peer_product_delivery": 0.3857142857142857,
+        "local_lineage_delivery": 0.6142857142857142
+      },
+      "q_minus": {
+        "evidenced_peer_product_delivery": 0.4714285714285714,
+        "local_lineage_delivery": 0.5285714285714286
+      },
+      "reason": "first_supported_feasible_nonzero_actual_B_mixture"
+    },
+    "epsilon": 0.1,
+    "minus_weights_sha256": "b9007bc91a72578147ceb7396158d5cfe3f57635d0519c8b68acdbd29ae0ca75",
+    "admission_rows_sha256": "30cf306b6d49ef374def4055dc1d429694eb9c2e50a647755f74fafb516b7691",
+    "admission_count": 643,
+    "original_slot_count": 24,
+    "global_member_denominator_factor": 48,
+    "critic_reweighted": false,
+    "new_end_steps_upper": [
+      5,
+      5
+    ]
+  },
+  "aggregate_same_branch_budget": {
+    "original_interval_cap_seconds": 172800,
+    "old_interval_started_at": 1792002724.686521,
+    "old_interval_conservative_end_at": 1792044614.6065538,
+    "old_interval_charged_seconds": 41889.92003273964,
+    "old_interval_includes_stop_drain": true,
+    "remaining_interval_seconds": 130910.07996726036,
+    "safe_integer_new_interval_seconds": 130910,
+    "old_GPU_worker_seconds_retained_separately": 42106.40163946152,
+    "worker_time_and_interval_overlap_not_additive": true,
+    "old_native_forward_started": 835,
+    "old_native_forward_completed": 835,
+    "new_native_forward_upper": 1292,
+    "aggregate_native_forward_upper": 2127,
+    "aggregate_native_forward_cap": 6150,
+    "old_backward_completed_lower": 191,
+    "old_backward_possible_upper_per_actor_or_critic": 192,
+    "new_backward_upper_per_actor_or_critic": 643,
+    "aggregate_backward_upper_per_actor_or_critic": 835,
+    "aggregate_backward_cap_per_actor_or_critic": 3072,
+    "old_optimizer_calls_per_actor_or_critic": 0,
+    "new_optimizer_calls_upper_per_actor_or_critic": 1,
+    "aggregate_optimizer_calls_upper_per_actor_or_critic": 1,
+    "budgets_fit": true
+  },
+  "source_locations": {
+    "H1_loop_and_optimizers": "src/proworksim/online_training.py:838-910",
+    "shared_before_snapshot": "src/proworksim/online_training.py:798",
+    "state_bundle": "src/proworksim/online_training.py:620-638",
+    "native_counter_wrapper": "scripts/software_learning_v050.py:360-394",
+    "same_state_and_weights": "scripts/software_learning_v050.py:399-450"
+  },
+  "GPU4_point_sample": {
+    "queried_at": 1792046495.8888612,
+    "command": [
+      "nvidia-smi",
+      "--id=4",
+      "--query-gpu=index,uuid,memory.free,memory.total,utilization.gpu",
+      "--format=csv,noheader,nounits"
+    ],
+    "returncode": 0,
+    "stdout": "4, GPU-ae8978c8-5100-933e-78d1-46ed781a8a0e, 61419, 81920, 100\n",
+    "stderr": "",
+    "stability_qualification_performed": false,
+    "launch_authorized_by_this_sample": false
+  },
+  "evidence": [
+    {
+      "path": "runs/software-learning-v050-resume-r1/plan.json",
+      "sha256": "d97ad4d096904ccad5c46f3413040937c2418cee863311da065971a5740ec7e9",
+      "bytes": 268748
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/s_star.json",
+      "sha256": "3ebc2d86757073527b50ba05d82e59d3b1801e42664d97f148b0416e7d320c98",
+      "bytes": 1250
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/direction.json",
+      "sha256": "8f767abdf252a6104c93a1957f5873c7e2bdd5ad1a1139968181d8ece548da3e",
+      "bytes": 18494
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/entries.json",
+      "sha256": "ea5399c0b568633451e6f7a4343547514a98fa2a432d93b5af5d99dab8c0640b",
+      "bytes": 1491995552
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/declaration.json",
+      "sha256": "dc4c133e35c5310d1c0cdc63dd0eb67899dba75da33a3c502621e2c51b7d4082",
+      "bytes": 275541
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/pretraining-admission.json",
+      "sha256": "3fcf9e0501bc13a0b73cedbd3efba79787fe985c2cb0c6140f202248b3eded45",
+      "bytes": 268361556
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/loaded-state.json",
+      "sha256": "513de29dfa64e3ec4e86b0f3ce50818fb24f34779fcedd158b5f26b68f9c5e8e",
+      "bytes": 1856
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/composition-before-update.json",
+      "sha256": "63464618e30c3567c6c24edbd5ff1b84f608b165a1cffeb3c41e11d204aa438a",
+      "bytes": 284545
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/training-compute.json",
+      "sha256": "0ae7c765fc89b6d97fca3fd1fe8c6e9a5e2800b66c4f205e927d305fe87b3475",
+      "bytes": 403
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update/admission.json",
+      "sha256": "c0b27102d89d3913e43af7c3738c775ee77cf1b301d2b87de0c201b7b0ac7115",
+      "bytes": 268361248
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update/composition-admission.json",
+      "sha256": "a7771ae7eb63efd525ad2df0a46ab2a18a055d099531c168f986a5d2cc3c5017",
+      "bytes": 203017
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update/report.json",
+      "sha256": "1ece3ee518de4d47849271679193abccc8bf6c4400a4919fcc68fbc2fb9c7e87",
+      "bytes": 40924
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update-token-evidence.json",
+      "sha256": "b4c902fe96a470ef454689c2075caddbc2fce43445ee1cc96beee65351ddf931",
+      "bytes": 1864380
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update-original-updater-binding.json",
+      "sha256": "c9c25776ec35b562ef275b38e18e204fedd0e27b5e1801b16288379f643bb0e3",
+      "bytes": 894
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/update-v050-learning-binding.json",
+      "sha256": "3bc344defe95dc558643e708bcde6024cc6ec0611a8d6050baaffc112201c3f7",
+      "bytes": 1205
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/update-Q_minus/actual/task.json",
+      "sha256": "acb2a2a0563ee09c1d70e2acd9a17576780b80d193af00a5040bde12cc068a37",
+      "bytes": 136
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/mechanism-stops/update-Q_minus-supervisor.json",
+      "sha256": "c5b80572a8f064945ec19f87f156cf64d38d8e003f2edd2d166f5b9ae46a040a",
+      "bytes": 1465
+    },
+    {
+      "path": "runs/software-learning-v050-resume-r1/host-stop-actions/update-Q_minus.json",
+      "sha256": "5e15e9c82e89d37adf36c52c2361f1dfde5bacffdaa0af6da0bc77b35e87fbfa",
+      "bytes": 570
+    },
+    {
+      "path": "scripts/software_learning_v050.py",
+      "sha256": "9b218af97cbfe3694ad74eac24e58eeda91189d48182d776a62d3c8c873cbc51",
+      "bytes": 32498
+    },
+    {
+      "path": "scripts/software_learning_resume_v050r1.py",
+      "sha256": "a83e02c62b5e9e415283f34143b0c69eea61a6250db4bc012a18f3b8dc561ce8",
+      "bytes": 24506
+    },
+    {
+      "path": "src/proworksim/online_training.py",
+      "sha256": "c9264e59054831ed80a82cb02b6a5c1e9ef3b42a0adf072ba511e6b95d6d8c07",
+      "bytes": 61817
+    },
+    {
+      "path": "src/proworksim/software_learning_v050.py",
+      "sha256": "6dbfdef0d6212ebb3d094c8694068c7284c4890dc782c77889a1ffdafa3d751f",
+      "bytes": 10150
+    },
+    {
+      "path": "src/proworksim/software_learning_v049.py",
+      "sha256": "ff223fd6c38bb6ca95cf3607fdef765f9ea9e74869e177556c44593f63826f7e",
+      "bytes": 27840
+    }
+  ],
+  "proof_sha256": "ab48e353d29fa5111d16701499c11c1c3a39984a724ca300823d1c9aa9b716d4"
+}
