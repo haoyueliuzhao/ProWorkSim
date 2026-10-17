@@ -501,7 +501,32 @@ class CalibrationActor:
     save_checkpoint = update_window
 
 
-def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None):
+def validate_checkpoint_metadata(checkpoint_path, saved, authorization=None):
+    """Permit 5/5 only through the explicit prelocked retained-state identity.
+
+    This is a metadata-only gate. The loader still verifies the complete state
+    file and tensor digest before copying any actor parameters. No HOLD task
+    content or outcome is consulted here.
+    """
+    steps = (saved.get("actor_steps"), saved.get("critic_steps"))
+    if any(type(step) is not int for step in steps):
+        raise ValueError("Historical checkpoint steps must be explicit integers")
+    if authorization is None:
+        if steps != (4, 4):
+            raise ValueError("An explicit frozen authorization is required outside S-star 4/4")
+    elif (not isinstance(authorization, dict)
+            or steps not in {(4, 4), (5, 5)}
+            or authorization.get("checkpoint") != reference(checkpoint_path)
+            or authorization.get("actor_identity") != saved.get("actor_identity")
+            or authorization.get("historical_steps") != list(steps)
+            or authorization.get("state_file_reference_from_original_metadata") != saved.get("state")
+            or not saved.get("actor_identity", {}).get("adapter_sha256")):
+        raise ValueError("Retained actor is not the exact statically authorized checkpoint")
+    return steps
+
+
+def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None,
+               checkpoint_authorization=None):
     """Load raw release or only a declared checkpoint's actor, never optimizers.
 
     CPU control/tests do not call this function.  Caller provides global resource
@@ -510,6 +535,13 @@ def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None)
     contract = validate_contract(contract)
     if path not in PATHS or path == "reference" and checkpoint is not None:
         raise ValueError("Reference is raw; checkpoint inference uses the project path")
+    if checkpoint is None and checkpoint_authorization is not None:
+        raise ValueError("A raw release cannot consume retained-state authorization")
+    saved, checkpoint_path = None, None
+    if checkpoint is not None:
+        checkpoint_path = Path(checkpoint).resolve()
+        saved = read_json(checkpoint_path)
+        validate_checkpoint_metadata(checkpoint_path, saved, checkpoint_authorization)
     if Path(output).exists():
         raise FileExistsError("Calibration output already exists; no overwritten model attempt")
     if os.environ.get("CUDA_VISIBLE_DEVICES") not in {str(i) for i in range(8)}:
@@ -564,10 +596,6 @@ def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None)
     if checkpoint is not None:
         from peft import LoraConfig, get_peft_model
         from .online_training import tensor_tree_digest
-        checkpoint_path = Path(checkpoint).resolve()
-        saved = read_json(checkpoint_path)
-        if (saved.get("actor_steps"), saved.get("critic_steps")) != (4, 4):
-            raise ValueError("CAL U accepts only the predeclared S-star 4/4, not a selected v050 endpoint")
         state_path = checkpoint_path.parent / "shared-state.pt"
         if sha_file(state_path) != saved["state"]["sha256"]:
             raise ValueError("Complete source checkpoint bytes changed")
@@ -595,6 +623,8 @@ def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None)
         policy.update(checkpoint=reference(checkpoint_path), adapter_sha256=actual,
             source_actor_identity=copy.deepcopy(saved["actor_identity"]),
             checkpoint_import_scope="actor tensors only; complete source digest verified; critic/Adam/RNG not installed")
+        if checkpoint_authorization is not None:
+            policy["retained_state_authorization"] = copy.deepcopy(checkpoint_authorization)
         del state
     for parameter in network.parameters():
         parameter.requires_grad_(False)
