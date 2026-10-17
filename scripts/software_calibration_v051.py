@@ -18,6 +18,7 @@ from proworksim.storage import atomic_write, digest, json_bytes, read_json
 from scripts.run_bounded_v022 import artifact_bytes, rss
 
 VERSION = "software-calibration-host-v0.51"
+GPU_PREFERENCE = [0, 1, 2, 3, 4, 6, 7]
 SOURCE = Path(__file__).resolve().parents[1]
 ASSETS = SOURCE / "artifacts/software-calibration-v051"
 MODEL = SOURCE / "runs/assets/models/Qwen3.5-9B-c20223623576"
@@ -135,12 +136,105 @@ def prepare(root):
         "evidence": copied_evidence,
         "resource_modules": [ref(RESOURCE_SOURCE / (name + ".py")) for name in
             ("software_learning_resources_v050r3", "software_learning_resources_v050r5")],
-        "gpu_preference": list(range(8)), "maximum_generations": 48,
+        "gpu_preference": GPU_PREFERENCE, "maximum_generations": 48,
         "maximum_actual_tokens": 3959768, "maximum_updates": 0, "maximum_backward_calls": 0,
         "new_qualification_calls": 0, "model_retries": False,
         "pre_model_resource_only_retries": True, "automatic_successors": False,
         "gate": "input/source/scoring integrity; no pass-rate or vendor-score threshold",
         "cal2_hold_launch_authorized_by_this_host": False})
+    write(root / "plan.json", plan)
+    return plan
+
+
+def remaining_inventory(previous_root, previous_plan, supervisor, relinquishment):
+    """Select only untouched original slots after the explicit GPU5 handoff."""
+    previous_root = Path(previous_root).resolve()
+    if supervisor.get("status") != "paused" or not supervisor.get("ended_at"):
+        raise ValueError("Previous CAL1 host must finish closing its in-flight calls")
+    if (relinquishment.get("kind") != "explicit_user_gpu_relinquishment"
+            or relinquishment.get("requested_gpu") != 5
+            or relinquishment.get("restart_or_resample_authorized") is not False
+            or relinquishment.get("release_observation", {}).get("worker_process_exists") is not False):
+        raise ValueError("Bound explicit GPU5 release receipt required")
+    interrupted = []
+    for name, state in supervisor["states"].items():
+        attempt = state["attempts"][-1]
+        if attempt["pid"] == relinquishment["pid"]:
+            if attempt["gpu"]["index"] != 5 or attempt.get("exit_code") != -15:
+                raise ValueError("GPU5 interruption identity or exit changed")
+            stop = read_json(Path(attempt["output"]) / "host-stop.json")
+            if stop.get("reason") != "explicit_user_gpu5_relinquishment":
+                raise ValueError("GPU5 intentional stop receipt missing")
+            interrupted.append(name)
+        elif (attempt.get("exit_code") != 0
+                or attempt.get("report", {}).get("guard", {}).get("passed") is not True
+                or attempt["report"].get("status") not in {"complete", "paused_before_next_slot"}):
+            raise ValueError("Independent worker did not close with its original guard")
+    if len(interrupted) != 1:
+        raise ValueError("Exactly one explicitly relinquished worker required")
+    remaining, excluded, interrupted_slots = [], [], []
+    for row in previous_plan["rows"]:
+        directory = previous_root / "slots" / row["slot_id"]
+        if directory.exists():
+            if not (directory / "started.json").is_file():
+                raise ValueError("Existing pre-generation slot needs separate diagnosis")
+            if (directory / "generation.json").is_file():
+                grade = directory / "grade/result.json"
+                if not grade.is_file() or read_json(grade).get("pass_at_1") not in (0, 1):
+                    raise ValueError("Existing completed output has unresolved scoring")
+            else:
+                if read_json(directory / "started.json").get("pid") != relinquishment["pid"]:
+                    raise ValueError("Unexplained interruption outside relinquished worker")
+                interrupted_slots.append(row["slot_id"])
+            excluded.append(row["slot_id"])
+        else:
+            remaining.append(row)
+    if not remaining or len(remaining) + len(excluded) != 48:
+        raise ValueError("Original 48-slot partition changed or has no remaining work")
+    if len(interrupted_slots) != 1:
+        raise ValueError("Exactly one in-flight GPU5 request must remain unknown")
+    return remaining, excluded
+
+
+def prepare_continuation(root, previous_root):
+    """Freeze a host-only continuation; model/scorer source stays byte-identical."""
+    root, previous_root = Path(root).resolve(), Path(previous_root).resolve()
+    if root.exists():
+        raise FileExistsError("Continuation requires a new root")
+    from proworksim.audit import code_identity
+    identity = code_identity()
+    if identity.get("code_dirty") is not False:
+        raise ValueError("Commit the continuation before freezing it")
+    previous = frozen(previous_root)
+    if "continuation" in previous:
+        raise ValueError("This bounded handoff only accepts the original CAL1 root")
+    receipt = previous_root / "gpu5-relinquishment.json"
+    supervisor_path = previous_root / "supervisor.json"
+    rows, excluded = remaining_inventory(previous_root, previous,
+        read_json(supervisor_path), read_json(receipt))
+    root.mkdir(parents=True)
+    snapshot = root / "source"
+    shutil.copytree(previous["source_root"], snapshot)
+    host_relative = "scripts/software_calibration_v051.py"
+    shutil.copyfile(Path(__file__).resolve(), snapshot / host_relative)
+    sources = {name: sha_file(snapshot / name) for name in previous["source_files"]}
+    if any(value != previous["source_files"][name] for name, value in sources.items()
+           if name != host_relative):
+        raise ValueError("Continuation changed model-visible or scoring source")
+    old_evidence = [ref(p) for p in sorted(previous_root.rglob("*"))
+        if p.is_file() and "source" not in p.relative_to(previous_root).parts]
+    continuation = {"kind": "explicit_gpu5_handoff_original_unstarted_only",
+        "previous_root": str(previous_root), "previous_plan": ref(previous_root / "plan.json"),
+        "previous_supervisor": ref(supervisor_path), "release_receipt": ref(receipt),
+        "previous_evidence": old_evidence, "excluded_started_slots": excluded,
+        "unchanged_source_except": [host_relative], "new_candidates": 0,
+        "retries": 0, "old_uncertain_reservation_transferred": False}
+    plan = sealed({**{k: v for k, v in previous.items() if k != "sha256"},
+        "created_at": time.time(), "source_commit": identity,
+        "source_root": str(snapshot), "source_files": sources,
+        "rows": rows, "gpu_preference": GPU_PREFERENCE,
+        "maximum_generations": len(rows), "maximum_actual_tokens": sum(r["maximum_tokens"] for r in rows),
+        "continuation": continuation})
     write(root / "plan.json", plan)
     return plan
 
@@ -154,7 +248,25 @@ def frozen(root):
             raise ValueError("CAL1 source snapshot changed: " + name)
     for item in [plan["cases"], plan["model_manifest"], *[e["frozen_copy"] for e in plan["evidence"]]]:
         checked(item)
-    if inventory(read_json(Path(plan["cases"]["path"]))) != plan["rows"]:
+    original_rows = inventory(read_json(Path(plan["cases"]["path"])))
+    continuation = plan.get("continuation")
+    if continuation:
+        previous_path = checked(continuation["previous_plan"])
+        previous = unseal(read_json(previous_path))
+        for item in continuation["previous_evidence"]:
+            checked(item)
+        rows, excluded = remaining_inventory(continuation["previous_root"], previous,
+            read_json(checked(continuation["previous_supervisor"])),
+            read_json(checked(continuation["release_receipt"])))
+        if (previous["rows"] != original_rows or rows != plan["rows"]
+                or excluded != continuation["excluded_started_slots"]
+                or plan["gpu_preference"] != GPU_PREFERENCE
+                or plan["maximum_generations"] != len(rows)
+                or plan["maximum_actual_tokens"] != sum(r["maximum_tokens"] for r in rows)
+                or any(value != previous["source_files"][name] for name, value in plan["source_files"].items()
+                    if name != "scripts/software_calibration_v051.py")):
+            raise ValueError("Original-inventory handoff binding changed")
+    elif original_rows != plan["rows"]:
         raise ValueError("CAL1 fixed inventory changed")
     return plan
 
@@ -260,7 +372,8 @@ def supervise(root):
     if (root / "supervisor.json").exists():
         raise FileExistsError("Started inventory cannot be automatically replayed")
     res, _ = resource_modules(plan)
-    states = {f"shard-{i}": {"status": "not_started", "attempts": []} for i in range(4)}
+    states = {name: {"status": "not_started", "attempts": []}
+        for name in dict.fromkeys(row["worker"] for row in plan["rows"])}
     summary = {"version": VERSION, "status": "waiting", "started_at": time.time(),
         "observer_pid": os.getpid(), "plan": ref(root / "plan.json"), "states": states}
     active, streams, guards = {}, {}, {}
@@ -403,13 +516,18 @@ def supervise(root):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("prepare", "supervise", "worker"))
+    parser.add_argument("command", choices=("prepare", "prepare-continuation", "supervise", "worker"))
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--worker")
     parser.add_argument("--attempt", type=Path)
+    parser.add_argument("--previous-root", type=Path)
     args = parser.parse_args()
     if args.command == "prepare":
         prepare(args.root)
+    elif args.command == "prepare-continuation":
+        if args.previous_root is None:
+            parser.error("--previous-root required for continuation")
+        prepare_continuation(args.root, args.previous_root)
     elif args.command == "supervise":
         supervise(args.root)
     else:
