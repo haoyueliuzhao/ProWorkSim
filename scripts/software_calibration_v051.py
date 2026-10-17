@@ -18,7 +18,9 @@ from proworksim.storage import atomic_write, digest, json_bytes, read_json
 from scripts.run_bounded_v022 import artifact_bytes, rss
 
 VERSION = "software-calibration-host-v0.51"
-GPU_PREFERENCE = [0, 1, 2, 3, 4, 6, 7]
+GPU_PREFERENCE = [0, 1, 3, 4, 6, 7]
+IDLE_POLICY = {"no_compute_processes": True, "utilization_percent": 0,
+    "stable_seconds": 60, "scope": "new-worker admission"}
 SOURCE = Path(__file__).resolve().parents[1]
 ASSETS = SOURCE / "artifacts/software-calibration-v051"
 MODEL = SOURCE / "runs/assets/models/Qwen3.5-9B-c20223623576"
@@ -146,8 +148,8 @@ def prepare(root):
     return plan
 
 
-def remaining_inventory(previous_root, previous_plan, supervisor, relinquishment):
-    """Select only untouched original slots after the explicit GPU5 handoff."""
+def remaining_inventory(previous_root, previous_plan, supervisor, relinquishment, reschedule=None):
+    """Select only untouched slots after explicitly identified resource stops."""
     previous_root = Path(previous_root).resolve()
     if supervisor.get("status") != "paused" or not supervisor.get("ended_at"):
         raise ValueError("Previous CAL1 host must finish closing its in-flight calls")
@@ -156,22 +158,40 @@ def remaining_inventory(previous_root, previous_plan, supervisor, relinquishment
             or relinquishment.get("restart_or_resample_authorized") is not False
             or relinquishment.get("release_observation", {}).get("worker_process_exists") is not False):
         raise ValueError("Bound explicit GPU5 release receipt required")
+    requested_stops = {relinquishment["pid"]: {"gpu": 5, "reason": "explicit_user_gpu5_relinquishment"}}
+    if reschedule is not None:
+        if (reschedule.get("kind") != "explicit_user_cancel_active_gpu_and_reschedule_when_idle"
+                or reschedule.get("allowed_gpu_indices") != GPU_PREFERENCE
+                or reschedule.get("max_residents") != 4
+                or reschedule.get("no_started_request_replay") is not True
+                or reschedule.get("supervisor_pid") != supervisor.get("observer_pid")
+                or reschedule.get("stop_observation", {}).get("host_status") != "paused"
+                or {row.get("pid") for row in reschedule.get("stop_observation", {}).get("workers", [])}
+                    != {state["attempts"][-1]["pid"] for state in supervisor["states"].values()}
+                or any(row.get("exists") is not False
+                       for row in reschedule.get("stop_observation", {}).get("workers", []))):
+            raise ValueError("Explicit all-worker stop and idle-rescheduling receipt required")
+        for row in reschedule["active_workers_at_request"]:
+            if row["pid"] in requested_stops or row["task"]["kind"] != "generation":
+                raise ValueError("New stop must identify a distinct in-flight generation")
+            requested_stops[row["pid"]] = {"gpu": row["gpu"], "reason": "supervisor_interrupted_or_fault"}
     interrupted = []
     for name, state in supervisor["states"].items():
         attempt = state["attempts"][-1]
-        if attempt["pid"] == relinquishment["pid"]:
-            if attempt["gpu"]["index"] != 5 or attempt.get("exit_code") != -15:
-                raise ValueError("GPU5 interruption identity or exit changed")
+        if attempt["pid"] in requested_stops:
+            expected = requested_stops[attempt["pid"]]
+            if attempt["gpu"]["index"] != expected["gpu"] or attempt.get("exit_code") != -15:
+                raise ValueError("Explicit interruption identity or exit changed")
             stop = read_json(Path(attempt["output"]) / "host-stop.json")
-            if stop.get("reason") != "explicit_user_gpu5_relinquishment":
-                raise ValueError("GPU5 intentional stop receipt missing")
+            if stop.get("reason") != expected["reason"]:
+                raise ValueError("Intentional stop receipt missing")
             interrupted.append(name)
         elif (attempt.get("exit_code") != 0
                 or attempt.get("report", {}).get("guard", {}).get("passed") is not True
                 or attempt["report"].get("status") not in {"complete", "paused_before_next_slot"}):
             raise ValueError("Independent worker did not close with its original guard")
-    if len(interrupted) != 1:
-        raise ValueError("Exactly one explicitly relinquished worker required")
+    if len(interrupted) != len(requested_stops):
+        raise ValueError("Every interrupted worker must match its explicit stop receipt")
     remaining, excluded, interrupted_slots = [], [], []
     for row in previous_plan["rows"]:
         directory = previous_root / "slots" / row["slot_id"]
@@ -183,7 +203,7 @@ def remaining_inventory(previous_root, previous_plan, supervisor, relinquishment
                 if not grade.is_file() or read_json(grade).get("pass_at_1") not in (0, 1):
                     raise ValueError("Existing completed output has unresolved scoring")
             else:
-                if read_json(directory / "started.json").get("pid") != relinquishment["pid"]:
+                if read_json(directory / "started.json").get("pid") not in requested_stops:
                     raise ValueError("Unexplained interruption outside relinquished worker")
                 interrupted_slots.append(row["slot_id"])
             excluded.append(row["slot_id"])
@@ -191,8 +211,8 @@ def remaining_inventory(previous_root, previous_plan, supervisor, relinquishment
             remaining.append(row)
     if not remaining or len(remaining) + len(excluded) != 48:
         raise ValueError("Original 48-slot partition changed or has no remaining work")
-    if len(interrupted_slots) != 1:
-        raise ValueError("Exactly one in-flight GPU5 request must remain unknown")
+    if len(interrupted_slots) != len(requested_stops):
+        raise ValueError("Each stopped in-flight request must remain unknown")
     return remaining, excluded
 
 
@@ -209,9 +229,10 @@ def prepare_continuation(root, previous_root):
     if "continuation" in previous:
         raise ValueError("This bounded handoff only accepts the original CAL1 root")
     receipt = previous_root / "gpu5-relinquishment.json"
+    reschedule_path = previous_root / "gpu-idle-reschedule.json"
     supervisor_path = previous_root / "supervisor.json"
     rows, excluded = remaining_inventory(previous_root, previous,
-        read_json(supervisor_path), read_json(receipt))
+        read_json(supervisor_path), read_json(receipt), read_json(reschedule_path))
     root.mkdir(parents=True)
     snapshot = root / "source"
     shutil.copytree(previous["source_root"], snapshot)
@@ -223,9 +244,10 @@ def prepare_continuation(root, previous_root):
         raise ValueError("Continuation changed model-visible or scoring source")
     old_evidence = [ref(p) for p in sorted(previous_root.rglob("*"))
         if p.is_file() and "source" not in p.relative_to(previous_root).parts]
-    continuation = {"kind": "explicit_gpu5_handoff_original_unstarted_only",
+    continuation = {"kind": "explicit_idle_rescheduling_original_unstarted_only",
         "previous_root": str(previous_root), "previous_plan": ref(previous_root / "plan.json"),
         "previous_supervisor": ref(supervisor_path), "release_receipt": ref(receipt),
+        "idle_rescheduling_receipt": ref(reschedule_path),
         "previous_evidence": old_evidence, "excluded_started_slots": excluded,
         "unchanged_source_except": [host_relative], "new_candidates": 0,
         "retries": 0, "old_uncertain_reservation_transferred": False}
@@ -233,6 +255,7 @@ def prepare_continuation(root, previous_root):
         "created_at": time.time(), "source_commit": identity,
         "source_root": str(snapshot), "source_files": sources,
         "rows": rows, "gpu_preference": GPU_PREFERENCE,
+        "idle_policy": IDLE_POLICY,
         "maximum_generations": len(rows), "maximum_actual_tokens": sum(r["maximum_tokens"] for r in rows),
         "continuation": continuation})
     write(root / "plan.json", plan)
@@ -257,10 +280,12 @@ def frozen(root):
             checked(item)
         rows, excluded = remaining_inventory(continuation["previous_root"], previous,
             read_json(checked(continuation["previous_supervisor"])),
-            read_json(checked(continuation["release_receipt"])))
+            read_json(checked(continuation["release_receipt"])),
+            read_json(checked(continuation["idle_rescheduling_receipt"])))
         if (previous["rows"] != original_rows or rows != plan["rows"]
                 or excluded != continuation["excluded_started_slots"]
                 or plan["gpu_preference"] != GPU_PREFERENCE
+                or plan.get("idle_policy") != IDLE_POLICY
                 or plan["maximum_generations"] != len(rows)
                 or plan["maximum_actual_tokens"] != sum(r["maximum_tokens"] for r in rows)
                 or any(value != previous["source_files"][name] for name, value in plan["source_files"].items()
@@ -376,7 +401,7 @@ def supervise(root):
         for name in dict.fromkeys(row["worker"] for row in plan["rows"])}
     summary = {"version": VERSION, "status": "waiting", "started_at": time.time(),
         "observer_pid": os.getpid(), "plan": ref(root / "plan.json"), "states": states}
-    active, streams, guards = {}, {}, {}
+    active, streams, guards, idle_history = {}, {}, {}, {}
 
     def publish():
         summary.update(observed_at=time.time(), ledger=ledger(root, plan["rows"]),
@@ -471,6 +496,11 @@ def supervise(root):
                     write(root / "admission-latest.json", sample)
                     cards = res.available_cards(plan, sample,
                         excluded=[states[n]["attempts"][-1]["gpu"]["index"] for n in active])
+                    if plan.get("idle_policy"):
+                        cards = idle_ready_cards(cards, idle_history, now=time.time())
+                        write(root / "idle-gpu-status.json", {"policy": IDLE_POLICY,
+                            "observed_at": time.time(), "allowed_gpu_indices": plan["gpu_preference"],
+                            "idle_since": idle_history, "ready_gpu_indices": [c["index"] for c in cards]})
                     pending = [n for n, s in states.items() if s["status"] == "not_started"]
                     for name, card in zip(pending[:LIMITS["max_residents"] - len(active)], cards):
                         output = root / name / f"attempt-{len(states[name]['attempts']) + 1:03d}"
@@ -512,6 +542,22 @@ def supervise(root):
             ended_at=time.time())
         publish()
     return summary
+
+
+def idle_ready_cards(cards, history, *, now):
+    """A new process may start only on an unoccupied, steadily idle allowed GPU."""
+    eligible = {str(c["index"]): c for c in cards
+        if c["index"] in GPU_PREFERENCE and c.get("shared") is False
+        and c.get("utilization_percent") == 0}
+    for key in set(history) - set(eligible):
+        del history[key]
+    ready = []
+    for key, card in eligible.items():
+        if key not in history or history[key]["uuid"] != card["uuid"]:
+            history[key] = {"uuid": card["uuid"], "first_seen_idle_at": now}
+        if now - history[key]["first_seen_idle_at"] >= IDLE_POLICY["stable_seconds"]:
+            ready.append(card)
+    return ready
 
 
 def main():
