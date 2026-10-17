@@ -1,0 +1,36 @@
+# v051 CAL-2 单成员实现与有限 CPU 准备
+
+本记录只报告 CAL 六个外部仓库任务的 ProWorkSim P/U 接线与 CPU 资格；不报告模型修复能力，不读取或执行 HOLD 内容。机器摘要为 `artifacts/software-calibration-v051/pws-work/readiness-summary.json`，每项来源均带 SHA-256。
+
+## 实现边界
+
+`repository_sources_v051.py` 绑定已冻结六条原始故障树、原公开问题、原完整测试清单及生产文件修改范围。模型看不到 F2P/P2P 标签、参考修复、正确基线或 Git 历史。原测试与配置只读。程序执行接入单独的受限 runner；错误必须绑定完整候选 SHA、原测试完整性与真实执行回执。候选生产代码导致 pytest 收集失败只有在源码与异常轨迹充分绑定时判为代码失败；其未运行节点明确保留，不能声称这些测试体执行失败。普通环境/配置/插件故障保持未知。
+
+`software_calibration_world_v051.py` 使用真实单成员001和一个 operator；没有隐藏002、第二会话或初始测试。任务板为空，问题说明来源不增添 contract.md 文件。公开反馈使用原3072 Unicode字符精确分页。固定提交R与事前声明的终态工作树R_code/Q_task分别报告；同一精确文件树只使用一份最终评分回执。已尝试评分与实际测试命令执行分别计数。
+
+`software_calibration_collector_v051.py` 复用稳定成员原SDK协议、Γ1、预算账本、90+10分钟与18432/2048容量。P绑定原始actor，U绑定原S-star历史4/4；本阶段无critic/optimizer/更新。原SDK每次生成600秒声明保持；HF max_time为迭代停止，不能声称硬抢占。
+
+`software_calibration_measurement_v051.py` 将原严格反馈/分页/拒绝证明绑定至新S1身份、无初始测试和新来源。正式默认模式拒绝CPU fixture，要求实际read-only actor owner、project数值路径、同源响应与actual_generation_settled；显式CPU模式只允许合成身份与fixture标识，不能成为正式模型准入证据。未改旧测量器或旧记录。
+
+## 已完成的有限控制
+
+原8个 mock 控制通过；SDK环境9个通过（其中8个是此前控制，新增1个真实SDK程序输出控制）；随后3个新增收集错误归因控制通过。累计pytest执行20次，唯一控制12项，不将重复项计为新覆盖。另1个既存记录的纯函数门控确认：默认正式模式拒绝CPU fixture，显式CPU模式只记control。Ruff通过。
+
+六任务各生成一次真实SDK初始请求，用锁定官方 tokenizer 和模板实测；输出仅程序给定staff_done，测试回执仅程序fixture，没有模型推理或原仓库pytest执行。每形状10次编码，共60次；原生render共30次。P/U的模型身份不进入公开任务输入，故不重复同形状。该检查只证明初态容量，不保证后续反馈增长仍满足容量。
+
+| 任务 | 原始输入token | Γ1 selected=protected | 输出预留 | 剩余硬容量 |
+| --- | ---: | ---: | ---: | ---: |
+| boltons-1 | 7081 | 6735 | 2048 | 9649 |
+| boltons-2 | 7188 | 6790 | 2048 | 9594 |
+| parse-1 | 6668 | 6419 | 2048 | 9965 |
+| parse-2 | 6821 | 6495 | 2048 | 9889 |
+| xmltodict-1 | 6802 | 6489 | 2048 | 9895 |
+| xmltodict-2 | 6754 | 6464 | 2048 | 9920 |
+
+同六份既存记录的最终只读机械测量全部continue，0违规、0未决。首次测量因旧重建函数默认actual_generation_settled，而CPU记录明确使用cpu_programmed_fixture，误报projection不一致。修订仅使CPU重建保存其证据类别；模型路径重建保持原算法。原失败报告保留，未重采SDK请求、分词、测试或模型输出。
+
+## 保留的准备失败与资源
+
+首次收集错误模拟启动在bwrap失败，pytest未运行。初态脚本另有两次执行前准备失败：缺少scripts导入路径、使用未支持的evidence_kind；均在首个SDK请求和tokenizer编码前退出，日志与准备目录保留。正式初态六形状只执行一次。
+
+本子任务新增GPU worker、模型生成、原仓库测试执行、权重加载、反向和参数更新均为0；原来源的六任务×三状态资格和runner已通过控制不再重复。实验宿主运行与CAL后续是否获准由独立冻结协议决定。HOLD仍未执行；未来需要独立O1双稳定成员世界/调度/两私有树及终态评分定义，不能直接使用本轮S1语义。
