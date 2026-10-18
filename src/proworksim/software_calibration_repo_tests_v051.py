@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import uuid
+import weakref
 
 VERSION = "v051-repository-pytest-loopback-fd"
 LOOPBACK = "boltons_two_servers_v051"
@@ -104,32 +105,49 @@ def known_evaluation(terminal, *, worker_returncode, timed_out, source_unchanged
 
 def _socket_fixture(spec, active):
     original_socket = socket.socket
+    original_init = original_socket.__init__
+    original_bind = original_socket.bind
+    original_listen = original_socket.listen
     banks = {row["test"]: {**row, "clients": list(row["clients"]), "listener_used": False}
              for row in spec}
     events = []
+    listeners = weakref.WeakKeyDictionary()
 
-    class PreboundListener(original_socket):
-        def bind(self, address):
-            if tuple(address) != ("127.0.0.1", 0) or self.getsockname()[0] != "127.0.0.1":
-                raise PermissionError("Only the fixed localhost ephemeral listener fixture is available")
-            events.append({"operation": "bind_existing_localhost", "test": active[0]})
-
-        def listen(self, backlog=0):
-            if backlog != 100:
-                raise PermissionError("The fixed original test declares backlog 100")
-            events.append({"operation": "listen_existing_backlog100", "test": active[0]})
-
-    def make_socket(family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0, fileno=None):
+    def initialize(self, family=-1, type=-1, proto=-1, fileno=None):
+        # Keep socket.socket itself as the real Python socket class, including
+        # its inheritance protocol and the original fileno inference semantics.
         if fileno is not None:
-            return original_socket(family, type, proto, fileno=fileno)
+            original_init(self, family, type, proto, fileno=fileno)
+            return
         name = active[0].rsplit("::", 1)[-1] if active[0] else ""
         bank = banks.get(name)
-        if family != socket.AF_INET or type != socket.SOCK_STREAM or proto != 0 or bank is None or bank["listener_used"]:
+        effective = (socket.AF_INET if family == -1 else family,
+                     socket.SOCK_STREAM if type == -1 else type, 0 if proto == -1 else proto)
+        if effective != (socket.AF_INET, socket.SOCK_STREAM, 0) or bank is None or bank["listener_used"]:
             # This real syscall is denied for AF_INET by seccomp, not the shim.
-            return original_socket(family, type, proto)
+            original_init(self, family, type, proto)
+            return
         bank["listener_used"] = True
+        original_init(self, *effective, fileno=bank["listener"])
+        listeners[self] = name
         events.append({"operation": "take_listener_fd", "test": active[0]})
-        return PreboundListener(family, type, proto, fileno=bank["listener"])
+
+    def bind(self, address):
+        name = listeners.get(self)
+        if name is None:
+            return original_bind(self, address)
+        if (name != active[0].rsplit("::", 1)[-1] or tuple(address) != ("127.0.0.1", 0)
+                or self.getsockname()[0] != "127.0.0.1"):
+            raise PermissionError("Only the fixed localhost ephemeral listener fixture is available")
+        events.append({"operation": "bind_existing_localhost", "test": active[0]})
+
+    def listen(self, backlog=0):
+        name = listeners.get(self)
+        if name is None:
+            return original_listen(self, backlog)
+        if name != active[0].rsplit("::", 1)[-1] or backlog != 100:
+            raise PermissionError("The fixed original test declares backlog 100")
+        events.append({"operation": "listen_existing_backlog100", "test": active[0]})
 
     def connect(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None, *, all_errors=False):
         name = active[0].rsplit("::", 1)[-1] if active[0] else ""
@@ -141,8 +159,14 @@ def _socket_fixture(spec, active):
         events.append({"operation": "take_preconnected_client_fd", "test": active[0]})
         return original_socket(socket.AF_INET, socket.SOCK_STREAM, 0, fileno=fd)
 
-    socket.socket = make_socket
+    original_socket.__init__ = initialize
+    original_socket.bind = bind
+    original_socket.listen = listen
     socket.create_connection = connect
+    events.append({"operation": "preserve_original_socket_class",
+        "same_class_identity": socket.socket is original_socket,
+        "socket_is_type": isinstance(socket.socket, type),
+        "class_module": original_socket.__module__, "class_name": original_socket.__qualname__})
     return events
 
 
