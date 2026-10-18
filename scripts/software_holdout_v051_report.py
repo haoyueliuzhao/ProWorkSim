@@ -59,6 +59,11 @@ def paired(rows, left, right, metric, tasks):
             'bounds': [low / len(tasks), high / len(tasks)], 'pairs': pairs}
 
 
+def worker_gpu_index(attempt):
+    index = attempt.get('gpu', {}).get('index')
+    return index if index is not None else attempt.get('binding', {}).get('gpu_index')
+
+
 def summarize(root):
     root = Path(root).resolve()
     plan, supervisor = read(root / 'plan.json'), read(root / 'supervisor.json')
@@ -82,8 +87,9 @@ def summarize(root):
             if identity in used_attempts or 'seconds' not in attempt:
                 raise ValueError('Duplicated or unterminated worker interval')
             used_attempts.add(identity)
-            worker_intervals.append({key: attempt.get(key) for key in (
-                'output', 'gpu_index', 'pid', 'started_at', 'ended_at', 'seconds', 'exit_code', 'reason')})
+            worker_intervals.append({**{key: attempt.get(key) for key in (
+                'output', 'pid', 'started_at', 'ended_at', 'seconds', 'exit_code', 'reason')},
+                'gpu_index': worker_gpu_index(attempt)})
         folder = root / 'slots' / slot
         started, closed = folder / 'started.json', folder / 'closed.json'
         row['started'] = started.exists()

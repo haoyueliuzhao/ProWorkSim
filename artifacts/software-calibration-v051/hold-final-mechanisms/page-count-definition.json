@@ -1,0 +1,59 @@
+{
+  "version": "v051-holdout-page-count-definition-v1",
+  "scope": "Explanation of already recorded counters from previously inspected frozen definitions; no new execution, input reading, measurement, tokenization or trajectory scan",
+  "original_mechanism_report": {
+    "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/hold-final-mechanisms/report.json",
+    "sha256": "7738b74f1c76beeba7a394206319d13055c2caec387f463b57bd877dc11a03c7",
+    "bytes": 283443,
+    "changed": false
+  },
+  "counts": {
+    "actual_page_read_requests": 32,
+    "run_tests_feedback_units": 47,
+    "verified_page_feedback_returns": 79
+  },
+  "definitions": {
+    "actual_page_read_requests": "Number of actual model decisions whose action is read_test_result and whose model_call_id belongs to the recorded actual-input call set.",
+    "verified_page_feedback_returns": "Sum across immutable report histories of verified page-bearing feedback entries. Both run_tests and read_test_result can produce a page-bearing feedback entry. Each verified feedback entry contributes one fragment, regardless of how many later inputs contain that feedback.",
+    "run_tests_initial_page": "A successful verified run_tests page return is required to be page index 0, so the initial test response contributes its first page without an explicit read_test_result action."
+  },
+  "decomposition": {
+    "run_tests_initial_page_entries": 47,
+    "explicit_read_test_result_page_entries": 32,
+    "verified_page_bearing_feedback_entries": 79,
+    "arithmetic": "47 + 32 = 79",
+    "basis": "Existing aggregate contains47 run_tests feedback entries,32 verified explicit read outcomes and79 verified page-feedback entries; frozen helper only admits these two tool origins. No new per-feedback traversal was performed for this explanation."
+  },
+  "not_equivalent_to": [
+    "79 independent read_test_result calls",
+    "32 explicit read calls producing79 independent response envelopes",
+    "79 unique page positions or unique page contents",
+    "79 repeated presentation occurrences across later model inputs"
+  ],
+  "recommended_wording": "32 explicit page-read actions;79 verified page-bearing feedback entries, comprising47 initial pages returned by run_tests and32 explicit page-read returns. Unique page count and semantic use are not inferred.",
+  "frozen_definition_sources": [
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/software_organization_measurement_v050.py",
+      "line": 843,
+      "definition": "verified_page_feedback_returns sums each report history's verified_page_feedback_count; the adjacent actual_page_read_requests expression counts read_test_result actual model decisions."
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/scripts/measure_organization_projection_v046.py",
+      "function": "page_feedback",
+      "line": 623,
+      "definition": "Only run_tests/read_test_result feedback is eligible; run_tests is checked to return index0."
+    },
+    {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/scripts/measure_organization_projection_v046.py",
+      "function": "report_histories",
+      "line": 728,
+      "definition": "verified_page_feedback_count is len(fragments), with one fragment per associated verified feedback entry; actual_inputs are stored within the fragment and are not multiplied into this count."
+    }
+  ],
+  "source_identity": "Common frozen implementation0770d02f11bae4b33018c94be809f416c5fb91a2; this note does not change frozen definitions or original counters",
+  "new_model_calls": 0,
+  "new_tokenizer_calls": 0,
+  "new_test_executions": 0,
+  "new_measurement_executions": 0,
+  "semantic_partner_use": "not_analyzed"
+}
