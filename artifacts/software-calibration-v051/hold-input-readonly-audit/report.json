@@ -1,0 +1,1871 @@
+{
+  "version": "v051-holdout-initial-input-readonly-difference-audit-v1",
+  "scope": "Saved initial-request measurement only; not a new admission or an alteration of Gamma or inputs",
+  "audit_script": {
+    "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/hold-input-readonly-audit/audit.py",
+    "sha256": "e37bae1361fde911d0dee8bb1131028d4ac4ff73e3577372097e1c5408814823",
+    "bytes": 12954
+  },
+  "original_input_qualification": {
+    "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/summary.json",
+    "sha256": "27e80b9d857a8dd1a4001c1ec0e320b4490a1494643b8dd569ff3b6fe0c34db5",
+    "bytes": 49959
+  },
+  "original_qualification_passed": false,
+  "original_qualified_case_ids": [],
+  "original_blocked_case_ids": [
+    "hold-funcy-1",
+    "hold-funcy-2",
+    "hold-python-slugify-1",
+    "hold-python-slugify-2",
+    "hold-iniconfig-1",
+    "hold-iniconfig-2",
+    "hold-dominate-1",
+    "hold-dominate-2"
+  ],
+  "qualification_changed": false,
+  "source_snapshot": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source",
+  "sources": {
+    "scripts/software_holdout_inputs_v051.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/scripts/software_holdout_inputs_v051.py",
+      "sha256": "f87b3c4016577a45c084c4a618ca325c1fd7707b9e066023817d8d034721c23e",
+      "bytes": 16771
+    },
+    "src/proworksim/software_holdout_world_v051.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/software_holdout_world_v051.py",
+      "sha256": "bd86beb5a8e7b1e19d27cefe8ae33103464c91929db48767fabab54d18769e6a",
+      "bytes": 29262
+    },
+    "src/proworksim/software_holdout_collector_v051.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/software_holdout_collector_v051.py",
+      "sha256": "c179807b05604ca5d43eb8c20ec0280dd063827e2c59e7d84ae0a30fe9865e99",
+      "bytes": 33972
+    },
+    "src/proworksim/scenarios.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/scenarios.py",
+      "sha256": "8148d93aaec0b7da66ffdcd508eb95514bce2d28c46c9e19e15ab8807b843487",
+      "bytes": 41345
+    },
+    "src/proworksim/world_core.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/world_core.py",
+      "sha256": "f8e4d6ea24482d9149fcb1ef1cd9bc7da5813677dd00b1e11aed186af377409b",
+      "bytes": 106343
+    },
+    "src/proworksim/core/world.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/core/world.py",
+      "sha256": "7343cd08abcd9b004f72a30754712f72e084158c046a7c86e6bb1d4791cb3252",
+      "bytes": 30155
+    },
+    "src/proworksim/team_budget_v033.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/team_budget_v033.py",
+      "sha256": "cc4b78d9fe32abd5889f1c27016d2d7c5e9c2461a4da664756998e6771d47549",
+      "bytes": 15174
+    },
+    "src/proworksim/storage.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/storage.py",
+      "sha256": "bef565d97a5acf311cb8bcd740116f04e013d3d9b55e30bc2edb933aa4e7a0f7",
+      "bytes": 7207
+    },
+    "src/proworksim/compiler.py": {
+      "path": "/data1/zhuxinrui/projects/ProWorkSim/runs/software-holdout-v051-common/source/src/proworksim/compiler.py",
+      "sha256": "5097cde2ff034bdb3cfb777fbbe52b23cd6141565d21e3204ee2fce6599d674d",
+      "bytes": 17847
+    }
+  },
+  "original_opaque_mask_paths": [
+    [
+      "instance_id"
+    ],
+    [
+      "workspace_reference",
+      "object_id"
+    ],
+    [
+      "member_registry",
+      "member_001",
+      "initial_source_reference",
+      "object_id"
+    ],
+    [
+      "member_registry",
+      "member_002",
+      "initial_source_reference",
+      "object_id"
+    ],
+    [
+      "team_model_budget",
+      "state_sha256"
+    ]
+  ],
+  "analysis_only_additional_mask": "/observation/branch_id",
+  "observed_distinct_difference_paths": [
+    "/messages/1/content/observation/branch_id",
+    "/messages/1/content/observation/instance_id",
+    "/messages/1/content/observation/team_model_budget/state_sha256"
+  ],
+  "cause": "Original audit mask covers instance_id and budget state_sha256 but omits independently generated model-visible branch_id. No other differing public leaf was found in any of the eight fixed task-role groups.",
+  "uuid_source_call_chain": [
+    {
+      "file": "src/proworksim/software_holdout_world_v051.py",
+      "line": 323,
+      "operation": "build_scenario(spec, root/world)"
+    },
+    {
+      "file": "src/proworksim/scenarios.py",
+      "line": 611,
+      "operation": "WorldCore.create(root, WorldSpec(...))"
+    },
+    {
+      "file": "src/proworksim/world_core.py",
+      "line": 72,
+      "operation": "new_world_state(spec)"
+    },
+    {
+      "file": "src/proworksim/core/world.py",
+      "line": 203,
+      "operation": "instance_id = uuid.uuid4().hex"
+    },
+    {
+      "file": "src/proworksim/core/world.py",
+      "line": 204,
+      "operation": "branch_id = uuid.uuid4().hex"
+    },
+    {
+      "file": "src/proworksim/software_holdout_world_v051.py",
+      "line": 238,
+      "operation": "observe copies instance_id and branch_id into actual public observation"
+    }
+  ],
+  "legacy_compiler_distinction": "compiler.py:176-177 also initializes UUIDs, but this HOLD path calls WorldCore.create/new_world_state, not the legacy compiler.",
+  "budget_digest_source": "MetadataOwner window_id = holdout-v051:+slot_id (inputs.py:100); build_runtime passes it as team_id (collector.py:300); SharedTeamBudget stores team_id and hashes its entire initial empty ledger (team_budget.py:35-51). The public digest is therefore an opaque hash dependent on the host condition-bearing slot namespace. All 32 values are independently reproduced from the saved window and unchanged initial ledger literals; condition labels themselves are not exposed by this digest.",
+  "business_source_scope": "Full serialized request structures, tools and visible issue/material fields are equal after only the observed opaque fields. This audit does not newly read or retest repository file trees; frozen builder obtains files solely from provider.build_case(case_id), without an actor-condition argument, and original source qualification remains authoritative.",
+  "limits": [
+    "branch_id is actual model-visible input, not hidden host metadata",
+    "Raw requests and token sequences remain different; no byte-equality claim",
+    "No claim that the model is insensitive to randomized namespaces",
+    "No universal capacity guarantee for future opaque identifiers",
+    "Original frozen input_blocked results remain unchanged; any independent revision requires root decision"
+  ],
+  "groups": [
+    {
+      "task_id": "hold-iniconfig-1",
+      "member_id": "member_001",
+      "conditions": [
+        "S_star",
+        "B",
+        "Q_plus",
+        "Q_minus"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "S_star": "cc17c46173574db682204666488ea049",
+            "B": "4306431314154f8ca895ce7c85c3c550",
+            "Q_plus": "110dd7dd6d26489a8550e555a92f2be9",
+            "Q_minus": "ac1794666f7a4edaabc635e4390adbe3"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "S_star": "0a70ac060b1b418bafbae6a3f26e9688",
+            "B": "8775373878194ebfaba3b50b79502465",
+            "Q_plus": "0ad4c503398d4819926f656d098147ea",
+            "Q_minus": "9f27e2a30c3849f19b9ebb6f2962a8d4"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "S_star": "a45bcd3a4fbd3b2a6a90d2a5abe2867f98c2a498ff01f6d6f5e324302ef257d1",
+            "B": "a09d0b633b50b5fcc782983a04b3e6ff834355ceee081203980286cc8c016082",
+            "Q_plus": "2e5f6a52a9e10f9716dc6ef2dcc7ed23236666ecbc6d34756536178566fa33fc",
+            "Q_minus": "a444a0315b9ee0daa607df1cd78be4d868316a164f171d36eed256551c43c846"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "member_id": "member_002",
+      "conditions": [
+        "S_star",
+        "B",
+        "Q_plus",
+        "Q_minus"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "S_star": "937dcfcafd504f84b29da6036e240806",
+            "B": "6e34e8b4a46941e68ab5e09a87b8fedc",
+            "Q_plus": "4264da49969f468d8c556562bc1bf5df",
+            "Q_minus": "40550c86e24b45c48e286bfab50ff24a"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "S_star": "759ce592a9554475bd1e6914bc9137a5",
+            "B": "7a1bb5aa5f6241019080761bdd11bdfc",
+            "Q_plus": "93b65eb51e484407b9e73d4dd28477a6",
+            "Q_minus": "fd5e7eb125394d4598fa90399ffcb302"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "S_star": "a45bcd3a4fbd3b2a6a90d2a5abe2867f98c2a498ff01f6d6f5e324302ef257d1",
+            "B": "a09d0b633b50b5fcc782983a04b3e6ff834355ceee081203980286cc8c016082",
+            "Q_plus": "2e5f6a52a9e10f9716dc6ef2dcc7ed23236666ecbc6d34756536178566fa33fc",
+            "Q_minus": "a444a0315b9ee0daa607df1cd78be4d868316a164f171d36eed256551c43c846"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "member_id": "member_001",
+      "conditions": [
+        "B",
+        "Q_plus",
+        "Q_minus",
+        "S_star"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "B": "7a1ed9371d7743268f77ddca67ad42e1",
+            "Q_plus": "9f96f1a252094742996dc35acc1aaeac",
+            "Q_minus": "735341e6021b4b9caa5bf481966870ed",
+            "S_star": "5e415ee593da47f99b3caf3cf1d19503"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "B": "8016266320af48fe922d06568e58239a",
+            "Q_plus": "0fc6f861b87c4de887a083b587638c6b",
+            "Q_minus": "033fad3177c047b8876eb9062bf011a3",
+            "S_star": "b430393750af4ba1917f535d1717d5f6"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "B": "612cdfca02099b01cee3c4decc6376f0ef51a38009db0893527676dc36814d55",
+            "Q_plus": "d09d1f135dc3fb6a81c4513d59a8a785b07739c316fcb9e95c5d407fd4955f5f",
+            "Q_minus": "4cef28dedc33a375554a601c1d29a8392b2238972887736ef7ad3d9683dec16d",
+            "S_star": "ac69991229fcd1a70dc7b806f1dddf8369716ec57255756bf42a078280ab887b"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "member_id": "member_002",
+      "conditions": [
+        "B",
+        "Q_plus",
+        "Q_minus",
+        "S_star"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "B": "e37458d2eb0c480397c2d09a846df03a",
+            "Q_plus": "1aa837c41ddf4246b21a9cc4079fe642",
+            "Q_minus": "5df554d99ecd401baa23a5a3f43988cb",
+            "S_star": "62e5b3915c234c95be61f134e3972721"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "B": "1c6c835c015f47a0bc80568cb27bd080",
+            "Q_plus": "b2ee32183bb44072a7537068617b313d",
+            "Q_minus": "0d6ffd49f4534399801cb4123df3e593",
+            "S_star": "77fad1443dd94b67ab0bcec20ded97c9"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "B": "612cdfca02099b01cee3c4decc6376f0ef51a38009db0893527676dc36814d55",
+            "Q_plus": "d09d1f135dc3fb6a81c4513d59a8a785b07739c316fcb9e95c5d407fd4955f5f",
+            "Q_minus": "4cef28dedc33a375554a601c1d29a8392b2238972887736ef7ad3d9683dec16d",
+            "S_star": "ac69991229fcd1a70dc7b806f1dddf8369716ec57255756bf42a078280ab887b"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "member_id": "member_001",
+      "conditions": [
+        "Q_plus",
+        "Q_minus",
+        "S_star",
+        "B"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "Q_plus": "074c8b1c95774edaa9cfe9c7282f737c",
+            "Q_minus": "98fa4c9132814d879317e83e6634688e",
+            "S_star": "d2955a1e176f45a180b5a1452fddf9ba",
+            "B": "5ae48d9451c54135bcff4f3b6814e6ff"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "Q_plus": "749d479891324de2a5f68e030536a3e4",
+            "Q_minus": "3e42ef4a1c284b5784a31d26ead154d3",
+            "S_star": "531b2251bac947f79b784307ed3f197c",
+            "B": "4e7f419435e64aa587e5935ac72550ef"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "Q_plus": "ad4a5b71ff954143bbe465bcf07a59f6a924ea1d0441302d8bb5a0b9bd09f7e3",
+            "Q_minus": "54e71b751da918a662da15f35d405b6a80124171061b8bde01979a7f5ea240db",
+            "S_star": "db18051326bfcfc491e33141411916db34312d3e50be2050973635b35a2a235c",
+            "B": "ac1c194c47bb5dce654081ff68ccfe02f1b7030e65842a1b77e0907b44e4254b"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "member_id": "member_002",
+      "conditions": [
+        "Q_plus",
+        "Q_minus",
+        "S_star",
+        "B"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "Q_plus": "696e170ade854308855b975d6fdce137",
+            "Q_minus": "0507adc7b6a24bd191d0e670001ac416",
+            "S_star": "bd4a647e39f84d5eb8645eac11e762c0",
+            "B": "004c7d53c6c0489a8c9291d70bc392b2"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "Q_plus": "d93b4f1e3c0e4a87b28a3cf21fd6c3de",
+            "Q_minus": "8d1247eb949245c09eae379722398745",
+            "S_star": "ef2e46d5f73b49dbb539c3ff47da614d",
+            "B": "cf384c56ecf14f29bc62721178b38a7b"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "Q_plus": "ad4a5b71ff954143bbe465bcf07a59f6a924ea1d0441302d8bb5a0b9bd09f7e3",
+            "Q_minus": "54e71b751da918a662da15f35d405b6a80124171061b8bde01979a7f5ea240db",
+            "S_star": "db18051326bfcfc491e33141411916db34312d3e50be2050973635b35a2a235c",
+            "B": "ac1c194c47bb5dce654081ff68ccfe02f1b7030e65842a1b77e0907b44e4254b"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "member_id": "member_001",
+      "conditions": [
+        "Q_minus",
+        "S_star",
+        "B",
+        "Q_plus"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "Q_minus": "faa2eba6694b42a8bcced785733ddf84",
+            "S_star": "8372e81548a542cca4aceeacdcf6e28c",
+            "B": "d6ea697f39a044fbb1b861009635f0bd",
+            "Q_plus": "6f4e077900334223b4a3847a3487e28f"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "Q_minus": "9f1709458ad74df28b6ad89b1763e7f8",
+            "S_star": "ee2022fb47284675ae4451ab9354a0c8",
+            "B": "0e5341ecdae0458aaf4706252ad780d0",
+            "Q_plus": "228b63b559874704ba20758b277d7a7d"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "Q_minus": "4e9fd72681843bcced50bc45389818ffdc440440644e5a48d2d7b33569a74907",
+            "S_star": "f14afc719e6e8f9ab7eb91222436d5c8b4ef988a8464ddeced3551230094044a",
+            "B": "6949b028573fd7057c7c24b671d983a7dde5828aa0ff887037478c75f5bf186f",
+            "Q_plus": "adaadac371acb1fae4a82d0fbb81119a9fb261452fb6fc7b3ca91dd31b8bc8a1"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "member_id": "member_002",
+      "conditions": [
+        "Q_minus",
+        "S_star",
+        "B",
+        "Q_plus"
+      ],
+      "minimal_differing_json_leaf_paths": [
+        {
+          "path": "/messages/1/content/observation/branch_id",
+          "original_values": {
+            "Q_minus": "846692b521c0486383ea58267a2ab58f",
+            "S_star": "93763e52795d4bc386d23977fa18e96f",
+            "B": "6c9759436bc745c5aa0899185ec2d00b",
+            "Q_plus": "81c1ca6a5b1a4a51bbff164b7a3e5d6e"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/instance_id",
+          "original_values": {
+            "Q_minus": "7f4de179941b49e19e61c3fa68bb69ce",
+            "S_star": "f21cc0f2857949b7b92141f34d82f503",
+            "B": "a175e1d4dd32437faba184923c4a907c",
+            "Q_plus": "0b20e3f7bb054e77b5688f8c1659909e"
+          },
+          "classification": "model_visible_opaque_world_namespace",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        },
+        {
+          "path": "/messages/1/content/observation/team_model_budget/state_sha256",
+          "original_values": {
+            "Q_minus": "4e9fd72681843bcced50bc45389818ffdc440440644e5a48d2d7b33569a74907",
+            "S_star": "f14afc719e6e8f9ab7eb91222436d5c8b4ef988a8464ddeced3551230094044a",
+            "B": "6949b028573fd7057c7c24b671d983a7dde5828aa0ff887037478c75f5bf186f",
+            "Q_plus": "adaadac371acb1fae4a82d0fbb81119a9fb261452fb6fc7b3ca91dd31b8bc8a1"
+          },
+          "classification": "model_visible_opaque_budget_digest",
+          "classification_confidence": "high: exact saved values and frozen construction source"
+        }
+      ],
+      "all_other_decoded_public_request_fields_equal": true,
+      "original_masked_signatures_equal": false,
+      "analysis_additional_branch_mask_signatures_equal": true,
+      "frozen_first_member_equal": true
+    }
+  ],
+  "requests": [
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "S_star",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_001/original-request.json",
+        "sha256": "3a6c2ea2b0d1d4f3440c8bb76b8aa528f79e8d9ec17957421e2aaa781f3cd620",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_001/capture.json",
+        "sha256": "5cfe38a0b6d5afdc2b8b3ed26aed75eaed2a4691bb2636db72ffd53a035741f0",
+        "bytes": 4986
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_001/opaque-identities.json",
+        "sha256": "39c4860846dc14991d761fb46c81389af8d06b93f9b55c657fd6bdf4b7f50c07",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_001/projection.json",
+        "sha256": "7d805efae81ddaf079bcc7c6beef061d45aad1f06dc3769750427d0fc2855c0d",
+        "bytes": 336812
+      },
+      "original_gate_signature": "5083867bef28309f4e673dbe74556406bb54925a0c971627837bd8cba33ffe9a",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "765e9b0fa139b57eadbfbd850d95539b3d1e71cb2f589688bf81d9a97c46cacc",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "a45bcd3a4fbd3b2a6a90d2a5abe2867f98c2a498ff01f6d6f5e324302ef257d1",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7070,
+      "original_actual_input_ids_sha256": "0fe7b49cd3611b230da49f07635708ff7be11c93a918c2b296c0d41219fd973a",
+      "original_actual_rendered_prompt_sha256": "b7b15b4a27517019231f4d82c6c006db25d7d27178afd03e31c4a90090e95034",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "S_star",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_002/original-request.json",
+        "sha256": "e603f13d05bd7c4e977dc9153a84addf7246d3d12c471b5725f609224e5f66d0",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_002/capture.json",
+        "sha256": "681c19b18ae0285f63392c96aa36c2cee329f72c97a29bcf954b85ca10c612cb",
+        "bytes": 4986
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_002/opaque-identities.json",
+        "sha256": "ce3522fbb9f30b6e916221dcf0590f838bd28a774267f8ea44fe9bf48eca5ba4",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-S_star/member_002/projection.json",
+        "sha256": "c99743e65b9eb5bb404e340912bf1cf0428acd4e90b28c1b42055373d3b9d066",
+        "bytes": 336706
+      },
+      "original_gate_signature": "7b5cf02852bdd8d3dcee575cbbbd88e71083a83dc1e9a5fda5eb99a6ffb61741",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "0a1e56881fcea239fa6104f822cc49c5abdda06e1c45dac80be191a724dfd9b0",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "a45bcd3a4fbd3b2a6a90d2a5abe2867f98c2a498ff01f6d6f5e324302ef257d1",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7065,
+      "original_actual_input_ids_sha256": "4df40b5f5e23a0c946b30032015bead7c94a4c138f200381987885f205e0969e",
+      "original_actual_rendered_prompt_sha256": "37cbe4892d1d805c5d4a4fd5673e5c4a7d26b9e135d7e201d1112af12a094a7f",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "B",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_001/original-request.json",
+        "sha256": "1b1fe3da1c7dea4808f9d431b6dc324970371ca06601c0a0d5bc5b692cbf3f46",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_001/capture.json",
+        "sha256": "093f303ab0048f76d31ec98819e4deee2c7b4de0f08441a9fd0964bb6adad36c",
+        "bytes": 4981
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_001/opaque-identities.json",
+        "sha256": "a11fe6628a37b21aa3f8f77ee32c195679a41da5a67ce0f204166242c5ebe71b",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_001/projection.json",
+        "sha256": "21c0212aee1877040d173f04bd47c7ae91760d05844df9440ed7dcf64786b6d1",
+        "bytes": 336850
+      },
+      "original_gate_signature": "2bec12986256564cee8c5371f468b085095aafe9e3a4e93486df29b98d68ec79",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "765e9b0fa139b57eadbfbd850d95539b3d1e71cb2f589688bf81d9a97c46cacc",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "a09d0b633b50b5fcc782983a04b3e6ff834355ceee081203980286cc8c016082",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7072,
+      "original_actual_input_ids_sha256": "a9f707a9930ead7bb5d692f1e986bef1d8bb80e779b18c283d1508e7e7575076",
+      "original_actual_rendered_prompt_sha256": "61caa3301ab8bb7f7cf7f38c0f62f98b50ab78e5feda7c07351cf653d358b654",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "B",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_002/original-request.json",
+        "sha256": "848b23e251703cb651617ead8eed0d309882b44255de3c6f5e1ff7d8b45f7906",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_002/capture.json",
+        "sha256": "01019dfe0067d5ce743f2f9882f6670aacd6c22cc46aea06cf7a54865aff6e29",
+        "bytes": 4981
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_002/opaque-identities.json",
+        "sha256": "a28db0ec94790885e7c0a94841776d13648857c0f19c17fe193b5151a2670c33",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-B/member_002/projection.json",
+        "sha256": "e5976dcc50f419bc3983df7d10962723602d16d4efa8f36daf891cf4318c6a53",
+        "bytes": 336706
+      },
+      "original_gate_signature": "751924256676a1c4ad5287b9a7675150f1641be8ed111afaff3359161b27ba11",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "0a1e56881fcea239fa6104f822cc49c5abdda06e1c45dac80be191a724dfd9b0",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "a09d0b633b50b5fcc782983a04b3e6ff834355ceee081203980286cc8c016082",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7065,
+      "original_actual_input_ids_sha256": "0d82ead38935cca3d6e6241ee4a637862d0e510fa7def878017f83941ace5085",
+      "original_actual_rendered_prompt_sha256": "91c19eecc3983892656403a89bf4a0e770de12e0c4769f03a3e22a0775b35dc0",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "Q_plus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_001/original-request.json",
+        "sha256": "29bfea010e9789b883c183c6b22a64c03dd681e907a85d9d025a236997077a67",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_001/capture.json",
+        "sha256": "c6ca0ef8018cfdf5ebe5f2a625d91022ef0121e314143d9e6d93373aae9d3842",
+        "bytes": 5011
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_001/opaque-identities.json",
+        "sha256": "3983f743525b299a6ed8745c007bfb88a0bf4eaa1023d0f833fdb94f944ff796",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_001/projection.json",
+        "sha256": "50167f2ae5a738e91f02ce078c215f4d66ddddd3d0e5786ffbdc315611b0dc9a",
+        "bytes": 336792
+      },
+      "original_gate_signature": "96f1935e566949c6765d619cf855652aa3bac2b6f667d83d4782c5a2ac1e18cd",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "765e9b0fa139b57eadbfbd850d95539b3d1e71cb2f589688bf81d9a97c46cacc",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "2e5f6a52a9e10f9716dc6ef2dcc7ed23236666ecbc6d34756536178566fa33fc",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7069,
+      "original_actual_input_ids_sha256": "f2fd90ea1c26a62a317a40e814534c6934e6946dcbc509c9f0d9ec3cb5cc6e10",
+      "original_actual_rendered_prompt_sha256": "bff71d541da3458ae9c064c95d31f38bcfd021bbd19332443729819005e81c99",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "Q_plus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_002/original-request.json",
+        "sha256": "43bbb7d1831eec1a6093fc88764203e848f495902e49dae03da1d1b5182c43d2",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_002/capture.json",
+        "sha256": "d6fef9052b32c7295a22bb45049bf5a82537c5fb28898ae39a05c1d403ded6a0",
+        "bytes": 5011
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_002/opaque-identities.json",
+        "sha256": "c10f781eacd7b063dc54b047e5a5f5bd2f0b794df4dd311da70079dbfd1fdb61",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_plus/member_002/projection.json",
+        "sha256": "64975898955707bbe59a212ef0c6247abcc8ba183685174bb7b43d107b97f249",
+        "bytes": 336692
+      },
+      "original_gate_signature": "d7fd24f9ea6cab75fa0888730dcf3403fc7ef7bed4d48673d04e0b1d3820fe63",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "0a1e56881fcea239fa6104f822cc49c5abdda06e1c45dac80be191a724dfd9b0",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "2e5f6a52a9e10f9716dc6ef2dcc7ed23236666ecbc6d34756536178566fa33fc",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7064,
+      "original_actual_input_ids_sha256": "5e6b05d6ccdbb378268a6f7f306bc00947787ee7efd591dc7cc2014fb784e47c",
+      "original_actual_rendered_prompt_sha256": "a4c83e2589aeae96f345a09fc91237c4e8ae0d86b6a75e2821485f88f0a50365",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "Q_minus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_001/original-request.json",
+        "sha256": "6d5b2e853ce4a466fd9255cef9551287135b7c9f64f7fdf045bb75de3403416b",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_001/capture.json",
+        "sha256": "93ab6b4a91e72d5c9efd234cee3b81c7879c64fc0a150102b5ad79bd930d1968",
+        "bytes": 5017
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_001/opaque-identities.json",
+        "sha256": "a0762e69a2deb6d5da575703bfa8925c1b9cb5e98f499f0cef95e4922fb76a56",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_001/projection.json",
+        "sha256": "bcf64c52faabf931bdd668e4712c14804311be1ca03c9142a2fcff5c4cb33222",
+        "bytes": 336752
+      },
+      "original_gate_signature": "dd4ba9e938dc2cd006c8823dc2e0bdcc298b0fed5266d2f4f0e27bfe2a64237b",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "765e9b0fa139b57eadbfbd850d95539b3d1e71cb2f589688bf81d9a97c46cacc",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "a444a0315b9ee0daa607df1cd78be4d868316a164f171d36eed256551c43c846",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7067,
+      "original_actual_input_ids_sha256": "5dd75547b41e9b51683f7007fafd0d59a70f5ed745284683ff4d8a15aae5795a",
+      "original_actual_rendered_prompt_sha256": "57194dfb38aae3e535d721e03714fe736eb79ae7a74b78e6afa4a38b447b566c",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-1",
+      "condition": "Q_minus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_002/original-request.json",
+        "sha256": "a0b73594abde306021f2182e657ec1471f156abb6ad851393f56b93660fa7723",
+        "bytes": 37883
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_002/capture.json",
+        "sha256": "073703ce000b917ad6b421d2f52764e555cc311dad6fffefb6ddc8ad4c54327a",
+        "bytes": 5017
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_002/opaque-identities.json",
+        "sha256": "706a84363e8a0df527049921f9f4ac0b6f935bf50a49873a93140f2f6d76c1a5",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-1-Q_minus/member_002/projection.json",
+        "sha256": "65e48a9374919f80ad5e8f2c58bc0d27c02b5cc7d30673896c2110755fb38200",
+        "bytes": 336694
+      },
+      "original_gate_signature": "d6916530b3ba7f94dddc7d07a54867ee8d0978e1da115743906f973e6c6befa3",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "0a1e56881fcea239fa6104f822cc49c5abdda06e1c45dac80be191a724dfd9b0",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "a444a0315b9ee0daa607df1cd78be4d868316a164f171d36eed256551c43c846",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-1-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7064,
+      "original_actual_input_ids_sha256": "1813f4a00f0d2109b34b332a33df352cb8905e58ba198c412cd787d964cbe918",
+      "original_actual_rendered_prompt_sha256": "371e440e0452712f3e77b3fcb6e306c30738efcc0050b8796cb46b6a352bb9a5",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "B",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_001/original-request.json",
+        "sha256": "8db63e72e80f5e96713ef056f444fadc20ebb237a5ce3ccc9aafdd939f993335",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_001/capture.json",
+        "sha256": "e1e6c26aec6f2ce9ede0d30567f5e616e46c3296137e4d9e429f37aa21fadba8",
+        "bytes": 4981
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_001/opaque-identities.json",
+        "sha256": "077949b97f804607c8b2f816b73b43e8023fab81bdac9cbc70f349ba67ccccce",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_001/projection.json",
+        "sha256": "0e05fa8614713776ec0e11f02ecfa7b68db2460835d91e035e8839d48e7de1fd",
+        "bytes": 337162
+      },
+      "original_gate_signature": "81a1c44021cab627f1429421cdebade22d8160824a8ccc9ae20f7a6d06989508",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "2b2d737db54539588b25ef4d1b800757b833cfe915b90bc8209cfe285b843d9c",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "612cdfca02099b01cee3c4decc6376f0ef51a38009db0893527676dc36814d55",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7073,
+      "original_actual_input_ids_sha256": "3bf433f399718b8bbb0f4818427878168866d627645a03f8d206ef90f5f3a6f7",
+      "original_actual_rendered_prompt_sha256": "a4947bf7191e891bb139fffbf3b85ff740a8b22a18c152cf9c2f6534925933c6",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "B",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_002/original-request.json",
+        "sha256": "208112e152ccd285188eb5108e235f7d3e9880b2e35fc9e6d9a76c81442f6419",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_002/capture.json",
+        "sha256": "c86a4890d79ebef315ab172ed0b726f01472a0df1440d4f47b540f4c9b813e1c",
+        "bytes": 4981
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_002/opaque-identities.json",
+        "sha256": "0a9e320b8192459c9007c9500056bad7b387686b16b8c44640541ff00b5a14e7",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-B/member_002/projection.json",
+        "sha256": "fa1729a07938e0e23333a838e0c9793bf61c35eaf6d875b954d16c6952c27b5e",
+        "bytes": 337106
+      },
+      "original_gate_signature": "c4f2da4d5cf7ea8ecf727e9b4a6b2c1f0850f6f1fc73fdc825dc49eb1bd1e036",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "5882aca0edc31781ab3c072c28c0f1989b1887b858027152197149252ff1f0ae",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "612cdfca02099b01cee3c4decc6376f0ef51a38009db0893527676dc36814d55",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7070,
+      "original_actual_input_ids_sha256": "6fe285c04590fde5de29299ff5a56e9e8d05c64ad6f5a11a0ec05e785fe89f3f",
+      "original_actual_rendered_prompt_sha256": "c80d025345ba2d6dcd7e5c823ab96cabca9cec9d6fbdd22828787786a1299238",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "Q_plus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_001/original-request.json",
+        "sha256": "a699842aa525e90bf705e8402ef289f8be646dc254007df72ab66464c664cdc1",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_001/capture.json",
+        "sha256": "b2bcdf2ba8294d5cc483e0d735479f199d8589b54eaa18ca81334def956b0641",
+        "bytes": 5011
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_001/opaque-identities.json",
+        "sha256": "ab8eafd4bdc8eee3baf3c1b0ae6996d9e8d2adbcad157c8ddfe92f52eb401ffd",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_001/projection.json",
+        "sha256": "fde7f545b0e19804ccad11194eecf5533ba06fafcc1a9775c89481f807cbf342",
+        "bytes": 337276
+      },
+      "original_gate_signature": "7e0ec9f271139c441b64dba63c411feef42f28a2ddeb125a43738ef0dbd097be",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "2b2d737db54539588b25ef4d1b800757b833cfe915b90bc8209cfe285b843d9c",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "d09d1f135dc3fb6a81c4513d59a8a785b07739c316fcb9e95c5d407fd4955f5f",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7078,
+      "original_actual_input_ids_sha256": "65d7d1f52655d6f1d04ccb5d4c9b6aaa29d12e65f63018fb8faca161ac8ed711",
+      "original_actual_rendered_prompt_sha256": "687f334876fcde31be23947180f595183975f33fe192abfb6334f7beafa386c6",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "Q_plus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_002/original-request.json",
+        "sha256": "9efeee832653911c20585e597e22e1872e7fad46ad73416d401dc837afe93014",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_002/capture.json",
+        "sha256": "d191266168771f29548d50289ed4e64cfd20e63c71954c11126f18e38eaf3e0e",
+        "bytes": 5011
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_002/opaque-identities.json",
+        "sha256": "8e47bff4f6120c4703562e19049ba1fcd298fc72ab91fbc83776c7ad5b5ae767",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_plus/member_002/projection.json",
+        "sha256": "c4feb0d0d9eebc3c41cd52da8fdfadf05e4c5c3f0d7f1f1acb5eca41ea2fefc5",
+        "bytes": 337196
+      },
+      "original_gate_signature": "367b85ffd5bc6e3bc55c5c4e7ac5b1581dc68e942809c48da2d72278fdf2e853",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "5882aca0edc31781ab3c072c28c0f1989b1887b858027152197149252ff1f0ae",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "d09d1f135dc3fb6a81c4513d59a8a785b07739c316fcb9e95c5d407fd4955f5f",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7074,
+      "original_actual_input_ids_sha256": "531bdac6d11c7c9790154f409a3e1a18d6f89cd68d9495fc6ff07ed8dc59d2e5",
+      "original_actual_rendered_prompt_sha256": "4db45f6794150c484af2d6290df008723962353c01ece491a519dd8fb8485ce9",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "Q_minus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_001/original-request.json",
+        "sha256": "9f9dc806a1ad01e637a0912fdf2ea9a527aa59e36ad3a54de34b5f4b3f495c9e",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_001/capture.json",
+        "sha256": "aeb18921b79093528d79fe499c9cea6add486e6d52ff22e26de5d3a69992bd25",
+        "bytes": 5017
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_001/opaque-identities.json",
+        "sha256": "5298806bce2463864d94dc58a939ea817351f8fbc7d9f2899ba297dc902f8e85",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_001/projection.json",
+        "sha256": "22e0e6a654c014e30436e0f4988092c48fa61884ad238e317a9b5271c99e2ff8",
+        "bytes": 337166
+      },
+      "original_gate_signature": "3195c470e24f899824815dfacc13ae4eee313d5b8920a3ed11b3a209eee3f8a2",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "2b2d737db54539588b25ef4d1b800757b833cfe915b90bc8209cfe285b843d9c",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "4cef28dedc33a375554a601c1d29a8392b2238972887736ef7ad3d9683dec16d",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7073,
+      "original_actual_input_ids_sha256": "bac219c198c4f5c2bc1cb591d4bee819fbf8b0d49b79c88af2d19f555e558e1d",
+      "original_actual_rendered_prompt_sha256": "bc9a6fa50432e9928d8a956f7fc5179eab25e6ad558dab9f3db5ea7ebe1ab565",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "Q_minus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_002/original-request.json",
+        "sha256": "5179f535802bc106636d159c18c45c618058e04fcc47dcf5bfa27675e1f18f52",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_002/capture.json",
+        "sha256": "50cacccd3285a9b7e3d0baab9884ee06c576e407a08e0523486d117536cbffcf",
+        "bytes": 5017
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_002/opaque-identities.json",
+        "sha256": "d945c716833e49c32ba363af705cdcb8d9e6c25dfacca6ac60e5097a62049eb5",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-Q_minus/member_002/projection.json",
+        "sha256": "93105eb3bb82de76b32253e93ce7de8073a61f9fdcfd99c1ea03a340580ccb88",
+        "bytes": 337060
+      },
+      "original_gate_signature": "5786bd672f2d6fc24e2dfd14210ec57ebbe6802656a8d56122acf5c2ad298e5b",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "5882aca0edc31781ab3c072c28c0f1989b1887b858027152197149252ff1f0ae",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "4cef28dedc33a375554a601c1d29a8392b2238972887736ef7ad3d9683dec16d",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7068,
+      "original_actual_input_ids_sha256": "1baadac5f796eb8cfdb8bc81798186ac06cfe1765f4aa73a87fec73487caf27c",
+      "original_actual_rendered_prompt_sha256": "45787dbd4c373605a0b2cd694b4fd4f70c2ea18baf7482ba749608dec6824ea6",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "S_star",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_001/original-request.json",
+        "sha256": "e50eb60e66784d085094eb1ae97555035a8b5482e5f58f8b4f82d40159d7fa92",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_001/capture.json",
+        "sha256": "f4dae481a1bfb5ed2301b367993f43ab7ebce979d5f915bf7623d4f8a3ffaa1d",
+        "bytes": 4986
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_001/opaque-identities.json",
+        "sha256": "8066d963f40a77e523f0601d3bb7766b541c79ef6c44ead4dfc40eec6322707e",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_001/projection.json",
+        "sha256": "9065b2fe22e27466785933ecf62b5b2d7e22ba0e33e021cdb060166655190e87",
+        "bytes": 337194
+      },
+      "original_gate_signature": "149ac715bad1fdf70ccae6696a9336657c653ee571fcd15dac188b7f1be35e8e",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "2b2d737db54539588b25ef4d1b800757b833cfe915b90bc8209cfe285b843d9c",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "ac69991229fcd1a70dc7b806f1dddf8369716ec57255756bf42a078280ab887b",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7074,
+      "original_actual_input_ids_sha256": "5b279ee827a7dce3bca603bb566012b4025e31bb5a3b3ac57c88a06b60b09e01",
+      "original_actual_rendered_prompt_sha256": "52e5e03a5e6a1c4eaeac12b612fb929a30604f4cd7ca784651fbea8a1d162f28",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-iniconfig-2",
+      "condition": "S_star",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_002/original-request.json",
+        "sha256": "ae2a69ec9e401fc91f904430f51b582776e3dee041ae2c7ace75e7c6413a7d5f",
+        "bytes": 37903
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_002/capture.json",
+        "sha256": "af8cb18c0d8003edfe22147135f29ff9fd26b92c1d9f1e91e1ffe0a10fed58fb",
+        "bytes": 4986
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_002/opaque-identities.json",
+        "sha256": "c465c53de58af5b48797b71de7d51971f77181ec6a12607ed364d88da273b815",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-iniconfig-2-S_star/member_002/projection.json",
+        "sha256": "c2ef16aafc92e14976511823b56494ec4a04d97d82a6e5752b617dfff03097b9",
+        "bytes": 337060
+      },
+      "original_gate_signature": "ec66730ce020f6d98fa9c5915311e145307519fb726188aef97671d53ae13939",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "5882aca0edc31781ab3c072c28c0f1989b1887b858027152197149252ff1f0ae",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "ac69991229fcd1a70dc7b806f1dddf8369716ec57255756bf42a078280ab887b",
+      "host_online_window_id": "holdout-v051:v051-hold-iniconfig-2-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7068,
+      "original_actual_input_ids_sha256": "d6538e8e6140bb9d57805349a671e6ac5eec4e2d06506ae27ddd111f320cc677",
+      "original_actual_rendered_prompt_sha256": "f9f2a8d00d5ff49fd2871f3086e0b6d80db062faad1b82764f9e5fb08c6a42c8",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "Q_plus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_001/original-request.json",
+        "sha256": "8377a8a3c6e38e353fd925c7e215be019fddeb30f97082449e3b856a827767fa",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_001/capture.json",
+        "sha256": "21468ca9f39f1c0013a854f335c8d2104738c8ca06184b83b984654128e441b0",
+        "bytes": 5010
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_001/opaque-identities.json",
+        "sha256": "5e33e18a0825e709dec0230ef6acd205ea29033c22ab7250db381e2d3aac20db",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_001/projection.json",
+        "sha256": "7807ad73671279d15849da82eb1c5d0a332f0b009a37b4586613a7a7ae2d27f4",
+        "bytes": 344417
+      },
+      "original_gate_signature": "e306a40bb50edfc6257afe1051c0b1d9acf9d8ca51230f054b1e4733a5d6ed5f",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "8e0cd34af5ffe83fcdab0a768218c2c9b7b0614702b365fcf538119248b4885d",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "ad4a5b71ff954143bbe465bcf07a59f6a924ea1d0441302d8bb5a0b9bd09f7e3",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7187,
+      "original_actual_input_ids_sha256": "63ebbca908917775996e507b5d9997384bcc1017bb2c0e697e0e626b0288a64c",
+      "original_actual_rendered_prompt_sha256": "37f88f18995d753e046722a3e970866882d073410a250c2037e7da0460d3e788",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "Q_plus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_002/original-request.json",
+        "sha256": "c0c788223c3d8fc2f95d47e0211a965a5d529de0ad17254db7d33eabad004afe",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_002/capture.json",
+        "sha256": "3b1ec65297fe2ecb55244d52fa40c6b8447a739c79d0254041de1d7e891e67a0",
+        "bytes": 5010
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_002/opaque-identities.json",
+        "sha256": "10d6f1b1652a59e78a0f844a3d91787a697519d2299a5880b2d728b25c910240",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_plus/member_002/projection.json",
+        "sha256": "2d39ac7439632a4b9abf6d86dd5669b07c134e7b14f89e59999408bf6e4f7082",
+        "bytes": 344267
+      },
+      "original_gate_signature": "ab08cdb02487f7d29155a3a3e6930da8c07acf8ef3383c369e0b6fbe82a69039",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "6e0713c6579ac9a6eab2ff6814d19ccf8e5d6c68c30a4c2261d06861b92ddb17",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "ad4a5b71ff954143bbe465bcf07a59f6a924ea1d0441302d8bb5a0b9bd09f7e3",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7180,
+      "original_actual_input_ids_sha256": "d11fedf95c3f741b3a4614824c296501aa1259372a7ba81aee8e8567230bf881",
+      "original_actual_rendered_prompt_sha256": "b139bec388493e3a9c0d884b6d6ab4dd6b926b2a315e2da790b9ea37fac20058",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "Q_minus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_001/original-request.json",
+        "sha256": "bd7a06ea369c7b2b4c1484defa938e7c928f7c0ec86f1c98f389654562eb55d1",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_001/capture.json",
+        "sha256": "a800150f4f96e887fd0298e8ef1e7cb899634e970cc4dcfacbbd382d29f9d0e9",
+        "bytes": 5016
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_001/opaque-identities.json",
+        "sha256": "b7b450d55dd3cf12bb4efe96b3b613c41a0adcbb10b0274fda6c5ef432f331af",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_001/projection.json",
+        "sha256": "446a1c04ef9585113106dc2f7955d3e9833f93b2934521f3815b89ea0bd83ddd",
+        "bytes": 344479
+      },
+      "original_gate_signature": "d40056fa91aedc4825e23e4e67d00213cc506482d4a3bd67cf7cfaf7df961b55",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "8e0cd34af5ffe83fcdab0a768218c2c9b7b0614702b365fcf538119248b4885d",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "54e71b751da918a662da15f35d405b6a80124171061b8bde01979a7f5ea240db",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7190,
+      "original_actual_input_ids_sha256": "3654cfdcfc1acbd00d9366769fb0fe5faa9173b8b7a70d5cbaf49e57cc5cc3c5",
+      "original_actual_rendered_prompt_sha256": "f073736ab72235d1734a8c24dcff5bcf37e5fc977a4068185ad1d70c471ec46a",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "Q_minus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_002/original-request.json",
+        "sha256": "fcee9d6d1d29f980e31e0890635b7c7b3ef43bd23e6210e9aa45601aa1a3a41b",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_002/capture.json",
+        "sha256": "291dcda2fc99c1249cd8ac8e93033dfce020b790b803206ff32aa28107e79cc3",
+        "bytes": 5016
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_002/opaque-identities.json",
+        "sha256": "08ce6ef7a6467184bd70559d5b6a0e8ce82e21f5863651040317b7fa0d24a129",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-Q_minus/member_002/projection.json",
+        "sha256": "ee685e37a62a62b49cd780e84beb6d7d407f35b52c7952389dff958f52be1729",
+        "bytes": 344357
+      },
+      "original_gate_signature": "0956621e919c6d6759dee6afa9bed7516da97b1b9dcd2f3f8ea6fd327e522950",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "6e0713c6579ac9a6eab2ff6814d19ccf8e5d6c68c30a4c2261d06861b92ddb17",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "54e71b751da918a662da15f35d405b6a80124171061b8bde01979a7f5ea240db",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7184,
+      "original_actual_input_ids_sha256": "67e8d230045e9454d4cdf0709cc6cd3bfa00f8245525aeae62c7a631f461d8a8",
+      "original_actual_rendered_prompt_sha256": "477d6b169fd1c91fc8022f496355b59818b922c96042834fb793928b69b93296",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "S_star",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_001/original-request.json",
+        "sha256": "67c1b4cf8fd38efd5bc0076c0d84fad58030521976a3c73c1e28e32aa6de8c9b",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_001/capture.json",
+        "sha256": "f0c694743dbf8c69333bd50171bcf410ee7d8fcf66d63a30dfcc21d9849d61cb",
+        "bytes": 4985
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_001/opaque-identities.json",
+        "sha256": "9462b3f292fcc6792f8b69a6b982cb35335178770112c307b3b66c39e464c499",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_001/projection.json",
+        "sha256": "0c469ba2e3710d6d65bdeb0a789a4d224629ae2575507fbbba00b34b9f5cc301",
+        "bytes": 344439
+      },
+      "original_gate_signature": "784885e56adeb48c784adeaec111148568ec55e3cc7d4e6c4769adc6e333dfb5",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "8e0cd34af5ffe83fcdab0a768218c2c9b7b0614702b365fcf538119248b4885d",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "db18051326bfcfc491e33141411916db34312d3e50be2050973635b35a2a235c",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7188,
+      "original_actual_input_ids_sha256": "2627b228fa50cfcf02cdfb0abd09a124a1456dd13038fe7e64b7f551a770d762",
+      "original_actual_rendered_prompt_sha256": "5b7e46689e448637cf9a7ac43023253ea38d675636c431ac73d5f06e7d6cc033",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "S_star",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_002/original-request.json",
+        "sha256": "6f3f4053d8c5ab9b50f1089a1879b62076f03b08ce7325c060aa487f5f5079f4",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_002/capture.json",
+        "sha256": "d3369c5778107eed36959a42d1b73001a405b9cd5d26f5ddc2648f53940a2397",
+        "bytes": 4985
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_002/opaque-identities.json",
+        "sha256": "7ec5af3d537aca8992e4df1372fac6a6c3a87810fa590dbbef12e34269d221b0",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-S_star/member_002/projection.json",
+        "sha256": "68b7eec8d86cfa79b6ad7f285c99b320d9863004e84d5b0baafed87f203b966d",
+        "bytes": 344335
+      },
+      "original_gate_signature": "31af9656188f1da1b04bcc448556555ddf51f511447c177dc7a349a0150c94ea",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "6e0713c6579ac9a6eab2ff6814d19ccf8e5d6c68c30a4c2261d06861b92ddb17",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "db18051326bfcfc491e33141411916db34312d3e50be2050973635b35a2a235c",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7183,
+      "original_actual_input_ids_sha256": "9b90400610f6dc4e240dac92779018d5a6afb3559aba8cde7a41dd76853b3482",
+      "original_actual_rendered_prompt_sha256": "daf474358e6b23dba0dac8ef142fc9086fdb74717e86206a21415fe1d6d65635",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "B",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_001/original-request.json",
+        "sha256": "71ea6c2291fa9dc5f45e72ec977305e35bc6991e5e6d105c354cdf1864cb756c",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_001/capture.json",
+        "sha256": "2fe9165597c83b4c255eceaae7a508ec9c8a92d02d038a4621c8bb045fcd9435",
+        "bytes": 4980
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_001/opaque-identities.json",
+        "sha256": "e688cc64e7be5f8197f35a1060937063c65f25780817dc916c3f8ee7781bcdef",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_001/projection.json",
+        "sha256": "9b2cb1deea405821fd1c323f33c91945cdcdc9d994d210a9d6f1969ba70d1fa3",
+        "bytes": 344389
+      },
+      "original_gate_signature": "80336b52cf760a9e1edd66664fdbb0e3b1d50e5f9c0bd586097d6cc3a8927878",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "8e0cd34af5ffe83fcdab0a768218c2c9b7b0614702b365fcf538119248b4885d",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "ac1c194c47bb5dce654081ff68ccfe02f1b7030e65842a1b77e0907b44e4254b",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7186,
+      "original_actual_input_ids_sha256": "8e275aeea8a29daab76e33f869606b7cc663206060742e0ee4553658a5db0836",
+      "original_actual_rendered_prompt_sha256": "b26013e3c587196a1c7e63d41e758ae7b0575514903051d7c93020b047c669df",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-1",
+      "condition": "B",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_002/original-request.json",
+        "sha256": "3c095175f18202fb3dfdee3b4916a6f9e01de8b386708aa999adaa87ae27b458",
+        "bytes": 38718
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_002/capture.json",
+        "sha256": "1d2c7c7244092af02ee9eb9f2915c376b1f227f355db59175b7d8f47dbd5b3b2",
+        "bytes": 4980
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_002/opaque-identities.json",
+        "sha256": "344412a6fafff4c9def97afa3ee09abae357e7cc8b7890756101fdd19bed2aab",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-1-B/member_002/projection.json",
+        "sha256": "2554432df5fb8673630db150014c1b07842cc2c0a70955b972ad20dc50d69aaf",
+        "bytes": 344371
+      },
+      "original_gate_signature": "b8d3412878f3b405efbcec639f5d09847b11e60b845189362992bc7e2d8f9b8b",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "6e0713c6579ac9a6eab2ff6814d19ccf8e5d6c68c30a4c2261d06861b92ddb17",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "ac1c194c47bb5dce654081ff68ccfe02f1b7030e65842a1b77e0907b44e4254b",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-1-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_001",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7185,
+      "original_actual_input_ids_sha256": "e350f4ea242f5f09e379fe68c00cf40ab37227865d74fa0fa96046b847f46c85",
+      "original_actual_rendered_prompt_sha256": "adfb0460b88c7285b576c3a371f24d09326327d34d4d0fa16cbb3de8b2b00df1",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "Q_minus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_001/original-request.json",
+        "sha256": "e4b3ca3515f418f9440cb1555258b5b2fc4f72107fe4e4a19efef13e15598888",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_001/capture.json",
+        "sha256": "cb876e0f768909190b5b0eed65060b37582603a74f719a8dc740767c57a76276",
+        "bytes": 5016
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_001/opaque-identities.json",
+        "sha256": "713d6f9f6f8ceae89b63e152c344026cd297a9208b4443cea47963c9f35ce34f",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_001/projection.json",
+        "sha256": "5f683a018a729988853fecaf312f47bb3297d67965bb3966c6fda1d2e6bda358",
+        "bytes": 350956
+      },
+      "original_gate_signature": "d7c65218355fa03d3cce39a7b817e34c9df9fa7b29ea6e6907da0c57b6aa2351",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "83ca339ccfcb133b71f8eb755bd416c9749d627b74a4b5124f546a0ceb8e3a64",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "4e9fd72681843bcced50bc45389818ffdc440440644e5a48d2d7b33569a74907",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7275,
+      "original_actual_input_ids_sha256": "9d6e779ea12d0917b2ad00dd1c189dd20c982b4db15b4cbcbc2949af1ef066ae",
+      "original_actual_rendered_prompt_sha256": "eb4390baa01cd7a8c767e846257843b9d61d8f9bbaef0e1334c20fda914d503b",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "Q_minus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_002/original-request.json",
+        "sha256": "0fb77e0a248b4bdec43b8b9d10d4d32e8c07eda9cb6a70519bcc17157da6a9f9",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_002/capture.json",
+        "sha256": "815f25bd96f0193eb3623048d80c87722ad29a1db2c802e27a030f893aba2c4b",
+        "bytes": 5016
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_002/opaque-identities.json",
+        "sha256": "61373c83762d483562e9c7cabc66f82361f40d37fc8162310a54aef4ec1b280d",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_minus/member_002/projection.json",
+        "sha256": "4365ea43d34507cd8fdc408fea0c6a264136462a15a7d30a65f04ddd331d68ba",
+        "bytes": 350980
+      },
+      "original_gate_signature": "4efbd464100ee21a9af5531ce56748fb0aaf669dca85f74ffd6ece429eea9c6b",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "aa29902647d56054b7984526375b547bdec9a36771a4bcd28cf0c2c4801694e2",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "4e9fd72681843bcced50bc45389818ffdc440440644e5a48d2d7b33569a74907",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-Q_minus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7276,
+      "original_actual_input_ids_sha256": "890653f17418d56d03f4fea724f88c8a6eef09dba07932adb1b3cbb27d59e57a",
+      "original_actual_rendered_prompt_sha256": "63d235543b35fbe503c8ee302068840f48ca8bedaa8bc88dfb74290776304a02",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:52dc58b5419c101b66045a7030c81b8ea0db1842ab3330a00a45563aa13e4995",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "S_star",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_001/original-request.json",
+        "sha256": "3ca940ee648a4df7b052f83e3ca84e4f921564f291df7406929e1cfedbf30fb6",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_001/capture.json",
+        "sha256": "234fc33463a9756aa3617ffd202f7e73f7ed4b29ba74e0c2858f127844d3afea",
+        "bytes": 4985
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_001/opaque-identities.json",
+        "sha256": "bd426a0bfe510779548067189c3516eebcac04168ffe4b3ccc1c6bda29cf54b9",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_001/projection.json",
+        "sha256": "ecb889d5b2ea56e66e7617c2f63a9a5b65995fd802d034cd30f710bd132547d7",
+        "bytes": 350932
+      },
+      "original_gate_signature": "0f6c96f5b5c1821b79d216d0ddadc68c6deb507af004da38cf598c23c1913b09",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "83ca339ccfcb133b71f8eb755bd416c9749d627b74a4b5124f546a0ceb8e3a64",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "f14afc719e6e8f9ab7eb91222436d5c8b4ef988a8464ddeced3551230094044a",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7274,
+      "original_actual_input_ids_sha256": "fa768196a45ace4de98099658d5202fc1017d0b002d0676d6ba8e14c168f6978",
+      "original_actual_rendered_prompt_sha256": "1ab9797ac3504d2354cbe3cc93467830f4f68c91129b7552aa75affa539e4ad4",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "S_star",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_002/original-request.json",
+        "sha256": "a7d446d734c64eb83c1d8a879c205a2c468b46079b09a3d606211974e5d085e2",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_002/capture.json",
+        "sha256": "c0aad12edc188019cc8e83b0c558ca364ccdeff8a202c8b89b89ee0f77dcdfb6",
+        "bytes": 4985
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_002/opaque-identities.json",
+        "sha256": "36692e697f3e9247cd6fb0769be3dd56ab8c8e346eb65fb79592ba0ea43b02b6",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-S_star/member_002/projection.json",
+        "sha256": "6e906bfe88a21108289ea8b937dea7feea0a61e9470e6871ec8fb936ae7d191f",
+        "bytes": 350996
+      },
+      "original_gate_signature": "858cc69f7221ab7a566f7e7e98bfd56700c783ed09fbf62f1dfd5663c6ed6649",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "aa29902647d56054b7984526375b547bdec9a36771a4bcd28cf0c2c4801694e2",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "f14afc719e6e8f9ab7eb91222436d5c8b4ef988a8464ddeced3551230094044a",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-S_star",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7277,
+      "original_actual_input_ids_sha256": "c4fbce14db257698f7bf477bde6ad9d4592b6333fc1c4c7fb8aff4bb95684b6c",
+      "original_actual_rendered_prompt_sha256": "5716f889052bcadc39ec78ef4ed6bf389d693a2dfaa8bfdf20195c7763b5cfd5",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-4:06f997903cd7d9bf8fb5dba403d5fe831619a1d871faec8e4699576a55154bcf",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "B",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_001/original-request.json",
+        "sha256": "c3b19b70c37c3b506df65e9730e4cfd1f4b8c39fe146399136d63248aee7a456",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_001/capture.json",
+        "sha256": "e31f2aba91d95908fe1f4f935e3662abc6c9e2bf6295909f11b61087a355c8dd",
+        "bytes": 4980
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_001/opaque-identities.json",
+        "sha256": "7f7cfa401eb71fb78951ac1f6ce3155182a422f13bfe6d1fcb106e306ae2821b",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_001/projection.json",
+        "sha256": "72a5145fc61a504a10eb5ea600442557466c986afb128d3960d064a60e46e5c4",
+        "bytes": 351048
+      },
+      "original_gate_signature": "5824025495aa7abf6159efaaa230003893bee4e59836eeba51324ff4e3f5dfd6",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "83ca339ccfcb133b71f8eb755bd416c9749d627b74a4b5124f546a0ceb8e3a64",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "6949b028573fd7057c7c24b671d983a7dde5828aa0ff887037478c75f5bf186f",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7279,
+      "original_actual_input_ids_sha256": "346aae7aef18163caadabdc304b4543806080ab99857a1dfec7245c7cdd2ec0f",
+      "original_actual_rendered_prompt_sha256": "e0b9e5d374f990054d6a55a98e5ddb687c92fb761bf33a44e96d01ff445d0577",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "B",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_002/original-request.json",
+        "sha256": "da59b8ac1937a8e52249ba7a37819b9908d465012ca2718e2b2fc46caeeb9649",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_002/capture.json",
+        "sha256": "3e57e5e96ca328cd8f27ebaef84d630bb29bc17233d4ed43374affee30985ed1",
+        "bytes": 4980
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_002/opaque-identities.json",
+        "sha256": "6e75d702de33a95595b2a70e5e7648c16c4f41860e2373ea22aa147f5dbed413",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-B/member_002/projection.json",
+        "sha256": "b32e37aea03c0902a5b3f347afba02f5b3589ef1f6a2109d76d453ab49379e00",
+        "bytes": 351002
+      },
+      "original_gate_signature": "98aa431117b5a07c29d13bbccd5790884dca7eb26b14945b2376013abeb59846",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "aa29902647d56054b7984526375b547bdec9a36771a4bcd28cf0c2c4801694e2",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "6949b028573fd7057c7c24b671d983a7dde5828aa0ff887037478c75f5bf186f",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-B",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7277,
+      "original_actual_input_ids_sha256": "85993185e662c7eca35082d7ac6451d07346eb01a96e3c80fa62c041387d95bd",
+      "original_actual_rendered_prompt_sha256": "e6d85b06cc7ac51039d28119444dc3e42b88b96cf8234154944b9607f96f1b2a",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:18f5fd7d61330aef9210965909d42b33944131fa94abc27c8846ca057317d465",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "Q_plus",
+      "member_id": "member_001",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_001/original-request.json",
+        "sha256": "72c798f42be6e75270c9889419469edc5846bea215a1e140d86dbc902ac1d006",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_001/capture.json",
+        "sha256": "a16b9a7305edafa6e756d26c53fe62e9bca15d1afb5a90be7c543e8434f5fe77",
+        "bytes": 5010
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_001/opaque-identities.json",
+        "sha256": "05f68227c49534f8c490c07f6277b3c51979a1790c9324dccbb3095571fc0bf4",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_001/projection.json",
+        "sha256": "b889768e21c290a687871fc1cb3fe98789fe52bbdb0d3a7d8a271fee0a75b722",
+        "bytes": 351024
+      },
+      "original_gate_signature": "1dea4ae970931c5409feaec613b191a792ad778d632a15c95c0808b9585a97a3",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "83ca339ccfcb133b71f8eb755bd416c9749d627b74a4b5124f546a0ceb8e3a64",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "adaadac371acb1fae4a82d0fbb81119a9fb261452fb6fc7b3ca91dd31b8bc8a1",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7278,
+      "original_actual_input_ids_sha256": "96bc9c118604d64d995331e00e9baf03b4839cc27f010b41fece1747430b082c",
+      "original_actual_rendered_prompt_sha256": "289f9ce82a65062281ab5789f68aaa77134d7c4ee4d1132c28ab5fbc17ba6180",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    },
+    {
+      "task_id": "hold-dominate-2",
+      "condition": "Q_plus",
+      "member_id": "member_002",
+      "original_request": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_002/original-request.json",
+        "sha256": "c4f962adbe14b71cd0ccb1a025a22ff5cb8b24e26a7d723599af563bb08f34a5",
+        "bytes": 39540
+      },
+      "capture": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_002/capture.json",
+        "sha256": "6d26c05ab655cff237f609754b5a65f4572d7bf399ce28d428c51d29f0299b8b",
+        "bytes": 5010
+      },
+      "opaque_identities": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_002/opaque-identities.json",
+        "sha256": "05af64a40ceb2ae1af59636e795916d6fa7443bfe8560500403e0d4d30f64471",
+        "bytes": 765
+      },
+      "projection": {
+        "path": "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/holdout-initial-inputs/v051-hold-dominate-2-Q_plus/member_002/projection.json",
+        "sha256": "6aed420bd31490896e8aaa67baf71090412d3f48b35a7c5bf56d7bfc6606757e",
+        "bytes": 350876
+      },
+      "original_gate_signature": "fa7b2569683cc6d3ecb5bb6af587e23d8ffff59148a077e88cec7746bea91ff7",
+      "original_gate_signature_matches_saved_summary": true,
+      "analysis_only_additional_branch_mask_signature": "aa29902647d56054b7984526375b547bdec9a36771a4bcd28cf0c2c4801694e2",
+      "saved_mask_omits_branch_id": true,
+      "public_budget_digest": "adaadac371acb1fae4a82d0fbb81119a9fb261452fb6fc7b3ca91dd31b8bc8a1",
+      "host_online_window_id": "holdout-v051:v051-hold-dominate-2-Q_plus",
+      "initial_budget_digest_from_host_window_matches": true,
+      "frozen_first_member": "member_002",
+      "capture_generation_attempts": 0,
+      "capture_world_unchanged": true,
+      "original_actual_selected_prompt_tokens": 7271,
+      "original_actual_input_ids_sha256": "5d9ac56559f8026e158143973b2ce02828eab596aa5803cb99a2b11f3d7e5539",
+      "original_actual_rendered_prompt_sha256": "ec918f89f6a3893e8577ac0f2768d0d54bdd3851c58c99764b2740637e4230be",
+      "original_actual_capacity_fit": true,
+      "actor_state_metadata_model_revision": "online-actor-5:7a76e93826a90052c400505bc407a30f9ff067e99fd1d1537e5d551678e69207",
+      "state_model_revision_is_not_a_public_request_leaf": true
+    }
+  ],
+  "counts": {
+    "saved_actual_requests": 32,
+    "fixed_task_role_groups": 8,
+    "all_original_actual_capacity_fit": true,
+    "all_original_gate_signatures_reproduced": true,
+    "all_budget_digest_origins_bound": true,
+    "all_analysis_branch_only_comparisons_equal": true,
+    "new_SDK_requests": 0,
+    "new_tokenizer_calls": 0,
+    "new_model_calls": 0,
+    "new_test_executions": 0,
+    "common_source_mutations": 0,
+    "original_result_mutations": 0
+  }
+}
