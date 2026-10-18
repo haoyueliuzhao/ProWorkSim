@@ -78,7 +78,7 @@ def prepare_buggy_worktree(files, destination, *, receipt_path):
     for name, text in files.items():
         path = destination / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
+        path.write_bytes(text.encode("utf-8"))
     env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_AUTHOR_NAME": "v051 calibration",
         "GIT_AUTHOR_EMAIL": "calibration@local.invalid", "GIT_COMMITTER_NAME": "v051 calibration",
@@ -118,10 +118,12 @@ def read_worktree(worktree):
             if path.is_symlink() or not path.is_file():
                 raise ValueError("Native deliverable must contain ordinary UTF-8 files")
             key = str(path.relative_to(root))
-            files[key] = path.read_text(encoding="utf-8")
+            files[key] = path.read_bytes().decode("utf-8")
     if len(files) > 5000 or sum(len(value.encode()) for value in files.values()) > 33554432:
         raise ValueError("Native source snapshot exceeds the predeclared finite tree budget")
-    return files
+    # Frozen repository file maps use path order; JSON identity must not depend
+    # on the host filesystem's os.walk traversal order.
+    return dict(sorted(files.items()))
 
 
 def fixed_patch(initial, final):

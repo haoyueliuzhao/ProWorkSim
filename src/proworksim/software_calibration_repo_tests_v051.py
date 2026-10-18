@@ -7,6 +7,7 @@ sockets, connect/bind/listen, and external file access remain OS-denied.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -146,12 +147,21 @@ def _socket_fixture(spec, active):
 
 
 def _worker(spec_path):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from proworksim.software_calibration_shell_v051 import install, record_current_process
+    spec = json.loads(Path(spec_path).read_text())
+    # The standalone CPU interpreter needs only this same frozen stdlib helper,
+    # not proworksim.__init__ and unrelated application dependencies.
+    helper_path = Path(__file__).resolve().with_name("software_calibration_shell_v051.py")
+    helper_bytes = helper_path.read_bytes()
+    helper_source = {"path": str(helper_path), "sha256": hashlib.sha256(helper_bytes).hexdigest(),
+                     "bytes": len(helper_bytes)}
+    if helper_source != spec["shell_helper_source"]:
+        raise RuntimeError("Standalone isolation helper differs from the frozen sibling source")
+    module_spec = importlib.util.spec_from_file_location("v051_repository_isolation_helper", helper_path)
+    helper = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(helper)
     import pytest
 
-    spec = json.loads(Path(spec_path).read_text())
-    record_current_process(spec, spec_path)
+    helper.record_current_process(spec, spec_path)
     root = Path(spec["worktree"])
     os.chdir(root)
     os.environ.clear()
@@ -211,11 +221,12 @@ def _worker(spec_path):
                     "longreprtext": report.longreprtext if report.longrepr else "",
                     "phase": report.when}
 
-    proof = install(spec)
+    proof = helper.install(spec)
     args = pytest_arguments(spec, root)
     code = pytest.main(args, plugins=[Recorder()])
     result = {"version": VERSION, "nonce": spec["nonce"], "returncode": int(code),
         "tests": list(rows.values()), "collected": collected, "isolation": proof,
+        "shell_helper_source": helper_source,
         "collection_errors": [{**row, **exceptions.get(node, {})} for node, row in collection_errors.items()],
         "loopback_fixture": {"policy": LOOPBACK if spec["loopback_fds"] else None,
             "connections_preestablished_by_host": bool(spec["loopback_fds"]),
@@ -243,7 +254,7 @@ def run_repository_tests(*, files, task, run_root):
         if Path(name).is_absolute() or ".." in Path(name).parts or ".git" in Path(name).parts:
             raise ValueError("Only declared repository-relative source paths")
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
+        path.write_bytes(text.encode("utf-8"))
     (tree / ".calibration-empty-pytest.ini").write_text("[pytest]\n")
     (tree / ".calibration-tmp").mkdir()
     python = Path(task["cpu_python"]).absolute()
@@ -263,7 +274,11 @@ def run_repository_tests(*, files, task, run_root):
                             "clients": [client.fileno() for client in clients]})
     elif task.get("loopback_fixture") is not None:
         raise ValueError("Unknown network fixture is not an allowed fallback")
+    helper_path = Path(__file__).resolve().with_name("software_calibration_shell_v051.py")
+    helper_bytes = helper_path.read_bytes()
     spec = {"version": VERSION, "worktree": str(tree), "nodeids": ids, "nonce": uuid.uuid4().hex,
+        "shell_helper_source": {"path": str(helper_path), "sha256": hashlib.sha256(helper_bytes).hexdigest(),
+                                "bytes": len(helper_bytes)},
         "parent_pid": os.getpid(), "parent_start_ticks": process_identity(os.getpid())["start_ticks"],
         "config_relative_path": task.get("config_relative_path"),
         "readonly_paths": ["/usr/bin", "/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/lib64",
@@ -314,7 +329,7 @@ def run_repository_tests(*, files, task, run_root):
     changed = []
     for name, text in files.items():
         try:
-            if (tree / name).is_symlink() or (tree / name).read_text() != text:
+            if (tree / name).is_symlink() or (tree / name).read_bytes() != text.encode("utf-8"):
                 changed.append(name)
         except OSError:
             changed.append(name)
@@ -327,6 +342,7 @@ def run_repository_tests(*, files, task, run_root):
     valid = known_evaluation(terminal, worker_returncode=proc.returncode, timed_out=timed_out,
         source_unchanged=not changed, missing=missing, unexpected=unexpected,
         source_attributable_collection_failure=binding["source_attributable_collection_failure"])
+    valid = valid and terminal.get("shell_helper_source") == spec["shell_helper_source"]
     result = {"version": VERSION, "executed": valid,
         "passed": all_observed and terminal["returncode"] == 0 and all(row["outcome"] == "passed" for row in tests) if valid else None,
         "returncode": terminal.get("returncode", proc.returncode) if terminal else proc.returncode,
@@ -338,6 +354,7 @@ def run_repository_tests(*, files, task, run_root):
         "source_unchanged": not changed, "changed_input_paths": sorted(changed),
         "test_integrity": not changed, "missing_test_ids": missing, "unexpected_test_ids": unexpected,
         "isolation": terminal.get("isolation") if terminal else None,
+        "shell_helper_source": terminal.get("shell_helper_source") if terminal else None,
         "loopback_fixture": terminal.get("loopback_fixture") if terminal else None,
         "timed_out": timed_out, "seconds": time.monotonic() - started,
         "original_nodeids_sha256": hashlib.sha256(_json(ids)).hexdigest(),
