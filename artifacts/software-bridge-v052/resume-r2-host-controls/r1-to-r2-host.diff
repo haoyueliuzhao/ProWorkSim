@@ -1,0 +1,205 @@
+--- r1-immutable
++++ r2-independent
+@@ -1,4 +1,4 @@
+-"""Only the three wholly unopened original v052 slots, under a separate release.
++"""Independent r2 for the original three, after zero-model r1 binding failure.
+ 
+ The original worker code object and resource supervisor algorithm are reused in
+ private namespaces. Model-visible source is copied byte-for-byte from the old
+@@ -11,6 +11,7 @@
+ import copy
+ from functools import cache
+ import inspect
++import json
+ from pathlib import Path
+ import shutil
+ import time
+@@ -22,10 +23,10 @@
+ from scripts import software_bridge_v052 as bridge
+ from scripts.software_calibration_v051 import checked, ref, sealed, unseal, write
+ 
+-VERSION = 'software-openhands-bridge-resume-r1-v0.52'
+-MODULE = 'scripts.software_bridge_v052_resume'
+-MODULE_FILE = 'scripts/software_bridge_v052_resume.py'
+-STAGE = 'v052-OH-BRIDGE-resume-r1'
++VERSION = 'software-openhands-bridge-resume-r2-v0.52'
++MODULE = 'scripts.software_bridge_v052_resume_r2'
++MODULE_FILE = 'scripts/software_bridge_v052_resume_r2.py'
++STAGE = 'v052-OH-BRIDGE-resume-r2'
+ ORIGINAL_COMMIT = '7d95912b4ce9ae3130b01b4ce87bc26f9e2e5b9d'
+ PENDING = (
+     'v052-cal2-xmltodict-1-PS1',
+@@ -47,6 +48,7 @@
+     'all_nine_entered_excluded', 'four_interrupted_unknown_preserved',
+     'original_scientific_sources_unchanged', 'original_qualifications_reused',
+     'resume_host_controls', 'old_budget_and_costs_not_transferred',
++    'r1_zero_model_entry_failure_preserved',
+ }
+ PREDECESSOR_KEYS = ('predecessor_plan', 'predecessor_supervisor', 'predecessor_pause', 'predecessor_stage_report')
+ PRESERVED_KEYS = (
+@@ -101,7 +103,7 @@
+ 
+ 
+ def gates(release, references):
+-    if (release.get('version') != 'v052-bridge-resume-r1-release-v1'
++    if (release.get('version') != 'v052-bridge-resume-r2-release-v1'
+             or release.get('stage') != STAGE or release.get('released') is not True
+             or release.get('user_resume_authorized') is not True
+             or release.get('unresolved_blockers') != []
+@@ -121,8 +123,9 @@
+             or observation.get('worker_wrapped') is not False or observation.get('restart') != 'no'):
+         raise ValueError('Signal observation is external, supervisor-only, no-fork-follow and no worker wrapper')
+     supporting = release.get('supporting_references', {})
+-    if not {'signal_observation_control', 'interruption_audit', 'partial_accounting_audit'} <= set(supporting):
+-        raise ValueError('Bind existing signal-control and interruption/accounting audits; do not infer signal origin')
++    if not {'signal_observation_control', 'interruption_audit', 'partial_accounting_audit',
++            'resume_r1_zero_model_failure', 'cross_interpreter_binding_diagnostic'} <= set(supporting):
++        raise ValueError('Bind signal/interruption/accounting and zero-model r1/AST-difference evidence')
+ 
+ 
+ def original_state(project, references):
+@@ -188,6 +191,56 @@
+     return old, selected, entered
+ 
+ 
++def zero_model_predecessor(project, reference):
++    """Reuse the immutable r1 receipt, rejecting any changed trace or new entry."""
++    root = Path(project).resolve() / 'runs/software-bridge-v052-resume-r1'
++    audit = read_json(checked(reference))
++    if (audit.get('version') != 'v052-resume-r1-zero-entry-readonly-audit-v1'
++            or audit.get('passed') is not True or audit.get('root') != str(root)
++            or audit.get('host_status') != 'paused' or audit.get('host_ended_at') is None
++            or not audit.get('checks') or any(value is not True for value in audit['checks'].values())
++            or [row.get('slot_id') for row in audit.get('rows', [])] != list(PENDING)
++            or audit.get('new_model_calls') != 0):
++        raise ValueError('r1 must remain a fully bound zero-model entry failure')
++    for name in ('plan.json', 'supervisor.json', 'pause.json', 'supervisor-signals.strace'):
++        if Path(audit['sources'][name]['path']).resolve() != root / name:
++            raise ValueError('r1 predecessor trace identity changed')
++    for item in audit['sources'].values():
++        checked(item)
++    ledger = audit.get('original_ledger', {})
++    if (any(ledger.get(key) != 0 for key in ('known_actual_tokens', 'uncertain_reservation_tokens',
++            'started_generations', 'complete_generations', 'ledger_tokens', 'complete_actual_tokens'))
++            or ledger.get('integrity_errors') != []
++            or [row.get('slot_id') for row in ledger.get('outcomes', [])] != list(PENDING)
++            or any(row.get('started') is not False or row.get('closed') is not False
++                   for row in ledger.get('outcomes', []))):
++        raise ValueError('r1 model exposure or cost prevents a fresh entry')
++    for row in audit['rows']:
++        if (any(row.get(key) is not False for key in ('slot_entered', 'model_loader_entered',
++                'generation_started', 'business_sample_exposure_added'))
++                or any(row.get(key) != 0 for key in ('new_model_calls', 'known_actual_tokens',
++                    'uncertain_reservation_tokens'))
++                or row.get('host_state') != 'stopped' or len(row.get('attempts', [])) != 1):
++            raise ValueError('r1 entered or charged rows cannot be replayed')
++        attempt = row['attempts'][0]
++        if (attempt.get('exit_code') != 1 or attempt.get('ended_at') is None
++                or attempt.get('failure') != 'ValueError: Resume source/release/lineage binding changed'
++                or attempt.get('failure_present_in_log') is not True
++                or attempt.get('all_expected_pre_model_paths_absent') is not True):
++            raise ValueError('r1 failure is not the recorded pre-entry binding error')
++        for key in ('worker_log', 'launch'):
++            checked(attempt[key])
++        absent = attempt.get('absent_before_model_paths', {})
++        if not absent or any(value is not True or not Path(path).is_relative_to(root) or Path(path).exists()
++                             for path, value in absent.items()):
++            raise ValueError('r1 has new slot/model entry artifacts')
++        output = Path(attempt['output'])
++        if (not output.is_relative_to(root / 'workers')
++                or sorted(path.name for path in output.iterdir()) != attempt['actual_attempt_directory_entries']):
++            raise ValueError('r1 attempt contents changed after its zero-entry audit')
++    return audit
++
++
+ def scientific_contract(plan, old, selected):
+     if any(plan.get(key) != old.get(key) for key in PRESERVED_KEYS):
+         raise ValueError('Original scientific, asset, qualification or resource contract changed')
+@@ -211,6 +264,20 @@
+                   prior_costs_included=False, old_remaining_budget_transfer=0,
+                   scope='This independent three-slot root only; first-stage costs are a separate immutable source, never added here.')
+     return result
++
++
++def canonical_ast(node):
++    """Versioned structural value, independent of ast.dump empty-field defaults.
++
++    Omit empty optional fields only. Source bytes remain independently hashed;
++    the parsed tree used by the supervisor is not changed by this serialization.
++    """
++    if isinstance(node, ast.AST):
++        return [type(node).__name__, {name: canonical_ast(value) for name, value in ast.iter_fields(node)
++                                    if value is not None and value != []}]
++    if isinstance(node, list):
++        return [canonical_ast(value) for value in node]
++    return node
+ 
+ 
+ @cache
+@@ -244,13 +311,14 @@
+     if replacements != 1:
+         raise ValueError('The original resource supervisor has exactly one worker-module literal')
+     ast.fix_missing_locations(tree)
+-    exec(compile(tree, '<v052-resume-r1-worker-module-only>', 'exec'), namespace)
++    exec(compile(tree, '<v052-resume-r2-worker-module-only>', 'exec'), namespace)
+     adaptation = {'version': VERSION, 'worker_module': MODULE,
+         'worker_code_unchanged': worker_bound.__code__ is bridge.worker.__code__,
+         'ledger_code_unchanged': ledger_bound.__code__ is bridge.ledger.__code__,
+         'worker_completion_code_unchanged': bound_completion.__code__ is completion.__code__,
+         'supervisor_source_sha256': digest(source.encode()),
+-        'supervisor_AST_sha256': digest(ast.dump(tree, include_attributes=False).encode()),
++        'supervisor_AST_encoding': 'nonempty-fields-json-v1',
++        'supervisor_AST_sha256': digest(json.dumps(canonical_ast(tree), sort_keys=True, separators=(',', ':')).encode()),
+         'changed_worker_module_literals': replacements,
+         'worker_global_overrides': ['VERSION', 'MODULE', 'frozen', 'CONTRACT', 'LIMITS'],
+         'supervisor_global_overrides': ['VERSION', 'LIMITS', 'frozen', 'ledger', 'classify_closed', 'worker_completion'],
+@@ -261,9 +329,9 @@
+ 
+ def prepare(root, *, project_root, release_path=None):
+     project, root = Path(project_root).resolve(), Path(root).resolve()
+-    if root != project / 'runs/software-bridge-v052-resume-r1' or root.exists():
+-        raise ValueError('Use only the predeclared fresh resume-r1 root, never replay or overwrite it')
+-    release_path = Path(release_path or project / 'docs/experiments/software-bridge-v052-resume-r1-release.json').resolve()
++    if root != project / 'runs/software-bridge-v052-resume-r2' or root.exists():
++        raise ValueError('Use only the predeclared fresh resume-r2 root, never replay or overwrite it')
++    release_path = Path(release_path or project / 'docs/experiments/software-bridge-v052-resume-r2-release.json').resolve()
+     release = read_json(release_path)
+     references = {key: copy.deepcopy(release[key]) for key in PREDECESSOR_KEYS}
+     gates(release, references)
+@@ -271,8 +339,9 @@
+     if identity.get('code_dirty') is not False:
+         raise ValueError('Commit the independent resume source, controls and release before prepare')
+     old, selected, entered = original_state(project, references)
++    zero_model_predecessor(project, release['supporting_references']['resume_r1_zero_model_failure'])
+     controls = read_json(checked(release['controls']))
+-    if controls.get('version') != 'v052-resume-r1-host-controls-v1' or controls.get('passed') is not True:
++    if controls.get('version') != 'v052-resume-r2-host-controls-v1' or controls.get('passed') is not True:
+         raise ValueError('Bind the new finite resume host controls')
+     host_source = checked(release['resume_host_source'])
+     if host_source != project / MODULE_FILE or ref(Path(__file__)) != release['resume_host_source']:
+@@ -329,7 +398,7 @@
+     root = Path(root).resolve()
+     plan = unseal(read_json(root / 'plan.json'))
+     project = Path(plan['project_root']).resolve()
+-    if (root != project / 'runs/software-bridge-v052-resume-r1' or plan.get('version') != VERSION
++    if (root != project / 'runs/software-bridge-v052-resume-r2' or plan.get('version') != VERSION
+             or plan.get('worker_module') != MODULE or plan.get('resume_host_commit', {}).get('code_dirty') is not False
+             or Path(plan['source_root']).resolve() != root / 'source'):
+         raise ValueError('Distinct resume plan, source root and committed host identity are required')
+@@ -337,6 +406,7 @@
+     refs = plan['predecessor_references']
+     gates(release, refs)
+     old, selected, entered = original_state(project, refs)
++    zero_model_predecessor(project, release['supporting_references']['resume_r1_zero_model_failure'])
+     scientific_contract(plan, old, selected)
+     if (plan.get('original_entered_records') != entered
+             or plan.get('predecessor_root') != str(project / 'runs/software-bridge-v052')
+@@ -365,7 +435,7 @@
+                  *plan['supporting_references'].values(), *[item['frozen_copy'] for item in plan['evidence']]]:
+         checked(item)
+     controls = read_json(checked(plan['resume_controls']))
+-    if (controls.get('version') != 'v052-resume-r1-host-controls-v1' or controls.get('passed') is not True
++    if (controls.get('version') != 'v052-resume-r2-host-controls-v1' or controls.get('passed') is not True
+             or controls.get('sources', {}).get(MODULE_FILE) != release['resume_host_source']):
+         raise ValueError('Resume control/source evidence changed')
+     return plan
