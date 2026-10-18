@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="3" time="5.891" timestamp="2026-10-18T18:44:03.800089+08:00" hostname="lyg0310"><testcase classname="tests.test_software_bridge_openhands_v052" name="test_official_conversation_terminal_shared_runner_finish_and_ledger" time="5.629"><failure message="KeyError: 'status'">tmp_path = PosixPath('/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-bridge-v052/openhands-controls/fourth/fixtures/test_official_conversation_ter0')
+
+    def test_official_conversation_terminal_shared_runner_finish_and_ledger(tmp_path):
+        owner = ProgrammedOwner([
+            tool('terminal', command='echo SHOULD_NOT_RUN', is_input='true'),
+            tool('terminal', command="python -c \"from pathlib import Path; Path('parse.py').write_text('def answer():\\n    return 1\\n')\""),
+            tool('terminal', command='bridge_run_tests'),
+            tool('finish', message='Synthetic change completed.'),
+        ])
+        result = collect(tmp_path, owner)
+        assert result['status'] == 'closed' and result['sdk_execution_status'] == 'finished'
+        assert result['ledger']['attempts'] == result['ledger']['complete_responses'] == 4
+        assert result['ledger']['known_actual_tokens'] == 404
+        assert result['ledger']['inflight'] is None and owner.generated == 4
+        assert result['fixture_only'] is True and result['formal_native_provider'] is False
+        commands = [json.loads(oh.checked(x).read_bytes()) for x in result['tool_commands']]
+        assert len(commands) == 3
+        assert commands[0]['result']['side_effect'] is False
+        assert commands[0]['result']['execution_kind'] == 'unsupported_interactive_request'
+        execution = commands[2]['result']['execution']
+        assert execution['executed'] is True and execution['returncode'] == 0
+        assert execution['tests'][0]['nodeid'] == 'tests/test_bridge.py::test_answer'
+&gt;       assert execution['tests'][0]['status'] == 'passed'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'status'
+
+tests/test_software_bridge_openhands_v052.py:140: KeyError</failure></testcase><testcase classname="tests.test_software_bridge_openhands_v052" name="test_initial_capture_actual_official_request_has_no_guard_attempt_or_tool" time="0.074" /><testcase classname="tests.test_software_bridge_openhands_v052" name="test_context_preexecution_closes_unique_tree_without_model_or_tool" time="0.096" /></testsuite></testsuites>

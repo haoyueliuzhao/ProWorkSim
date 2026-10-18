@@ -1,0 +1,37 @@
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_official_conversation_terminal_shared_runner_finish_and_ledger ______
+
+tmp_path = PosixPath('/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-bridge-v052/openhands-controls/fourth/fixtures/test_official_conversation_ter0')
+
+    def test_official_conversation_terminal_shared_runner_finish_and_ledger(tmp_path):
+        owner = ProgrammedOwner([
+            tool('terminal', command='echo SHOULD_NOT_RUN', is_input='true'),
+            tool('terminal', command="python -c \"from pathlib import Path; Path('parse.py').write_text('def answer():\\n    return 1\\n')\""),
+            tool('terminal', command='bridge_run_tests'),
+            tool('finish', message='Synthetic change completed.'),
+        ])
+        result = collect(tmp_path, owner)
+        assert result['status'] == 'closed' and result['sdk_execution_status'] == 'finished'
+        assert result['ledger']['attempts'] == result['ledger']['complete_responses'] == 4
+        assert result['ledger']['known_actual_tokens'] == 404
+        assert result['ledger']['inflight'] is None and owner.generated == 4
+        assert result['fixture_only'] is True and result['formal_native_provider'] is False
+        commands = [json.loads(oh.checked(x).read_bytes()) for x in result['tool_commands']]
+        assert len(commands) == 3
+        assert commands[0]['result']['side_effect'] is False
+        assert commands[0]['result']['execution_kind'] == 'unsupported_interactive_request'
+        execution = commands[2]['result']['execution']
+        assert execution['executed'] is True and execution['returncode'] == 0
+        assert execution['tests'][0]['nodeid'] == 'tests/test_bridge.py::test_answer'
+>       assert execution['tests'][0]['status'] == 'passed'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'status'
+
+tests/test_software_bridge_openhands_v052.py:140: KeyError
+------------------------------ Captured log call -------------------------------
+INFO     openhands.sdk.conversation.state:state.py:592 Created new conversation 6121afec-3232-4fbd-81c6-6cfc4842b5d9
+INFO     openhands.sdk.agent.base:base.py:564 Loaded 1 tools from spec
+=========================== short test summary info ============================
+FAILED tests/test_software_bridge_openhands_v052.py::test_official_conversation_terminal_shared_runner_finish_and_ledger
+1 failed, 2 passed, 1 deselected in 5.89s

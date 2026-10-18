@@ -1,0 +1,53 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+____________ test_exact_fixed_receipt_reuse_and_different_tree_once ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-1889/test_exact_fixed_receipt_reuse0')
+
+    def test_exact_fixed_receipt_reuse_and_different_tree_once(tmp_path):
+        provider = Provider()
+        files = ordered_files(provider.files)
+        lock = lock_final_candidate(provider=provider, task_id='synthetic', candidate_files=files, run_root=tmp_path / 'same')
+        first = provider._backend(files=files, task=provider.task, run_root=tmp_path / 'fixed')
+        fixed = {'submitted': True, 'evaluation_identity': evaluation_identity(files, provider.task),
+            'authoritative_runner_receipt': ref(tmp_path / 'fixed/result.json'), 'bridge_binding': first['bridge_binding']}
+>       reused = grade_locked_candidate(provider=provider, lock_reference=lock, fixed_assessment=fixed)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_software_bridge_sources_v052.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+provider = <test_software_bridge_sources_v052.Provider object at 0x7817e493c410>
+lock_reference = {'path': '/tmp/pytest-of-zhuxinrui/pytest-1889/test_exact_fixed_receipt_reuse0/same/lock.json', 'sha256': 'd38b21c140f69fa8b59bd454811ab12ee086405b5913bef44bfabf6e7a645a51', 'bytes': 1197}
+fixed_assessment = {'submitted': True, 'evaluation_identity': '9fddb4459e5f34a3e2b855c83bf7340456e4ccbb7b690b4df7ff0a711ad61a8b', 'author...ixed/bridge-binding.json', 'sha256': 'adb7f5c0f1e1a78610581630c32073f18423d23784135bd07566ff19e2199a28', 'bytes': 429}}
+
+    def grade_locked_candidate(*, provider, lock_reference, fixed_assessment=None):
+        lock_path = checked(lock_reference)
+        lock = json.loads(lock_path.read_bytes())
+        root = lock_path.parent
+        if lock.get('version') != 'v052-final-candidate-lock-v1' or (root / 'assessment.json').exists() or (root / 'entered.json').exists():
+            raise ValueError('A locked terminal candidate is assessed at most once; never select another after scoring')
+        files = json.loads(checked(lock['grading_files']).read_bytes())
+        task = json.loads(checked(lock['task']).read_bytes())
+        checked(lock['raw_candidate'])
+        checked(lock['canonical_tree'])
+        identity = evaluation_identity(files, task)
+        if identity != lock['execution_identity'] or task != {**provider.runner_spec(lock['task_id']),
+                'accepted_new_production_paths': task['accepted_new_production_paths']}:
+            raise ValueError('Candidate or current shared evaluation identity changed after lock')
+        write_new(root / 'entered.json', {'version': VERSION, 'identity': identity, 'automatic_retry': False})
+        reused = bool(fixed_assessment and fixed_assessment.get('submitted') is True
+                      and fixed_assessment.get('evaluation_identity') == identity)
+        if reused:
+            reused_source = fixed_assessment['authoritative_runner_receipt']
+            execution = json.loads(checked(reused_source).read_bytes())
+            binding = json.loads(checked(fixed_assessment['bridge_binding']).read_bytes())
+>           if (binding['execution_identity'] != identity or binding['r3_result'] != reused_source
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    or binding['runtime_manifest'] != task['bridge_runtime_ref']):
+E                   KeyError: 'execution_identity'
+
+src/proworksim/software_bridge_sources_v052.py:207: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_software_bridge_sources_v052.py::test_exact_fixed_receipt_reuse_and_different_tree_once
+1 failed, 1 passed in 0.09s
