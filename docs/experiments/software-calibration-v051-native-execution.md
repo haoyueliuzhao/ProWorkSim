@@ -38,6 +38,8 @@ R 工作树中的公开测试可以被模型修改，这是原生文件系统框
 
 不重设 `HOME`。显式 Git 配置隔离，shell 使用基础 C locale，Python 使用显式 UTF-8。这个选择发生在 CAL2 模型前：必要边界控制的原输出有 locale warning，它会遮住 mini 要求位于 stdout 首行的完成标志。修订后只补了一个真实完成标志检查，没有重跑先前完整边界控制。
 
+2026-10-18宿主接线时新增`COVERAGE_FILE=.calibration-tmp/.coverage`环境绑定，避免普通原生pytest-cov把二进制数据库写入交付文件集合；该scratch目录原已从candidate读取中排除。此次只做环境构造静态断言，旧隔离、主循环和TCP控制未重跑。独立宿主与新增必要控制见[CAL2宿主协议](software-calibration-v051-cal2-host-protocol.md)。
+
 ## 有限真实 loopback FD fixture
 
 固定 boltons 完整节点集包含两个必须使用 localhost TCP 的测试，不能删除：

@@ -218,7 +218,8 @@ def run_bounded_shell(command, *, worktree, python_executable, python_prefix, ev
         if actual == worktree or worktree.is_relative_to(actual):
             raise ValueError("Runtime allowlist must not expose a parent of the writable tree")
     env = {"PATH": str(python_prefix / "bin") + ":/usr/bin:/bin",
-        "TMPDIR": str(temporary), "LC_ALL": "C", "LANG": "C", "TZ": "UTC",
+        "TMPDIR": str(temporary), "COVERAGE_FILE": str(temporary / ".coverage"),
+        "LC_ALL": "C", "LANG": "C", "TZ": "UTC",
         "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8",
         "PYTHONPATH": str(worktree) + ":" + str(worktree / "src"),
         "PYTHONDONTWRITEBYTECODE": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
