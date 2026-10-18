@@ -1,0 +1,36 @@
+{
+  "version": "v052-signal-provenance-control-command-v1",
+  "command": [
+    "/usr/bin/systemd-run",
+    "--user",
+    "--unit=pws-v052-signal-provenance-control",
+    "--property=Type=exec",
+    "--property=Restart=no",
+    "--property=RuntimeMaxSec=30",
+    "--collect",
+    "--wait",
+    "--pipe",
+    "/usr/bin/strace",
+    "-ttt",
+    "-e",
+    "trace=none",
+    "-e",
+    "signal=SIGTERM,SIGINT",
+    "-o",
+    "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-bridge-v052/signal-provenance-control/signal.trace",
+    "/data1/zhuxinrui/projects/ProWorkSim/.venv/bin/python",
+    "/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-bridge-v052/signal-provenance-control/probe.py"
+  ],
+  "environment_recorded": {
+    "XDG_RUNTIME_DIR": "/run/user/1004",
+    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1004/bus"
+  },
+  "unit": "pws-v052-signal-provenance-control.service",
+  "Restart": "no",
+  "RuntimeMaxSec": 30,
+  "strace_follow_forks": false,
+  "maximum_probe_executions": 1,
+  "maximum_SIGTERM_sends": 1,
+  "target_scope": "Only the new probe parent PID assigned by its own os.getpid; no caller-supplied or old-process PID",
+  "probe_sha256": "7ca26ff13dead89a1410911c367295a2c753ffc7422016c4c1443095541e45b0"
+}
