@@ -1,5 +1,13 @@
 # ProWorkSim
 
+## v0.52：原十二槽桥接与三槽接续收口（2026-10-18）
+
+原生 OpenHands terminal-only 参照与受管 S1 使用同一原始 Qwen3.5-9B 和项目数值 provider，比较六个固定开发任务。原阶段因 SIGTERM 中断后，仅接续原三个未开始槽；独立宿主修复了 Python 3.14/3.12 的 AST 元数据误拒绝，原科学源码、种子和预算保持。三槽全部闭合，R_code 为 PS1 的 0/1、OH_ref 的 0，共 80 完整调用、888,289 token，无新增费用未知或监督器 SIGTERM/SIGINT 记录。
+
+唯一十二槽为 **8 条正式结果已知、4 条原技术未知、0 条未启动**；已知完整代码通过 1 条。完整六题主均值和条件差仍为 null，不以已知子集替代；历史信号发送者仍未知。累计已知实际 2,683,508 token，另保留 14,512 不确定预约，完整实际费用仍为 null。18 个唯一 worker 区间含零模型启动失败，共约 1.049096132 小时，旧成本只一次。无参数更新、反向或自动后继。
+
+详见[唯一库存合并报告](docs/experiments/software-bridge-v052-completion-final-r2.md)、[机器结果](docs/experiments/software-bridge-v052-completion-final-r2.json)、[历史信号审计](docs/experiments/software-bridge-v052-interruption-audit.md)与[接续观察范围](docs/experiments/software-bridge-v052-resume-signal-observation.md)。原首阶段与 r1 零模型失败记录均保留；六题是有限开发材料，这不是独立确认、完整默认 OpenHands preset 复现或学习收益证据。
+
 ## v0.47：原44槽架构、成员名额与预算先导全部闭合（2026-10-12）
 
 七配置、阶段权限与额度、精确固定候选采用及90分钟软截止/10分钟关闭边界已按新审计实现。131项不同CPU控制、Ruff和有限材料资格通过后，冻结原9B完整common 3/3完成28槽250k架构比较与事前锁定的16槽500k预算比较；没有依据A结果筛选B。
