@@ -1,5 +1,20 @@
 # ProWorkSim
 
+## 服务器 249：迁移与运行入口（2026-10-19）
+
+项目已迁移到 `/data0/zhuxinrui/projects/ProWorkSim`，`/data1/zhuxinrui/projects/ProWorkSim` 与 `/home/zhuxinrui/datatmp/projects/ProWorkSim` 在目标宿主指向同一目录。完整数据与外部依赖的迁移元数据检查为零差异，私有运行时的五项 CPU 验收已通过；详见[迁移记录](docs/migrations/server-249-20261019.md)和[运行时说明](docs/migrations/server-249-runtime-20261019.md)。
+
+迁移环境保留原解释器和依赖。使用目标已部署的私有运行时启动项目；例如查看 CLI 帮助：
+
+```bash
+/data0/zhuxinrui/proworksim-runtime/run-cpu.sh \
+  /data1/zhuxinrui/projects/ProWorkSim/.venv/bin/python -B -m proworksim --help
+```
+
+该入口默认只读项目；需要写入时按运行时说明使用 `--write-project`。依赖 Python 3.12 的原虚拟环境必须在私有运行时内使用。下文通用安装步骤不用于重建此迁移环境，实际冻结依赖版本见运行时说明。
+
+迁移验收记录的目标 Landlock ABI 为 **1**，原 v051/v052 执行器要求 **≥ 3**，相关执行仍受内核能力限制；GPU 入口尚未实测。数据同步与 CPU 导入通过不代表全部实验可运行，旧实验队列保持暂停。
+
 ## v0.52：原十二槽桥接与三槽接续收口（2026-10-18）
 
 原生 OpenHands terminal-only 参照与受管 S1 使用同一原始 Qwen3.5-9B 和项目数值 provider，比较六个固定开发任务。原阶段因 SIGTERM 中断后，仅接续原三个未开始槽；独立宿主修复了 Python 3.14/3.12 的 AST 元数据误拒绝，原科学源码、种子和预算保持。三槽全部闭合，R_code 为 PS1 的 0/1、OH_ref 的 0，共 80 完整调用、888,289 token，无新增费用未知或监督器 SIGTERM/SIGINT 记录。
