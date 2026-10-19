@@ -2,7 +2,9 @@
 
 Unlike the existing frozen-driver sandbox this permits subprocesses. Landlock
 allows file contents only in the worktree and declared runtime paths; seccomp
-denies networking and cross-process control. Public tests in this native tree
+denies networking and cross-process control. On hosts without Landlock ABI 3,
+a separate user/mount namespace backend enforces the filesystem allowlist.
+Public tests in this native tree
 are editable: final authoritative tests must be copied afresh by the host.
 """
 from __future__ import annotations
@@ -20,6 +22,7 @@ import signal
 import subprocess
 import sys
 import time
+import types
 import uuid
 
 VERSION = "v051-landlock-native-shell"
@@ -33,6 +36,7 @@ DENIED = (
     "utime", "utimes", "futimesat", "utimensat", "setxattr", "lsetxattr", "fsetxattr",
     "removexattr", "lremovexattr", "fremovexattr", "reboot", "kexec_load", "init_module",
     "finit_module", "delete_module", "swapon", "swapoff", "sethostname", "setdomainname",
+    "mknod", "mknodat",
 )
 
 
@@ -75,13 +79,43 @@ def uid_threads():
     return count
 
 
-def install(spec):
+def filesystem_policy():
+    """Bind host capability and the new backend source before starting a child."""
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise RuntimeError("The bounded native shell requires Linux x86_64")
     libc = ctypes.CDLL(None, use_errno=True)
     abi = libc.syscall(444, 0, 0, 1)
+    policy = {"version": "server-filesystem-policy-v1", "landlock_abi": abi,
+              "filesystem_backend": "landlock" if abi >= 3 else "user_mount_namespace",
+              "landlock_enforced": abi >= 3}
     if abi < 3:
-        raise RuntimeError("Landlock ABI >= 3 required")
+        path = Path(__file__).resolve().with_name("server_namespace_sandbox.py")
+        raw = path.read_bytes()
+        policy["backend_source"] = {"path": str(path), "sha256": hashlib.sha256(raw).hexdigest(),
+                                    "bytes": len(raw)}
+    return policy
+
+
+def install_filesystem(spec):
+    policy = filesystem_policy()
+    if spec.get("filesystem_policy", policy) != policy:
+        raise RuntimeError("Filesystem backend/capability/source changed before execution")
+    if policy["filesystem_backend"] == "user_mount_namespace":
+        reference = policy["backend_source"]
+        raw = Path(reference["path"]).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != reference["sha256"]:
+            raise RuntimeError("Namespace backend source changed during loading")
+        module = types.ModuleType("server_namespace_isolation")
+        module.__file__ = reference["path"]
+        exec(compile(raw, reference["path"], "exec"), module.__dict__)
+        proof = module.install_filesystem(spec)
+        return {**proof, **policy}
+    _install_landlock(spec)
+    return policy
+
+
+def _install_landlock(spec):
+    libc = ctypes.CDLL(None, use_errno=True)
 
     class Ruleset(ctypes.Structure):
         _fields_ = [("handled_access_fs", ctypes.c_uint64)]
@@ -97,6 +131,8 @@ def install(spec):
         raise OSError(ctypes.get_errno(), "landlock_create_ruleset")
     read = (1 << 0) | (1 << 2) | (1 << 3)  # EXECUTE / READ_FILE / READ_DIR
     write = read | (1 << 1) | (1 << 4) | (1 << 5) | (1 << 7) | (1 << 8) | (1 << 12) | (1 << 13) | (1 << 14)
+    if spec.get("worktree_writable", True) is False:
+        write = read
     # Regular files/directories/symlinks only, never device nodes/FIFOs/sockets.
     paths = [(Path(spec["worktree"]), write)] + [(Path(path), read) for path in spec["readonly_paths"]]
     paths += [(Path("/dev/null"), (1 << 1) | (1 << 2)), (Path("/dev/urandom"), 1 << 2)]
@@ -119,7 +155,12 @@ def install(spec):
     finally:
         os.close(fd)
 
+
+def install(spec):
+    # The namespace backend changes this process's filesystem view. Load the
+    # trusted syscall library before confinement, just as the shell worker does.
     seccomp = ctypes.CDLL("libseccomp.so.2", use_errno=True)
+    filesystem = install_filesystem(spec)
     seccomp.seccomp_init.argtypes = [ctypes.c_uint32]
     seccomp.seccomp_init.restype = ctypes.c_void_p
     seccomp.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]
@@ -163,7 +204,7 @@ def install(spec):
     resource.setrlimit(resource.RLIMIT_NOFILE, (128, 128))
     resource.setrlimit(resource.RLIMIT_NPROC, (spec["uid_thread_limit"], spec["uid_thread_limit"]))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    return {"version": VERSION, "landlock_abi": abi, "network": "seccomp_denied",
+    return {**filesystem, "version": VERSION, "network": "seccomp_denied",
             "subprocesses": "allowed_with_uid_thread_margin_and_group_cleanup"}
 
 
@@ -229,6 +270,7 @@ def run_bounded_shell(command, *, worktree, python_executable, python_prefix, ev
     spec = {"version": VERSION, "command": command, "worktree": str(worktree),
         "parent_pid": os.getpid(), "parent_start_ticks": process_identity(os.getpid())["start_ticks"],
         "readonly_paths": runtime_paths, "env": env, "nonce": uuid.uuid4().hex,
+        "filesystem_policy": filesystem_policy(),
         "cpu_seconds": max(1, int(timeout_seconds) + 1), "memory_bytes": 2147483648,
         "file_bytes": 8388608, "uid_thread_limit": uid_threads() + 32}
     spec_path = call / "spec.json"

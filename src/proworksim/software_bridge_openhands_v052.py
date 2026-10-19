@@ -345,6 +345,13 @@ class Bridge:
         else:
             task = self.task_source['runner_spec']
             runtime = json.loads(checked(task['bridge_runtime_ref']).read_bytes())
+            from .server_bridge_runtime_v052 import VERSION as SERVER_VERSION, require_task_protocol
+            if runtime.get('version') == SERVER_VERSION:
+                from .software_bridge_sources_v052 import runtime_binding
+                runtime, _ = runtime_binding(task['bridge_runtime_ref']['path'])
+                require_task_protocol(task, runtime)
+            elif 'bridge_execution_protocol' in task:
+                raise ValueError('The frozen OH helper cannot use a new server execution identity')
             helper = checked(runtime['shell_helper'])
             spec = importlib.util.spec_from_file_location('v052_oh_frozen_shell', helper)
             module = importlib.util.module_from_spec(spec)

@@ -1,7 +1,8 @@
 """v052 shared CAL2 source/engine binding and one locked final code candidate.
 
 The v051 P/raw model-visible provider contract remains unchanged. All new fields
-are host evidence. The actual child is the immutable final r3 stdlib-only runner.
+are host evidence. The original protocol uses the immutable final r3 runner;
+the migrated server requires an explicit separate source/kernel/policy identity.
 """
 from __future__ import annotations
 
@@ -55,6 +56,10 @@ def tree_manifest(root):
 def runtime_binding(runtime_path):
     path = Path(runtime_path).resolve()
     runtime = json.loads(path.read_bytes())
+    from .server_bridge_runtime_v052 import VERSION as SERVER_VERSION, validate_runtime
+    if runtime.get('version') == SERVER_VERSION:
+        validate_runtime(runtime)
+        return runtime, ref(path)
     if runtime.get('version') != 'v052-final-r3-test-runtime-v1' or runtime.get('fixture_only') is not False:
         raise ValueError('Declare the final shared formal CPU runtime')
     if runtime['runner']['sha256'] != RUNNER_SHA or runtime['shell_helper']['sha256'] != HELPER_SHA:
@@ -85,6 +90,14 @@ def evaluation_identity(files, task):
                'resource_policy': {'wall_seconds': 60, 'cpu_seconds': 55, 'memory_bytes': 4294967296,
                    'file_bytes': 8388608, 'uid_thread_margin': 32},
                'worktree_path_rule': '/tmp/v051c/<decimal_time_ns>', 'engine': RUNNER_SHA, 'helper': HELPER_SHA}
+    if 'bridge_execution_protocol' in task:
+        from .server_bridge_runtime_v052 import VERSION as SERVER_VERSION
+        protocol = task['bridge_execution_protocol']
+        if protocol.get('version') != SERVER_VERSION:
+            raise ValueError('Unknown bridge execution protocol')
+        payload.update(engine=protocol['sources']['runner']['sha256'],
+                       helper=protocol['sources']['shell_helper']['sha256'],
+                       execution_protocol=protocol)
     return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
@@ -92,11 +105,20 @@ def run_repository_tests(*, files, task, run_root):
     """The sole entry shared by PS1, OH terminal qualification and final code."""
     runtime_path = checked(task['bridge_runtime_ref'])
     runtime, runtime_ref = runtime_binding(runtime_path)
+    from .server_bridge_runtime_v052 import (
+        VERSION as SERVER_VERSION, BINDING_VERSION, require_task_protocol,
+    )
+    server_runtime = runtime['version'] == SERVER_VERSION
+    if server_runtime:
+        require_task_protocol(task, runtime)
+    elif 'bridge_execution_protocol' in task:
+        raise ValueError('The original frozen runtime cannot use a new execution identity')
     if task['cpu_python'] != runtime['python_invocation']:
         raise ValueError('The shared frozen interpreter invocation cannot be replaced')
     files = ordered_files(files)
     source = checked(runtime['runner'])
-    spec = importlib.util.spec_from_file_location('v052_frozen_r3_repository_runner', source)
+    module_name = 'v052_server_repository_runner' if server_runtime else 'v052_frozen_r3_repository_runner'
+    spec = importlib.util.spec_from_file_location(module_name, source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     execution = module.run_repository_tests(files=files, task=task, run_root=run_root)
@@ -111,6 +133,10 @@ def run_repository_tests(*, files, task, run_root):
             'reference_trees_not_in_filesystem_allowlist': True,
             'scope': 'Source-bound cold interpreter/sys.path/allowlist proof, not an invented target __file__ observation'},
         'original_result_modified': False}
+    if server_runtime:
+        proof.update(version=BINDING_VERSION, runner_result=proof.pop('r3_result'),
+                     execution_protocol=task['bridge_execution_protocol'],
+                     kernel=runtime['kernel'], filesystem_policy=runtime['filesystem_policy'])
     write_new(Path(run_root) / 'bridge-binding.json', proof)
     return {**execution, 'bridge_binding': ref(Path(run_root) / 'bridge-binding.json'),
             'evaluation_identity': proof['execution_identity']}
@@ -131,6 +157,9 @@ class RepositorySources(OriginalSources):
         task = super().runner_spec(case_id)
         task.update(bridge_runtime_ref=self.runtime_ref, initial_file_paths=sorted(self._entry(case_id)['files']),
                     accepted_new_production_paths=[])
+        from .server_bridge_runtime_v052 import VERSION as SERVER_VERSION, execution_protocol
+        if self.runtime['version'] == SERVER_VERSION:
+            task['bridge_execution_protocol'] = execution_protocol(self.runtime)
         return task
 
     def _run(self, *, files, task, run_root):
@@ -206,7 +235,9 @@ def grade_locked_candidate(*, provider, lock_reference, fixed_assessment=None):
         reused_source = fixed_assessment['authoritative_runner_receipt']
         execution = json.loads(checked(reused_source).read_bytes())
         binding = json.loads(checked(fixed_assessment['bridge_binding']).read_bytes())
-        if (binding['execution_identity'] != identity or binding['r3_result'] != reused_source
+        result_key = 'runner_result' if 'bridge_execution_protocol' in task else 'r3_result'
+        if (binding['execution_identity'] != identity
+                or binding[result_key] != reused_source
                 or binding['runtime_manifest'] != task['bridge_runtime_ref']):
             raise ValueError('Same-tree reuse requires the full frozen evaluation binding')
     else:

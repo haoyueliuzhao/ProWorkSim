@@ -1,8 +1,9 @@
 """Fail-closed Linux Landlock/seccomp worker for the bounded software asset.
 
 This is an OS access-control boundary, not a changed cwd. No user-supplied
-command, shell, environment or host path is accepted. Requires x86_64 Linux,
-Landlock ABI >= 3 and libseccomp. A fresh read-only source tree is used per run.
+command, shell, environment or host path is accepted. Requires x86_64 Linux
+and libseccomp. ABI 3 uses Landlock; older hosts use a separate read-only
+user/mount namespace. A fresh read-only source tree is used per run.
 """
 
 import ctypes
@@ -25,13 +26,40 @@ LIMITS = {"wall_seconds": 20, "cpu_seconds": 10, "memory_bytes": 536870912,
           "output_bytes": 262144, "open_files": 64, "processes": 0}
 
 
-def _restrict(tree):
+def _filesystem_helper():
+    path = Path(__file__).resolve().with_name("software_calibration_shell_v051.py")
+    module = types.ModuleType("software_server_filesystem_helper")
+    module.__file__ = str(path)
+    exec(compile(path.read_bytes(), str(path), "exec"), module.__dict__)
+    return module
+
+
+def _restrict(tree, policy=None):
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise RuntimeError("The frozen sandbox supports Linux x86_64 only")
     libc = ctypes.CDLL(None, use_errno=True)
     abi = libc.syscall(444, 0, 0, 1)
     if abi < 3:
-        raise RuntimeError("Landlock ABI >= 3 is required")
+        # Keep this older executor's read-only tree and no-subprocess policy;
+        # only replace the unavailable filesystem mechanism.
+        seccomp = ctypes.CDLL("libseccomp.so.2", use_errno=True)
+        helper = _filesystem_helper()
+        specification = {"worktree": str(tree), "worktree_writable": False,
+            "readonly_paths": [str(Path(sys.base_prefix) / "lib" /
+                                   ("python" + str(sys.version_info.major) + "." + str(sys.version_info.minor))),
+                               "/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/etc/ld.so.cache"]}
+        if policy is not None:
+            specification["filesystem_policy"] = policy
+        filesystem = helper.install_filesystem(specification)
+    else:
+        filesystem = {"landlock_abi": abi, "filesystem_backend": "landlock",
+                      "landlock_enforced": True}
+        _landlock_readonly(tree, libc)
+        seccomp = ctypes.CDLL("libseccomp.so.2", use_errno=True)
+    return _install_syscalls(seccomp, filesystem)
+
+
+def _landlock_readonly(tree, libc):
     # Handle every filesystem right supported through ABI 3, including REFER
     # and TRUNCATE. Later rights are not needed for the read-only worker.
     handled = (1 << 15) - 1
@@ -65,7 +93,9 @@ def _restrict(tree):
             raise OSError(ctypes.get_errno(), "landlock_restrict_self")
     finally:
         os.close(fd)
-    seccomp = ctypes.CDLL("libseccomp.so.2", use_errno=True)
+
+
+def _install_syscalls(seccomp, filesystem):
     seccomp.seccomp_init.argtypes = [ctypes.c_uint32]
     seccomp.seccomp_init.restype = ctypes.c_void_p
     seccomp.seccomp_syscall_resolve_name.argtypes = [ctypes.c_char_p]
@@ -96,7 +126,7 @@ def _restrict(tree):
     resource.setrlimit(resource.RLIMIT_NOFILE, (LIMITS["open_files"], LIMITS["open_files"]))
     resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    return {"version": SANDBOX_VERSION, "landlock_abi": abi, "filesystem": "read_only_allowlist",
+    return {**filesystem, "version": SANDBOX_VERSION, "filesystem": "read_only_allowlist",
             "network": "seccomp_denied", "subprocess": "seccomp_denied", "limits": LIMITS}
 
 
@@ -104,6 +134,7 @@ def _worker(spec_path):
     spec = json.loads(Path(spec_path).read_text())
     root, code = str(Path(spec["tree"]).resolve()), compile(spec["code"], "<frozen-test-driver>", "exec")
     completion_nonce = spec["completion_nonce"]
+    filesystem_policy = spec.get("filesystem_policy")
     # Load required native library before confinement; never weaken access on failure.
     import unittest
     import socket
@@ -114,7 +145,7 @@ def _worker(spec_path):
     os.environ.clear()
     sys.dont_write_bytecode = True
     sys.path[:] = [root + "/src", root, *[p for p in sys.path if p.startswith("/usr/lib/python")]]
-    isolation = _restrict(root)
+    isolation = _restrict(root, filesystem_policy)
     print(json.dumps({"isolation_installed": isolation}), flush=True)
     sys.argv[:] = ["frozen-tests"]
     module = types.ModuleType("__main__")
@@ -148,7 +179,8 @@ def run_isolated(files, code, *, run_root):
             destination.write_text(content)
         spec = directory / "driver.json"
         completion_nonce = secrets.token_hex(32)
-        spec.write_text(json.dumps({"tree": str(tree), "code": code, "completion_nonce": completion_nonce}))
+        spec.write_text(json.dumps({"tree": str(tree), "code": code, "completion_nonce": completion_nonce,
+                                   "filesystem_policy": _filesystem_helper().filesystem_policy()}))
         started = time.monotonic()
         with tempfile.TemporaryFile() as output:
             process = subprocess.Popen(["/usr/bin/python3", "-I", "-S", str(Path(__file__).resolve()), str(spec)],

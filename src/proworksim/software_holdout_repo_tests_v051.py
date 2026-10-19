@@ -347,6 +347,7 @@ def run_repository_tests(*, files, task, run_root):
         if any((Path(directory) / name).exists() or (Path(directory) / (name + ".py")).exists() for name in TARGET_PACKAGES):
             raise ValueError("Business dependency directory cannot contain HOLD target source")
     spec = {"version": VERSION, "worktree": str(tree), "nodeids": ids, "nonce": uuid.uuid4().hex,
+        "filesystem_policy": helper.filesystem_policy(),
         "test_engine": task["test_engine"], "engine_spec": engine, "target_modules": task["target_modules"],
         "file_sha256": {name: _sha(text.encode()) for name, text in files.items()},
         "shell_helper_source": helper_ref, "parent_pid": os.getpid(),

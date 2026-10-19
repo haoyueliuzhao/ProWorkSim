@@ -260,7 +260,9 @@ def _worker(spec_path):
 
 
 def run_repository_tests(*, files, task, run_root):
-    from proworksim.software_calibration_shell_v051 import uid_threads, process_identity
+    from proworksim.software_calibration_shell_v051 import (
+        uid_threads, process_identity, filesystem_policy,
+    )
     if (not isinstance(files, dict) or not files or any(not isinstance(v, str) for v in files.values())
             or len(files) > 5000 or sum(len(v.encode()) for v in files.values()) > 33554432):
         raise ValueError("Declare the finite complete text repository tree")
@@ -311,6 +313,7 @@ def run_repository_tests(*, files, task, run_root):
             "PYTHONDONTWRITEBYTECODE": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1", "LC_ALL": "C.UTF-8",
             "COVERAGE_FILE": str(tree / ".calibration-tmp" / ".coverage"),
             "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "TZ": "UTC"},
+        "filesystem_policy": filesystem_policy(),
         "cpu_seconds": 55, "memory_bytes": 4294967296, "file_bytes": 8388608,
         "uid_thread_limit": uid_threads() + 32, "loopback_fds": fd_rows}
     spec_path = run_root / "spec.json"

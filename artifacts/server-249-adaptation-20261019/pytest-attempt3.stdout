@@ -1,0 +1,48 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+__________ test_only_readonly_urandom_runtime_descriptor_is_admitted ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-0/test_only_readonly_urandom_run0')
+
+    def test_only_readonly_urandom_runtime_descriptor_is_admitted(tmp_path):
+        worktree = tmp_path / "worktree"
+        worktree.mkdir()
+        ordinary_file = tmp_path / "ordinary-canary.txt"
+        ordinary_file.write_text("private-controller-canary")
+        code = '''
+    import importlib.util, json, sys
+    source = importlib.util.spec_from_file_location("namespace_fd_control", sys.argv[1])
+    module = importlib.util.module_from_spec(source)
+    source.loader.exec_module(module)
+    try:
+        plan = module.validate_spec({"worktree": sys.argv[2], "readonly_paths": []})
+    except (ValueError, RuntimeError) as error:
+        print(json.dumps({"blocked": True, "message": str(error)}))
+    else:
+        print(json.dumps({"blocked": False,
+                          "fixture_fds": plan["fixture_fds"],
+                          "runtime_readonly_device_fds": plan["runtime_readonly_device_fds"]}))
+    '''
+        cases = (
+            ("readonly_urandom", "/dev/urandom", os.O_RDONLY, False),
+            ("writeonly_urandom", "/dev/urandom", os.O_WRONLY, True),
+            ("readwrite_urandom", "/dev/urandom", os.O_RDWR, True),
+            ("pathonly_urandom", "/dev/urandom", os.O_PATH, True),
+            ("readonly_ordinary_file", ordinary_file, os.O_RDONLY, True),
+        )
+        for name, path, flags, blocked in cases:
+            descriptor = os.open(path, flags)
+            try:
+                result = subprocess.run([sys.executable, "-I", "-S", "-c", code,
+                                         str(Path(namespace.__file__)), str(worktree)],
+                                        capture_output=True, text=True, pass_fds=(descriptor,), timeout=10)
+                assert result.returncode == 0, (name, result.stderr)
+                observed = json.loads(result.stdout)
+>               assert observed["blocked"] is blocked, (name, observed)
+E               AssertionError: ('readonly_urandom', {'blocked': True, 'message': "Unauthorized inherited descriptor: 3 (mode=0o100775, target='/data1/zhuxinrui/miniconda3/lib/libffi.so.8.1.4')"})
+E               assert True is False
+
+tests/test_server_namespace_sandbox.py:230: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_server_namespace_sandbox.py::test_only_readonly_urandom_runtime_descriptor_is_admitted
+1 failed, 1 passed, 4 deselected in 0.33s

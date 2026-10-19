@@ -1,0 +1,258 @@
+FFF..                                                                    [100%]
+=================================== FAILURES ===================================
+______________ test_shell_and_repository_synthetic_pytest_entries ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-0/test_shell_and_repository_synt0')
+
+    def test_shell_and_repository_synthetic_pytest_entries(tmp_path):
+        assert CPU_PYTHON.exists(), "Run inside the prepared private CPU runtime."
+        worktree = tmp_path / "shell-worktree"
+        worktree.mkdir()
+        for name, content in FILES.items():
+            (worktree / name).write_text(content)
+        (worktree / "pytest.ini").write_text("[pytest]\n")
+        command = shlex.join([str(CPU_PYTHON), "-m", "pytest", "-q", "-p", "no:cacheprovider",
+                              "--rootdir", str(worktree), "-c", "pytest.ini", NODE])
+>       observed = shell.run_bounded_shell(
+            command, worktree=worktree, python_executable=CPU_PYTHON,
+            python_prefix=CPU_PYTHON.parent.parent, evidence_root=tmp_path / "shell-evidence",
+        )
+
+tests/test_server_namespace_sandbox.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+command = '/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/cal2-sources/cal2/cpu-venv/bin/python -m pyt...test-of-zhuxinrui/pytest-0/test_shell_and_repository_synt0/shell-worktree -c pytest.ini test_migration.py::test_answer'
+worktree = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-0/test_shell_and_repository_synt0/shell-worktree')
+python_executable = PosixPath('/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/cal2-sources/cal2/cpu-venv/bin/python')
+python_prefix = PosixPath('/data1/zhuxinrui/projects/ProWorkSim/artifacts/software-calibration-v051/cal2-sources/cal2/cpu-venv')
+evidence_root = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-0/test_shell_and_repository_synt0/shell-evidence')
+timeout_seconds = 30, output_bytes = 1048576, workspace_bytes = 67108864
+workspace_files = 5000
+
+    def run_bounded_shell(command, *, worktree, python_executable, python_prefix, evidence_root,
+                          timeout_seconds=30, output_bytes=1048576, workspace_bytes=67108864,
+                          workspace_files=5000):
+        worktree, evidence_root = Path(worktree).resolve(), Path(evidence_root).resolve()
+        python_executable, python_prefix = Path(python_executable).absolute(), Path(python_prefix).resolve()
+        if (not worktree.is_dir() or not python_executable.exists() or not python_prefix.is_dir()
+                or evidence_root == worktree or evidence_root.is_relative_to(worktree)
+                or not isinstance(command, str) or not command or len(command.encode()) > 32768
+                or not 0 < timeout_seconds <= 60):
+            raise ValueError("Invalid bounded native command/workspace/runtime/evidence declaration")
+        evidence_root.mkdir(parents=True, exist_ok=True)
+        temporary = worktree / ".calibration-tmp"
+        temporary.mkdir(exist_ok=True)
+        call = evidence_root / ("shell-" + uuid.uuid4().hex)
+        call.mkdir()
+        # Runtime roots are read-only, never the parent project or original repo.
+        runtime_paths = ["/usr/bin", "/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/lib64",
+            "/usr/lib/python3.12", "/etc/ld.so.cache", str(python_prefix)]
+        for path in runtime_paths:
+            actual = Path(path).resolve()
+            if actual == worktree or worktree.is_relative_to(actual):
+                raise ValueError("Runtime allowlist must not expose a parent of the writable tree")
+        env = {"PATH": str(python_prefix / "bin") + ":/usr/bin:/bin",
+            "TMPDIR": str(temporary), "COVERAGE_FILE": str(temporary / ".coverage"),
+            "LC_ALL": "C", "LANG": "C", "TZ": "UTC",
+            "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8",
+            "PYTHONPATH": str(worktree) + ":" + str(worktree / "src"),
+            "PYTHONDONTWRITEBYTECODE": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+            "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_TERMINAL_PROMPT": "0",
+            "PAGER": "cat", "MANPAGER": "cat", "PIP_NO_INDEX": "1", "OMP_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1"}
+        spec = {"version": VERSION, "command": command, "worktree": str(worktree),
+            "parent_pid": os.getpid(), "parent_start_ticks": process_identity(os.getpid())["start_ticks"],
+            "readonly_paths": runtime_paths, "env": env, "nonce": uuid.uuid4().hex,
+            "filesystem_policy": filesystem_policy(),
+            "cpu_seconds": max(1, int(timeout_seconds) + 1), "memory_bytes": 2147483648,
+            "file_bytes": 8388608, "uid_thread_limit": uid_threads() + 32}
+        spec_path = call / "spec.json"
+        spec_path.write_text(json.dumps(spec))
+        started = time.monotonic()
+        proc = subprocess.Popen([str(python_executable), "-I", "-S", str(Path(__file__).resolve()), str(spec_path)],
+            cwd=worktree, env={"PATH": "/usr/bin:/bin"}, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True, close_fds=True)
+        selector = selectors.DefaultSelector()
+        selector.register(proc.stdout, selectors.EVENT_READ)
+        data, reason, next_size = bytearray(), None, 0.0
+        try:
+            while selector.get_map():
+                elapsed = time.monotonic() - started
+                if elapsed > timeout_seconds:
+                    reason = "wall_timeout"
+                    break
+                if elapsed >= next_size:
+                    count, size = tree_size(worktree)
+                    next_size = elapsed + .5
+                    if count > workspace_files or size > workspace_bytes:
+                        reason = "workspace_resource_limit"
+                        break
+                for key, _ in selector.select(.05):
+                    chunk = os.read(key.fd, 16384)
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        continue
+                    data.extend(chunk[:max(0, output_bytes + 8192 - len(data))])
+                    if len(data) >= output_bytes + 8192:
+                        reason = "output_limit"
+                        break
+                if reason:
+                    break
+        finally:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            proc.wait(timeout=5)
+            (call / "closed.json").write_text(json.dumps({"version": VERSION, "pid": proc.pid,
+                "wrapper_reaped": True, "returncode": proc.returncode, "group_cleanup_signal": "SIGKILL",
+                "closed_at": time.time(), "scope": "This parent requested cleanup of the entire recorded child session group"}, indent=2))
+            selector.close()
+            proc.stdout.close()
+        text = bytes(data).decode("utf-8", errors="replace")
+        first, _, body = text.partition("\n")
+        try:
+            proof = json.loads(first)
+        except ValueError:
+            proof = {}
+        installed = proof.get("nonce") == spec["nonce"] and proof.get("isolation_installed", {}).get("version") == VERSION
+        if not installed:
+>           raise RuntimeError("Native shell isolation failed before command execution: " + text[:2000])
+E           RuntimeError: Native shell isolation failed before command execution: Traceback (most recent call last):
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_shell_v051.py", line 341, in <module>
+E               _worker(sys.argv[1])
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_shell_v051.py", line 219, in _worker
+E               proof = install(spec)
+E                       ^^^^^^^^^^^^^
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_shell_v051.py", line 163, in install
+E               filesystem = install_filesystem(spec)
+E                            ^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_shell_v051.py", line 111, in install_filesystem
+E               proof = module.install_filesystem(spec)
+E                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/server_namespace_sandbox.py", line 336, in install_filesystem
+E               linux.mount(f"/proc/self/fd/{descriptor}", destination, flags=_MS_BIND)
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/server_namespace_sandbox.py", line 213, in mount
+E               self.check(self.libc.mount(encode(source), encode(target), encode(kind), flags,
+E             File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/server_namespace_sandbox.py", line 208, in check
+E               raise OSError(ctypes.get_errno(), operation)
+E           OSError: [Errno 22] mount:/tmp/proworksim-ns-mkvbsivd/tmp/pytest-of-zhuxinrui/pytest-0/test_shell_and_repository_synt0/shell-worktree
+
+src/proworksim/software_calibration_shell_v051.py:327: RuntimeError
+__________________ test_hold_native_unittest_standalone_child __________________
+
+tmp_path = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-0/test_hold_native_unittest_stan0')
+
+    def test_hold_native_unittest_standalone_child(tmp_path):
+        """Cover the existing 3.10 child, without rehashing its frozen environment."""
+        assert HOLD_PYTHON.exists(), "The migrated HOLD Python 3.10 environment is required."
+        template_path = ROOT / "artifacts/software-calibration-v051/hold-python310/environment-template.json"
+        environment = json.loads(template_path.read_text())
+        root = tmp_path / "hold-worktree"
+        root.mkdir()
+        (root / ".hold-tmp").mkdir()
+        files = {
+            "migration_candidate.py": FILES["migration_candidate.py"],
+            "test_migration.py": (
+                "import unittest\nfrom migration_candidate import answer\n\n"
+                "class MigrationTest(unittest.TestCase):\n"
+                "    def test_answer(self):\n        self.assertEqual(answer(), 42)\n\n"
+                "if __name__ == '__main__':\n    unittest.main()\n"
+            ),
+        }
+        for name, content in files.items():
+            (root / name).write_text(content)
+        node = "test_answer (__main__.MigrationTest)"
+        spec = {
+            "worktree": str(root), "nodeids": [node], "nonce": "synthetic-server-control",
+            "test_engine": "native_unittest", "engine_spec": {"script": "test_migration.py", "argv": ["--verbose"]},
+            "target_modules": ["migration_candidate"], "dependency_paths": [],
+            "file_sha256": {name: sha(content) for name, content in files.items()},
+            "shell_helper_source": holdout.source_ref(Path(shell.__file__)),
+            "filesystem_policy": shell.filesystem_policy(),
+            "parent_pid": os.getpid(), "parent_start_ticks": shell.process_identity(os.getpid())["start_ticks"],
+            "readonly_paths": ["/usr/bin", "/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/lib64", "/etc/ld.so.cache",
+                               *environment["runtime_paths"]],
+            "env": {"PATH": str(HOLD_PYTHON.parent) + ":/usr/bin:/bin", "TMPDIR": str(root / ".hold-tmp"),
+                    "PYTHONDONTWRITEBYTECODE": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1", "LC_ALL": "C.UTF-8"},
+            "cpu_seconds": 10, "memory_bytes": 536870912, "file_bytes": 8388608,
+            "uid_thread_limit": shell.uid_threads() + 16,
+        }
+        spec_path = tmp_path / "hold-spec.json"
+        spec_path.write_text(json.dumps(spec))
+        process = subprocess.Popen([str(HOLD_PYTHON), "-I", str(Path(holdout.__file__)), str(spec_path)],
+                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   start_new_session=True, env={"PATH": "/usr/bin:/bin"})
+        try:
+            output, _ = process.communicate(timeout=20)
+        finally:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=5)
+        text = output.decode()
+>       assert process.returncode == 0, text
+E       AssertionError: Traceback (most recent call last):
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_holdout_repo_tests_v051.py", line 425, in <module>
+E             _worker(sys.argv[1])
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_holdout_repo_tests_v051.py", line 242, in _worker
+E             proof = helper.install(spec)
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_shell_v051.py", line 163, in install
+E             filesystem = install_filesystem(spec)
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_shell_v051.py", line 111, in install_filesystem
+E             proof = module.install_filesystem(spec)
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/server_namespace_sandbox.py", line 283, in install_filesystem
+E             plan = validate_spec(spec)
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/server_namespace_sandbox.py", line 161, in validate_spec
+E             "aliases": aliases, "fixture_fds": _inherited_fds(spec)}
+E           File "/data1/zhuxinrui/projects/ProWorkSim/src/proworksim/server_namespace_sandbox.py", line 112, in _inherited_fds
+E             raise ValueError(f"Unauthorized inherited descriptor: {descriptor}")
+E         ValueError: Unauthorized inherited descriptor: 3
+E         
+E       assert 1 == 0
+E        +  where 1 = <Popen: returncode: 1 args: ['/data1/zhuxinrui/projects/ProWorkSim/runs/v051...>.returncode
+
+tests/test_server_namespace_sandbox.py:112: AssertionError
+_________ test_generic_readonly_worker_denies_mutation_and_subprocess __________
+
+tmp_path = PosixPath('/tmp/pytest-of-zhuxinrui/pytest-0/test_generic_readonly_worker_d0')
+
+    def test_generic_readonly_worker_denies_mutation_and_subprocess(tmp_path):
+        code = '''
+    import ctypes, errno, json, os
+    from pathlib import Path
+    from migration_candidate import answer
+    checks = {"candidate_read": answer() == 42}
+    for name, operation in (
+        ("write", lambda: Path("migration_candidate.py").write_text("unexpected")),
+        ("truncate", lambda: os.truncate("migration_candidate.py", 0)),
+    ):
+        try:
+            operation()
+        except OSError as error:
+            checks[name] = error.errno in (errno.EACCES, errno.EROFS)
+        else:
+            checks[name] = False
+    libc = ctypes.CDLL(None, use_errno=True)
+    ctypes.set_errno(0)
+    child = libc.fork()
+    if child == 0:
+        os._exit(0)
+    if child > 0:
+        os.waitpid(child, 0)
+    checks["fork"] = child == -1 and ctypes.get_errno() == errno.EPERM
+    print(json.dumps(checks))
+    '''
+        result = software_sandbox.run_isolated(
+            {"migration_candidate.py": FILES["migration_candidate.py"]}, code, run_root=tmp_path / "readonly")
+>       assert result["executed"] and result["driver_completed"] and result["returncode"] == 0, result
+E       AssertionError: {'sandbox': None, 'executed': False, 'driver_completed': False, 'returncode': 1, ...}
+E       assert (False)
+
+tests/test_server_namespace_sandbox.py:151: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_server_namespace_sandbox.py::test_shell_and_repository_synthetic_pytest_entries
+FAILED tests/test_server_namespace_sandbox.py::test_hold_native_unittest_standalone_child
+FAILED tests/test_server_namespace_sandbox.py::test_generic_readonly_worker_denies_mutation_and_subprocess
+3 failed, 2 passed in 0.61s
