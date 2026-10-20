@@ -12,7 +12,9 @@
 
 v3 改用官方镜像实际初态，相关证据及上游／镜像历史差异见[镜像基线修订](software-panel-v053-mirror-baseline-v3.md)。Faker、Pydantic 两份实际镜像已完成无模型源码控制：重建缺陷树等于各自原官方任务分支的 bug tree；逆补丁返回镜像初态；删除 F2P 后的树等于原官方任务分支；删除旧历史及缓存、重建唯一提交后源码树不变。回执位于 `runs/software-panel-v053/mirror-tree-control-v3-r2/summary.json`。首个控制尝试使用了官方 valid 不要求的 `git apply --index`，在测试前遇到 index 匹配错误；日志保留，修订后使用官方的普通精确 `git apply`。
 
-目前尚未得到任何仓库的 clean／bug／gold 测试资格，也尚未执行真实候选导出到独立 judge 的完整控制。因此不能称本地已有 200 个可运行任务，不能称 Docker 端到端评分已通过。没有模型调用、训练或 GPU 准入动作。
+随后 v3 实际执行了 CPU 资格测试，但发现整删官方 uv 缓存的公共接入错误后已暂停。停止时保存 76 份任务资格（64 true／12 false）、161 次阶段尝试及 160 份阶段回执；这些是中断准备阶段的原始记录，不是最终面板，也不能把已知公共错误产生的 false 用于来源排除。状态及证据引用见 `runs/software-panel-v053/v3-common-cache-fault.json`。
+
+v4 缓存修订及必要控制见[缓存适配说明](software-panel-v053-cache-adaptation-v4.md)。目前仍未执行真实候选导出到独立 judge 的完整控制，不能称本地已有 200 个可运行任务，不能称 Docker 端到端评分已通过。没有模型调用、训练或 GPU 准入动作。
 
 ## 固定身份和容器边界
 
@@ -22,7 +24,7 @@ v3 改用官方镜像实际初态，相关证据及上游／镜像历史差异�
 - `scripts/software_panel_environment_v053.py`：按预锁仓库顺序并行准入，以及一次完整 CPU 后端控制。
 - `tests/test_software_panel_docker_v053.py`：快照路径／链接、不可覆盖、真实测试转移、严格完成口径、公共故障与进程身份边界。
 
-v3 配置文件为 `runs/software-panel-v053/backend-config-v3.json`，新回执目录为 `runs/software-panel-v053/environments-v3`。Docker 客户端必须显式连接：
+v4 配置文件为 `runs/software-panel-v053/backend-config-v4.json`，新回执目录为 `runs/software-panel-v053/environments-v4`。Docker 客户端必须显式连接：
 
 ```text
 unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock
@@ -64,7 +66,9 @@ unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/dock
 
 从镜像实际工作树 B 应用缺陷后，actor 删除 F2P 对应的整个测试文件。这是官方 SWE-smith 任务分支的隐藏粒度。若同一个文件也包含 P2P，该部分 P2P 同样随文件隐藏；不会另外删除仅包含 P2P 的文件。有些仓库因此可能没有剩余的公开测试。
 
-所有 clean／bug／gold、actor 和 judge 工作树都清除原 `.git` 历史、已有 `__pycache__`／`.pyc`／`.pyo` 和 pytest 缓存，移除临时缺陷 patch 与 root 包缓存，再建立单初态 git 提交。actor 在删除隐藏测试后才重新提交；judge 的唯一初态是完整测试下的 bug。于是模型不能从 actor 的祖先提交找回原始源码，候选代码在 judge 内执行时也不能通过 `git show` 读取正确祖先。
+所有 clean／bug／gold、actor 和 judge 工作树都清除原 `.git` 历史、已有 `__pycache__`／`.pyc`／`.pyo` 和 pytest 缓存，移除临时缺陷 patch，再建立单初态 git 提交。actor 在删除隐藏测试后才重新提交；judge 的唯一初态是完整测试下的 bug。于是模型不能从 actor 的祖先提交找回原始源码，候选代码在 judge 内执行时也不能通过 `git show` 读取正确祖先。
+
+保留不可变官方镜像的依赖构建缓存，不再整删 `/root/.cache`。Pydantic 的原 editable wheel 已逐项检查，只含指向 `/testbed` 的 `.pth` 及分发元数据，没有 `.py`、字节码或实现二进制。容器固定 `UV_OFFLINE=true`，让 uv 使用镜像内已有依赖与索引缓存；仅有 `network=none` 不能阻止 resolver 主动请求索引并失败。官方 `test_cmd` 和依赖版本未改。这一缓存政策进入 contract 及 clean 复用键，避免复用修订前的失败结果。
 
 这些属于相对原始官方运行包装的显式接入变化。资格检查使用同一历史／缓存清理方法；如果某个来源依赖保留原 git 历史才能通过测试，必须记录为该固定环境下不可准入，而不能在模型启动后临时放宽。
 
@@ -116,9 +120,9 @@ judge 从同一 image ID 重建本题 bug，单独备份原测试，删除其需
 /data0/zhuxinrui/proworksim-runtime/run-cpu.sh --write-project \
   /data1/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/harness-venv/bin/python \
   scripts/software_panel_environment_v053.py \
-  --config runs/software-panel-v053/backend-config-v3.json \
+  --config runs/software-panel-v053/backend-config-v4.json \
   --inventory artifacts/software-panel-v053/candidate-inventory.json \
-  --output artifacts/software-panel-v053/environment-admission-v3.json \
+  --output artifacts/software-panel-v053/environment-admission-v4.json \
   --max-workers 8 --allow-image-pull
 ```
 
@@ -130,7 +134,7 @@ judge 从同一 image ID 重建本题 bug，单独备份原测试，删除其需
 /data0/zhuxinrui/proworksim-runtime/run-cpu.sh --write-project \
   /data1/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/harness-venv/bin/python \
   scripts/software_panel_environment_v053.py \
-  --config runs/software-panel-v053/backend-config-v3.json \
+  --config runs/software-panel-v053/backend-config-v4.json \
   --control-task-id '<冻结主面板第一题的 task_id>' \
   --control-root runs/software-panel-v053/first-backend-control \
   --output artifacts/software-panel-v053/first-backend-control.json

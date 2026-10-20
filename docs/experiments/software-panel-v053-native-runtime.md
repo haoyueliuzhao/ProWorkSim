@@ -150,3 +150,15 @@ cd /data0/zhuxinrui/projects/ProWorkSim
 流水线另有两项纯 CPU mock 控制通过：环境准入失败、以及初态捕获失败都不能封存模型 admission 或进入 supervisor；失败日志和只读暂停报告均保留。此控制没有启动实际子进程、Docker、任务测试、GPU 或模型。新增文件的限定 Ruff 通过。
 
 上述证据只证明新增接口和调度合同。正式 200/40 任务环境、实际初始输入、真实 GPU 推理、280 回合状态及最终统计以各自本轮不可变记录为准，不能从合成控制推定已完成。
+
+## v3 停机及外部运行时诊断的只读复核
+
+2026-10-20 的 v3 环境准备因共同适配故障停止，尚未冻结正式 panel，也没有模型回合。`pipeline-v3/pipeline-state.json` 记录收到 SIGTERM，环境阶段的 wrapper PID 4153466 以 `-15` 退出；流水线在北京时间 14:24:37 左右记录为 paused。该状态只证明所等待的直接 wrapper 已退出，不证明其 user/mount namespace 内全部后代已经结束。
+
+本次停止之后仍观察到环境子进程活动，并在约 14:25:06 创建了一个 admission-bug 容器。实际 transient systemd unit 保持 `Restart=no`、`TimeoutStopSec=45s`；由宿主的 systemd 停止超时清理剩余进程后，仍有一个属于本轮私有 Docker daemon 的容器 `91c71c42…`，已由主代理按其确切 ID 清理。Docker daemon 中的容器不能仅凭宿主 wrapper 退出推断已经释放；也不能把 paused 时间当作所有环境活动的最终结束时间。现有记录不足以唯一归因 namespace 子进程为何未随首次进程组信号终止，本轮不将推测写成已定位的信号缺陷。
+
+这次只读检查还核对了私有运行时的挂载方式：每次入口独立创建 user/mount namespace，进入后立即执行 `mount --make-rprivate /`，临时目录各自独立。因此，共用 sysroot 的目录并不意味着各进程共用后续挂载表；现有代码和记录没有证明正式多 worker 之间存在挂载覆盖竞态。
+
+外部诊断的 `cache-diagnostic-v3/inspect.log` 有一次首个项目 bind 的 `wrong fs type, bad option...` 错误。该错误发生在模型及 CUDA 加载之前；同一时间段的宿主 systemd 运行入口已有实际成功记录。外部工具父 namespace 的挂载限制与宿主 service 不同，是一种可能解释，但该日志没有给出足以确认根因的证据。不能把这一次外部诊断失败泛化为宿主并发运行失败，也不能据此宣称四个真实 GPU worker 已经通过验证。
+
+按本次窄复核范围，仅记录上述边界，不修改 pipeline、host 或 runtime 的停止/挂载代码，不追加并发 `true`、业务测试、GPU 或模型实验。后续停止仍需结合 systemd 最终状态和本轮精确容器身份判断资源是否已经释放，不能只看流水线 paused 字段。

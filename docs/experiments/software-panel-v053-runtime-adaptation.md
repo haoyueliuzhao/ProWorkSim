@@ -29,3 +29,11 @@ GPU 可信运行时的 `/proc` 改为可写，保留 `nosuid,nodev,noexec`。CPU
 建议正式环境使用独立 `/data0` Docker daemon，显式指定私有 `data-root`、`exec-root`、`pidfile` 和 Unix socket。其 containerd 也必须独立，不能复用 `/run/containerd/containerd.sock`。推荐禁用该私有 daemon 的桥接和 iptables 修改，容器按协议使用无网络运行；镜像拉取由宿主 daemon 完成。所有 Docker 客户端必须显式使用本轮 `DOCKER_HOST`。这些是给后续环境实现的接口要求，本子任务没有启动 daemon、修改共享 daemon 或拉取镜像。宿主 `sudo -n` 可用；rootlesskit、slirp4netns 和 subuid/subgid 映射已有，但 `newuidmap` 不在 PATH，不能据此宣称 rootless Docker 已准入。
 
 盘点时 GPU3 空闲 21,896 MiB，其他 GPU 空闲 4,291—9,497 MiB，均不能容纳上一轮约 35.1 GiB 的 FP32 短生成峰值，更未满足原有准入余量。此为瞬时资源观察，不否认上一轮 GPU3 确实可用；后续调度应继续按既定容量门等待，不改变精度、模型配置或借容量不足时冒险启动。
+
+## v3 停机和挂载边界的只读补充
+
+v3 在 2026-10-20 北京时间约 14:24:37 收到 SIGTERM，流水线等待的 wrapper 以 `-15` 退出并记录 paused；这不代表 namespace 内全部后代已经闭合。仍观察到约 14:25:06 创建的 admission-bug 容器。实际服务使用 `Restart=no`、`TimeoutStopSec=45s`，systemd 最终清理剩余进程后，一个本轮私有 daemon 中的遗留容器 `91c71c42…` 已由主代理按确切 ID 移除。停止资源是否释放，应结合 service 最终状态和容器身份判断，不能只看 paused。
+
+runtime 每次独立 unshare user/mount namespace，随后 `mount --make-rprivate /`，临时目录也独立；共用 sysroot 目录不等于共用挂载表。外部诊断在首个 project bind 出现的一次 `wrong fs type` 不能据此归因为正式 worker 的并发竞态。外部工具父 namespace 的锁定挂载约束是一种可能解释，当前证据不足以确定其根因；宿主 systemd 入口已有实际成功记录。没有因此追加模型、GPU、业务重测或四并发入口测试，也不宣称真实四 GPU 运行已通过。
+
+本次仅补充文档，未修改停机或挂载代码。具体证据路径与限制见[原生运行说明的只读复核记录](software-panel-v053-native-runtime.md#v3-停机及外部运行时诊断的只读复核)。

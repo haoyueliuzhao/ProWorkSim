@@ -231,3 +231,31 @@ def test_installation_deleted_test_remains_deleted_in_projected_bug_and_actor(tm
     assert "hidden_test.py" not in command(None, "git ls-tree --name-only " + projected["projected_actor_tree"])
     assert not (tmp_path / "installed_deleted_test.py").exists()
     assert (tmp_path / "source.py").read_text() == "correct\n"
+
+
+def test_source_cleanup_removes_old_answers_without_deleting_dependency_cache(tmp_path):
+    source = tmp_path / "testbed"
+    source.mkdir()
+    preserved = {
+        source / "module.py": b"current buggy source\n",
+        tmp_path / "root/.cache/uv/wheels-v5/pypi/hatchling/build.whl": b"official dependency\n",
+        tmp_path / "root/.cache/uv/archive-v0/project/_pydantic.pth": b"/testbed\n",
+    }
+    removed = [
+        source / ".git/objects/old-correct-source",
+        source / "__pycache__/module.cpython-310.pyc",
+        source / "legacy.pyo",
+        source / ".pytest_cache/v/cache/nodeids",
+    ]
+    for path, value in preserved.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(value)
+    for path in removed:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"old artifact")
+    result = subprocess.run(
+        ["bash", "-c", "set -euo pipefail\n" + docker.SOURCE_HISTORY_CACHE_CLEANUP],
+        cwd=source, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert all(not path.exists() for path in removed)
+    assert all(path.read_bytes() == value for path, value in preserved.items())

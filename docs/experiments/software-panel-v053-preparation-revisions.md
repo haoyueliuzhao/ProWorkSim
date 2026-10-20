@@ -40,3 +40,13 @@
 上游 U 仅作为来源声明；镜像 ID、Git 来源锚 C／T、默认引用和实际工作树 B 另行冻结。B 不一定等于 T：例如官方 fvcore 安装命令会删除 `tests/test_focal_loss.py`，盲目 reset 会恢复官方构建刻意删除的文件。clean、bug、gold 和实际 Agent 均从同一 B 准备，正向应用数据集 patch，逆向恢复时核对回到 B。已有官方任务分支提供额外树对照时记录其可比较性，不能猜测父提交、强行合并安装差异或临时拉取远端来替换初态。详细源码证据见 [镜像基线说明](software-panel-v053-mirror-baseline-v3.md)。
 
 通用初始化异常改为公共故障暂停；只有有明确任务／来源证据的失败才能成为来源不合格。正式模型仍必须等待完整 200 题环境资格、40 题子集与 280 个 seed 冻结，以及全部实际初始请求容量检查。修复初始化本身不等于这些条件已通过。
+
+## v4：保留离线构建依赖
+
+v3 实际进入了官方测试，但 Pydantic 的 clean 日志显示 pytest 尚未启动：适配器整删 `/root/.cache`，移除了镜像自带的 hatchling、hatch-fancy-pypi-readme 等 uv 构建依赖缓存。其 `5438 MISSING` 是共同适配错误，不能作为有效来源淘汰或模型失败。
+
+已在正式面板冻结之前停止 v3，保留 [v3 准备报告](software-panel-v053-result-v3.json)。停止收口时共保留 161 个阶段进入记录、160 个阶段回执和 76 个任务资格记录（64 true、12 false）；这些是被中止准备的原始记录，不是正式面板。停止后精确清理了本实验唯一遗留的 `admission-bug` 容器，无宿主挂载，没有停止专用 Docker／containerd 或触碰默认服务。完整处置记录在 `runs/software-panel-v053/v3-common-cache-fault.json`。
+
+v4 改为保留官方依赖缓存、继续清除任务源码历史和字节码，并固定 `UV_OFFLINE=true`。第一次仅保留缓存仍因 uv 尝试更新索引而在离线环境失败；该记录原样保留。补上离线解析后，Pydantic 原官方 clean 命令实际执行成功：5,810 passed、420 skipped、17 xfailed；第一道预选题的 5,438 项 required 测试全部为 PASSED／XFAIL。此成功回执写入新 `environments-v4` 的 clean 复用路径，正式准入不重复执行它。测试数字只说明这份 clean 控制，不是十题资格、200 题资格或模型成绩。
+
+修订另有一项针对依赖缓存保留和源码清理的 CPU 回归通过，限定 Ruff 通过；未重复此前整套控制。详见 [缓存适配证据与限制](software-panel-v053-cache-adaptation-v4.md)。新流水线使用独立 `pipeline-v4` 与 `environments-v4`，保留原候选顺序、抽样规则、数值配置和全部预算。正式模型调用数仍为零。

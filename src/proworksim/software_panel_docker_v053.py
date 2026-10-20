@@ -36,6 +36,11 @@ EXCLUDED_PARTS = frozenset({
     ".tox", ".venv", "node_modules",
 })
 DEFAULT_RESOURCES = {"mem_limit": "10g", "cpus": 4, "pids_limit": 512}
+SOURCE_HISTORY_CACHE_CLEANUP = r"""
+find . -type d -name .git -prune -exec rm -rf {} +
+find . -type d \( -name __pycache__ -o -name .pytest_cache \) -prune -exec rm -rf {} +
+find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+"""
 
 
 class CommonSystemFault(RuntimeError):
@@ -167,6 +172,8 @@ def profile_contract(config, task, *, image_baseline=None):
         "actor_f2p_files_hidden": True,
         "docker_init_enabled": True,
         "actor_background_processes_persist": False,
+        "dependency_cache_policy": "preserve-official-image-cache-offline-uv-clear-source-bytecode-v4",
+        "uv_offline": True,
         "candidate_source_byte_limit": SNAPSHOT_LIMIT,
         "candidate_archive_transport_byte_limit": ARCHIVE_TRANSPORT_LIMIT,
         "grading": (
@@ -395,7 +402,8 @@ def container_context(config, image, *, role, read_only=False):
             labels=labels,
             environment={"PYTHONDONTWRITEBYTECODE": "1", "GIT_TERMINAL_PROMPT": "0",
                          "PIP_NO_INDEX": "1", "HF_HUB_OFFLINE": "1",
-                         "TOKENIZERS_PARALLELISM": "false", "GIT_OPTIONAL_LOCKS": "0"},
+                         "TOKENIZERS_PARALLELISM": "false", "GIT_OPTIONAL_LOCKS": "0",
+                         "UV_OFFLINE": "true"},
             working_dir=WORKDIR,
         )
         container.start()
@@ -573,10 +581,8 @@ def prepare_checkout(container, task, contract, *, state, actor=False, evidence=
               ("\0".join(visible) + "\0").encode())
     require_exec(container, """
 set -euo pipefail
-find /testbed -type d -name .git -prune -exec rm -rf {} +
-find /testbed -type d \\( -name __pycache__ -o -name .pytest_cache \\) -prune -exec rm -rf {} +
-find /testbed -type f \\( -name '*.pyc' -o -name '*.pyo' \\) -delete
-rm -rf /root/.cache /tmp/patch.diff /patch.diff /eval.sh
+""" + SOURCE_HISTORY_CACHE_CLEANUP + """
+rm -f /tmp/patch.diff /patch.diff /eval.sh
 git init -q
 git config user.name ProWorkSim
 git config user.email evaluation@localhost
@@ -904,6 +910,7 @@ def qualify_repository(config, repository, *, allow_pull=False, stop_event=None)
                     "profile": contract["profile_source"],
                     "oracle_sources": contract["oracle_sources"],
                     "harness_dependency_versions": contract["harness_dependency_versions"],
+                    "dependency_cache_policy": contract["dependency_cache_policy"],
                 }))
                 clean_folder = folder / "clean" / clean_key
                 if clean_key not in clean_cache:
