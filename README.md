@@ -1,5 +1,11 @@
 # ProWorkSim
 
+## v0.54：Verified 500题方案与受管文件修复（2026-10-20）
+
+[新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。主对照1000回合预算上限5亿token，REF候选另500回合／2.5亿；这些是方案数字，**新增模型运行尚未授权**，不启动训练或多智能体。
+
+用户授权的[文件接口修复](docs/experiments/software-benchmark-v054-file-repair.md)已实现：取消原200文件／2MB准入上限，新增受管创建、删除、跨目录重命名及分页，保留完整文件元数据、同版本提交和最后工作树／最后合法提交双端点。17项必要合成CPU控制及真实OpenHands SDK构造检查通过，新增模型调用为0。Verified数据、500-ID清单、具体1500槽、镜像及官方评分接入仍待准备；旧v053的280槽继续保持未启动。
+
 ## 服务器 249：迁移与运行入口（2026-10-19）
 
 项目已迁移到 `/data0/zhuxinrui/projects/ProWorkSim`，`/data1/zhuxinrui/projects/ProWorkSim` 与 `/home/zhuxinrui/datatmp/projects/ProWorkSim` 在目标宿主指向同一目录。完整数据与外部依赖的迁移元数据检查为零差异，私有运行时的五项 CPU 验收已通过；详见[迁移记录](docs/migrations/server-249-20261019.md)和[运行时说明](docs/migrations/server-249-runtime-20261019.md)。
