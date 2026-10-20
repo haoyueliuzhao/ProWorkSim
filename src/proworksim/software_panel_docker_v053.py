@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import posixpath
+import re
 import shlex
 import sys
 import tarfile
@@ -128,7 +129,7 @@ def load_task(config, task):
     return raw, description
 
 
-def profile_contract(config, task):
+def profile_contract(config, task, *, image_baseline=None):
     if config.get("disable_dotenv", True) is not True:
         raise ValueError("The v053 harness requires dotenv auto-loading disabled")
     registry, _, _ = official_modules(config["official_code_root"])
@@ -155,7 +156,9 @@ def profile_contract(config, task):
             package: importlib.metadata.version(package)
             for package in ("docker", "swebench", "ghapi", "python-dotenv", "unidiff")
         },
-        "base_commit": profile.commit, "image_name": profile.image_name,
+        "upstream_source_commit": profile.commit, "image_name": profile.image_name,
+        "baseline_policy": "official-image-mirror-main-v3",
+        "image_baseline": copy.deepcopy(image_baseline),
         "test_command": command, "public_test_command": profile.test_cmd,
         "test_timeout_seconds": int(profile.timeout),
         "reference_timeout_seconds": int(profile.timeout_ref),
@@ -361,17 +364,18 @@ def execute_actor_command(container, command, timeout_seconds):
                 "extra": {"seconds": time.monotonic() - started, "transport_fault": True}}
 
 
-def require_exec(container, command, timeout=120):
+def require_exec(container, command, timeout=120, *, source_failure=False):
     result = exec_in(container, command, timeout)
     if result["exception_info"]:
         raise CommonSystemFault(f"Docker execution transport failed: {result}")
     if result["returncode"] != 0:
-        raise SourceEnvironmentError(f"Environment command failed: {command}\n{result}")
+        failure = SourceEnvironmentError if source_failure else CommonSystemFault
+        raise failure(f"Environment command failed: {command}\n{result}")
     return result["output"]
 
 
 @contextmanager
-def container_context(config, image, *, role):
+def container_context(config, image, *, role, read_only=False):
     client = docker_client(config)
     limits = resources(config)
     labels = {"proworksim.version": VERSION, "proworksim.role": role}
@@ -383,6 +387,7 @@ def container_context(config, image, *, role):
             image=image["image_id"], name="proworksim-v053-" + role + "-" + uuid.uuid4().hex,
             command=["/bin/bash", "-lc", "exec tail -f /dev/null"],
             entrypoint=[], user="root", detach=True, network_mode="none", init=True,
+            read_only=read_only,
             mem_limit=limits["mem_limit"], memswap_limit=limits["mem_limit"],
             nano_cpus=int(limits["cpus"] * 1_000_000_000),
             pids_limit=limits["pids_limit"], cap_drop=["ALL"],
@@ -390,7 +395,7 @@ def container_context(config, image, *, role):
             labels=labels,
             environment={"PYTHONDONTWRITEBYTECODE": "1", "GIT_TERMINAL_PROMPT": "0",
                          "PIP_NO_INDEX": "1", "HF_HUB_OFFLINE": "1",
-                         "TOKENIZERS_PARALLELISM": "false"},
+                         "TOKENIZERS_PARALLELISM": "false", "GIT_OPTIONAL_LOCKS": "0"},
             working_dir=WORKDIR,
         )
         container.start()
@@ -401,21 +406,145 @@ def container_context(config, image, *, role):
         client.close()
 
 
-def prepare_checkout(container, task, contract, *, state, actor=False):
-    """Base + exact mutation; no network fetch or guessed task branch."""
-    commit = shlex.quote(contract["base_commit"])
-    require_exec(container, f"git -c safe.directory=/testbed reset --hard {commit}")
-    actual = require_exec(container, "git rev-parse HEAD").strip()
-    if actual != contract["base_commit"]:
-        raise ValueError("Image does not contain the pinned base commit")
+def indexed_tree(container, base, commands=""):
+    """Compute a tree in a disposable index without changing source bytes."""
+    index = "/tmp/proworksim-tree-" + uuid.uuid4().hex
+    return require_exec(container, f"""
+set -euo pipefail
+export GIT_INDEX_FILE={shlex.quote(index)}
+trap 'rm -f "$GIT_INDEX_FILE" "$GIT_INDEX_FILE.lock"' EXIT
+git read-tree {shlex.quote(base)}
+{commands}
+git write-tree
+""").strip()
+
+
+def identify_image_baseline(container, task, contract):
+    """The official image clones a newly initialized mirror, not upstream U."""
+    head_ref = require_exec(container, "git symbolic-ref --quiet HEAD").strip()
+    values = require_exec(
+        container, "git rev-parse HEAD HEAD^{tree} refs/heads/main refs/remotes/origin/main"
+    ).splitlines()
+    if (head_ref != "refs/heads/main" or len(values) != 4
+            or any(re.fullmatch(r"[0-9a-f]{40}", value) is None for value in values)
+            or values[0] != values[2] or values[0] != values[3]):
+        raise CommonSystemFault("Official mirror HEAD/main/origin-main identity is unresolved")
+    origin = require_exec(container, "git remote get-url origin").strip()
+    repository = task["repo"]
+    allowed_origins = {f"https://github.com/{repository}", f"https://github.com/{repository}.git",
+                       f"git@github.com:{repository}.git"}
+    if origin not in allowed_origins:
+        raise CommonSystemFault("Image origin does not identify the declared official mirror")
+    status = require_exec(container, "git status --porcelain=v1 --untracked-files=normal")
+    worktree = indexed_tree(container, values[1], "git add -A")
+    delta = require_exec(container, "git diff --binary " + values[1] + " " + worktree)
+    return {
+        "policy": "official-image-mirror-main-v3",
+        "image_id": container.image.id, "mirror_repository": repository,
+        "upstream_source_commit": contract["upstream_source_commit"],
+        "head_ref": head_ref, "image_base_commit": values[0], "image_base_tree": values[1],
+        "origin_main_commit": values[3], "origin_url": origin,
+        "image_worktree_tree": worktree,
+        "image_worktree_status": status,
+        "installation_delta_sha256": sha256(delta.encode()),
+        "tracked_and_nonignored_worktree_clean": worktree == values[1],
+    }
+
+
+def official_task_trees(container, task, baseline):
+    """Use the branch ancestry prescribed by the official eval wrapper, if present."""
+    reference = "refs/remotes/origin/" + task["instance_id"]
+    found = exec_in(container, "git show-ref --verify --quiet " + shlex.quote(reference), 30)
+    if found["exception_info"] or found["returncode"] not in (0, 1):
+        raise CommonSystemFault("Cannot establish official task branch identity")
+    if found["returncode"] == 1:
+        return {"available_in_frozen_image": False, "reference": reference}
+    refs = [reference, reference + "^{tree}", reference + "~1^{tree}", reference + "~2"]
+    values = require_exec(container, "git rev-parse " + " ".join(map(shlex.quote, refs))).splitlines()
+    if (len(values) != 4 or any(re.fullmatch(r"[0-9a-f]{40}", value) is None for value in values)
+            or values[3] != baseline["image_base_commit"]):
+        raise CommonSystemFault("Official task ancestry does not close on this image's mirror main")
+    return {"available_in_frozen_image": True, "reference": reference,
+            "task_commit": values[0], "actor_tree": values[1], "bug_tree": values[2],
+            "base_commit": values[3]}
+
+
+def projected_task_trees(container, branch, baseline, hidden_files):
+    """Overlay the immutable image's installation delta on the official bug."""
+    if not branch["available_in_frozen_image"]:
+        return branch
+    hidden_commands = ""
+    if hidden_files:
+        hidden_commands = "git update-index --force-remove -- " + " ".join(
+            shlex.quote(path) for path in hidden_files)
+    if indexed_tree(container, branch["bug_tree"], hidden_commands) != branch["actor_tree"]:
+        raise CommonSystemFault("Official task branch does not exclusively hide the declared F2P files")
+    delta = require_exec(
+        container, "git diff --binary " + baseline["image_base_tree"] + " "
+        + baseline["image_worktree_tree"])
+    if sha256(delta.encode()) != baseline["installation_delta_sha256"]:
+        raise CommonSystemFault("Frozen image installation delta changed")
+    projected_bug = branch["bug_tree"]
+    if delta:
+        patch = "/tmp/proworksim-installation-" + uuid.uuid4().hex + ".diff"
+        index = "/tmp/proworksim-projection-" + uuid.uuid4().hex
+        put_bytes(container, patch, delta.encode())
+        try:
+            projected = exec_in(container, f"""
+set -euo pipefail
+export GIT_INDEX_FILE={shlex.quote(index)}
+trap 'rm -f "$GIT_INDEX_FILE" "$GIT_INDEX_FILE.lock"' EXIT
+git read-tree {shlex.quote(branch["bug_tree"])}
+if ! git apply --cached --check {shlex.quote(patch)}; then exit 42; fi
+git apply --cached {shlex.quote(patch)}
+git write-tree
+""", 120)
+        finally:
+            require_exec(container, "rm -f -- " + shlex.quote(patch))
+        if not projected["exception_info"] and projected["returncode"] == 42:
+            return {**branch, "comparison_available": False,
+                    "comparison_reason": "installation_delta_conflicts_with_auxiliary_branch",
+                    "projection_output": projected["output"]}
+        if projected["exception_info"] or projected["returncode"] != 0:
+            raise CommonSystemFault("Cannot execute auxiliary branch projection: " + str(projected))
+        projected_bug = projected["output"].strip()
+    return {
+        **branch, "comparison_available": True, "projected_bug_tree": projected_bug,
+        "projected_actor_tree": indexed_tree(container, projected_bug, hidden_commands),
+    }
+
+
+def prepare_checkout(container, task, contract, *, state, actor=False, evidence=None):
+    """Preserve the official image worktree, then exact bug/gold transitions."""
+    baseline = contract.get("image_baseline")
+    if baseline is None or identify_image_baseline(container, task, contract) != baseline:
+        raise CommonSystemFault("Fresh container differs from the frozen official mirror baseline")
+    proof = evidence if evidence is not None else {}
+    proof.update({"state": state, "actor": actor, "image_baseline": baseline})
+    expected_tree = baseline["image_worktree_tree"]
+    branch = official_task_trees(container, task, baseline) if state != "clean" else None
+    if branch is not None:
+        branch = projected_task_trees(container, branch, baseline, contract["hidden_f2p_files"])
+    proof["official_task_branch"] = branch
+    require_exec(container, "git read-tree " + expected_tree)
     if state in ("bug", "gold"):
         put_bytes(container, "/tmp/proworksim-mutation.diff", task["patch"].encode())
-        require_exec(container, "git apply --check /tmp/proworksim-mutation.diff")
+        require_exec(container, "git apply --check /tmp/proworksim-mutation.diff",
+                     source_failure=True)
         require_exec(container, "git apply /tmp/proworksim-mutation.diff")
+        require_exec(container, "git add -A")
+        expected_tree = require_exec(container, "git write-tree").strip()
+        proof["bug_tree"] = expected_tree
+        if branch.get("comparison_available") and expected_tree != branch["projected_bug_tree"]:
+            raise CommonSystemFault("Dataset mutation differs from the frozen official bug tree")
         if state == "gold":
             require_exec(container, "git apply --reverse --check /tmp/proworksim-mutation.diff")
             require_exec(container, "git apply --reverse /tmp/proworksim-mutation.diff")
-            require_exec(container, "git diff --exit-code")
+            require_exec(container, "git add -A")
+            expected_tree = require_exec(container, "git write-tree").strip()
+            proof["gold_reversal_tree"] = expected_tree
+            if expected_tree != baseline["image_worktree_tree"]:
+                raise CommonSystemFault("Reverse-gold mutation did not restore the image worktree")
         require_exec(container, "rm -f /tmp/proworksim-mutation.diff")
     elif state != "clean":
         raise ValueError("Unknown checkout state")
@@ -431,6 +560,11 @@ def prepare_checkout(container, task, contract, *, state, actor=False):
         hidden = " ".join(shlex.quote(path) for path in hidden_files)
         if hidden:
             require_exec(container, f"rm -f -- {hidden}")
+            require_exec(container, "git add -u")
+        expected_tree = require_exec(container, "git write-tree").strip()
+        proof["actor_hidden_tree"] = expected_tree
+        if branch.get("comparison_available") and expected_tree != branch["projected_actor_tree"]:
+            raise CommonSystemFault("Hidden-F2P reconstruction differs from the official task tree")
     # The judge also executes candidate code. It must not expose correct source
     # through git show, reflogs or cached bytecode. Admission uses this same
     # sanitization, so repository-version dependencies are checked in advance.
@@ -453,6 +587,10 @@ git -c core.hooksPath=/dev/null commit -qm 'Independent task initial state'
 test "$(git rev-list --count HEAD)" = 1
 test -z "$(git remote)"
 """)
+    proof["sanitized_tree"] = require_exec(container, "git rev-parse HEAD^{tree}").strip()
+    if proof["sanitized_tree"] != expected_tree:
+        raise CommonSystemFault("History/cache sanitization changed the bound source tree")
+    proof["tree_preserved_while_removing_history"] = True
     return tracked
 
 
@@ -588,7 +726,8 @@ def strict_completion(task, status_map, *, technical_error=None):
     }
 
 
-def execute_official_test(config, container, task, contract, folder, *, timeout=None):
+def execute_official_test(config, container, task, contract, folder, *, timeout=None,
+                          source_state=None):
     _, grading, constants = official_modules(config["official_code_root"])
     folder = Path(folder)
     script = "\n".join([
@@ -628,6 +767,7 @@ def execute_official_test(config, container, task, contract, folder, *, timeout=
     receipt = {
         "version": VERSION, "task_id": task["instance_id"], "contract": contract,
         "test_output": log_ref, "execution": run_ref, "technical_error": technical,
+        "source_state": source_state,
         "official_report": report, "test_status_map": status_map,
         **strict, "official_R": official_result,
         "primary_R_matches_official_R": (
@@ -674,9 +814,12 @@ def run_admission_phase(config, image, task, contract, root, state, *, timeout=N
     })
     try:
         with container_context(config, image, role="admission-" + state) as container:
-            prepare_checkout(container, task, contract, state=state)
+            proof = {}
+            prepare_checkout(container, task, contract, state=state, evidence=proof)
+            proof_ref = write_new(attempt / "source-state.json", proof)
             receipt = execute_official_test(
-                config, container, task, contract, attempt, timeout=timeout)
+                config, container, task, contract, attempt, timeout=timeout,
+                source_state=proof_ref)
         if receipt["technical_error"] == "docker_transport_failure":
             raise CommonSystemFault(f"Docker transport failed during {state} testing")
         reference = source_ref(attempt / "receipt.json")
@@ -724,6 +867,20 @@ def qualify_repository(config, repository, *, allow_pull=False, stop_event=None)
                 raise ValueError("Repository image identity changed after admission began")
         else:
             write_new(folder / "image.json", image)
+        first_task, _ = load_task(config, repository["candidate_tasks"][0])
+        _, first_contract = profile_contract(config, first_task)
+        baseline_path = folder / "image-baseline.json"
+        if baseline_path.exists():
+            baseline = json.loads(baseline_path.read_bytes())
+        else:
+            with container_context(config, image, role="admission-image-identity") as container:
+                baseline = identify_image_baseline(container, first_task, first_contract)
+            write_new(baseline_path, baseline)
+        if (baseline["image_id"] != image["image_id"]
+                or baseline["upstream_source_commit"] != first_contract["upstream_source_commit"]
+                or baseline["mirror_repository"] != first_task["repo"]):
+            raise CommonSystemFault("Stored mirror baseline belongs to a different source/image")
+        summary["image_baseline"] = source_ref(baseline_path)
         clean_cache = {}
         for task_id in repository["candidate_task_ids"]:
             if stop_event is not None and stop_event.is_set():
@@ -731,7 +888,7 @@ def qualify_repository(config, repository, *, allow_pull=False, stop_event=None)
             declared = next(row for row in repository["candidate_tasks"]
                             if row["task_id"] == task_id)
             task, description = load_task(config, declared)
-            profile, contract = profile_contract(config, task)
+            _, contract = profile_contract(config, task, image_baseline=baseline)
             task_folder = Path(config["environment_root"]) / "tasks" / task_id
             qualification_path = task_folder / "qualification.json"
             if qualification_path.exists():
@@ -742,7 +899,7 @@ def qualify_repository(config, repository, *, allow_pull=False, stop_event=None)
                     raise ValueError("Previous admission belongs to another source or environment")
             else:
                 clean_key = sha256(canonical_bytes({
-                    "image": image, "base_commit": profile.commit,
+                    "image": image, "image_baseline": baseline,
                     "command": contract["test_command"], "resources": resources(config),
                     "profile": contract["profile_source"],
                     "oracle_sources": contract["oracle_sources"],
@@ -836,12 +993,13 @@ class DockerBackend:
             "proworksim.worker_root": str(Path(run_root)),
         }
         self.task, description = load_task(config, task)
-        self.profile, self.contract = profile_contract(config, self.task)
         self.container, self._context, self._export = None, None, None
         if row["task_id"] != self.task["instance_id"]:
             raise ValueError("Episode row differs from the task source")
         qualification_path = Path(config["environment_root"]) / "tasks" / row["task_id"] / "qualification.json"
         qualification = json.loads(qualification_path.read_bytes())
+        self.profile, self.contract = profile_contract(
+            config, self.task, image_baseline=qualification["contract"].get("image_baseline"))
         if (qualification.get("admitted") is not True
                 or qualification["source_row_sha256"] != description["source_row_sha256"]
                 or qualification["contract"] != self.contract
@@ -851,14 +1009,17 @@ class DockerBackend:
         self._context = container_context(self.config, self.image, role="actor")
         self.container = self._context.__enter__()
         try:
+            prepared_source = {}
             self.tracked = prepare_checkout(
-                self.container, self.task, self.contract, state="bug", actor=True)
+                self.container, self.task, self.contract, state="bug", actor=True,
+                evidence=prepared_source)
             self.initial_tree = require_exec(self.container, "git rev-parse HEAD^{tree}").strip()
             self.identity = {
                 "version": VERSION, "task_id": row["task_id"], "slot_id": row["slot_id"],
                 "fresh_initial_state": True, "image": self.image,
                 "source_row_sha256": description["source_row_sha256"],
                 "qualification": source_ref(qualification_path), "contract": self.contract,
+                "prepared_source": prepared_source,
                 "initial_git_tree": self.initial_tree, "git_history_commits": 1,
                 "network": "none", "host_mounts": [], "resources": resources(config),
                 "actor_background_processes_persist": False,
@@ -924,7 +1085,10 @@ class DockerBackend:
             # One receipt per candidate; no score-dependent re-evaluation.
             write_new(folder / "entered.json", {"candidate_lock": lock_ref})
             with container_context(self.config, self.image, role="judge") as container:
-                tracked = prepare_checkout(container, self.task, self.contract, state="bug")
+                prepared_source = {}
+                tracked = prepare_checkout(
+                    container, self.task, self.contract, state="bug", evidence=prepared_source)
+                source_state_ref = write_new(folder / "judge-initial-state.json", prepared_source)
                 explicit = self.contract["official_test_files"]
                 protected = [path for path in tracked
                              if protected_path(path, self.profile, explicit)]
@@ -945,7 +1109,8 @@ class DockerBackend:
                 if protected:
                     require_exec(container, "tar -xf /tmp/proworksim-tests.tar -C /testbed")
                 receipt = execute_official_test(
-                    self.config, container, self.task, self.contract, folder / "official")
+                    self.config, container, self.task, self.contract, folder / "official",
+                    source_state=source_state_ref)
                 receipt["candidate_lock"] = lock_ref
                 receipt["restored_test_files"] = protected
                 receipt["removed_candidate_test_files"] = new_tests

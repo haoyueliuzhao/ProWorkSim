@@ -1,5 +1,7 @@
 """Critical candidate/oracle boundaries without a daemon or model."""
 import io
+from pathlib import Path
+import subprocess
 import tarfile
 from types import SimpleNamespace
 
@@ -140,3 +142,92 @@ def test_actor_cleanup_preserves_init_and_trusted_processes_and_handles_pid_reus
         "20": {"starttime": "150", "state": "R"},
     }
     assert docker.process_targets(current, baseline, own_pid=20) == {"9": "999", "13": "130"}
+
+
+def test_mirror_baseline_separates_upstream_and_preserves_installation_changes(monkeypatch):
+    commit, tree, upstream = "a" * 40, "b" * 40, "c" * 40
+    container = SimpleNamespace(image=SimpleNamespace(id="sha256:" + "d" * 64))
+    task = {"repo": "swesmith/owner__repo.12345678", "instance_id": "task"}
+    contract = {"upstream_source_commit": upstream}
+    answers = {
+        "git symbolic-ref --quiet HEAD": "refs/heads/main\n",
+        "git rev-parse HEAD HEAD^{tree} refs/heads/main refs/remotes/origin/main":
+            "\n".join([commit, tree, commit, commit]) + "\n",
+        "git remote get-url origin": "https://github.com/" + task["repo"],
+        "git status --porcelain=v1 --untracked-files=normal": "",
+        "git diff --binary " + tree + " " + tree: "",
+    }
+    monkeypatch.setattr(docker, "require_exec", lambda _, command: answers[command])
+    monkeypatch.setattr(docker, "indexed_tree", lambda *args: tree)
+    baseline = docker.identify_image_baseline(container, task, contract)
+    assert baseline["image_base_commit"] == commit != upstream
+    assert baseline["image_base_tree"] == tree
+    assert baseline["upstream_source_commit"] == upstream
+    answers["git symbolic-ref --quiet HEAD"] = "refs/heads/master"
+    with pytest.raises(docker.CommonSystemFault, match="unresolved"):
+        docker.identify_image_baseline(container, task, contract)
+    answers["git symbolic-ref --quiet HEAD"] = "refs/heads/main"
+    answers["git status --porcelain=v1 --untracked-files=normal"] = " D tests/test_focal_loss.py\n"
+    installed = "e" * 40
+    monkeypatch.setattr(docker, "indexed_tree", lambda *args: installed)
+    answers["git diff --binary " + tree + " " + installed] = "installation deletion\n"
+    baseline = docker.identify_image_baseline(container, task, contract)
+    assert baseline["image_worktree_tree"] == installed
+    assert baseline["tracked_and_nonignored_worktree_clean"] is False
+    assert baseline["image_worktree_status"].startswith(" D ")
+    monkeypatch.setattr(docker, "exec_in", lambda *args: {"returncode": 1, "exception_info": None})
+    assert docker.official_task_trees(container, task, baseline)["available_in_frozen_image"] is False
+
+
+def test_initialization_error_defaults_to_common_fault_and_patch_evidence_is_explicit(monkeypatch):
+    result = {"returncode": 128, "exception_info": None, "output": "could not parse object"}
+    monkeypatch.setattr(docker, "exec_in", lambda *args: result)
+    with pytest.raises(docker.CommonSystemFault):
+        docker.require_exec(None, "git init")
+    with pytest.raises(docker.SourceEnvironmentError):
+        docker.require_exec(None, "git apply --check patch.diff", source_failure=True)
+    result["exception_info"] = "daemon disconnected"
+    with pytest.raises(docker.CommonSystemFault):
+        docker.require_exec(None, "git apply --check patch.diff", source_failure=True)
+
+
+def test_installation_deleted_test_remains_deleted_in_projected_bug_and_actor(tmp_path, monkeypatch):
+    monkeypatch.setenv("LC_ALL", "C")
+    def command(_, text, *args):
+        result = subprocess.run(["bash", "-c", text], cwd=tmp_path, capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
+        return result.stdout
+
+    monkeypatch.setattr(docker, "require_exec", command)
+    monkeypatch.setattr(docker, "put_bytes", lambda _, path, value: Path(path).write_bytes(value))
+
+    def execute(_, text, timeout):
+        result = subprocess.run(["bash", "-c", text], cwd=tmp_path, capture_output=True, text=True)
+        return {"returncode": result.returncode, "output": result.stdout + result.stderr,
+                "exception_info": None}
+
+    monkeypatch.setattr(docker, "exec_in", execute)
+    command(None, "git init -q && git config user.email test@localhost && git config user.name Test")
+    (tmp_path / "source.py").write_text("correct\n")
+    (tmp_path / "hidden_test.py").write_text("test fix\n")
+    (tmp_path / "installed_deleted_test.py").write_text("test installation dependency\n")
+    command(None, "git add -A && git commit -qm Initial")
+    original = command(None, "git rev-parse HEAD^{tree}").strip()
+    (tmp_path / "source.py").write_text("bug\n")
+    bug = docker.indexed_tree(None, original, "git add -A")
+    actor = docker.indexed_tree(None, bug, "git update-index --force-remove -- hidden_test.py")
+    (tmp_path / "source.py").write_text("correct\n")
+    (tmp_path / "installed_deleted_test.py").unlink()
+    installed = docker.indexed_tree(None, original, "git add -A")
+    delta = command(None, "git diff --binary " + original + " " + installed)
+    baseline = {"image_base_tree": original, "image_worktree_tree": installed,
+                "installation_delta_sha256": docker.sha256(delta.encode())}
+    branch = {"available_in_frozen_image": True, "bug_tree": bug, "actor_tree": actor}
+    projected = docker.projected_task_trees(None, branch, baseline, ["hidden_test.py"])
+    assert projected["comparison_available"] is True
+    for tree in (projected["projected_bug_tree"], projected["projected_actor_tree"]):
+        assert "installed_deleted_test.py" not in command(None, "git ls-tree --name-only " + tree)
+        assert command(None, "git show " + tree + ":source.py") == "bug\n"
+    assert "hidden_test.py" not in command(None, "git ls-tree --name-only " + projected["projected_actor_tree"])
+    assert not (tmp_path / "installed_deleted_test.py").exists()
+    assert (tmp_path / "source.py").read_text() == "correct\n"

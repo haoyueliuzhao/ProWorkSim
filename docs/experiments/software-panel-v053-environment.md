@@ -8,7 +8,11 @@
 
 首次尝试的 SWE-bench `5.0.2` 缺少该固定 SWE-smith 源码所需的旧导出接口，因此没有用于实际题目评分；随后在独立 harness 虚拟环境内固定为 `4.1.0`，没有给官方源码添加兼容桩，也没有修改模型常驻环境。
 
-此时尚未得到任何实际仓库的 clean／bug／gold 资格，也尚未执行真实候选导出到独立 judge 的完整控制。因此不能称本地已有 200 个可运行任务，不能称 Docker 端到端评分已通过。下文描述已实现、将由实际准入检查执行的规则；最终事实以不可变环境回执为准。没有模型调用、训练或 GPU 准入动作。
+前八个官方镜像已通过标准 Docker load 导入，并逐一核对原始 config image ID，见[镜像传输说明](software-panel-v053-image-transfer.md)。pipeline-v2 随后的八个初始化尝试均因错误地将上游 commit 当作镜像内 Git 对象而提前失败，尚未运行测试节点或模型；这些原始 `admitted=false` 是公共接入错误产生的记录，不是有效来源排除，不用于替换仓库。
+
+v3 改用官方镜像实际初态，相关证据及上游／镜像历史差异见[镜像基线修订](software-panel-v053-mirror-baseline-v3.md)。Faker、Pydantic 两份实际镜像已完成无模型源码控制：重建缺陷树等于各自原官方任务分支的 bug tree；逆补丁返回镜像初态；删除 F2P 后的树等于原官方任务分支；删除旧历史及缓存、重建唯一提交后源码树不变。回执位于 `runs/software-panel-v053/mirror-tree-control-v3-r2/summary.json`。首个控制尝试使用了官方 valid 不要求的 `git apply --index`，在测试前遇到 index 匹配错误；日志保留，修订后使用官方的普通精确 `git apply`。
+
+目前尚未得到任何仓库的 clean／bug／gold 测试资格，也尚未执行真实候选导出到独立 judge 的完整控制。因此不能称本地已有 200 个可运行任务，不能称 Docker 端到端评分已通过。没有模型调用、训练或 GPU 准入动作。
 
 ## 固定身份和容器边界
 
@@ -18,7 +22,7 @@
 - `scripts/software_panel_environment_v053.py`：按预锁仓库顺序并行准入，以及一次完整 CPU 后端控制。
 - `tests/test_software_panel_docker_v053.py`：快照路径／链接、不可覆盖、真实测试转移、严格完成口径、公共故障与进程身份边界。
 
-配置文件为 `runs/software-panel-v053/backend-config.json`。Docker 客户端必须显式连接：
+v3 配置文件为 `runs/software-panel-v053/backend-config-v3.json`，新回执目录为 `runs/software-panel-v053/environments-v3`。Docker 客户端必须显式连接：
 
 ```text
 unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock
@@ -28,7 +32,9 @@ unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/dock
 
 每个 actor、每次 clean／bug／gold 检查和最终 judge 都使用独立容器；默认每容器 4 CPU、10 GiB 内存、512 PID，关闭网络，不挂载宿主目录或 Docker socket，丢弃 Linux capabilities，启用 `no-new-privileges` 和 Docker init。八仓库 CPU 并行窗口最多对应 32 个 CPU 配额；该数字是配额，不是实际 CPU 使用量。
 
-任务工作目录固定 `/testbed`。官方 profile 类、profile 源文件、基础 commit、测试命令、超时、原始测试文件集合、核心官方评分文件及依赖包版本都进入资格身份。正式创建 actor 时要求这些身份与该任务资格一致。
+任务工作目录固定 `/testbed`。官方 profile 类、源码文件、上游来源 commit U、镜像内实际 main commit C／Git tree T、实际源码工作树 B、测试命令、超时、原始测试文件集合、核心官方评分文件及依赖版本都进入资格身份。U 标记上游来源，不能用于重置镜像源码；官方镜像的 mirror 历史经过重建，U 通常不是镜像内存在的对象。
+
+每个仓库事先保存 `image-baseline.json`：精确 image ID、明确 `refs/heads/main`、HEAD／main／origin-main 一致的 C、官方 mirror remote、T、B、初始 Git 状态与 T→B 安装差异哈希。B 的范围是 Git 已跟踪和非忽略的源码文件；依赖及忽略的构建产物仍由不可变 image ID 绑定。计算 B 使用一次性容器的临时 index，不修改原工作树内容。B 不要求等于 T，例如官方 fvcore 安装命令会删除 `tests/test_focal_loss.py`，不能在准入时恢复该文件。每个新容器再次核对这些身份后才应用缺陷。
 
 宿主设置 `PYTHON_DOTENV_DISABLED=1`，并确认当前 python-dotenv 支持此开关。配置 `disable_dotenv` 必须为 true，避免官方模块导入时自动读取项目 `.env`。这不改变官方测试解析器。
 
@@ -36,15 +42,17 @@ unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/dock
 
 按已经锁定的仓库顺序，以最多八仓库的连续窗口并行准备。只有一个仓库原先预选的十个任务全部合格，它才进入可选择集合。不在同仓库里把未通过的任务替换成另一个题目。
 
-每种完整 clean 身份只执行一次。复用键包括 image ID、基础 commit、测试命令、资源配额、profile／评分源码身份和宿主依赖版本；只有完全相同的执行身份才复用其完整测试状态映射。不同任务的预定 F2P／P2P 仍分别核对，不能因为同仓库的另一题通过就默认本题合格。
+每种完整 clean 身份只执行一次。复用键包括 image ID、C／T／B 基线、测试命令、资源配额、profile／评分源码身份和宿主依赖版本；只有完全相同的执行身份才复用其完整测试状态映射。不同任务的预定 F2P／P2P 仍分别核对，不能因为同仓库的另一题通过就默认本题合格。
 
 | 状态 | 来源构建 | 必要观察 |
 | --- | --- | --- |
-| clean | 官方 profile 指定的原始 commit | 本题全部 F2P 与 P2P 均 PASSED 或 XFAIL |
-| bug | 在同一 commit 上精确应用本题官方 `patch` | 每项 F2P 实际 FAILED 或 ERROR；每项 P2P 仍 PASSED 或 XFAIL |
-| gold | 独立重建 bug，再精确反向应用同一 `patch` | 工作树回到原始源码；全部 F2P／P2P 均 PASSED 或 XFAIL |
+| clean | 官方镜像实际工作树 B，保留安装阶段改动 | 本题全部 F2P 与 P2P 均 PASSED 或 XFAIL |
+| bug | 在 B 上精确应用本题官方 `patch` | 每项 F2P 实际 FAILED 或 ERROR；每项 P2P 仍 PASSED 或 XFAIL |
+| gold | 独立重建 bug，再精确反向应用同一 `patch` | 工作树严格回到 B；全部 F2P／P2P 均 PASSED 或 XFAIL |
 
 这里的官方 `patch` 是缺陷注入，不是模型答案；官方 gold 语义是反向应用它。使用 `git apply --check` 后精确应用，不用模糊匹配或临时改动测试来使题目通过。每个状态均由独立容器开始，不复用其他状态的运行产物。
+
+镜像已经带有本题官方 remote branch 时，保留其 commit、bug tree、隐藏测试 tree 作为辅助对照。B=T 时直接比较；B≠T 时只尝试将固定安装差异机械投影到官方 bug tree。投影存在上下文冲突时记录“不可比较”和原因，不猜测合并、不改变 B，也不据此淘汰来源。分支缺失同样不构成来源排除；官方 valid 的核心输入本就是固定镜像初态与数据集 patch。可比较而结果不一致属于身份故障，必须暂停。各状态的 `source-state.json` 保存实际树转移证据。
 
 测试命令取固定官方 `profile.get_test_cmd(task, f2p_only=False)`，状态解析取原官方 `profile.log_parser`。clean 使用原 `timeout_ref`；bug／gold 和最终评分使用原 `timeout`。具体秒数来自各仓库 profile，不依据本轮结果调大门槛。
 
@@ -54,7 +62,7 @@ unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/dock
 
 ## 模型初态和公开测试
 
-从官方基础 commit 应用缺陷后，actor 删除 F2P 对应的整个测试文件。这是官方 SWE-smith 任务分支的隐藏粒度。若同一个文件也包含 P2P，该部分 P2P 同样随文件隐藏；不会另外删除仅包含 P2P 的文件。有些仓库因此可能没有剩余的公开测试。
+从镜像实际工作树 B 应用缺陷后，actor 删除 F2P 对应的整个测试文件。这是官方 SWE-smith 任务分支的隐藏粒度。若同一个文件也包含 P2P，该部分 P2P 同样随文件隐藏；不会另外删除仅包含 P2P 的文件。有些仓库因此可能没有剩余的公开测试。
 
 所有 clean／bug／gold、actor 和 judge 工作树都清除原 `.git` 历史、已有 `__pycache__`／`.pyc`／`.pyo` 和 pytest 缓存，移除临时缺陷 patch 与 root 包缓存，再建立单初态 git 提交。actor 在删除隐藏测试后才重新提交；judge 的唯一初态是完整测试下的 bug。于是模型不能从 actor 的祖先提交找回原始源码，候选代码在 judge 内执行时也不能通过 `git show` 读取正确祖先。
 
@@ -93,8 +101,8 @@ judge 从同一 image ID 重建本题 bug，单独备份原测试，删除其需
 | 完整执行中任一必要测试缺失、SKIPPED、XPASS | 正式主 R=0；另留官方辅助分数和覆盖诊断 |
 | 最终 Docker 失联、OOM、测试超时、命令不可执行、缺少完整日志标记或身份不一致 | 技术未知，R／Q 为 null，暂停后续正式派发 |
 | clean／bug／gold 在固定资源和官方超时内不能满足预定状态转移 | 本来源未通过事前环境资格；这不是模型失败 |
-| 镜像明确不存在、基础 commit／精确缺陷应用在该来源中不可执行 | 保存来源证据后，允许按预锁顺序考虑下一个仓库 |
-| 公共 daemon、registry 超时／限流、宿主依赖导入或身份故障 | 准入暂停，仓库保持 `admitted=null` 未决，不能作为来源排除 |
+| 镜像明确不存在、在已核对镜像初态上精确缺陷检查失败 | 保存来源证据后，允许按预锁顺序考虑下一个仓库 |
+| 通用初始化失败、公共 daemon、registry 超时／限流、宿主依赖导入或身份故障 | 准入暂停，仓库保持 `admitted=null` 未决，不能作为来源排除 |
 
 “测试超时”本身不能区分候选死循环、依赖等待和公共资源问题，因此正式回合保守留为技术未知，不据此填一个模型失败。终端中的普通短命令 timeout 则是模型可见工具反馈，后续仍按既定回合规则处理；它与最终 judge 没有得到可闭合判题结果是两种记录。
 
@@ -108,9 +116,9 @@ judge 从同一 image ID 重建本题 bug，单独备份原测试，删除其需
 /data0/zhuxinrui/proworksim-runtime/run-cpu.sh --write-project \
   /data1/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/harness-venv/bin/python \
   scripts/software_panel_environment_v053.py \
-  --config runs/software-panel-v053/backend-config.json \
+  --config runs/software-panel-v053/backend-config-v3.json \
   --inventory artifacts/software-panel-v053/candidate-inventory.json \
-  --output artifacts/software-panel-v053/environment-admission-v1.json \
+  --output artifacts/software-panel-v053/environment-admission-v3.json \
   --max-workers 8 --allow-image-pull
 ```
 
@@ -122,7 +130,7 @@ judge 从同一 image ID 重建本题 bug，单独备份原测试，删除其需
 /data0/zhuxinrui/proworksim-runtime/run-cpu.sh --write-project \
   /data1/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/harness-venv/bin/python \
   scripts/software_panel_environment_v053.py \
-  --config runs/software-panel-v053/backend-config.json \
+  --config runs/software-panel-v053/backend-config-v3.json \
   --control-task-id '<冻结主面板第一题的 task_id>' \
   --control-root runs/software-panel-v053/first-backend-control \
   --output artifacts/software-panel-v053/first-backend-control.json
