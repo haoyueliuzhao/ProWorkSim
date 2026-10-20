@@ -2,10 +2,85 @@ import hashlib
 import io
 import json
 import re
+import urllib.error
 
 import pytest
 
 from tools import verified_registry_ranges_v054 as ranges
+
+
+def test_explicit_lease_refresh_preserves_ranges_and_rate_limit_boundaries(tmp_path, monkeypatch):
+    body = bytes(range(256)) * (12 * 1024)
+    digest = "sha256:" + hashlib.sha256(body).hexdigest()
+    source = f"https://docker.1ms.run/v2/swebench/example/blobs/{digest}"
+    for mode in ("expired", "unknown_403", "refresh_429"):
+        clock, auth, permits, received, failed = [10000], [0], [0], [0], [False]
+        registry_ranges = []
+
+        class Auth:
+            def __init__(self, source):
+                assert source == "mirror"
+
+            def token(self, image):
+                auth[0] += 1
+                if mode == "refresh_429" and auth[0] == 2:
+                    try:
+                        raise urllib.error.HTTPError(
+                            "https://docker.1ms.run/openapi/v1/auth/token", 429, "limited",
+                            {"Retry-After": "3600"}, None)
+                    except urllib.error.HTTPError:
+                        raise ValueError("suppressed auth HTTP context") from None
+                return "lease-secret"
+
+        def open_response(opener, url, headers, policy, emit):
+            start, end = map(int, re.fullmatch(r"bytes=(\d+)-(\d+)", headers["Range"]).groups())
+            is_registry = url == source
+            if is_registry:
+                registry_ranges.append((start, end))
+                assert headers["Authorization"] == "Bearer lease-secret"
+            else:
+                assert "Authorization" not in headers
+                if not failed[0]:
+                    failed[0] = True
+                    if mode != "unknown_403":
+                        clock[0] = 14000
+                    error = urllib.error.HTTPError(url, 403, "forbidden", {}, None)
+                    raise ranges.asset.DownloadPaused("HTTP 403") from error
+            received[0] += end - start + 1
+            response = io.BytesIO(body[start:end + 1])
+            response.getcode = lambda: 206
+            response.headers = {"Content-Range": f"bytes {start}-{end}/{len(body)}",
+                                "Content-Length": str(end - start + 1)}
+            lease = ("https://cloudfront-docker-cf.mrs.1ms.run/blob?"
+                     f"Expires={clock[0] + 3000}&Key-Pair-Id=key&Signature=hidden-signature")
+            return response, lease
+
+        monkeypatch.setattr(ranges, "Metadata", Auth)
+        monkeypatch.setattr(ranges.asset, "open_response", open_response)
+        pool = ranges.RangePool(workers=1, chunk_bytes=1024 * 1024)
+        pool.now_epoch = lambda: clock[0]
+        pool.registry_turn = lambda: permits.__setitem__(0, permits[0] + 1)
+        output = tmp_path / mode / "blob"
+        if mode == "expired":
+            pool.download("swebench/example", digest, output, expected_bytes=len(body))
+            assert output.read_bytes() == body
+            assert received[0] == len(body)
+            assert registry_ranges == [(0, 1048575), (1048576, 2097151)]
+            assert auth[0] == permits[0] == 2
+        else:
+            with pytest.raises(ranges.asset.DownloadPaused) as caught:
+                pool.download("swebench/example", digest, output, expected_bytes=len(body))
+            assert received[0] == 1048576
+            assert auth[0] == permits[0] == (1 if mode == "unknown_403" else 2)
+            assert pool.stop.is_set()
+            if mode == "refresh_429":
+                assert caught.value.__cause__.headers["Retry-After"] == "3600"
+                assert pool.first_failure["http_status"] == 429
+                assert pool.first_failure["retry_after"] == "3600"
+        pool.close()
+        ledger_text = output.with_name("blob.ranges").joinpath("ledger.json").read_text()
+        assert "hidden-signature" not in ledger_text
+        assert "lease-secret" not in ledger_text
 
 
 def test_range_requires_exact_206_bounds():

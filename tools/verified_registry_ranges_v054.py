@@ -6,6 +6,7 @@ the authoritative verification is one complete SHA256 during final assembly.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import nullcontext
 from datetime import datetime, timezone
 import fcntl
 import hashlib
@@ -14,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import threading
+import time
 import urllib.error
 import urllib.parse
 
@@ -43,6 +45,31 @@ def checked_range(response, start, end, size):
         raise asset.DownloadPaused("Range Content-Length differs from pinned interval")
 
 
+def lease_expiry(url):
+    """Only the CloudFront canned-policy shape observed in local evidence."""
+    parsed = urllib.parse.urlsplit(url)
+    query = urllib.parse.parse_qs(parsed.query)
+    values = query.get("Expires", [])
+    if (parsed.hostname != "cloudfront-docker-cf.mrs.1ms.run"
+            or len(values) != 1 or not values[0].isdigit()
+            or len(query.get("Signature", [])) != 1
+            or len(query.get("Key-Pair-Id", [])) != 1):
+        return None
+    value = int(values[0])
+    return value if 0 < value < 2**63 else None
+
+
+def http_cause(error):
+    """AuditError suppresses display context but retains HTTP response headers."""
+    seen = set()
+    while error is not None and id(error) not in seen:
+        if isinstance(error, urllib.error.HTTPError):
+            return error
+        seen.add(id(error))
+        error = error.__cause__ or error.__context__
+    return None
+
+
 class RangePool:
     def __init__(self, workers=16, chunk_bytes=4 * 1024 * 1024):
         if not 1 <= workers <= 32 or not 1024 * 1024 <= chunk_bytes <= 8 * 1024 * 1024:
@@ -52,6 +79,21 @@ class RangePool:
         self.stop = threading.Event()
         self.chunk_bytes = chunk_bytes
         self.workers = workers
+        self.registry_lock = threading.Lock()
+        self.last_registry_start = 0.0
+        self.now_epoch = time.time
+        self.failure_lock = threading.Lock()
+        self.first_failure = None
+
+    def registry_turn(self):
+        """One permit covers auth plus one original-registry blob request."""
+        with self.registry_lock:
+            delay = 8.0 - (time.monotonic() - self.last_registry_start)
+            if delay > 0:
+                time.sleep(delay)
+            if self.stop.is_set():
+                raise asset.DownloadPaused("Range pool stopped before registry request")
+            self.last_registry_start = time.monotonic()
 
     def close(self):
         self.executor.shutdown(wait=True, cancel_futures=True)
@@ -140,7 +182,11 @@ class RangePool:
                     raise asset.DownloadPaused("Existing range segment exceeds pinned length")
                 return start + length
 
-            def transfer(start, end, url, headers):
+            lease_lock = threading.Lock()
+            lease = {"url": None, "expires": None, "refresh_count": 0}
+            refresh_margin_seconds, maximum_refreshes = 120, 4
+
+            def transfer_once(start, end, url, headers, *, slot_held=False):
                 if self.stop.is_set():
                     raise asset.DownloadPaused("Range pool stopped after public fault")
                 offset = segment_offset(start, end)
@@ -148,7 +194,7 @@ class RangePool:
                     return url
                 response = None
                 try:
-                    with self.slots:
+                    with nullcontext() if slot_held else self.slots:
                         response, final_url = asset.open_response(
                             asset.direct_opener(), url,
                             {"User-Agent": USER_AGENT, "Accept": "application/octet-stream",
@@ -175,34 +221,91 @@ class RangePool:
                             }
                             asset.atomic_json(ledger_path, ledger)
                         return final_url
-                except Exception as error:
-                    cause = error.__cause__
-                    retry_after = (cause.headers.get("Retry-After")
-                                   if isinstance(cause, urllib.error.HTTPError) else None)
-                    event("range_paused", start=start, end=end,
-                          saved_bytes=segment_offset(start, end) - start,
-                          error_type=type(error).__name__,
-                          http_status=getattr(cause, "code", None),
-                          retry_after=retry_after[:200] if retry_after else None)
-                    self.stop.set()
-                    raise
                 finally:
                     if response is not None:
                         response.close()
+
+            def transfer(start, end):
+                while True:
+                    if self.stop.is_set():
+                        raise asset.DownloadPaused("Range queue stopped before lease access")
+                    snapshot, refreshing = None, False
+                    try:
+                        with lease_lock:
+                            expires = lease["expires"]
+                            renew = (lease["url"] is not None and expires is not None
+                                     and self.now_epoch() >= expires - refresh_margin_seconds)
+                            if lease["url"] is None or renew:
+                                refreshing = True
+                                if renew and lease["refresh_count"] >= maximum_refreshes:
+                                    raise asset.DownloadPaused("Bounded signed-lease refresh limit reached")
+                                self.registry_turn()
+                                token = Metadata("mirror").token(image)
+                                final_url = transfer_once(
+                                    start, end, source, {"Authorization": "Bearer " + token})
+                                token = None
+                                if urllib.parse.urlsplit(final_url).hostname != "cloudfront-docker-cf.mrs.1ms.run":
+                                    raise asset.DownloadPaused("Range pool requires the approved CDN delivery host")
+                                new_expiry = lease_expiry(final_url)
+                                if (new_expiry is not None
+                                        and self.now_epoch() >= new_expiry - refresh_margin_seconds):
+                                    raise asset.DownloadPaused("New signed lease is already near expiry")
+                                lease.update(
+                                    url=final_url, expires=new_expiry,
+                                    refresh_count=lease["refresh_count"] + int(renew))
+                                event(
+                                    "lease_refreshed" if renew else "lease_acquired",
+                                    expires_epoch=new_expiry, refresh_count=lease["refresh_count"],
+                                    refresh_limit=maximum_refreshes,
+                                    refresh_margin_seconds=refresh_margin_seconds)
+                                return final_url
+                            snapshot = dict(lease)
+                        # No lease lock is taken while a normal request holds
+                        # a CDN slot, avoiding refresh/slot lock inversion.
+                        with self.slots:
+                            expires = snapshot["expires"]
+                            if (expires is not None
+                                    and self.now_epoch() >= expires - refresh_margin_seconds):
+                                continue
+                            return transfer_once(start, end, snapshot["url"], {}, slot_held=True)
+                    except Exception as error:
+                        cause = http_cause(error)
+                        known_expired_response = (
+                            not refreshing and snapshot is not None
+                            and snapshot["expires"] is not None
+                            and self.now_epoch() >= snapshot["expires"]
+                            and cause is not None and cause.code == 403
+                            and urllib.parse.urlsplit(cause.url).hostname
+                            == "cloudfront-docker-cf.mrs.1ms.run")
+                        if known_expired_response:
+                            event("expired_lease_response", http_status=403,
+                                  expires_epoch=snapshot["expires"],
+                                  saved_bytes=segment_offset(start, end) - start)
+                            continue
+                        retry_after = cause.headers.get("Retry-After") if cause is not None else None
+                        with self.failure_lock:
+                            if self.first_failure is None:
+                                self.first_failure = {
+                                    "error_type": type(error).__name__, "error": str(error)[:500],
+                                    "http_status": getattr(cause, "code", None),
+                                    "retry_after": retry_after[:200] if retry_after else None,
+                                }
+                            self.stop.set()
+                        event("range_paused", start=start, end=end,
+                              saved_bytes=segment_offset(start, end) - start,
+                              error_type=type(error).__name__, http_status=getattr(cause, "code", None),
+                              retry_after=retry_after[:200] if retry_after else None)
+                        if cause is not None and cause.code == 429:
+                            raise asset.DownloadPaused("Registry/CDN rate limit; queue paused") from cause
+                        raise
 
             missing = [(start, end) for start, end in intervals if segment_offset(start, end) <= end]
             futures = []
             try:
                 if missing:
-                    # One registry authentication and redirect resolution per blob.
-                    token = Metadata("mirror").token(image)
                     first_start, first_end = missing[0]
-                    cdn_url = transfer(
-                        first_start, first_end, source, {"Authorization": "Bearer " + token})
-                    if urllib.parse.urlsplit(cdn_url).hostname != "cloudfront-docker-cf.mrs.1ms.run":
-                        raise asset.DownloadPaused("Range pool requires the approved CDN delivery host")
-                    token = None
-                    futures = [self.executor.submit(transfer, start, end, cdn_url, {})
+                    transfer(first_start, first_end)
+                    futures = [self.executor.submit(transfer, start, end)
                                for start, end in missing[1:]]
                     for future in as_completed(futures):
                         future.result()

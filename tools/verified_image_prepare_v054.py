@@ -20,11 +20,11 @@ import time
 try:
     from .domestic_registry_blob import download_blob
     from .verified_image_metadata_v054 import load_inventory
-    from .verified_registry_ranges_v054 import RangePool
+    from .verified_registry_ranges_v054 import RangePool, http_cause
 except ImportError:
     from domestic_registry_blob import download_blob
     from verified_image_metadata_v054 import load_inventory
-    from verified_registry_ranges_v054 import RangePool
+    from verified_registry_ranges_v054 import RangePool, http_cause
 
 ROOT = Path(__file__).resolve().parents[1]
 SOCKET = "unix://" + str(ROOT / "runs/software-panel-v053/docker/docker.sock")
@@ -41,6 +41,16 @@ def save(path, value):
     temporary = path.with_name(path.name + ".writing")
     temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
     os.replace(temporary, path)
+
+
+def save_transport_status(plan, output):
+    keys = ("inventory_sha256", "status", "error_type", "error", "http_status",
+            "retry_after", "paused_at_utc", "created_at_utc", "completed_at_utc",
+            "loaded_count", "bounded_preflight_passed_count")
+    save(output / "transport-status.json", {
+        **{key: plan.get(key) for key in keys},
+        "service_invocation_id": os.environ.get("INVOCATION_ID"),
+    })
 
 
 def file_stat(path):
@@ -367,6 +377,7 @@ def execute(plan, output, *, workers, minimum_free, cdn_workers=16):
     plan["minimum_free_bytes"] = minimum_free
     plan["status"] = "downloading"
     save(output / "image-inventory.json", plan)
+    save_transport_status(plan, output)
     proofs = dict(plan["reused_blob_proofs"])
     proof_path = output / "blob-proofs.json"
     if proof_path.exists():
@@ -378,8 +389,6 @@ def execute(plan, output, *, workers, minimum_free, cdn_workers=16):
 
     stopped = threading.Event()
     range_pool = RangePool(workers=cdn_workers)
-    request_start_lock = threading.Lock()
-    last_request_start = [0.0]
 
     def fetch(item):
         if stopped.is_set():
@@ -402,20 +411,27 @@ def execute(plan, output, *, workers, minimum_free, cdn_workers=16):
             finally:
                 fcntl.flock(active_lock, fcntl.LOCK_UN)
         disk_gate(output, minimum_free, blob["bytes"])
-        with request_start_lock:
-            delay = 8.0 - (time.monotonic() - last_request_start[0])
-            if delay > 0:
-                time.sleep(delay)
-            last_request_start[0] = time.monotonic()
         if stopped.is_set():
             raise RuntimeError("preparation_stopped_after_public_fault")
-        if blob["bytes"] >= 8 * 1024 * 1024:
-            result = range_pool.download(
-                blob["image_name"], digest, blob["path"], expected_bytes=blob["bytes"])
-        else:
-            with range_pool.slots:
-                result = download_blob(
-                    blob["image_name"], digest, blob["path"], expected_bytes=blob["bytes"])
+        while True:
+            try:
+                if blob["bytes"] >= 8 * 1024 * 1024:
+                    result = range_pool.download(
+                        blob["image_name"], digest, blob["path"], expected_bytes=blob["bytes"])
+                else:
+                    range_pool.registry_turn()
+                    with range_pool.slots:
+                        result = download_blob(
+                            blob["image_name"], digest, blob["path"], expected_bytes=blob["bytes"])
+                break
+            except BlockingIOError:
+                # Another approved source may win the lock after the first
+                # inspection. Wait and reuse it; no competing HTTP transfer.
+                with lock_path.open("a+b") as active_lock:
+                    fcntl.flock(active_lock, fcntl.LOCK_EX)
+                    completed = cached_blob_proof(blob)
+                    if completed is not None:
+                        return digest, completed
         return digest, {
             "path": blob["path"], "bytes": blob["bytes"], "sha256": digest.split(":")[1],
             "stat": file_stat(Path(blob["path"])), "download": result,
@@ -423,6 +439,7 @@ def execute(plan, output, *, workers, minimum_free, cdn_workers=16):
 
     plan["new_cdn_pool_limit"] = cdn_workers
     plan["registry_blob_start_interval_seconds"] = 8.0
+    save(output / "image-inventory.json", plan)
     loader = ThreadPoolExecutor(max_workers=1, thread_name_prefix="v054-load-preflight")
     load_jobs, queued = [], set()
     plan_lock = threading.Lock()
@@ -478,14 +495,17 @@ def execute(plan, output, *, workers, minimum_free, cdn_workers=16):
             except Exception as error:
                 stopped.set()
                 range_pool.stop.set()
-                cause = error.__cause__
+                cause = http_cause(error)
                 headers = getattr(cause, "headers", {})
+                primary = range_pool.first_failure or {
+                    "error_type": type(error).__name__, "error": str(error)[:500],
+                    "http_status": getattr(cause, "code", None),
+                    "retry_after": headers.get("Retry-After"),
+                }
                 with plan_lock:
-                    plan.update(
-                        status="pausing_public_fault", error_type=type(error).__name__,
-                        error=str(error)[:500], http_status=getattr(cause, "code", None),
-                        retry_after=headers.get("Retry-After"), paused_at_utc=now())
+                    plan.update(status="pausing_public_fault", paused_at_utc=now(), **primary)
                     save(output / "image-inventory.json", plan)
+                    save_transport_status(plan, output)
                 for future in futures:
                     future.cancel()
                 raise
@@ -510,6 +530,7 @@ def execute(plan, output, *, workers, minimum_free, cdn_workers=16):
     plan["remaining_environment_gate"] = "Independent official scorer and actual actor isolation integration."
     plan["completed_at_utc"] = now()
     save(output / "image-inventory.json", plan)
+    save_transport_status(plan, output)
 
 
 def load_ready_only(plan, output, *, minimum_free):
@@ -589,9 +610,13 @@ def main(argv=None):
                     execute(plan, args.output, workers=args.workers,
                             minimum_free=args.minimum_free_gib * GiB, cdn_workers=args.cdn_workers)
             except Exception as error:
-                plan.update(status="paused", error_type=type(error).__name__,
-                            error=str(error)[:500], paused_at_utc=now())
+                if plan.get("status") != "pausing_public_fault":
+                    plan.update(error_type=type(error).__name__, error=str(error)[:500],
+                                paused_at_utc=now())
+                plan["status"] = "paused"
                 save(args.output / "image-inventory.json", plan)
+                if args.execute:
+                    save_transport_status(plan, args.output)
                 raise
     print(json.dumps({key: value for key, value in plan.items()
                       if key not in ("images", "blobs", "reused_blob_proofs")}))
