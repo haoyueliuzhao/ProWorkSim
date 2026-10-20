@@ -51,7 +51,11 @@ def status(root=ROOT):
         scorer_status = run / "scorer-preflight-r1/controller-status.json"
     seam = read(scorer_status)
     native = read(root / "docs/experiments/software-benchmark-v054-native-sdk-construction-r2.json")
+    match = read(root / "docs/experiments/software-benchmark-v054-match-seam-control-r2.json")
+    codec = read(root / "docs/experiments/software-benchmark-v054-match-codec-control-r3.json")
+    exact = read(root / "docs/experiments/software-benchmark-v054-exact-transport-control-r1.json")
     ref = read(artifacts / "native-environment/ref-followup-status.json")
+    apiba = read(run / "images/apiba-prefetch-r1/state.json")
     proof = read(run / "images/preparation-r1/blob-proofs.json")
     proved_bytes = sum(item.get("bytes", 0) for item in proof.values()
                        if isinstance(item, dict))
@@ -79,10 +83,14 @@ def status(root=ROOT):
             "unique_compressed_bytes": inventory.get("unique_compressed_blob_bytes"),
             "complete_blob_bytes_from_receipts": proved_bytes,
             "partial_download_bytes_included": False,
+            "alternative_domestic_source": apiba,
         },
         "official_scorer_500_specs_ready": scorer.get("all_500_specs_compatible") is True,
         "official_container_seam": seam,
         "native_sdk_construction_passed": native.get("passed") is True,
+        "match_synthetic_numerical_bridge_passed": match.get("passed") is True,
+        "official_output_codec_cpu_passed": codec.get("passed") is True,
+        "shared_exact_counting_cpu_passed": exact.get("passed") is True,
         "ref_dependency_finalizer": ref,
         "scoring_environment_prepared": (
             dataset_ready and loaded == 500 and bounded_passed == 500
@@ -90,7 +98,8 @@ def status(root=ROOT):
         "all_three_solver_environments_ready": False,
         "remaining_solver_gates": [
             "actual_Docker_actor_isolation_binding",
-            "MATCH_project_numerical_and_budget_bridge",
+            "per_task_owner_lifecycle_and_host_watchdog",
+            "actual_MATCH_model_owner_and_token_accounting_admission",
             "REF_model_capacity_and_execution_admission",
         ],
         "model_execution_authorized": False,
