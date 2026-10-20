@@ -8,6 +8,8 @@
 
 [固定Verified数据及500题／1500槽](docs/experiments/software-benchmark-v054-data-preparation.md)已从ModelScope国内直连取得并物化；[官方评分器](docs/experiments/software-benchmark-v054-scorer-preparation.md)已独立安装，500条规格兼容；[REF/MATCH原生接口](docs/experiments/software-benchmark-v054-native-sdk-preparation.md)的五工具、模板及condenser已在CPU构造中确认相同。[REF依赖](docs/experiments/software-benchmark-v054-ref-environment.md)已完成198项固定包的离线安装及CPU检查；[MATCH数值接入](docs/experiments/software-benchmark-v054-match-seam.md)和[两组共用的准确计数](docs/experiments/software-benchmark-v054-exact-native-transport.md)已通过合成CPU控制；[镜像资产](docs/experiments/software-benchmark-v054-image-preparation.md)、实际容器接入和GPU容量仍待闭合，不能称全部环境就绪。使用 `python3 tools/benchmark_preparation_status_v054.py` 读取现有回执汇总，不重复扫描大文件、不启动模型；旧v053的280槽继续保持未启动。
 
+[原生工具隔离](docs/experiments/software-benchmark-v054-native-worker-preparation.md)和[每题生命周期／宿主超时监督](docs/experiments/software-benchmark-v054-episode-lifecycle.md)已通过必要CPU控制。实际镜像中的UID等价、共同资源限制和真实模型运行装配仍待准入；合成检查不计作500题成绩。
+
 ## 服务器 249：迁移与运行入口（2026-10-19）
 
 项目已迁移到 `/data0/zhuxinrui/projects/ProWorkSim`，`/data1/zhuxinrui/projects/ProWorkSim` 与 `/home/zhuxinrui/datatmp/projects/ProWorkSim` 在目标宿主指向同一目录。完整数据与外部依赖的迁移元数据检查为零差异，私有运行时的五项 CPU 验收已通过；详见[迁移记录](docs/migrations/server-249-20261019.md)和[运行时说明](docs/migrations/server-249-runtime-20261019.md)。
