@@ -4,7 +4,9 @@
 
 [新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。主对照1000回合预算上限5亿token，REF候选另500回合／2.5亿；这些是方案数字，**新增模型运行尚未授权**，不启动训练或多智能体。
 
-用户授权的[文件接口修复](docs/experiments/software-benchmark-v054-file-repair.md)已实现：取消原200文件／2MB准入上限，新增受管创建、删除、跨目录重命名及分页，保留完整文件元数据、同版本提交和最后工作树／最后合法提交双端点。17项必要合成CPU控制及真实OpenHands SDK构造检查通过，新增模型调用为0。Verified数据、500-ID清单、具体1500槽、镜像及官方评分接入仍待准备；旧v053的280槽继续保持未启动。
+用户授权的[文件接口修复](docs/experiments/software-benchmark-v054-file-repair.md)已实现：取消原200文件／2MB准入上限，新增受管创建、删除、跨目录重命名及分页，保留完整文件元数据、同版本提交和最后工作树／最后合法提交双端点。17项必要合成CPU控制及真实OpenHands SDK构造检查通过，新增模型调用为0。
+
+[固定Verified数据及500题／1500槽](docs/experiments/software-benchmark-v054-data-preparation.md)已从ModelScope国内直连取得并物化；[官方评分器](docs/experiments/software-benchmark-v054-scorer-preparation.md)已独立安装，500条规格兼容；[REF/MATCH原生接口](docs/experiments/software-benchmark-v054-native-sdk-preparation.md)的五工具、模板及condenser已在CPU构造中确认相同。镜像资产、实际容器接入和[REF依赖](docs/experiments/software-benchmark-v054-ref-environment.md)仍在准备，不能称全部环境就绪。使用 `python3 tools/benchmark_preparation_status_v054.py` 读取现有回执汇总，不重复扫描大文件、不启动模型；旧v053的280槽继续保持未启动。
 
 ## 服务器 249：迁移与运行入口（2026-10-19）
 

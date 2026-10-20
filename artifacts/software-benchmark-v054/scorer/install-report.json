@@ -1,0 +1,118 @@
+{
+  "version": "1",
+  "pip_version": "24.0",
+  "install": [
+    {
+      "download_info": {
+        "url": "file:///data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/scorer/wheels/swebench-5.0.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=b7f0416a1e686eca22c2f749b5f816685a202835032f6683080e2b53545bbb62",
+          "hashes": {
+            "sha256": "b7f0416a1e686eca22c2f749b5f816685a202835032f6683080e2b53545bbb62"
+          }
+        }
+      },
+      "is_direct": true,
+      "is_yanked": false,
+      "requested": true,
+      "metadata": {
+        "metadata_version": "2.4",
+        "name": "swebench",
+        "version": "5.0.2",
+        "dynamic": [
+          "license-file"
+        ],
+        "summary": "The official SWE-bench package - a benchmark for evaluating LMs on software engineering",
+        "description": "<p align=\"center\">\n  <a href=\"http://swe-bench.github.io\">\n    <img src=\"docs/assets/figures/swellama_banner.svg\" style=\"height: 10em\" alt=\"Kawi the SWE-Llama\" />\n  </a>\n</p>\n\n<p align=\"center\"><strong>[&nbsp;<a href=\"https://swebench.com/SWE-bench/\">Read the Docs</a>&nbsp;]</strong></p>\n\n<p align=\"center\">\n  <a href=\"docs/other_languages/README_JP.md\">日本語</a> |\n  <a href=\"docs/other_languages/README_CN.md\">中文简体</a> |\n  <a href=\"docs/other_languages/README_TW.md\">中文繁體</a>\n</p>\n\n<p align=\"center\">\n    <a href=\"https://www.python.org/\">\n        <img alt=\"Build\" src=\"https://img.shields.io/badge/Python-3.8+-1f425f.svg?color=purple\">\n    </a>\n    <a href=\"https://copyright.princeton.edu/policy\">\n        <img alt=\"License\" src=\"https://img.shields.io/badge/License-MIT-blue\">\n    </a>\n    <a href=\"https://badge.fury.io/py/swebench\">\n        <img src=\"https://badge.fury.io/py/swebench.svg\">\n    </a>\n</p>\n\n---\n\nCode and data for the following works:\n* [ICLR 2025] <a href=\"https://arxiv.org/abs/2410.03859\">SWE-bench Multimodal: Do AI Systems Generalize to Visual Software Domains?</a>\n* [ICLR 2024 Oral] <a href=\"https://arxiv.org/abs/2310.06770\">SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</a>\n\n## 📰 News\n* **[Jan. 13, 2025]**: We've integrated [SWE-bench Multimodal](https://swebench.com/multimodal) ([paper](https://arxiv.org/abs/2410.03859), [dataset](https://huggingface.co/datasets/SWE-bench/SWE-bench_Multimodal)) into this repository! Unlike SWE-bench, we've kept evaluation for the test split *private*. Submit to the leaderboard using [sb-cli](https://github.com/swe-bench/sb-cli/tree/main), our new cloud-based evaluation tool.\n* **[Jan. 11, 2025]**: Thanks to [Modal](https://modal.com/), you can now run evaluations entirely on the cloud! See [here](https://github.com/swe-bench/SWE-bench/blob/main/docs/assets/evaluation.md#%EF%B8%8F-evaluation-with-modal) for more details.\n* **[Aug. 13, 2024]**: Introducing *SWE-bench Verified*! Part 2 of our collaboration with [OpenAI Preparedness](https://openai.com/preparedness/). A subset of 500 problems that real software engineers have confirmed are solvable. Check out more in the [report](https://openai.com/index/introducing-swe-bench-verified/)!\n* **[Jun. 27, 2024]**: We have an exciting update for SWE-bench - with support from [OpenAI's Preparedness](https://openai.com/preparedness/) team: We're moving to a fully containerized evaluation harness using Docker for more reproducible evaluations! Read more in our [report](https://github.com/swe-bench/SWE-bench/blob/main/docs/20240627_docker/README.md).\n* **[Apr. 2, 2024]**: We have released [SWE-agent](https://github.com/SWE-agent/SWE-agent), which sets the state-of-the-art on the full SWE-bench test set! ([Tweet 🔗](https://twitter.com/jyangballin/status/1775114444370051582))\n* **[Jan. 16, 2024]**: SWE-bench has been accepted to ICLR 2024 as an oral presentation! ([OpenReview 🔗](https://openreview.net/forum?id=VTF8yNQM66))\n\n## 👋 Overview\nSWE-bench is a benchmark for evaluating large language models on real world software issues collected from GitHub.\nGiven a *codebase* and an *issue*, a language model is tasked with generating a *patch* that resolves the described problem.\n\n<img src=\"docs/assets/figures/teaser.png\">\n\nTo access SWE-bench, copy and run the following code:\n```python\nfrom datasets import load_dataset\nswebench = load_dataset('princeton-nlp/SWE-bench', split='test')\n```\n\n## 🚀 Set Up\nSWE-bench uses Docker for reproducible evaluations.\nFollow the instructions in the [Docker setup guide](https://docs.docker.com/engine/install/) to install Docker on your machine.\nIf you're setting up on Linux, we recommend seeing the [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/) as well.\n\nFinally, to build SWE-bench from source, follow these steps:\n```bash\ngit clone git@github.com:SWE-bench/SWE-bench.git\ncd SWE-bench\npip install -e .\n```\n\nTest your installation by running:\n```bash\nswebench eval verified --gold -i sympy__sympy-20590 --run-id validate-gold\n```\n> [!NOTE]\n> If using a MacOS M-series or other ARM-based systems, add `--namespace ''` to the above script.\n> By default, the evaluation script pulls images (built for Linux) from [DockerHub](https://hub.docker.com/u/swebench).\n> Adding `--namespace ''` will cause evaluation images to be built locally instead.\n\n## 💽 Usage\nEvaluate patch predictions with the following command:\n```bash\nswebench eval verified -p <path_to_predictions> --run-id <run_id> -j <num_workers>\n```\n\n`DATASET` accepts an alias (`full`, `verified`, `multimodal`, `multilingual`), a\nHuggingFace id, or a local path. Anything else is passed through as given, so\n`SWE-bench/SWE-bench_Lite` works too:\n\n```bash\nswebench eval verified --gold                 # reference patches\nswebench eval multimodal --gold -i carbon-design-system__carbon-10188\nswebench report <run_id> -d verified          # re-grade saved logs, no containers\n```\n\nOther commands:\n\n```bash\nswebench images build verified -j 8           # build/pull images ahead of time\nswebench images check multilingual            # verify images exist on the registry\nswebench images clean --run-id <run_id>       # remove leftover containers\nswebench --help                               # all commands\n```\n\n> [!NOTE]\n> The previous `python -m swebench.harness.run_evaluation ...` form still works\n> and takes the same arguments as before.\n\nThis command will generate docker build logs (`logs/build_images`) and evaluation logs (`logs/run_evaluation`) in the current directory.\n\nThe final evaluation results will be stored in the `evaluation_results` directory.\n\n> [!NOTE]\n> **Result Caching**: The evaluation harness caches results by `run_id` and `instance_id` only. If you run the same instance with the same `run_id` multiple times, even with different prediction diffs, the harness will reuse the cached results from the first run and will not re-evaluate. To re-evaluate an instance with a different prediction diff, you must use a different `run_id`.\n\n> [!WARNING]\n> SWE-bench evaluation can be resource intensive\n> We recommend running on an `x86_64` machine with at least 120GB of free storage, 16GB of RAM, and 8 CPU cores.\n> We recommend using fewer than `min(0.75 * os.cpu_count(), 24)` for `--max_workers`.\n>\n> If running with Docker desktop, make sure to increase your virtual disk space to ~120 free GB. Set max_workers to be consistent with the above for the CPUs available to Docker.\n>\n> Support for `arm64` machines is experimental.\n\nTo see the full list of arguments for the evaluation harness, run:\n```bash\nswebench eval --help\n```\n\nSee the [evaluation tutorial](docs/guides/evaluation.md) for the full rundown on datasets you can evaluate.\nIf you're looking for non-local, cloud based evaluations, check out...\n* [sb-cli](https://github.com/swe-bench/sb-cli), our tool for running evaluations automatically on AWS, or...\n* Running SWE-bench evaluation on [Modal](https://modal.com/). Details [here](docs/guides/evaluation.md#Cloud-Based-Evaluation)\n\nAdditionally, you can also:\n* [Train](https://github.com/swe-bench/SWE-bench/tree/main/swebench/inference/make_datasets) your own models on our pre-processed datasets. (🆕 Check out [SWE-smith](https://swesmith.com/), a dedicated toolkit for creating SWE training data.)\n* Run [inference](docs/reference/inference.md) on existing models (both local and API models). The inference step is where you give the model a repo + issue and have it generate a fix.\n*  Run SWE-bench's [data collection procedure](https://github.com/swe-bench/SWE-bench/blob/main/swebench/collect/) ([tutorial](docs/guides/collection.md)) on your own repositories, to make new SWE-Bench tasks.\n    * ⚠️ We are temporarily pausing support for queries around creating SWE-bench instances. Please see the note in the tutorial.\n\n## ⬇️ Downloads\n| Datasets | Models | RAG |\n| - | - | - |\n| [💿 SWE-bench](https://huggingface.co/datasets/SWE-bench/SWE-bench) | [🦙 SWE-Llama 13b](https://huggingface.co/princeton-nlp/SWE-Llama-13b) | [🤗 \"Oracle\" Retrieval](https://huggingface.co/datasets/princeton-nlp/SWE-bench_oracle) |\n| [💿 SWE-bench Lite](https://huggingface.co/datasets/SWE-bench/SWE-bench_Lite) | [🦙 SWE-Llama 13b (PEFT)](https://huggingface.co/princeton-nlp/SWE-Llama-13b-peft) | [🤗 BM25 Retrieval 13K](https://huggingface.co/datasets/princeton-nlp/SWE-bench_bm25_13K) |\n| [💿 SWE-bench Verified](https://huggingface.co/datasets/SWE-bench/SWE-bench_Verified) | [🦙 SWE-Llama 7b](https://huggingface.co/princeton-nlp/SWE-Llama-7b) | [🤗 BM25 Retrieval 27K](https://huggingface.co/datasets/princeton-nlp/SWE-bench_bm25_27K) |\n| [💿 SWE-bench Multimodal](https://huggingface.co/datasets/SWE-bench/SWE-bench_Multimodal) | [🦙 SWE-Llama 7b (PEFT)](https://huggingface.co/princeton-nlp/SWE-Llama-7b-peft) | [🤗 BM25 Retrieval 40K](https://huggingface.co/datasets/princeton-nlp/SWE-bench_bm25_40K) |\n| | | [🤗 BM25 Retrieval 50K (Llama tokens)](https://huggingface.co/datasets/princeton-nlp/SWE-bench_bm25_50k_llama) |\n\n## 💫 Contributions\nWe would love to hear from the broader NLP, Machine Learning, and Software Engineering research communities, and we welcome any contributions, pull requests, or issues!\nTo do so, please either file a new pull request or issue and fill in the corresponding templates accordingly. We'll be sure to follow up shortly!\n\nContact person: [Carlos E. Jimenez](http://www.carlosejimenez.com/) and [John Yang](https://john-b-yang.github.io/) (Email: carlosej@princeton.edu, johnby@stanford.edu).\n\n## ✍️ Citation & license\nMIT license. Check `LICENSE.md`.\n\nIf you find our work helpful, please use the following citations.\n\nFor SWE-bench (Verified):\n```bibtex\n@inproceedings{\n    jimenez2024swebench,\n    title={{SWE}-bench: Can Language Models Resolve Real-world Github Issues?},\n    author={Carlos E Jimenez and John Yang and Alexander Wettig and Shunyu Yao and Kexin Pei and Ofir Press and Karthik R Narasimhan},\n    booktitle={The Twelfth International Conference on Learning Representations},\n    year={2024},\n    url={https://openreview.net/forum?id=VTF8yNQM66}\n}\n```\n\nFor SWE-bench Multimodal\n```bibtex\n@inproceedings{\n    yang2024swebenchmultimodal,\n    title={{SWE}-bench Multimodal: Do AI Systems Generalize to Visual Software Domains?},\n    author={John Yang and Carlos E. Jimenez and Alex L. Zhang and Kilian Lieret and Joyce Yang and Xindi Wu and Ori Press and Niklas Muennighoff and Gabriel Synnaeve and Karthik R. Narasimhan and Diyi Yang and Sida I. Wang and Ofir Press},\n    booktitle={The Thirteenth International Conference on Learning Representations},\n    year={2025},\n    url={https://openreview.net/forum?id=riTiq3i21b}\n}\n```\n\nFor SWE-bench Multilingual\n```bibtex\n@misc{yang2025swesmith,\n    title={SWE-smith: Scaling Data for Software Engineering Agents},\n    author={John Yang and Kilian Lieret and Carlos E. Jimenez and Alexander Wettig and Kabir Khandpur and Yanzhe Zhang and Binyuan Hui and Ofir Press and Ludwig Schmidt and Diyi Yang},\n    year={2025},\n    eprint={2504.21798},\n    archivePrefix={arXiv},\n    primaryClass={cs.SE},\n    url={https://arxiv.org/abs/2504.21798},\n}\n```\n\n## Our Other Projects\n\n<div align=\"center\">\n  <a href=\"https://github.com/SWE-bench/sb-cli\"><img src=\"https://raw.githubusercontent.com/SWE-agent/swe-agent-media/refs/heads/main/media/logos_banners/sbcli_logo_text_below.svg\" alt=\"sb-cli\" height=\"120px\"></a>\n   &nbsp;&nbsp;\n  <a href=\"https://github.com/SWE-bench/SWE-smith\"><img src=\"https://raw.githubusercontent.com/SWE-agent/swe-agent-media/refs/heads/main/media/logos_banners/swesmith_logo_text_below.svg\" alt=\"SWE-smith\" height=\"120px\"></a>\n   &nbsp;&nbsp;\n  <a href=\"https://github.com/SWE-agent/SWE-agent\"><img src=\"https://raw.githubusercontent.com/SWE-agent/swe-agent-media/refs/heads/main/media/logos_banners/sweagent_logo_text_below.svg\" alt=\"SWE-agent\" height=\"120px\"></a>\n   &nbsp;&nbsp;\n  <a href=\"https://github.com/codeclash-ai/codeclash\"><img src=\"https://raw.githubusercontent.com/SWE-agent/swe-agent-media/refs/heads/main/media/logos_banners/codeclash_logo_text_below.svg\" alt=\"CodeClash\" height=\"120px\"></a>\n  &nbsp;&nbsp;\n  <a href=\"https://github.com/SWE-agent/Mini-SWE-Agent\"><img src=\"https://raw.githubusercontent.com/SWE-agent/swe-agent-media/refs/heads/main/media/logos_banners/mini_logo_text_below.svg\" alt=\"Mini-SWE-Agent\" height=\"120px\"></a>\n  &nbsp;&nbsp;\n  <a href=\"https://github.com/SWE-agent/SWE-ReX\"><img src=\"https://raw.githubusercontent.com/SWE-agent/swe-agent-media/refs/heads/main/media/logos_banners/swerex_logo_text_below.svg\" alt=\"SWE-ReX\" height=\"120px\"></a>\n</div>\n",
+        "description_content_type": "text/markdown",
+        "keywords": [
+          "nlp",
+          "benchmark",
+          "code"
+        ],
+        "author_email": "SWE-bench team <support@swebench.com>",
+        "license": "MIT License\n\nCopyright (c) 2023 Carlos E Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press, Karthik R Narasimhan\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+        "classifier": [
+          "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3 :: Only",
+          "License :: OSI Approved :: MIT License",
+          "Operating System :: OS Independent"
+        ],
+        "requires_dist": [
+          "beautifulsoup4",
+          "chardet",
+          "datasets",
+          "docker",
+          "ghapi<2",
+          "GitPython",
+          "modal",
+          "pre-commit",
+          "python-dotenv",
+          "PyYAML",
+          "requests",
+          "rich",
+          "typer",
+          "tenacity",
+          "tqdm",
+          "unidiff",
+          "protobuf; extra == \"datasets\"",
+          "sentencepiece; extra == \"datasets\"",
+          "tiktoken; extra == \"datasets\"",
+          "transformers; extra == \"datasets\"",
+          "openai; extra == \"datasets\"",
+          "anthropic; extra == \"datasets\"",
+          "jedi; extra == \"datasets\"",
+          "torch>=2.0.0; extra == \"inference\"",
+          "anthropic; extra == \"inference\"",
+          "jedi; extra == \"inference\"",
+          "openai; extra == \"inference\"",
+          "peft; extra == \"inference\"",
+          "protobuf; extra == \"inference\"",
+          "sentencepiece; extra == \"inference\"",
+          "tiktoken; extra == \"inference\"",
+          "transformers; extra == \"inference\"",
+          "triton; extra == \"inference\"",
+          "flash_attn>=2.0.0; extra == \"inference\"",
+          "requests; extra == \"inference\"",
+          "pytest; extra == \"test\"",
+          "pytest-cov; extra == \"test\"",
+          "mkdocs; extra == \"docs\"",
+          "mkdocs-material; extra == \"docs\"",
+          "mkdocs-glightbox; extra == \"docs\"",
+          "mkdocstrings; extra == \"docs\"",
+          "mkdocstrings-python; extra == \"docs\"",
+          "mike; extra == \"docs\"",
+          "pymdown-extensions; extra == \"docs\"",
+          "mkdocs-include-markdown-plugin; extra == \"docs\""
+        ],
+        "requires_python": ">=3.10",
+        "project_url": [
+          "Documentation, https://github.com/swe-bench/SWE-bench",
+          "Bug Reports, http://github.com/swe-bench/SWE-bench/issues",
+          "Source Code, http://github.com/swe-bench/SWE-bench",
+          "Website, https://swebench.com"
+        ],
+        "provides_extra": [
+          "datasets",
+          "inference",
+          "test",
+          "docs"
+        ]
+      }
+    }
+  ],
+  "environment": {
+    "implementation_name": "cpython",
+    "implementation_version": "3.12.3",
+    "os_name": "posix",
+    "platform_machine": "x86_64",
+    "platform_release": "5.15.0-186-generic",
+    "platform_system": "Linux",
+    "platform_version": "#196-Ubuntu SMP Sat Jun 20 16:09:34 UTC 2026",
+    "python_full_version": "3.12.3",
+    "platform_python_implementation": "CPython",
+    "python_version": "3.12",
+    "sys_platform": "linux"
+  }
+}
