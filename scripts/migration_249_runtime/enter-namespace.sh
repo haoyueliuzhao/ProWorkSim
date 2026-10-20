@@ -6,7 +6,8 @@ data_root=$2
 temporary_root=$3
 project_mode=$4
 gpu_devices=$5
-shift 5
+gpu_uuids=$6
+shift 6
 sysroot=$runtime_root/sysroot
 mount --make-rprivate /
 bind_path() {
@@ -34,7 +35,14 @@ fi
 # bind drops those submounts and is rejected in an unprivileged namespace.
 # Preserve the existing tree and the kernel filesystem's locked flags.
 mount --rbind /proc "$sysroot/proc"
-mount -o remount,bind,ro,nosuid,nodev,noexec "$sysroot/proc"
+proc_mode=ro
+if [[ -n $gpu_devices ]]; then
+    # CUDA initializes thread names via /proc/self/task/*/comm. Keep proc
+    # writable only in this trusted GPU runtime; business sandboxes hide proc.
+    [[ -n $gpu_uuids ]] || { printf '%s\n' 'Missing resolved GPU UUIDs.' >&2; exit 1; }
+    proc_mode=rw
+fi
+mount -o "remount,bind,$proc_mode,nosuid,nodev,noexec" "$sysroot/proc"
 for name in null zero random urandom; do
     bind_path "/dev/$name" "$sysroot/dev/$name" rw
 done
@@ -82,6 +90,7 @@ exec /usr/sbin/chroot "$sysroot" /usr/bin/env -i \
     HOME=/home/zhuxinrui USER=zhuxinrui LOGNAME=zhuxinrui \
     PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 TMPDIR=/tmp \
     PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/data1/zhuxinrui/projects/ProWorkSim/src \
-    CUDA_VISIBLE_DEVICES="$gpu_devices" NVIDIA_VISIBLE_DEVICES="${gpu_devices:-void}" \
+    CUDA_VISIBLE_DEVICES="$gpu_uuids" NVIDIA_VISIBLE_DEVICES="${gpu_uuids:-void}" \
+    PROWORKSIM_HOST_GPU_DEVICES="$gpu_devices" \
     LD_LIBRARY_PATH="$driver_library_path" \
     /bin/sh -c 'cd /data1/zhuxinrui/projects/ProWorkSim && exec "$@"' migration-runtime "$@"

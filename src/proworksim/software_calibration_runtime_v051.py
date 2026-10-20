@@ -13,6 +13,7 @@ import copy
 import math
 import os
 from pathlib import Path
+import re
 import time
 import uuid
 
@@ -525,8 +526,85 @@ def validate_checkpoint_metadata(checkpoint_path, saved, authorization=None):
     return steps
 
 
+def single_gpu_binding(environ):
+    """Accept one physical index, or the server namespace's exact UUID binding."""
+    visible = environ.get("CUDA_VISIBLE_DEVICES")
+    indices = {str(i) for i in range(8)}
+    if visible in indices:
+        return {"physical_index": int(visible), "cuda_visible_devices": visible,
+                "uuid": None}
+    physical = environ.get("PROWORKSIM_HOST_GPU_DEVICES")
+    if (isinstance(visible, str)
+            and re.fullmatch(r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", visible)
+            and physical in indices):
+        return {"physical_index": int(physical), "cuda_visible_devices": visible,
+                "uuid": visible}
+    raise ValueError("Bind exactly one approved physical GPU index or server UUID before model loading")
+
+
+def verify_single_gpu_uuid(binding, device_properties):
+    if binding["uuid"] is not None:
+        actual = str(getattr(device_properties, "uuid", ""))
+        if actual.lower().removeprefix("gpu-") != binding["uuid"].lower().removeprefix("gpu-"):
+            raise ValueError("Actual CUDA device UUID differs from the declared server physical GPU")
+
+
+def model_source_stat(path):
+    path = Path(path).resolve()
+    stat = path.stat()
+    return {"path": str(path), "dev": stat.st_dev, "ino": stat.st_ino, "size": stat.st_size,
+            "mtime_ns": stat.st_mtime_ns, "ctime_ns": stat.st_ctime_ns}
+
+
+def verify_model_source(model_path, manifest, *, verified_source_receipt=None):
+    """Reuse an explicit one-time content audit only while every file stat matches."""
+    model_path = Path(model_path).resolve()
+    identity = read_json(Path(manifest))
+    files = identity.get("files", {})
+    if not files or not any(name.endswith(".safetensors") for name in files):
+        raise ValueError("Original complete weight manifest required")
+    saved = None
+    if verified_source_receipt is not None:
+        if reference(verified_source_receipt["path"]) != verified_source_receipt:
+            raise ValueError("Frozen model source audit receipt changed")
+        saved = read_json(Path(verified_source_receipt["path"]))
+        if (saved.get("version") != "model-source-content-stat-v053"
+                or saved.get("model_path") != str(model_path)
+                or saved.get("manifest") != reference(manifest)
+                or set(saved.get("files", {})) != set(files)):
+            raise ValueError("Model source manifest or audited file inventory changed")
+    actual = {}
+    for name, item in files.items():
+        target = (model_path / name).resolve()
+        if not target.is_relative_to(model_path):
+            raise ValueError("Raw model source escapes its manifest: " + name)
+        before = model_source_stat(target)
+        if before["size"] != item["bytes"]:
+            raise ValueError("Raw model source size changed: " + name)
+        if saved is not None:
+            if saved["files"][name] != {"stat": before, "sha256": item["sha256"]}:
+                raise ValueError("Audited model file stat identity changed: " + name)
+        elif sha_file(target) != item["sha256"] or model_source_stat(target) != before:
+            raise ValueError("Raw model content changed during its one-time audit: " + name)
+        actual[name] = {"stat": before, "sha256": item["sha256"]}
+    return {"version": "model-source-content-stat-v053", "model_path": str(model_path),
+            "manifest": reference(manifest), "files": actual,
+            "verification": "full_content_sha256_once_then_exact_stat_identity"}
+
+
+def prepare_model_source_receipt(model_path, *, manifest, output):
+    output = Path(output)
+    if output.exists():
+        raise FileExistsError("Do not redo an existing one-time model content audit")
+    result = verify_model_source(model_path, manifest)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("xb") as stream:
+        stream.write(json_bytes(result))
+    return reference(output)
+
+
 def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None,
-               checkpoint_authorization=None):
+               checkpoint_authorization=None, verified_source_receipt=None):
     """Load raw release or only a declared checkpoint's actor, never optimizers.
 
     CPU control/tests do not call this function.  Caller provides global resource
@@ -544,22 +622,14 @@ def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None,
         validate_checkpoint_metadata(checkpoint_path, saved, checkpoint_authorization)
     if Path(output).exists():
         raise FileExistsError("Calibration output already exists; no overwritten model attempt")
-    if os.environ.get("CUDA_VISIBLE_DEVICES") not in {str(i) for i in range(8)}:
-        raise ValueError("Bind exactly one approved physical GPU before model loading")
+    gpu_binding = single_gpu_binding(os.environ)
     model_path = Path(model_path).resolve()
     identity = read_json(Path(manifest))
     registered = CHECKPOINTS["qwen3.5-9b"]
     if (identity.get("repo_id") != registered["repo_id"]
             or identity.get("declared_hf_revision") != registered["revision"]):
         raise ValueError("Only the frozen raw Qwen3.5-9B release is admitted")
-    files = identity.get("files", {})
-    if not files or not any(name.endswith(".safetensors") for name in files):
-        raise ValueError("Original complete weight manifest required")
-    for name, item in files.items():
-        target = (model_path / name).resolve()
-        if (not target.is_relative_to(model_path) or target.stat().st_size != item["bytes"]
-                or sha_file(target) != item["sha256"]):
-            raise ValueError("Raw model source changed: " + name)
+    verify_model_source(model_path, manifest, verified_source_receipt=verified_source_receipt)
 
     import torch
     from transformers import AutoConfig, AutoTokenizer, GenerationConfig, Qwen3_5ForCausalLM
@@ -567,6 +637,7 @@ def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None,
 
     if torch.cuda.device_count() != 1 or not torch.cuda.is_bf16_supported(including_emulation=False):
         raise ValueError("One native BF16 CUDA device is required; no offload/fallback")
+    verify_single_gpu_uuid(gpu_binding, torch.cuda.get_device_properties(0))
     torch.set_num_threads(8)
     torch.set_float32_matmul_precision("highest")
     torch.backends.cuda.matmul.allow_tf32 = False
@@ -649,6 +720,8 @@ def load_actor(model_path, *, manifest, contract, path, output, checkpoint=None,
         identity=policy, torch_module=torch, head_execution=head_execution,
         historical_steps=historical_steps)
     atomic_write(actor.output / "loading.json", json_bytes({**loading_info_record(info),
+        "gpu_binding": gpu_binding,
+        "verified_source_receipt": copy.deepcopy(verified_source_receipt),
         "original_weight_manifest": reference(manifest), "checkpoint": policy["checkpoint"],
         "new_optimizer_steps": 0, "new_backward_calls": 0, "critic_constructed": False,
         "optimizer_constructed": False, "raw_has_no_adapter_modules": checkpoint is None}))
