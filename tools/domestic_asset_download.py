@@ -23,6 +23,7 @@ VERSION = "domestic-asset-download-v1"
 POLICY_VERSION = "domestic-asset-download-policy-v1"
 HOST_CANDIDATES = frozenset({
     "modelscope.cn", "www.modelscope.cn", "cdn-lfs-cn-1.modelscope.cn", "hf-mirror.com",
+    "docker.1ms.run", "cloudfront-docker-cf.mrs.1ms.run",
 })
 DEFAULT_POLICY = Path(__file__).resolve().parents[1] / "config/domestic-download-policy.json"
 REDIRECTS = frozenset({301, 302, 303, 307, 308})
@@ -135,6 +136,7 @@ def verified_file(path, receipt_path, *, expected_sha256, expected_bytes, chunk_
 
 def open_response(opener, url, headers, policy, emit):
     current = validate_url(url, policy)
+    headers = dict(headers)
     for redirect_count in range(policy["max_redirects"] + 1):
         emit("request", url=current, range=headers.get("Range"))
         request = urllib.request.Request(current, headers=headers, method="GET")
@@ -160,6 +162,13 @@ def open_response(opener, url, headers, policy, emit):
             raise
         if redirect_count == policy["max_redirects"]:
             raise DownloadPaused("Redirect limit reached; no additional request")
+        source_origin = urllib.parse.urlsplit(current)
+        target_origin = urllib.parse.urlsplit(target)
+        if ((source_origin.scheme, source_origin.hostname, source_origin.port or 443)
+                != (target_origin.scheme, target_origin.hostname, target_origin.port or 443)):
+            # A registry bearer is scoped to its origin, never its blob CDN.
+            headers = {key: value for key, value in headers.items()
+                       if key.lower() != "authorization"}
         emit("redirect_allowed", source_url=current, target_url=target)
         current = target
     raise AssertionError("Unreachable redirect loop")
@@ -190,7 +199,13 @@ def validate_response(response, *, offset, expected_bytes):
             raise DownloadPaused("Response Content-Length differs from the pinned remaining bytes")
 
 
-def download(url, output, *, expected_sha256, expected_bytes, policy_path=DEFAULT_POLICY, log_path=None):
+def download(url, output, *, expected_sha256, expected_bytes, policy_path=DEFAULT_POLICY,
+             log_path=None, request_headers=None):
+    """Download pinned content; internal headers may be a lazy no-argument callable.
+
+    Resolve lazy credentials only after validating the URL, pinned identity and
+    local files. This keeps complete-cache reuse entirely offline.
+    """
     policy, policy_sha256 = load_policy(policy_path)
     validate_url(url, policy)
     if not isinstance(expected_sha256, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", expected_sha256):
@@ -213,6 +228,13 @@ def download(url, output, *, expected_sha256, expected_bytes, policy_path=DEFAUL
     payload_bytes_received = 0
 
     def emit(event, **fields):
+        # Signed redirect URLs are temporary capabilities, not resume identities.
+        # Keep their host/path for provenance without retaining query secrets.
+        fields = {
+            key: (value.split("?", 1)[0] + "?<redacted>"
+                  if key.endswith("url") and isinstance(value, str) and "?" in value else value)
+            for key, value in fields.items()
+        }
         record = {
             **identity, "event": event, "at_utc": datetime.now(timezone.utc).isoformat(),
             "policy_sha256": policy_sha256,
@@ -259,7 +281,22 @@ def download(url, output, *, expected_sha256, expected_bytes, policy_path=DEFAUL
                     raise DownloadPaused("Partial hash differs from its checkpoint; no append or restart")
                 emit("partial_verified", partial_bytes=offset, partial_sha256=hasher.hexdigest())
             if offset < expected_bytes:
-                headers = {"Accept-Encoding": "identity"}
+                headers = {"Accept-Encoding": "identity", "Accept": "application/octet-stream",
+                           "User-Agent": "ProWorkSim-domestic-asset/1"}
+                extra_headers = request_headers() if callable(request_headers) else request_headers
+                if extra_headers is not None:
+                    if not isinstance(extra_headers, dict):
+                        raise DownloadPaused("Internal request headers must be a dictionary")
+                    for key, value in extra_headers.items():
+                        if (not isinstance(key, str)
+                                or key.lower() not in {"authorization", "user-agent", "accept"}
+                                or not isinstance(value, str) or not value
+                                or any(ord(character) < 32 or ord(character) == 127
+                                       for character in value)):
+                            raise DownloadPaused("Invalid internal request header")
+                        canonical_key = {"authorization": "Authorization", "user-agent": "User-Agent",
+                                         "accept": "Accept"}[key.lower()]
+                        headers[canonical_key] = value
                 if offset:
                     headers["Range"] = f"bytes={offset}-"
                 response, final_url = open_response(direct_opener(), url, headers, policy, emit)

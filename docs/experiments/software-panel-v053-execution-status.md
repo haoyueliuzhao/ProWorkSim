@@ -1,6 +1,6 @@
 # v053 启动状态记录
 
-最新状态：2026-10-20 20:34 CST，按用户要求暂停 v5 派发，核对 Docker 镜像官方泄露修复版本。280 回合全部未启动，模型调用和实际 token 为 0。当前尚未取得 SWE-smith 修复版的可验证目标 digest 和可用国内来源，不能声称镜像更新完成；详见 [Docker 镜像核对与暂停记录](software-panel-v053-docker-image-review-v6.md)。
+最新状态：2026-10-20，v5 自20:34 CST暂停，280 回合全部未启动，模型调用和实际 token 为 0。21:03 官方独立查询已确认32个镜像的当前digest与本地、毫秒镜像全部一致，国内直连下载路径及小量实际传输通过。来源问题已解决，无需重下原镜像；SWE-smith与Verified的泄露修复适用范围仍须区分，评测集选择未明前不恢复派发。详见 [Docker 镜像核对与暂停记录](software-panel-v053-docker-image-review-v6.md)。
 
 历史状态：18:10 CST v5 完成原数据与运行前准备并启动监控器；18:47 的观察状态为 `waiting_resources`，尚无任务派发。完整题单、实测准备耗时和原监控策略见 [v5 准备完成记录](software-panel-v053-preparation-complete-v5.md)。以下保留 14:44 的历史启动快照。
 

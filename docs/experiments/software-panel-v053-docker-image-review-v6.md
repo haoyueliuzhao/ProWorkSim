@@ -1,6 +1,6 @@
 # v053 Docker 镜像版本与泄露修复核对
 
-记录日期：2026-10-20，Asia/Shanghai。当前结论是**镜像更新尚未完成，正式派发暂停**，不是“镜像已确认最新”或“已确认修复”。
+记录日期：2026-10-20，Asia/Shanghai。后续已找到并实测 `docker.1ms.run` 直连来源，独立官方检查确认 **32 个镜像的当前官方 digest、镜像站 digest 和本地缓存一致，无需重下载**。这解决下载来源和当前版本确认，不代表确认 SWE-smith 已包含 Verified 的泄露修复。正式派发仍暂停，评测集及修复适用范围待明确。下面保留初次失败与后续成功的完整区别。
 
 ## 用户澄清与停止记录
 
@@ -43,6 +43,40 @@ SWE-smith 当前锁定官方源码的 [Python 构建入口](https://github.com/S
 
 实际读取响应正文合计 1,455 字节，不含 HTTP/TLS 开销；代理使用、重定向跟随、镜像层请求均为 0。这不证明所有国内源都不可用，也不证明上述服务可以取得新版。
 
+## 后续来源处理与成功证据
+
+用户要求继续处理来源失败后，检查了服务器已有镜像配置及服务方文档，并进一步做有界直连探测。没有改动共享 Docker 配置，也没有为通过探测而启用代理。
+
+| 来源 | 后续实测结论 |
+| --- | --- |
+| 南京大学 | DNS 正常，HTTPS 403 |
+| SJTUG | DNS 正常，TLS 握手失败 |
+| DaoCloud 替换域 | 仍指向同一认证与白名单服务，不能通过替换域名解决许可范围问题 |
+| 轩辕 | 免费节点 HTTP 403，`TOOMANYREQUESTS`；未购买服务或注册账户 |
+| Docker Proxy | HTTP 401，未提供可使用的标准匿名认证挑战 |
+| 1Panel 候选入口 | 直连 TLS 连接被重置 |
+| 毫秒镜像 `docker.1ms.run` | 32 个 manifest 全部取得并核对；小型 config、完整极小层及大层有界 Range 均取得成功回执 |
+
+### 官方版本身份
+
+本项目 [GitHub Actions 运行 39427123231](https://github.com/haoyueliuzhao/ProWorkSim/actions/runs/39427123231) 使用固定提交 `e4d6b6335abc735b9f4898f134c8a18e4b92bbb6`，在 21:03:15–21:03:18 CST 直连官方认证与 registry，仅查询 32 个指定 `latest` manifest。每份正文 SHA 与官方响应摘要核对，通过数 32，changed 0，unknown 0；没有获取 config/layer blob。工作流、任务日志及 artifact 保存了查询时间和完整逐项结论，宿主失败请求不改写成成功。
+
+本机毫秒镜像另一次检查同样取得 32/32 manifest，正文 SHA、响应头及 config descriptor 均与原官方记录相同。将两份证据逐镜像合并，得到当前官方／国内镜像服务／本地缓存三方一致，见 [机器摘要](software-panel-v053-domestic-registry-v6.json)。因此本轮没有缺少的新版本层，没有进行整镜像重拉或重新执行不变环境资格。
+
+### 文件交付验证与实现
+
+1ms registry 返回的文件交付域为 `cloudfront-docker-cf.mrs.1ms.run`。初次默认客户端请求得到 403，其短正文摘要对应 `error code: 1010\n`。随后使用真实项目 User-Agent 和正常 `Accept: application/octet-stream` 取得：
+
+- 5,551 字节 config，HTTP 200，完整 SHA 与 manifest 一致；
+- 164 字节层，HTTP 200，完整 SHA 与 manifest 一致；
+- 431,740,248 字节层的前 4,096 字节，HTTP 206，Content-Range 精确匹配，内容与已有完整验证缓存的对应前缀一致。没有重下载或重新 hash 整个大层。
+
+请求头及时间都发生变化，不能把成功唯一归因于 User-Agent，也不能把一次探测说成长期可用性认证。交付响应的 CF-Ray 标记为 `SIN`；本结论是“国内镜像服务可直连且未使用宿主代理”，不宣称所有 CDN 节点及整个链路均位于中国大陆。
+
+新增 [固定摘要 blob 下载入口](../../tools/DOMESTIC_REGISTRY_DOWNLOAD.md)，只允许精确的 registry 与交付域，显式禁代理，逐跳检查，跨域删除 bearer，完整 SHA/大小核验，断点绑定稳定原 URL。完整缓存直接复用，不为认证或重哈希而额外联网。元数据和身份选择与文件传输分离，工具不自动升级镜像。
+
+3 项新增和 5 项受改动影响的离线控制通过，限定 Ruff 通过；随后根代理使用实际 CLI 完成一次 **164 字节**下载，覆盖匿名认证、重定向、去认证头和完整 SHA 的集成路径。回执文件为 `runs/software-panel-v053/image-refresh-v6/cli-smoke-164.blob.download.jsonl`，结果 `download_complete`。没有进行镜像导入、GPU 或模型操作。
+
 ## 已有隔离措施及边界
 
 本项目现有后端在 actor 暴露前，先应用缺陷并隐藏指定测试，再清除 `/testbed` 下旧 `.git` 目录、Python 字节码和测试缓存，重建唯一初态提交，并检查 remote 为空、源码 tree 不变。judge 同样清理历史并独立恢复受保护测试。相关既有控制已通过，本次没有重复运行环境测试。
@@ -51,9 +85,9 @@ SWE-smith 当前锁定官方源码的 [Python 构建入口](https://github.com/S
 
 ## 后续放行条件
 
-先确定用户所指修复的适用镜像和不可变身份，再取得当前官方 manifest，核对国内源的 manifest/config/layer digest；只补缺失层。如果与本地内容完全相同，可复用内容并记录事实，不能声称新增了修复。国内源缺失或直连失败不回退代理。
+当前版本身份及国内直连来源已经闭合，但用户所指泄露修复适用的评测集仍需区分。用户补充“主要就是评测集”，随后已明确询问继续原 SWE-smith 200 题还是改用 SWE-bench Verified；未得到选择前不擅自替换题库。两套数据不能混成同一面板，官方 Verified 的修复公告不能替代 SWE-smith 的适用性证据。
 
-实际 image ID 改变时，仅重新准入受影响仓库的原预选任务，并验证相关泄露路径；不按新测试或模型表现更换题目。新资格和运行配置使用独立记录，旧 v5 证据不覆盖。目标身份、可用下载来源及必要环境资格闭合之前，保留全部未启动 slot，正式 GPU 派发不恢复。
+如果后续明确需要改变 image ID，仅重新准入受影响仓库的原预选任务，并验证相关泄露路径；不按新测试或模型表现更换题目。新资格和运行配置使用独立记录，旧 v5 证据不覆盖。当前保留全部未启动 slot，正式 GPU 派发不恢复。
 
 ## 本机证据
 
@@ -61,6 +95,10 @@ SWE-smith 当前锁定官方源码的 [Python 构建入口](https://github.com/S
 - `runs/software-panel-v053/image-refresh-v6/official-latest-comparison.json`
 - `runs/software-panel-v053/image-refresh-v6/dockerhub-tag-probe.json`
 - `runs/software-panel-v053/image-refresh-v6/domestic-source-probes.json`
+- `runs/software-panel-v053/image-refresh-v6/official-latest-via-ci.json`
+- `runs/software-panel-v053/image-refresh-v6/ms-latest-32-comparison.json`
+- `runs/software-panel-v053/image-refresh-v6/ms-config-error-diagnostic.json`
+- `runs/software-panel-v053/image-refresh-v6/ms-small-layer-and-range-control.json`
 - [v5 停止时零回合报告](software-panel-v053-result-v5.md)
 
 本次新增模型加载、模型调用、生成 token、训练和任务测试均为 0。
