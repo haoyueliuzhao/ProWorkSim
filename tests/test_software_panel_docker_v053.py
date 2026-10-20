@@ -259,3 +259,60 @@ def test_source_cleanup_removes_old_answers_without_deleting_dependency_cache(tm
     assert result.returncode == 0, result.stderr
     assert all(not path.exists() for path in removed)
     assert all(path.read_bytes() == value for path, value in preserved.items())
+
+
+def test_planned_local_image_wait_loads_or_stops_without_duplicate_pull(monkeypatch):
+    class APIError(Exception):
+        status_code = 404
+
+    class ImageNotFound(APIError):
+        pass
+
+    monkeypatch.setitem(__import__("sys").modules, "docker", SimpleNamespace(
+        errors=SimpleNamespace(APIError=APIError, ImageNotFound=ImageNotFound)))
+    image = SimpleNamespace(id="sha256:original", attrs={"Architecture": "amd64", "Os": "linux"})
+    clock = [0]
+    calls = {"get": 0, "pull": 0}
+
+    class Stop:
+        stopped = False
+        stop_during_wait = False
+
+        def is_set(self):
+            return self.stopped
+
+        def wait(self, seconds):
+            clock[0] += seconds
+            self.stopped = self.stop_during_wait
+            return self.stopped
+
+    stop = Stop()
+    monkeypatch.setattr(docker.time, "monotonic", lambda: clock[0])
+    available_after = [2]
+
+    def get(name):
+        calls["get"] += 1
+        if calls["get"] >= available_after[0]:
+            return image
+        raise ImageNotFound(name)
+
+    def pull(name):
+        calls["pull"] += 1
+        return image
+
+    client = SimpleNamespace(images=SimpleNamespace(get=get, pull=pull))
+    settings = {"allow_pull": True, "local_image_wait_seconds": 30,
+                "local_image_wait_names": ["official/image"], "stop_event": stop}
+    assert docker.image_identity(client, "official/image", **settings)["image_id"] == image.id
+    assert calls == {"get": 2, "pull": 0}
+    calls["get"], clock[0], available_after[0] = 0, 0, 1000
+    with pytest.raises(docker.CommonSystemFault, match="Timed out waiting"):
+        docker.image_identity(client, "official/image", **settings)
+    assert clock[0] == 30 and calls["pull"] == 0
+    calls["get"], clock[0], stop.stop_during_wait = 0, 0, True
+    with pytest.raises(docker.CommonSystemFault, match="preparation stopped"):
+        docker.image_identity(client, "official/image", **settings)
+    assert calls["get"] == 1 and calls["pull"] == 0
+    stop.stopped = False
+    assert docker.image_identity(client, "another/image", **settings)["image_id"] == image.id
+    assert calls["pull"] == 1

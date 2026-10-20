@@ -32,6 +32,8 @@ unix:///data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/dock
 
 程序拒绝默认 `/var/run/docker.sock`。镜像只在 CPU 环境准入期间按已预选仓库拉取；不会拉取整个公开资产池。保存请求的官方 image 名称、实际不可变 image ID、可取得的 RepoDigests、操作系统和架构。正式回合使用已准入 image ID，禁止临时拉取另一标签版本。
 
+外部传输已安排预取时，可固定 `local_image_wait_names` 为已列入计划的官方镜像名称，并设置 `local_image_wait_seconds`（默认 0，上限 7,200 秒）。名单中的镜像本地缺失时，只在同一专用 daemon 每至多 15 秒查询是否已 load，不同时调用 pull；已存在则立即使用。等待超过截止时间记为公共准备故障，保留来源未决；共享停止事件可立即打断等待。未列入名单或等待值为 0 时，继续原来的 `allow_pull` 规则。这是传输调度设置，不改变测试命令、镜像内容、科学 contract 或 clean 复用身份。
+
 每个 actor、每次 clean／bug／gold 检查和最终 judge 都使用独立容器；默认每容器 4 CPU、10 GiB 内存、512 PID，关闭网络，不挂载宿主目录或 Docker socket，丢弃 Linux capabilities，启用 `no-new-privileges` 和 Docker init。八仓库 CPU 并行窗口最多对应 32 个 CPU 配额；该数字是配额，不是实际 CPU 使用量。
 
 任务工作目录固定 `/testbed`。官方 profile 类、源码文件、上游来源 commit U、镜像内实际 main commit C／Git tree T、实际源码工作树 B、测试命令、超时、原始测试文件集合、核心官方评分文件及依赖版本都进入资格身份。U 标记上游来源，不能用于重置镜像源码；官方镜像的 mirror 历史经过重建，U 通常不是镜像内存在的对象。

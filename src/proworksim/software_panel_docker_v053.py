@@ -209,16 +209,43 @@ def resources(config):
     return value
 
 
-def image_identity(client, image_name, *, allow_pull=False):
+def image_identity(client, image_name, *, allow_pull=False, local_image_wait_seconds=0,
+                   local_image_wait_names=(), stop_event=None):
     import docker
 
+    if (type(local_image_wait_seconds) not in (int, float)
+            or not 0 <= local_image_wait_seconds <= 7200):
+        raise CommonSystemFault("Local image wait must be between 0 and 7200 seconds")
+    if (not isinstance(local_image_wait_names, (list, tuple))
+            or any(not isinstance(name, str) for name in local_image_wait_names)):
+        raise CommonSystemFault("Local image wait names must be an explicit image-name list")
+    wait_locally = local_image_wait_seconds > 0 and image_name in local_image_wait_names
     try:
-        try:
-            image = client.images.get(image_name)
-        except docker.errors.ImageNotFound:
-            if not allow_pull:
-                raise CommonSystemFault("Admitted image is missing from the dedicated daemon")
-            image = client.images.pull(image_name)
+        deadline = None
+        while True:
+            if stop_event is not None and stop_event.is_set():
+                raise CommonSystemFault("Local image preparation stopped")
+            try:
+                image = client.images.get(image_name)
+                break
+            except docker.errors.ImageNotFound:
+                if wait_locally:
+                    if deadline is None:
+                        deadline = time.monotonic() + local_image_wait_seconds
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise CommonSystemFault(
+                            "Timed out waiting for the preplanned local image load: " + image_name)
+                    delay = min(15, remaining)
+                    if stop_event is None:
+                        time.sleep(delay)
+                    elif stop_event.wait(delay):
+                        raise CommonSystemFault("Local image preparation stopped")
+                    continue
+                if not allow_pull:
+                    raise CommonSystemFault("Admitted image is missing from the dedicated daemon")
+                image = client.images.pull(image_name)
+                break
     except docker.errors.APIError as error:
         if error.status_code == 404:
             raise SourceEnvironmentError(f"Pinned source image unavailable: {error}") from error
@@ -866,7 +893,11 @@ def qualify_repository(config, repository, *, allow_pull=False, stop_event=None)
         if stop_event is not None and stop_event.is_set():
             raise CommonSystemFault("Admission paused by another repository's shared fault")
         client = docker_client(config)
-        image = image_identity(client, repository["image_name"], allow_pull=allow_pull)
+        image = image_identity(
+            client, repository["image_name"], allow_pull=allow_pull,
+            local_image_wait_seconds=config.get("local_image_wait_seconds", 0),
+            local_image_wait_names=config.get("local_image_wait_names", []),
+            stop_event=stop_event)
         summary["image"] = image
         if (folder / "image.json").exists():
             if json.loads((folder / "image.json").read_bytes()) != image:
