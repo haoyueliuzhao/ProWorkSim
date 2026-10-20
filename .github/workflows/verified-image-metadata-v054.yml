@@ -1,0 +1,40 @@
+name: Verified v054 official image metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v054-verified-image-inventory.json
+      - tools/verified_image_metadata_v054.py
+      - .github/workflows/verified-image-metadata-v054.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Official manifests only, no image blobs
+        run: |
+          python3 tools/verified_image_metadata_v054.py \
+            --inventory config/v054-verified-image-inventory.json \
+            --output "$RUNNER_TEMP/verified-image-metadata" \
+            --source official --shard-index "${{ matrix.shard }}" --shard-count 8
+      - name: Preserve every outcome
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: verified-v054-official-${{ github.run_id }}-${{ matrix.shard }}
+          path: ${{ runner.temp }}/verified-image-metadata/
+          if-no-files-found: error
+          retention-days: 30
