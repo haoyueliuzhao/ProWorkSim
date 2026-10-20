@@ -81,3 +81,5 @@ URL 示例只是参数结构，不是已验证的下载地址。默认策略文�
 - [SWE-smith-py main 文件页](https://huggingface.co/datasets/SWE-bench/SWE-smith-py/tree/main) 指向 [77cab9055d42ab4a5c25c89a8f937096db13558e](https://huggingface.co/datasets/SWE-bench/SWE-smith-py/commit/77cab9055d42ab4a5c25c89a8f937096db13558e)。
 
 因此，这三项主资产的锁定提交均与本次官方查询所示 `main` 一致，无需因本次版本核对重新下载。上述网页证据不覆盖镜像站实际同步状态，也不证明所有依赖都是各自最新 release；正式任务环境镜像继续使用与任务及代码提交对应的固定版本。原 API 失败回执保留，不改写成请求成功。
+
+用户随后澄清需要核对 **Docker 镜像的官方泄露修复版本**。上段三个仓库的 `main` 结论不能用于断言 Docker 镜像最新或无需更新。当前 v5 已暂停；官方镜像当前 digest 直连未取得，两个国内候选也未提供可验证 manifest，更新尚未完成。详见 [Docker 镜像核对记录](../docs/experiments/software-panel-v053-docker-image-review-v6.md)。此前的环境准备完成不自动覆盖新增镜像要求。
