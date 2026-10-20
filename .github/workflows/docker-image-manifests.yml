@@ -1,0 +1,38 @@
+name: Official Docker image manifest audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - tools/audit_official_docker_manifests.py
+      - config/v053-docker-image-inventory.json
+      - .github/workflows/docker-image-manifests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the audit inputs
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read official metadata without image layers or proxies
+        run: |
+          python3 tools/audit_official_docker_manifests.py \
+            --inventory config/v053-docker-image-inventory.json \
+            --output-dir "$RUNNER_TEMP/docker-image-manifests"
+
+      - name: Preserve metadata and all per-image outcomes
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: official-docker-manifests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/docker-image-manifests/
+          if-no-files-found: error
+          retention-days: 30

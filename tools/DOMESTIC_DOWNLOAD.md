@@ -83,3 +83,9 @@ URL 示例只是参数结构，不是已验证的下载地址。默认策略文�
 因此，这三项主资产的锁定提交均与本次官方查询所示 `main` 一致，无需因本次版本核对重新下载。上述网页证据不覆盖镜像站实际同步状态，也不证明所有依赖都是各自最新 release；正式任务环境镜像继续使用与任务及代码提交对应的固定版本。原 API 失败回执保留，不改写成请求成功。
 
 用户随后澄清需要核对 **Docker 镜像的官方泄露修复版本**。上段三个仓库的 `main` 结论不能用于断言 Docker 镜像最新或无需更新。当前 v5 已暂停；官方镜像当前 digest 直连未取得，两个国内候选也未提供可验证 manifest，更新尚未完成。详见 [Docker 镜像核对记录](../docs/experiments/software-panel-v053-docker-image-review-v6.md)。此前的环境准备完成不自动覆盖新增镜像要求。
+
+## 官方 Docker 元数据的独立核对
+
+宿主无法直连官方 registry 时，使用本项目 [GitHub Actions 工作流](../.github/workflows/docker-image-manifests.yml) 在独立 runner 上直连官方认证与 manifest API。输入为 [32 镜像固定库存](../config/v053-docker-image-inventory.json)，执行器为 [audit_official_docker_manifests.py](audit_official_docker_manifests.py)。该流程只取小型元数据，不取 config/blob 内容或镜像层，也不加载模型、修改部署或使用主机代理。
+
+工作流只在这三个指定文件变动或手动触发时运行，读取权限、10 分钟上限、4 路并发，保存逐项结果和原始 manifest 为 artifact，并在日志输出带查询时间的精简结果。必须等真实运行回执才能判断当前官方 tag；本地离线控制通过不代替远端查询。镜像站提供的 `latest` 另与这些官方 digest 对照，不能自证上游最新。
