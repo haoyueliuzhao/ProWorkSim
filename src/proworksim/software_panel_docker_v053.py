@@ -272,7 +272,7 @@ def put_bytes(container, path, content, *, mode=0o600):
         raise RuntimeError(f"Docker did not copy harness file {path}")
 
 
-def exec_in(container, command, timeout_seconds, *, output_limit=None):
+def exec_in(container, command, timeout_seconds, *, output_limit=None, separate_output=False):
     if type(timeout_seconds) not in (int, float) or not 0 < timeout_seconds <= 7200:
         raise ValueError("A bounded positive execution timeout is required")
     started = time.monotonic()
@@ -280,13 +280,20 @@ def exec_in(container, command, timeout_seconds, *, output_limit=None):
     wrapped = ["timeout", "--signal=TERM", "--kill-after=5",
                str(timeout_seconds), "/bin/bash", "-lc", command]
     try:
-        result = container.exec_run(wrapped, workdir=WORKDIR, user="root", demux=False)
-        text = result.output.decode("utf-8", errors="replace")
+        result = container.exec_run(wrapped, workdir=WORKDIR, user="root", demux=separate_output)
+        streams = {}
+        if separate_output:
+            stdout, stderr = result.output
+            streams = {"stdout": (stdout or b"").decode("utf-8", errors="replace"),
+                       "stderr": (stderr or b"").decode("utf-8", errors="replace")}
+            text = streams["stdout"] + streams["stderr"]
+        else:
+            text = result.output.decode("utf-8", errors="replace")
         truncated = output_limit is not None and len(text) > output_limit
         if truncated:
             text = text[:output_limit] + "\n[terminal output truncated]"
         return {
-            "output": text, "returncode": result.exit_code, "exception_info": None,
+            "output": text, "returncode": result.exit_code, "exception_info": None, **streams,
             "extra": {"timed_out": result.exit_code in (124, 137),
                       "seconds": time.monotonic() - started, "truncated": truncated},
         }
@@ -520,6 +527,7 @@ def projected_task_trees(container, branch, baseline, hidden_files):
     if sha256(delta.encode()) != baseline["installation_delta_sha256"]:
         raise CommonSystemFault("Frozen image installation delta changed")
     projected_bug = branch["bug_tree"]
+    diagnostics = {}
     if delta:
         patch = "/tmp/proworksim-installation-" + uuid.uuid4().hex + ".diff"
         index = "/tmp/proworksim-projection-" + uuid.uuid4().hex
@@ -533,7 +541,7 @@ git read-tree {shlex.quote(branch["bug_tree"])}
 if ! git apply --cached --check {shlex.quote(patch)}; then exit 42; fi
 git apply --cached {shlex.quote(patch)}
 git write-tree
-""", 120)
+""", 120, separate_output=True)
         finally:
             require_exec(container, "rm -f -- " + shlex.quote(patch))
         if not projected["exception_info"] and projected["returncode"] == 42:
@@ -542,10 +550,14 @@ git write-tree
                     "projection_output": projected["output"]}
         if projected["exception_info"] or projected["returncode"] != 0:
             raise CommonSystemFault("Cannot execute auxiliary branch projection: " + str(projected))
-        projected_bug = projected["output"].strip()
+        projected_bug = projected["stdout"].strip()
+        if re.fullmatch(r"[0-9a-f]{40}", projected_bug) is None:
+            raise CommonSystemFault("Auxiliary projection did not return exactly one Git tree SHA")
+        diagnostics["projection_stderr"] = projected["stderr"]
     return {
         **branch, "comparison_available": True, "projected_bug_tree": projected_bug,
         "projected_actor_tree": indexed_tree(container, projected_bug, hidden_commands),
+        **diagnostics,
     }
 
 

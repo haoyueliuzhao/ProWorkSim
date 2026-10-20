@@ -50,3 +50,11 @@ v3 实际进入了官方测试，但 Pydantic 的 clean 日志显示 pytest 尚�
 v4 改为保留官方依赖缓存、继续清除任务源码历史和字节码，并固定 `UV_OFFLINE=true`。第一次仅保留缓存仍因 uv 尝试更新索引而在离线环境失败；该记录原样保留。补上离线解析后，Pydantic 原官方 clean 命令实际执行成功：5,810 passed、420 skipped、17 xfailed；第一道预选题的 5,438 项 required 测试全部为 PASSED／XFAIL。此成功回执写入新 `environments-v4` 的 clean 复用路径，正式准入不重复执行它。测试数字只说明这份 clean 控制，不是十题资格、200 题资格或模型成绩。
 
 修订另有一项针对依赖缓存保留和源码清理的 CPU 回归通过，限定 Ruff 通过；未重复此前整套控制。详见 [缓存适配证据与限制](software-panel-v053-cache-adaptation-v4.md)。新流水线使用独立 `pipeline-v4` 与 `environments-v4`，保留原候选顺序、抽样规则、数值配置和全部预算。正式模型调用数仍为零。
+
+## v5：Git 诊断与树 SHA 分离，复用既有完成证据
+
+v4 的 `records` 安装差异投影实际成功，但 Git 空白警告与 tree SHA 被合并读取，导致后续 Git 命令将警告文本误作对象名。共享停止事件使该窗口八个仓库保持未决，环境汇总因此暂停；正式模型仍未进入。修订仅分离这个机器读取通道的输出流并严格校验 40 位树 SHA，不更改缺陷补丁、空白字节或测试定义。一次实际产生 Git 空白警告的 CPU 回归及限定 Ruff 通过，详见 [v5 修复证据](software-panel-v053-git-output-v5.md)。
+
+新 `environments-v5` 用真实目录和 2443 个逐文件链接复用 v4 的不可变证据。原有 16 份仓库资格、167 份任务资格和 370 份 completed 回执保留原身份，避免重复执行；8 份旧公共故障摘要原样留在 v4 并由 transition 逐个引用。未完成尝试只能在新路径继续，不能当作完成结果。配置、证据与写入边界见 [v5 复用说明](software-panel-v053-preparation-reuse-v5.md)。候选、种子、模型和科学 contract 均不变。
+
+用户另要求取消 GPU2／GPU5 的临时占位。两个占位服务已停止，CUDA 预留归零，并写入 `runs/software-panel-v053/gpu-hold-2-5/cancellation.json`；不会自动重新占位。该操作不取消原正式评测任务，也未产生任何模型调用。

@@ -201,10 +201,10 @@ def test_installation_deleted_test_remains_deleted_in_projected_bug_and_actor(tm
     monkeypatch.setattr(docker, "require_exec", command)
     monkeypatch.setattr(docker, "put_bytes", lambda _, path, value: Path(path).write_bytes(value))
 
-    def execute(_, text, timeout):
+    def execute(_, text, timeout, *, separate_output=False):
         result = subprocess.run(["bash", "-c", text], cwd=tmp_path, capture_output=True, text=True)
         return {"returncode": result.returncode, "output": result.stdout + result.stderr,
-                "exception_info": None}
+                "exception_info": None, "stdout": result.stdout, "stderr": result.stderr}
 
     monkeypatch.setattr(docker, "exec_in", execute)
     command(None, "git init -q && git config user.email test@localhost && git config user.name Test")
@@ -316,3 +316,50 @@ def test_planned_local_image_wait_loads_or_stops_without_duplicate_pull(monkeypa
     stop.stopped = False
     assert docker.image_identity(client, "another/image", **settings)["image_id"] == image.id
     assert calls["pull"] == 1
+
+
+def test_projection_keeps_real_git_whitespace_warnings_out_of_tree_identity(tmp_path, monkeypatch):
+    monkeypatch.setenv("LC_ALL", "C")
+
+    class LocalContainer:
+        def exec_run(self, command, *, workdir, user, demux):
+            result = subprocess.run(command, cwd=tmp_path, capture_output=True)
+            return SimpleNamespace(
+                exit_code=result.returncode,
+                output=(result.stdout, result.stderr) if demux else result.stdout + result.stderr)
+
+    container = LocalContainer()
+    monkeypatch.setattr(docker, "put_bytes", lambda _, path, value: Path(path).write_bytes(value))
+
+    def command(text):
+        return docker.require_exec(container, text)
+
+    command("git init -q && git config user.email test@localhost && git config user.name Test"
+            " && git config apply.whitespace warn")
+    (tmp_path / "source.py").write_text("correct\n")
+    (tmp_path / "hidden_test.py").write_text("test fix\n")
+    metadata = tmp_path / "installation_metadata.txt"
+    metadata.write_text("original\n")
+    command("git add -A && git commit -qm Initial")
+    original = command("git rev-parse HEAD^{tree}").strip()
+    (tmp_path / "source.py").write_text("bug\n")
+    bug = docker.indexed_tree(container, original, "git add -A")
+    actor = docker.indexed_tree(
+        container, bug, "git update-index --force-remove -- hidden_test.py")
+    (tmp_path / "source.py").write_text("correct\n")
+    metadata.write_text("installed with trailing whitespace \n\n")
+    installed = docker.indexed_tree(container, original, "git add -A")
+    delta = command("git diff --binary " + original + " " + installed)
+    projected = docker.projected_task_trees(
+        container, {"available_in_frozen_image": True, "bug_tree": bug, "actor_tree": actor},
+        {"image_base_tree": original, "image_worktree_tree": installed,
+         "installation_delta_sha256": docker.sha256(delta.encode())},
+        ["hidden_test.py"])
+    assert "trailing whitespace" in projected["projection_stderr"]
+    tree = projected["projected_bug_tree"]
+    assert len(tree) == 40 and all(letter in "0123456789abcdef" for letter in tree)
+    assert command("git show " + tree + ":source.py") == "bug\n"
+    assert command("git show " + tree + ":installation_metadata.txt") == metadata.read_text()
+    assert "hidden_test.py" not in command(
+        "git ls-tree --name-only " + projected["projected_actor_tree"])
+    assert (tmp_path / "source.py").read_text() == "correct\n"
