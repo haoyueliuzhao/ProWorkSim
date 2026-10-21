@@ -22,11 +22,11 @@ from .software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT = Path(__file__).resolve().parents[2]
 HOST_PYTHON = ROOT / ".venv/bin/python"
-VERSION = "software-benchmark-formal-queue-v054-r3-resident"
+VERSION = "software-benchmark-formal-queue-v054-r4-dynamic-pool"
 SLOTS_SHA = "55899d0b83a5bab1082bccb50496fb6c1d7111ecb951fc4d61c222be19d88676"
 QUEUE = ROOT / "runs/software-benchmark-v054/formal-queue-r1"
-AUTH = ROOT / "config/v054-formal-authorization-r1.json"
-PLAN = ROOT / "config/v054-formal-execution-plan-r2.json"
+AUTH = ROOT / "config/v054-formal-authorization-r2-dynamic-pool.json"
+PLAN = ROOT / "config/v054-formal-execution-plan-r3-dynamic-pool.json"
 SOURCE = ROOT / "artifacts/software-benchmark-v054/runner/source-manifest.json"
 BUSY = {"gpu_lease_busy", "ref_port_busy", "gpu_capacity_gate", "resident_session_busy"}
 ACTIVE = {"intent", "running"}
@@ -96,9 +96,11 @@ def check_plan(authorization, plan, slots):
             or authorization["aggregate_input_output_token_upper_bound"] != 750000000
             or authorization["input_output_token_limit_per_episode"] != 500000
             or authorization["training_authorized"] is not False
-            or plan["maximum_active_generation_episodes"] != 2
+            or authorization["maximum_active_generation_episodes"] != 8
+            or authorization["physical_gpus"] != list(range(8))
+            or plan["maximum_active_generation_episodes"] != 8
             or plan["maximum_active_official_graders"] != 2
-            or plan["physical_gpu_by_arm"] != {"REF": 7, "MATCH": 6, "PROJECT": 6}):
+            or plan["physical_gpu_by_arm"] != {"REF": [7], "MATCH": list(range(8)), "PROJECT": list(range(8))}):
         raise ValueError("Only the original authorized 1500-slot / 750M panel is supported")
     for task in {x["instance_id"] for x in rows}:
         group = [x for x in rows if x["instance_id"] == task]
@@ -106,7 +108,7 @@ def check_plan(authorization, plan, slots):
             raise ValueError("Frozen same-task arm/seed assignment changed")
 
 
-def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, resident_registry):
+def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, resident_pool_policy, prewarm_policy):
     """Freeze only actual capacity and final source evidence; allocate no GPU."""
     slots_ref = reference(ROOT / "artifacts/software-benchmark-v054/manifests/slots.json")
     if slots_ref["sha256"] != SLOTS_SHA:
@@ -123,6 +125,9 @@ def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, re
         ROOT / "src/proworksim/software_benchmark_runner_v054.py",
         ROOT / "src/proworksim/software_benchmark_scorer_r5_v054.py",
         ROOT / "tools/run_formal_queue_v054.py",
+        ROOT / "src/proworksim/software_benchmark_resident_pool_v054.py",
+        ROOT / "src/proworksim/software_benchmark_resident_session_v054.py",
+        ROOT / "src/proworksim/software_benchmark_prewarm_v054.py",
     }
     if not required.issubset({Path(item["path"]).resolve() for item in files}):
         raise ValueError("Final source manifest lacks queue, runner, factories or r5")
@@ -142,33 +147,20 @@ def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, re
     if Path(scorer_ref["path"]).name != "installation-manifest-r5.json":
         raise ValueError("Use the mapped official r5 installation manifest")
     conditions = {arm: condition_reference(arm) for arm in ("REF", "MATCH", "PROJECT")}
-    resident_ref = reference(resident_registry)
-    registry = load_ref(resident_ref)
-    if registry.get("version") != "v054-resident-registry-v1" or set(registry["residents"]) != {"REF", "MATCH_PROJECT"}:
-        raise ValueError("Freeze the two independent resident deployments before dispatch")
-    resident_files = [resident_ref]
-    for mode, item in registry["residents"].items():
-        declaration = load_ref(item)
-        if declaration["mode"] != mode or declaration["gpu_index"] != (7 if mode == "REF" else 6):
-            raise ValueError("Resident physical mode changed")
-        resident_files.extend([item, declaration["source_spec"]])
-        deployment = load_ref(declaration["source_spec"])
-        for field in ("preparation_permit", "contract", "load_admission"):
-            if field in deployment:
-                resident_files.append(deployment[field])
-    handoff_ref = reference(ROOT / "artifacts/software-benchmark-v054/native-environment/resident-admission-r1.json")
-    handoff = load_ref(handoff_ref)
-    if (handoff.get("version") != "v054-resident-admission-v1" or handoff.get("registry") != resident_ref
-            or handoff.get("source_manifest") != source_ref or handoff.get("formal_claims") != 0
-            or set(handoff["admitted_modes"]) != {"REF", "MATCH_PROJECT"}):
-        raise ValueError("Actual two-session resident admission is required before formal reuse")
-    resident_files.append(handoff_ref)
-    for mode, item in registry["residents"].items():
-        admitted = handoff["admitted_modes"][mode]
-        if admitted.get("passed") is not True or admitted.get("resident_spec") != load_ref(item)["source_spec"]:
-            raise ValueError("Actual handoff evidence belongs to a different resident specification")
-        checked(admitted["check_receipt"])
-        resident_files.append(admitted["check_receipt"])
+    from .software_benchmark_resident_pool_v054 import validate_pool_policy
+    pool_ref = reference(resident_pool_policy)
+    policy = validate_pool_policy(pool_ref)
+    if policy["source_manifest"] != source_ref:
+        raise ValueError("Pool registration policy belongs to another frozen host revision")
+    # Only the policy is global/immutable. Each registration/admission is pinned
+    # at dispatch; growing append-only events must never invalidate old jobs.
+    from .software_benchmark_prewarm_v054 import validate_prewarm_policy
+    prewarm_ref = reference(prewarm_policy)
+    prepared_policy = validate_prewarm_policy(prewarm_ref)
+    if (prepared_policy["source_manifest"] != source_ref or prepared_policy["slots"] != slots_ref
+            or prepared_policy["registry"] != registry_ref):
+        raise ValueError("CPU prewarm policy belongs to another frozen host revision or fixed panel")
+    resident_files = [pool_ref, prewarm_ref]
     references = [reference(AUTH), reference(PLAN), slots_ref, source_ref, registry_ref,
                   scorer_ref, *capacities.values(), *admission_refs, *conditions.values(), *resident_files, *files]
     unique = {item["path"]: item for item in references}
@@ -178,7 +170,8 @@ def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, re
              "authorization": reference(AUTH), "plan": reference(PLAN), "slots": slots_ref,
              "source_manifest": source_ref, "registry": registry_ref, "scorer_manifest": scorer_ref,
              "capacities": capacities, "capacity_admission": admission_refs[0], "conditions": conditions,
-             "resident_registry": resident_ref, "resident_admission": handoff_ref, "residency_protocol": "independent_resident_with_exclusive_episode_sessions_v1",
+             "resident_pool_policy": pool_ref, "prewarm_policy": prewarm_ref,
+             "residency_protocol": "append_only_dynamic_pool_independent_sessions_v1",
              "frozen_files": [{"reference": item, "stat": stat_id(item["path"])}
                               for item in unique.values()],
              "model_loads": 0, "slot_claims": 0, "automatic_start": False}
@@ -195,23 +188,54 @@ def validate_frozen(bindings, *, initial=False):
             raise ValueError("Frozen source/configuration file changed: " + ref["path"])
 
 
-def head_slot(rows, available_gpus, *, timestamp=None):
-    """Earliest resource-ready slot, retaining the original order on each GPU."""
+def select_pool_slot(rows, residents, *, timestamp=None, maximum_active=8, is_prepared=None):
+    """Earliest pending fixed slot plus a distinct eligible registered resident."""
     timestamp = time.time() if timestamp is None else timestamp
-    blocked = set()
+    active = [row for row in rows if row["generation"]["status"] in ACTIVE]
+    if len(active) >= maximum_active:
+        return None
+    busy_ids = {row["generation"].get("resident_id") for row in active}
+    busy_gpus = {row["generation"].get("physical_gpu") for row in active}
+    preparing_instances = {row["slot"]["instance_id"] for row in active
+                           if row["slot"].get("instance_id") is not None
+                           and not row["generation"].get("claimed", False)}
+    free = {key: item for key, item in residents.items()
+            if key not in busy_ids and item["declaration"]["gpu_index"] not in busy_gpus}
+    blocked_modes = set()
     for row in rows:
-        generation = row["generation"]
-        gpu = 7 if row["slot"]["arm"] == "REF" else 6
-        if generation["status"] in ACTIVE:
-            blocked.add(gpu)
-        if generation["status"] == "pending":
-            if (gpu not in blocked and gpu in available_gpus
-                    and timestamp >= generation.get("retry_not_before", 0)):
-                return row
-            blocked.add(gpu)  # A later same-GPU slot may never bypass this one.
-        if generation["status"] == "technical_unknown":
-            return None
+        if row["generation"]["status"] != "pending":
+            continue
+        if row["slot"].get("instance_id") in preparing_instances:
+            # Native preparation is task-keyed and LOCK_NB. Once the prior
+            # worker claims, its qualified immutable template is reusable.
+            continue
+        mode = "REF" if row["slot"]["arm"] == "REF" else "MATCH_PROJECT"
+        if mode in blocked_modes:
+            continue
+        if timestamp < row["generation"].get("retry_not_before", 0):
+            blocked_modes.add(mode)
+            continue
+        eligible = [(item["declaration"]["gpu_index"], key, item) for key, item in free.items()
+                    if item["declaration"]["mode"] == mode]
+        if eligible and (is_prepared is None or is_prepared(row)):
+            _, resident_id, resident = min(eligible, key=lambda item: (item[0], item[1]))
+            return row, resident_id, resident
     return None
+
+
+def ref_completion_evidence(state):
+    """Mechanical retirement eligibility; no use of successful/failed score values."""
+    rows = state["rows"]
+    refs = [row for row in rows if row["slot"]["arm"] == "REF"]
+    identities = [row["slot"]["slot_id"] for row in refs]
+    closed = sum(row["generation"]["status"] == "closed" for row in refs)
+    reports = sum(row["scores"].get("code", {}).get("status") == "official_report"
+                  and type(row["scores"]["code"].get("resolved")) is bool for row in refs)
+    eligible = (len(rows) == 1500 and len(refs) == len(set(identities)) == 500 and closed == reports == 500)
+    return {"eligible": eligible, "planned_ref_slots": 500, "observed_ref_slots": len(refs),
+            "closed_ref_generations": closed, "determinate_ref_code_reports": reports,
+            "ref_slot_ids_sha256": hashlib.sha256(json.dumps(sorted(identities)).encode()).hexdigest(),
+            "no_score_value_selection": True, "resident_idle_and_retirement_proof_still_required": True}
 
 
 def generation_outcome(returncode, result, claimed):
@@ -308,6 +332,7 @@ class Coordinator:
         validate_frozen(self.bindings, initial=True)
         self.plan = load_ref(self.bindings["plan"])
         self.slots = load_ref(self.bindings["slots"])
+        self.public_entries = {row["instance_id"]: row for row in load_ref(self.bindings["registry"])["entries"]}
         check_plan(load_ref(self.bindings["authorization"]), self.plan, self.slots)
         self.system = system or Systemd()
         self.root.mkdir(parents=True, exist_ok=True)
@@ -390,6 +415,9 @@ class Coordinator:
             events.append({"dispatch_ordinal": len(events) + 1, "intent_utc": now(),
                            "job": job, "slot_id": record["slot_id"],
                            "slot_index": record["slot_index"], "physical_gpu": record["physical_gpu"],
+                           "resident_id": record.get("resident_id"),
+                           "registration": record.get("resident_registration"),
+                           "pool_policy": self.bindings.get("resident_pool_policy"),
                            "worker_started": None, "claim": None})
         self.save()  # Durable intent precedes launch; uncertain handoff is never retried.
         response = self.system.launch(unit, job)
@@ -552,48 +580,65 @@ class Coordinator:
     def dispatch_generation(self):
         if self.state["status"] != "running":
             return
-        rows = self.state["rows"]
-        active = [x for x in rows if x["generation"]["status"] in ACTIVE]
-        if len(active) >= 2:
-            return
         from .software_benchmark_resident_session_v054 import available_residents
-        resident_rows = available_residents(self.bindings["resident_registry"])
-        cards = {index: {"index": index, "uuid": row["declaration"]["gpu_uuid"],
-                        "admission": "existing_qualified_project_resident_not_free_memory"}
-                 for index, row in resident_rows.items()}
-        busy = {self.plan["physical_gpu_by_arm"][x["slot"]["arm"]] for x in active}
-        row = head_slot(rows, set(cards) - busy)
-        if row is None:
-            self.state["waiting"] = {"reason": "no_resource_ready_lane_head", "slot_claimed": False,
-                                     "observed_ready_gpus": sorted(set(cards) - busy)}
-            return
-        slot, generation = row["slot"], row["generation"]
-        gpu_index = self.plan["physical_gpu_by_arm"][slot["arm"]]
-        if claim_path(slot["slot_id"]).exists():
-            raise ValueError("Pending slot already has a global once-only claim; never replay")
-        arm = "REF" if slot["arm"] == "REF" else "MATCH"
-        card = cards[gpu_index]
-        if card["index"] != gpu_index:
-            raise ValueError("Capacity mode selected a GPU outside this frozen two-card plan")
-        from .software_benchmark_service_factory_v054 import build_service
-        from .software_benchmark_slot_factory_v054 import build_slot_config
-        validate_frozen(self.bindings)
-        attempt = len(generation["attempts"]) + 1
-        root = self.root / "slots" / str(slot["slot_index"]) / ("preclaim-" + str(attempt))
-        root.mkdir(parents=True, exist_ok=False)
-        service_ref = build_service(arm=slot["arm"], capacity_reference=self.bindings["capacities"][arm],
-                                    card=card, directory=root / "service",
-                                    resident_reference=resident_rows[gpu_index]["declaration_reference"])
-        config = build_slot_config(slot_id=slot["slot_id"], condition_reference=self.bindings["conditions"][slot["arm"]],
-                    model_service=load_ref(service_ref), registry_reference=self.bindings["registry"],
-                    scorer_manifest_reference=self.bindings["scorer_manifest"], output=root / "config.json",
-                    authorization=self.bindings["authorization"])
-        generation.update(config=config, service=service_ref, episode_output=str(root / "episode"), claimed=False,
-                          slot_id=slot["slot_id"], slot_index=slot["slot_index"], physical_gpu=gpu_index)
-        self.state.pop("waiting", None)
-        self.start_job(generation, kind="generation", directory=root / "worker",
-                       argv=[str(HOST_PYTHON), str(ROOT / "tools/run_benchmark_episode_v054.py"),
-                             "--config", config["path"], "--output", str(root / "episode")])
+        from .software_benchmark_prewarm_v054 import preparation_state, prewarm_health
+        health = prewarm_health(self.bindings["prewarm_policy"])
+        if health["status"] == "failed":
+            raise RuntimeError("CPU prewarm failed; no new generation: " + json.dumps(health))
+        residents = available_residents(self.bindings["resident_pool_policy"])
+        qualifications = {}
+        def is_prepared(row):
+            instance = row["slot"]["instance_id"]
+            if instance not in qualifications:
+                qualifications[instance] = preparation_state(instance,
+                    mapping_reference=self.public_entries[instance]["baseline_mapping"],
+                    cache_root=ROOT / "runs/software-benchmark-v054/native-lazy-cache")
+            proof = qualifications[instance]
+            if proof["status"] == "failed":
+                raise RuntimeError("Fixed task CPU preparation failed: " + instance + " " + json.dumps(proof))
+            return proof["status"] == "qualified"
+        # Read the pool once, then fill different idle residents. Factory and
+        # runner independently revalidate the exact registration before acquire.
+        while self.state["status"] == "running":
+            selected = select_pool_slot(self.state["rows"], residents,
+                                        maximum_active=self.plan["maximum_active_generation_episodes"],
+                                        is_prepared=is_prepared)
+            if selected is None:
+                self.state["waiting"] = {"reason": "no_ready_registered_resident_for_pending_slot",
+                                         "slot_claimed": False, "observed_residents": sorted(residents)}
+                return
+            row, resident_id, observed = selected
+            slot, generation = row["slot"], row["generation"]
+            declaration = observed["declaration"]
+            gpu_index = declaration["gpu_index"]
+            if claim_path(slot["slot_id"]).parent.exists():
+                raise ValueError("Pending slot already has a global claim directory; never replay")
+            arm = "REF" if slot["arm"] == "REF" else "MATCH"
+            card = {"index": gpu_index, "uuid": declaration["gpu_uuid"],
+                    "admission": "immutable_pool_registration_and_live_resident"}
+            from .software_benchmark_service_factory_v054 import build_service
+            from .software_benchmark_slot_factory_v054 import build_slot_config
+            validate_frozen(self.bindings)
+            attempt = len(generation["attempts"]) + 1
+            root = self.root / "slots" / str(slot["slot_index"]) / ("preclaim-" + str(attempt))
+            root.mkdir(parents=True, exist_ok=False)
+            service_ref = build_service(arm=slot["arm"], capacity_reference=self.bindings["capacities"][arm],
+                        card=card, directory=root / "service", resident_reference=observed["declaration_reference"],
+                        registration_reference=observed["registration"],
+                        pool_policy_reference=self.bindings["resident_pool_policy"])
+            config = build_slot_config(slot_id=slot["slot_id"], condition_reference=self.bindings["conditions"][slot["arm"]],
+                        model_service=load_ref(service_ref), registry_reference=self.bindings["registry"],
+                        scorer_manifest_reference=self.bindings["scorer_manifest"], output=root / "config.json",
+                        authorization=self.bindings["authorization"], prewarm_policy_reference=self.bindings["prewarm_policy"])
+            generation.update(config=config, service=service_ref, episode_output=str(root / "episode"), claimed=False,
+                              slot_id=slot["slot_id"], slot_index=slot["slot_index"], physical_gpu=gpu_index,
+                              resident_id=resident_id, resident_registration=observed["registration"],
+                              resident_pool_policy=self.bindings["resident_pool_policy"])
+            self.state.pop("waiting", None)
+            self.start_job(generation, kind="generation", directory=root / "worker",
+                           argv=[str(HOST_PYTHON), str(ROOT / "tools/run_benchmark_episode_v054.py"),
+                                 "--config", config["path"], "--output", str(root / "episode")])
+            residents.pop(resident_id)
 
     def tick(self):
         try:
@@ -637,7 +682,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     freeze = commands.add_parser("freeze")
-    for key in ("ref-capacity", "match-capacity", "scorer-manifest", "resident-registry", "output"):
+    for key in ("ref-capacity", "match-capacity", "scorer-manifest", "resident-pool-policy", "prewarm-policy", "output"):
         freeze.add_argument("--" + key, required=True, type=Path)
     run = commands.add_parser("run")
     run.add_argument("--bindings", required=True, type=Path)
@@ -648,7 +693,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.command == "freeze":
         print(json.dumps(freeze_bindings(ref_capacity=args.ref_capacity, match_capacity=args.match_capacity,
-              scorer_manifest=args.scorer_manifest, resident_registry=args.resident_registry, output=args.output)))
+              scorer_manifest=args.scorer_manifest, resident_pool_policy=args.resident_pool_policy, prewarm_policy=args.prewarm_policy, output=args.output)))
         return 0
     if args.command == "worker":
         item = reference(args.job)

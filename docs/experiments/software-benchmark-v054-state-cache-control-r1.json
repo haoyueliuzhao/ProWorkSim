@@ -1,0 +1,81 @@
+{
+  "version": "v054-state-cache-control-r1",
+  "python": "3.12.3",
+  "model_calls": 0,
+  "gpu_launches": 0,
+  "source_world_mutated": false,
+  "checks": {
+    "normalization_matches_real_json_roundtrip": true,
+    "independent_load_returns": true,
+    "exception_without_save_does_not_leak": true,
+    "save_bytes_exactly_match_original_writer": true,
+    "original_fsync_and_private_file_mode_preserved": true,
+    "save_invalidates_without_caching_input": true,
+    "external_atomic_replace_even_same_size_mtime_invalidates": true,
+    "same_inode_observable_ctime_change_invalidates": true,
+    "failed_save_preserves_original_bytes_and_load": true,
+    "stat_after_copy_detects_foreign_replace": true,
+    "cache_has_only_one_committed_snapshot": true,
+    "original_real_public_read_task_committed": true,
+    "cached_real_public_read_task_committed": true,
+    "actual_tool_output_exactly_identical": true,
+    "actual_transaction_state_bytes_identical_with_fixed_timing_receipt": true,
+    "source_completed_world_bytes_unchanged": true
+  },
+  "state_only_benchmark": {
+    "source": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/formal-queue-r1/slots/6/preclaim-1/episode/managed-world/world/control/state.json",
+    "bytes": 91426372,
+    "timings_seconds": {
+      "cached_cold_load": 1.2764070658013225,
+      "standard_load": [
+        1.1338165234774351,
+        1.0908878426998854,
+        1.0928875161334872
+      ],
+      "cached_warm_load": [
+        0.08809407986700535,
+        0.08523084875196218,
+        0.08334097638726234
+      ]
+    },
+    "warm_read_reduction_fraction": 0.9220131555226293,
+    "caveat": "Warm file, isolated CPU, three read pairs; not overall PROJECT speedup. Save remains original full serialization/atomic_write/fsync."
+  },
+  "public_transaction_comparison": [
+    {
+      "implementation": "original",
+      "seconds": 6.295113660395145,
+      "store_seconds": {
+        "load": 1.086989689618349,
+        "recover": 0.3651263462379575,
+        "save": 1.2881559012457728
+      },
+      "store_calls": {
+        "load": 1,
+        "recover": 1,
+        "save": 1
+      },
+      "state_sha256": "2c05d816f201689c49099fd7997487b29afdd94b06ae5b35e8247296b1d72bc5",
+      "output_sha256": "e30d6cee1508fd0666ad5c58111d3bb36d65b75351aeddece44a54443f646a8c"
+    },
+    {
+      "implementation": "cached",
+      "seconds": 5.632701240479946,
+      "store_seconds": {
+        "load": 0.06818395853042603,
+        "recover": 0.35816940385848284,
+        "save": 1.3983888337388635
+      },
+      "store_calls": {
+        "load": 1,
+        "recover": 1,
+        "save": 1
+      },
+      "state_sha256": "2c05d816f201689c49099fd7997487b29afdd94b06ae5b35e8247296b1d72bc5",
+      "output_sha256": "e30d6cee1508fd0666ad5c58111d3bb36d65b75351aeddece44a54443f646a8c"
+    }
+  ],
+  "public_transaction_caveat": "One read_task on each independent completed-world copy, after a priming load. Fixed request_key and monotonic only to compare canonical bytes including wall_seconds; normal production retains actual elapsed timing and is not expected to repeat identical wall_seconds.",
+  "source_state_sha256": "a0277054e10afe853cd87f94d8ce1cc3490b76bf20d7c7010aa899164229ecb3",
+  "passed": true
+}

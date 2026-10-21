@@ -11,8 +11,16 @@ def coordinator(root):
     value = object.__new__(queue.Coordinator)
     value.root = root
     value.bindings_ref = {"path": str(root / "binding.json"), "sha256": "synthetic", "bytes": 0}
+    value.bindings = {}
     value.state = {"status": "running", "rows": [], "faults": []}
     return value
+
+
+def select_with_cards(rows, indices, **kwargs):
+    residents = {str(index): {"declaration": {"gpu_index": index,
+                 "mode": "REF" if index == 7 else "MATCH_PROJECT"}} for index in indices}
+    selected = queue.select_pool_slot(rows, residents, **kwargs)
+    return selected[0] if selected else None
 
 
 def test_cpu_durable_intent_no_replay_and_order(tmp_path):
@@ -44,9 +52,9 @@ def test_cpu_durable_intent_no_replay_and_order(tmp_path):
     resumed.state, resumed.system = persisted, value.system
     assert resumed.completion(resumed.state["rows"][0]["generation"]) is None
     assert len(calls) == 1
-    assert queue.head_slot(resumed.state["rows"], {6}) is None
+    assert select_with_cards(resumed.state["rows"], {6}) is None
     resumed.state["rows"][0]["generation"]["claimed"] = True
-    assert queue.head_slot(resumed.state["rows"], {6, 7})["slot"]["slot_index"] == 3
+    assert select_with_cards(resumed.state["rows"], {6, 7})["slot"]["slot_index"] == 3
     value.system.active = lambda unit: False
     resumed.completion(resumed.state["rows"][0]["generation"])
     assert resumed.state["rows"][0]["generation"]["status"] == "technical_unknown"
@@ -113,16 +121,16 @@ def test_cpu_two_grader_leases_and_result_identity(tmp_path, monkeypatch):
 def test_resource_ready_lane_order_only():
     rows = [{"slot": {"slot_index": i, "arm": arm}, "generation": {"status": "pending"}}
             for i, arm in enumerate(("MATCH", "PROJECT", "REF", "REF", "MATCH"), 1)]
-    assert queue.head_slot(rows, {6, 7})["slot"]["slot_index"] == 1
-    assert queue.head_slot(rows, {7})["slot"]["slot_index"] == 3
-    rows[0]["generation"].update(status="running", claimed=False)
-    assert queue.head_slot(rows, {6, 7})["slot"]["slot_index"] == 3
-    rows[2]["generation"]["status"] = "running"
-    assert queue.head_slot(rows, {6, 7}) is None
+    assert select_with_cards(rows, {6, 7})["slot"]["slot_index"] == 1
+    assert select_with_cards(rows, {7})["slot"]["slot_index"] == 3
+    rows[0]["generation"].update(status="running", claimed=False, physical_gpu=6)
+    assert select_with_cards(rows, {6, 7})["slot"]["slot_index"] == 3
+    rows[2]["generation"].update(status="running", physical_gpu=7)
+    assert select_with_cards(rows, {6, 7}) is None
     rows[0]["generation"]["status"] = "closed"
-    assert queue.head_slot(rows, {6, 7})["slot"]["slot_index"] == 2
+    assert select_with_cards(rows, {6, 7})["slot"]["slot_index"] == 2
     rows[1]["generation"]["retry_not_before"] = 100
-    assert queue.head_slot(rows, {6, 7}, timestamp=99) is None
+    assert select_with_cards(rows, {6, 7}, timestamp=99) is None
     rows[2]["generation"]["status"] = "closed"
-    assert queue.head_slot(rows, {6, 7}, timestamp=99)["slot"]["slot_index"] == 4
-    assert queue.head_slot(rows, {6, 7}, timestamp=100)["slot"]["slot_index"] == 2
+    assert select_with_cards(rows, {6, 7}, timestamp=99)["slot"]["slot_index"] == 4
+    assert select_with_cards(rows, {6, 7}, timestamp=100)["slot"]["slot_index"] == 2

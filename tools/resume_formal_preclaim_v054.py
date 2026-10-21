@@ -17,7 +17,7 @@ from pathlib import Path
 import re
 import subprocess
 
-VERSION = "v054-explicit-preclaim-recovery-v1"
+VERSION = "v054-explicit-drained-queue-transition-v2"
 FIXED_SHA = "55899d0b83a5bab1082bccb50496fb6c1d7111ecb951fc4d61c222be19d88676"
 UNCHANGED_BINDINGS = ("slots", "authorization", "plan", "registry", "scorer_manifest",
                       "capacities", "capacity_admission")
@@ -67,8 +67,44 @@ def claim_directory(repository, slot_id):
             / hashlib.sha256(slot_id.encode()).hexdigest())
 
 
-def verify_transition(old_bindings, new_bindings, previous_condition_root, previous_source, *, allow_residency_revision=False):
+def verify_resource_revision(old_bindings, new_bindings):
+    """Only the newly authorized resource changes may differ from the old plan."""
+    old_auth, new_auth = read_ref(old_bindings["authorization"]), read_ref(new_bindings["authorization"])
+    auth_fields = {"version", "supersedes", "authorization_source", "physical_gpus",
+                   "maximum_active_generation_episodes", "dynamic_gpu_policy"}
+    if ({k: v for k, v in old_auth.items() if k not in auth_fields}
+            != {k: v for k, v in new_auth.items() if k not in auth_fields}
+            or new_auth["physical_gpus"] != list(range(8))
+            or new_auth["maximum_active_generation_episodes"] != 8
+            or new_auth.get("dynamic_gpu_policy", {}).get("terminate_other_jobs") is not False
+            or new_auth["dynamic_gpu_policy"].get("only_unclaimed_original_slots") is not True):
+        raise ValueError("New authorization exceeds the explicit dynamic resource revision")
+    old_plan, new_plan = read_ref(old_bindings["plan"]), read_ref(new_bindings["plan"])
+    plan_fields = {"version", "supersedes", "authorization_path", "maximum_active_generation_episodes",
+                   "physical_gpu_by_arm", "dispatch_order", "scheduling_authorization", "resident_pool",
+                   "actual_order_evidence", "ref_gpu7_conversion", "resource_poll_seconds", "prior_source_snapshot"}
+    if ({k: v for k, v in old_plan.items() if k not in plan_fields}
+            != {k: v for k, v in new_plan.items() if k not in plan_fields}
+            or new_plan["maximum_active_generation_episodes"] != 8
+            or new_plan["maximum_active_official_graders"] != 2
+            or new_plan["resource_poll_seconds"] != 5
+            or new_plan["physical_gpu_by_arm"] != {"REF": [7], "MATCH": list(range(8)), "PROJECT": list(range(8))}
+            or not new_bindings.get("resident_pool_policy")):
+        raise ValueError("New plan changed more than the authorized dynamic pool/poll policy")
+    return {"authorization_before": old_bindings["authorization"], "authorization_after": new_bindings["authorization"],
+            "plan_before": old_bindings["plan"], "plan_after": new_bindings["plan"],
+            "pool_policy": new_bindings["resident_pool_policy"], "fixed_slots_and_budget_unchanged": True,
+            "poll_seconds_before": old_plan["resource_poll_seconds"], "poll_seconds_after": 5}
+
+
+def verify_transition(old_bindings, new_bindings, previous_condition_root, previous_source, *,
+                      allow_residency_revision=False, allow_dynamic_pool_revision=False):
+    resource_changes = None
+    if allow_dynamic_pool_revision:
+        resource_changes = verify_resource_revision(old_bindings, new_bindings)
     for key in UNCHANGED_BINDINGS:
+        if allow_dynamic_pool_revision and key in {"authorization", "plan"}:
+            continue
         if old_bindings[key] != new_bindings[key]:
             raise ValueError("Recovery cannot silently change " + key)
     if (new_bindings.get("execution_authorized") is not True
@@ -87,6 +123,13 @@ def verify_transition(old_bindings, new_bindings, previous_condition_root, previ
         if any(previous_ref[key] != old_bindings["conditions"][arm][key] for key in ("sha256", "bytes")):
             raise ValueError("Previous condition snapshot differs: " + arm)
         before, after = json.loads(snapshot.read_bytes()), read_ref(new_bindings["conditions"][arm])
+        scheduling_change = None
+        if allow_dynamic_pool_revision:
+            prior_scheduling = before.pop("resource_scheduling_protocol", None)
+            next_scheduling = after.pop("resource_scheduling_protocol", None)
+            if not next_scheduling:
+                raise ValueError("Dynamic pool revision must be explicit in each condition")
+            scheduling_change = {"before": prior_scheduling, "after": next_scheduling}
         residency_change = None
         if allow_residency_revision:
             prior_protocol, new_protocol = before.pop("residency_protocol", None), after.pop("residency_protocol", None)
@@ -101,24 +144,26 @@ def verify_transition(old_bindings, new_bindings, previous_condition_root, previ
         conditions[arm] = {"previous_snapshot": previous_ref,
                            "new_condition": new_bindings["conditions"][arm],
                            "non_source_non_residency_condition_fields_equal": True,
-                           "explicit_residency_protocol_revision": residency_change}
+                           "explicit_residency_protocol_revision": residency_change,
+                           "explicit_resource_scheduling_revision": scheduling_change}
     old_files = {x["path"]: x for x in old_source["files"]}
     new_files = {x["path"]: x for x in new_source["files"]}
     delta = [{"path": path, "before": old_files.get(path), "after": new_files.get(path)}
              for path in sorted(set(old_files) | set(new_files)) if old_files.get(path) != new_files.get(path)]
-    return {"previous_source_snapshot": old_source_ref, "conditions": conditions, "source_delta": delta}
+    return {"previous_source_snapshot": old_source_ref, "conditions": conditions, "source_delta": delta,
+            "resource_authorization_and_plan_revision": resource_changes}
 
 
 def verify_state(state, *, repository, slot_ids, unit_check=stopped_unit):
     """Read only proofs; never reinterpret a claimed or entered episode as unused."""
-    if state["status"] != "paused_technical_unknown" or state["planned_slots"] != 1500:
+    if state["status"] not in {"paused_technical_unknown", "paused_operator_drain"} or state["planned_slots"] != 1500:
         raise ValueError("Expected the stopped, complete-panel paused queue")
     rows = state["rows"]
     if len(rows) != 1500 or len({x["slot"]["slot_id"] for x in rows}) != 1500:
         raise ValueError("The full unique panel must remain present")
     selected = set(slot_ids)
     unknown = {x["slot"]["slot_id"] for x in rows if x["generation"]["status"] == "technical_unknown"}
-    if not selected or selected != unknown:
+    if selected != unknown:
         raise ValueError("Every technical unknown must be explicitly addressed, without selecting by score")
     proofs = []
     for row in rows:
@@ -193,10 +238,11 @@ def main():
     for key in ("repository", "queue", "new-bindings", "previous-conditions", "previous-source", "output"):
         parser.add_argument("--" + key, type=Path, required=True)
     parser.add_argument("--controller-unit", required=True)
-    parser.add_argument("--slot-id", action="append", required=True)
+    parser.add_argument("--slot-id", action="append", default=[])
     parser.add_argument("--reason", required=True)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--allow-residency-protocol-revision", action="store_true")
+    parser.add_argument("--allow-dynamic-pool-revision", action="store_true")
     args = parser.parse_args()
     os.umask(0o077)
     queue = args.queue.resolve()
@@ -208,7 +254,8 @@ def main():
         new_ref = reference(args.new_bindings)
         old_bindings, new_bindings = read_ref(state["bindings"]), read_ref(new_ref)
         transition = verify_transition(old_bindings, new_bindings, args.previous_conditions, args.previous_source,
-                                       allow_residency_revision=args.allow_residency_protocol_revision)
+                                       allow_residency_revision=args.allow_residency_protocol_revision,
+                                       allow_dynamic_pool_revision=args.allow_dynamic_pool_revision)
         proofs = verify_state(state, repository=args.repository.resolve(), slot_ids=args.slot_id)
         transition.update(version=VERSION, created_utc=datetime.now(timezone.utc).isoformat(),
                           reason=args.reason, previous_state=state_ref, previous_bindings=state["bindings"],

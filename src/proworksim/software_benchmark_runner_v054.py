@@ -320,12 +320,22 @@ def _run(config, output, leases):
     if config.get("lazy_native_preparation"):
         try:
             from .software_benchmark_native_lazy_v054 import ensure_native_instance
-            prepared = ensure_native_instance(
-                instance_id=config["public_task"]["instance_id"],
-                mapping_reference=config["scorer_request_base"]["baseline_mapping"],
-                cache_root=Path(config["lazy_native_preparation"]["cache_root"]),
-                stdlib=Path(config["stdlib"]), public_tasks_reference=config["public_tasks"],
-                docker_socket="unix://" + config["scorer_request_base"]["docker_socket"])
+            if config.get("prewarm_policy"):
+                from .software_benchmark_prewarm_v054 import qualified_paths, validate_prewarm_policy
+                prewarm = validate_prewarm_policy(config["prewarm_policy"])
+                if (Path(prewarm["cache_root"]) != Path(config["lazy_native_preparation"]["cache_root"])
+                        or prewarm["public_tasks"] != config["public_tasks"]):
+                    raise ValueError("Formal shared template paths differ from the frozen CPU policy")
+                prepared = qualified_paths(config["public_task"]["instance_id"],
+                    mapping_reference=config["scorer_request_base"]["baseline_mapping"],
+                    cache_root=Path(config["lazy_native_preparation"]["cache_root"]))
+            else:
+                prepared = ensure_native_instance(
+                    instance_id=config["public_task"]["instance_id"],
+                    mapping_reference=config["scorer_request_base"]["baseline_mapping"],
+                    cache_root=Path(config["lazy_native_preparation"]["cache_root"]),
+                    stdlib=Path(config["stdlib"]), public_tasks_reference=config["public_tasks"],
+                    docker_socket="unix://" + config["scorer_request_base"]["docker_socket"])
             config = {**config, "rootfs_environment": prepared["rootfs_environment"],
                       "environment": reference(prepared["environment"])}
             write_new(output / "native-preparation.json", prepared)
@@ -345,7 +355,9 @@ def _run(config, output, leases):
         try:
             resident_session = ResidentSession(config["resident_reference"], slot=slot,
                 claim_id=planned_claim_id, authorization=config["authorization"],
-                directory=config["resident_session_directory"])
+                directory=config["resident_session_directory"],
+                pool_policy_reference=config.get('resident_pool_policy'),
+                registration_reference=config.get('resident_registration'))
             leases.append(resident_session)
             config = {**config, **resident_session.config_fields(),
                       "model_command": [*config["model_command"], "--session-sha256",

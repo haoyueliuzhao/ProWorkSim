@@ -12,6 +12,7 @@ from .adapters.capabilities import encode
 from .harness_policy_v040 import FORBIDDEN_TOOLS
 from .scenarios import SCENARIO_VERSION, build_scenario, initial_business_state
 from .storage import atomic_write, digest, json_bytes
+from .software_benchmark_state_cache_v054 import CachedStateStore
 from .templates.online_work import PreparedOnlineCase
 from .tool_outcomes import ToolRejection
 from .work_interface import _schema_errors
@@ -147,6 +148,14 @@ def member_instruction(case, **_):
 
 
 class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
+    def __init__(self, root):
+        # Preserve the original constructor's schema and recovery checks;
+        # subsequent v054 reads use an isolated committed-state cache only.
+        super().__init__(root)
+        original_store = self.store
+        self.store = CachedStateStore(original_store.root)
+        self.store.fault_hook = original_store.fault_hook
+
     def _tool_definitions(self, project_id):
         return copy.deepcopy(TOOLS) if project_id == PROJECT else super()._tool_definitions(project_id)
 

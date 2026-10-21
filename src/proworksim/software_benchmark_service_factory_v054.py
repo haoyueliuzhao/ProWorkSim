@@ -9,6 +9,8 @@ import os
 
 from .software_benchmark_candidates_v054 import checked, reference, write_new
 from .software_benchmark_match_v054 import CONTRACT
+from .software_benchmark_deployment_gpu_v054 import validate_card_identity
+from .software_benchmark_resident_pool_v054 import validate_registration
 from .storage import digest, json_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -120,13 +122,17 @@ def templates():
                 "numerical_path": "original raw CalibrationActor plus shared r3/r5 cache protocol"},
             "dynamic_inputs_required": ["actual passed capacity receipt", "observed GPU card",
                 "per-slot fresh output paths", "separate formal execution/budget permit"],
-            "maximum_global_residents": 4, "model_loads": 0, "formal_execution_authorized": False}
+            "maximum_global_residents": 8, "model_loads": 0, "formal_execution_authorized": False}
 
 
-def build_service(*, arm, capacity_reference, card, directory, resident_reference=None):
+def build_service(*, arm, capacity_reference, card, directory, resident_reference=None,
+                  registration_reference=None, pool_policy_reference=None):
     if resident_reference is not None:
         return build_resident_session_service(arm=arm, capacity_reference=capacity_reference,
-            card=card, directory=directory, resident_reference=resident_reference)
+            card=card, directory=directory, resident_reference=resident_reference,
+            registration_reference=registration_reference, pool_policy_reference=pool_policy_reference)
+    if registration_reference is not None or pool_policy_reference is not None:
+        raise ValueError('Dynamic pool execution requires an admitted persistent resident')
     admitted_capacity = capacity_admission(arm, capacity_reference)
     capacity = json.loads(checked(capacity_reference).read_text())
     mode = "REF" if arm == "REF" else "MATCH"
@@ -137,8 +143,8 @@ def build_service(*, arm, capacity_reference, card, directory, resident_referenc
     if (not re.fullmatch(r"GPU-[0-9a-fA-F-]{36}", card["uuid"])
             or type(card["index"]) is not int or not 0 <= card["index"] < 8):
         raise ValueError("An observed physical GPU binding is required")
-    if card["index"] != (7 if arm == "REF" else 6):
-        raise ValueError("The authorized deployment binds REF to GPU7 and MATCH/PROJECT to GPU6")
+    if arm == 'REF' and card['index'] != 7:
+        raise ValueError('REF retains its one fixed GPU7 deployment')
     root = Path(directory).resolve()
     if not root.is_relative_to(ROOT / "runs/software-benchmark-v054"):
         raise ValueError("Fresh model service output must be under this project's benchmark runs")
@@ -187,6 +193,13 @@ def validate_resident_session_service(service, arm):
     spec_path = checked(service["service_spec"])
     spec = json.loads(spec_path.read_text())
     declaration = json.loads(checked(service["resident_reference"]).read_text())
+    registration = validate_registration(
+        json.loads(checked(service['resident_registration']).read_text()), service['resident_pool_policy'])
+    if (registration['event_reference'] != service['resident_registration']
+            or registration['declaration'] != service['resident_reference']
+            or spec.get('resident_registration') != service['resident_registration']
+            or spec.get('resident_pool_policy') != service['resident_pool_policy']):
+        raise ValueError('Session escaped its current immutable resident registration')
     expected_command = [str(ROOT / ".venv/bin/python"), str(ROOT / "tools/hold_resident_session_v054.py"),
                         "--session", str(Path(spec["root"]) / "session.json")]
     if (service["factory_source"] != reference(__file__) or service["arm"] != arm
@@ -196,6 +209,8 @@ def validate_resident_session_service(service, arm):
             or spec["resident_reference"] != service["resident_reference"]
             or declaration["mode"] != ("REF" if arm == "REF" else "MATCH_PROJECT")
             or declaration["gpu_uuid"] != service["gpu_uuid"]
+            or declaration['gpu_index'] != service['gpu_index']
+            or registration['resident_id'] != service['resident_id']
             or service["admission_passed"] is not True):
         raise ValueError("Resident session differs from its frozen service/condition")
     recorded = spec_path.parent / "model-service.json"
@@ -204,12 +219,20 @@ def validate_resident_session_service(service, arm):
     return reference(recorded)
 
 
-def build_resident_session_service(*, arm, capacity_reference, card, directory, resident_reference):
+def build_resident_session_service(*, arm, capacity_reference, card, directory, resident_reference,
+                                   registration_reference, pool_policy_reference):
     admitted = capacity_admission(arm, capacity_reference)
+    validate_card_identity(card)
+    if registration_reference is None or pool_policy_reference is None:
+        raise ValueError('Formal sessions require a separately admitted pool registration')
+    registration = validate_registration(json.loads(checked(registration_reference).read_text()), pool_policy_reference)
+    if (registration['event_reference'] != registration_reference
+            or registration['declaration'] != resident_reference):
+        raise ValueError('Resident declaration is not this active admitted registration')
     declaration = json.loads(checked(resident_reference).read_text())
     deployment = json.loads(checked(declaration["source_spec"]).read_text())
     if (declaration["mode"] != ("REF" if arm == "REF" else "MATCH_PROJECT")
-            or declaration["gpu_index"] != (7 if arm == "REF" else 6)
+            or (arm == 'REF' and declaration['gpu_index'] != 7)
             or card["index"] != declaration["gpu_index"] or card["uuid"] != declaration["gpu_uuid"]
             or deployment["capacity_receipt"] != capacity_reference):
         raise ValueError("Resident is outside the admitted physical/numerical mode")
@@ -221,15 +244,19 @@ def build_resident_session_service(*, arm, capacity_reference, card, directory, 
     owner_admission = write_new(root / "owner-admission.json", {
         "arm": arm, "capacity_receipt": capacity_reference, "capacity_admission": admitted,
         "condition": condition, "capacity_passed": True, "formal_execution_authorized": False,
+        'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
         "model_manifest": reference(MODEL / "proworksim-manifest.json"), "resident_reference": resident_reference})
     spec = write_new(root / "service-spec.json", {"root": str(root), "arm": arm,
         "condition": condition, "resident_reference": resident_reference,
+        'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
         "capacity_receipt": capacity_reference, "factory_source": reference(__file__)})
     return write_new(root / "model-service.json", {"factory_version": VERSION,
         "deployment_mode": "resident-session-v1", "factory_source": reference(__file__),
         "arm": arm, "condition": condition, "admission_passed": True, "capacity_receipt": capacity_reference,
         "capacity_admission": admitted, "model_manifest": reference(MODEL / "proworksim-manifest.json"),
         "owner_admission": owner_admission, "resident_reference": resident_reference,
+        'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
+        'resident_id': registration['resident_id'], 'gpu_index': card['index'],
         "session_directory": str(root), "service_spec": spec, "gpu_uuid": card["uuid"],
         "startup_timeout_seconds": 30, "ready_path": str(root / "session-ready.json"),
         "identity_path": str(root / "session-identity.json"), "socket_path": None,

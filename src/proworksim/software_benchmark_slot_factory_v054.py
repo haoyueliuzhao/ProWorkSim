@@ -13,7 +13,7 @@ VERSION = "software-benchmark-slot-factory-v054"
 
 
 def build_slot_config(*, slot_id, condition_reference, model_service, registry_reference,
-                      scorer_manifest_reference, output, authorization=None):
+                      scorer_manifest_reference, output, authorization=None, prewarm_policy_reference=None):
     """No model, Docker, GPU lease or slot claim occurs while freezing this config.
 
     model_service supplies argv (never a shell string), ready/identity/socket
@@ -59,6 +59,10 @@ def build_slot_config(*, slot_id, condition_reference, model_service, registry_r
         "configuration": condition_reference, "owner_admission": model_service["owner_admission"],
         "model_service": service_reference,
         "resident_reference": model_service.get("resident_reference"),
+        "prewarm_policy": prewarm_policy_reference,
+        'resident_pool_policy': model_service.get('resident_pool_policy'),
+        'resident_registration': model_service.get('resident_registration'),
+        'resident_id': model_service.get('resident_id'), 'gpu_index': model_service.get('gpu_index'),
         "resident_session_directory": model_service.get("session_directory"),
         "authorization": authorization,
         "all_solver_admissions_passed": bool(authorization is not None and model_service.get("admission_passed") is True),

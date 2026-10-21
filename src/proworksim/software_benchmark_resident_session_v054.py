@@ -14,6 +14,8 @@ import time
 from .software_benchmark_candidates_v054 import checked, reference, write_new
 from .software_benchmark_owner_ipc_v054 import OwnerClient
 from .software_benchmark_supervision_v054 import process_identity
+from .software_benchmark_deployment_gpu_v054 import validate_card_identity
+from .software_benchmark_resident_pool_v054 import registrations, validate_registration, validate_pool_policy
 from .storage import atomic_write, json_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,11 +34,37 @@ def admin_client(declaration, identity, *, timeout=None):
     return OwnerClient(admin["socket_path"], identity, timeout=timeout or 5)
 
 
-def admitted_resident(declaration_reference, *, query=True):
+def admitted_resident(declaration_reference, *, query=True, pool_policy_reference=None,
+                      registration_reference=None):
     declaration = read_ref(declaration_reference)
-    expected_gpu = 7 if declaration["mode"] == "REF" else 6
-    if declaration["mode"] not in {"REF", "MATCH_PROJECT"} or declaration["gpu_index"] != expected_gpu:
-        raise ValueError("Resident is outside the fixed GPU/mode assignment")
+    validate_card_identity({'index': declaration['gpu_index'], 'uuid': declaration['gpu_uuid']})
+    registration = None
+    if pool_policy_reference is not None or registration_reference is not None:
+        if pool_policy_reference is None or registration_reference is None:
+            raise ValueError('Both frozen pool policy and immutable registration are required')
+        registration = validate_registration(read_ref(registration_reference), pool_policy_reference)
+        if (registration['event_reference'] != registration_reference
+                or registration['declaration'] != declaration_reference):
+            raise ValueError('Resident declaration differs from its active admitted registration')
+    elif declaration.get('version') == 'v054-resident-declaration-v2':
+        # Read-only inspection before the independent device handoff control.
+        # Formal session acquisition below still requires a current registration.
+        policy = validate_pool_policy(declaration['pool_policy'])
+        deployment = read_ref(declaration['source_spec'])
+        if (deployment.get('version') != 'v054-match-resident-spec-v2'
+                or deployment.get('pool_policy') != declaration['pool_policy']
+                or deployment.get('resident_id') != declaration['resident_id']
+                or declaration['mode'] != 'MATCH_PROJECT'
+                or deployment['card']['index'] != declaration['gpu_index']
+                or deployment['card']['uuid'] != declaration['gpu_uuid']
+                or declaration['gpu_index'] not in policy['physical_gpus']):
+            raise ValueError('New resident lacks its immutable pre-admission deployment identity')
+    elif (declaration.get('version') != 'v054-resident-declaration-v1'
+          or declaration['gpu_index'] != (7 if declaration['mode'] == 'REF' else 6)):
+        raise ValueError('Unknown historical or dynamic resident deployment')
+    if (declaration["mode"] not in {"REF", "MATCH_PROJECT"}
+            or (declaration['mode'] == 'REF' and declaration['gpu_index'] != 7)):
+        raise ValueError("Resident is outside its authorized GPU/mode assignment")
     checked(declaration["source_spec"])
     ready_path = Path(declaration["ready_path"])
     if not ready_path.exists():
@@ -65,6 +93,14 @@ def admitted_resident(declaration_reference, *, query=True):
             or (ready.get("cgroup") is not None and ready["cgroup"] != unit_state["ControlGroup"])):
         raise ValueError("Resident unit/cgroup invocation no longer owns the recorded process")
     identity = read_ref(ready["identity"])
+    if declaration['mode'] == 'MATCH_PROJECT':
+        binding = identity.get('resource_binding', {})
+        if (binding.get('gpu_index') != declaration['gpu_index']
+                or binding.get('gpu_uuid') != declaration['gpu_uuid']
+                or identity.get('actual_CalibrationActor') is not True
+                or identity.get('original_generate_native') is not True
+                or identity.get('numerical_methods_replaced') is not False):
+            raise ValueError('Actual raw owner numerical/physical binding differs from registration')
     status = admin_client(declaration, identity).call("status") if query else None
     if status is not None:
         healthy = status.get("poisoned") is False
@@ -82,21 +118,27 @@ def admitted_resident(declaration_reference, *, query=True):
             raise RuntimeError("Registered resident is poisoned or its health evidence is invalid; no automatic reuse")
     return {"declaration": declaration, "declaration_reference": declaration_reference,
             "ready": ready, "ready_reference": reference(ready_path), "identity": identity, "status": status,
-            "unit_state": unit_state}
+            "unit_state": unit_state, 'registration': registration_reference,
+            'resident_id': registration['resident_id'] if registration else declaration.get('resident_id'),
+            'preparation_only': registration is None}
 
 
-def available_residents(registry_reference):
-    registry = read_ref(registry_reference)
-    if registry.get("version") != "v054-resident-registry-v1" or set(registry["residents"]) != {"REF", "MATCH_PROJECT"}:
-        raise ValueError("The two fixed independent resident declarations are required")
+def available_residents(pool_policy_reference):
+    """Only active admitted registrations; occupancy never rechecks free GPU memory."""
     available = {}
-    for mode, item in registry["residents"].items():
-        observed = admitted_resident(item)
+    seen_devices = set()
+    for registration in registrations(pool_policy_reference):
+        item = registration['declaration']
+        observed = admitted_resident(item, pool_policy_reference=pool_policy_reference,
+                                     registration_reference=registration['event_reference'])
         if observed is not None and observed["status"].get("active_claim") is None:
             declaration = observed["declaration"]
-            if declaration["mode"] != mode:
-                raise ValueError("Resident registry mode changed")
-            available[declaration["gpu_index"]] = observed
+            if declaration['gpu_uuid'] in seen_devices:
+                raise ValueError('Two active residents claim the same physical GPU')
+            seen_devices.add(declaration['gpu_uuid'])
+            if declaration["mode"] != registration['mode']:
+                raise ValueError("Resident registration mode changed")
+            available[registration['resident_id']] = observed
     return available
 
 
@@ -118,6 +160,52 @@ def suspend_registered(declaration, ready):
             "already_submitted_GPU_kernels_not_claimed_cancelled": True, "unsettled_usage": "unknown"}
 
 
+def released_session_evidence(session):
+    """A settled released claim cannot poison an independently idle resident."""
+    root = Path(session["session_root"])
+    path = root / "release.json"
+    if not path.exists():
+        return None
+    ticket = reference(root / "session.json")
+    if read_ref(ticket) != session:
+        raise ValueError("Saved resident session identity differs from the released claim")
+    release = json.loads(path.read_text())
+    if release.get("session") != ticket:
+        raise ValueError("Release is not bound to this exact saved session")
+    result = release["result"]
+    if result.get("claim_id") != session["claim_id"]:
+        raise ValueError("Release claim identity changed")
+    declaration = session["resident_declaration"]
+    if declaration["mode"] == "REF":
+        if (any(result.get(key) is not True for key in (
+                "released", "quiescent", "resident_still_loaded", "engine_paused", "cache_reset"))
+                or result.get("engine_unfinished") != 0 or result.get("weights_unloaded") is not False):
+            raise ValueError("REF release does not prove fully settled model/cache state")
+    else:
+        proof = result.get("quiescence", {})
+        if (result.get("state") != "released" or proof.get("owner_idle") is not True
+                or proof.get("model_busy") is not False or proof.get("active_session") is not None
+                or proof.get("learning_unchanged") is not True
+                or proof.get("rng_restored_exactly") is not True
+                or proof.get("weights_reloaded") is not False):
+            raise ValueError("Raw owner release does not prove independent-window closure")
+    ready = session["resident_ready"]
+    if process_identity(ready["host_process"]["pid"]) != ready["host_process"]:
+        raise ValueError("Released resident process identity changed")
+    status = admin_client(declaration, session["admin_identity"], timeout=2).call("status")
+    if declaration["mode"] == "REF":
+        idle = (status.get("poisoned") is False and status.get("phase") == "idle"
+                and status.get("active_claim") is None and status.get("inflight") == 0)
+    else:
+        idle = (status.get("resident") is True and "poisoned" in status
+                and status["poisoned"] is None and status.get("state") == "idle"
+                and status.get("active_claim") is None and status.get("inflight") is None)
+    if not idle:
+        raise ValueError("The released resident is not independently healthy and idle")
+    return {"release": reference(path), "session": ticket, "status": status,
+            "resident_host_process": ready["host_process"]}
+
+
 def poison_session(session, reason):
     root = Path(session["session_root"])
     marker = root / "poison.json"
@@ -125,6 +213,17 @@ def poison_session(session, reason):
         return json.loads(marker.read_text())
     declaration, ready = session["resident_declaration"], session["resident_ready"]
     value = {"claim_id": session["claim_id"], "poisoned": True, "reason": reason, "automatic_reuse": False}
+    try:
+        settled = released_session_evidence(session)
+    except BaseException as error:
+        value["release_guard_error"] = {"type": type(error).__name__, "message": str(error)}
+    else:
+        if settled is not None:
+            notice = {"claim_id": session["claim_id"], "poisoned": False,
+                      "reason": reason, "resident_poison_skipped": "exact_released_session_and_live_idle",
+                      "administrative_episode_failure_preserved": True, "evidence": settled}
+            atomic_write(root / "post-release-failure.json", json_bytes(notice))
+            return notice
     try:
         value["admin"] = admin_client(declaration, session["admin_identity"], timeout=2).call(
             "poison", claim_id=session["claim_id"], reason=reason)
@@ -143,13 +242,19 @@ def poison_session(session, reason):
 
 class ResidentSession:
     """Acquire before the formal claim; release only after trusted model quiescence."""
-    def __init__(self, declaration_reference, *, slot, claim_id, authorization, directory):
+    def __init__(self, declaration_reference, *, slot, claim_id, authorization, directory,
+                 pool_policy_reference, registration_reference):
         self.lock = self.session = None
         self.directory = Path(directory)
-        observed = admitted_resident(declaration_reference)
+        if pool_policy_reference is None or registration_reference is None:
+            raise ValueError('A formal session requires its active independently admitted registration')
+        observed = admitted_resident(declaration_reference, pool_policy_reference=pool_policy_reference,
+                                     registration_reference=registration_reference)
         if observed is None:
             raise BlockingIOError("Registered resident is not ready; no slot claimed")
         declaration = observed["declaration"]
+        if declaration['mode'] != ('REF' if slot['arm'] == 'REF' else 'MATCH_PROJECT'):
+            raise ValueError('A task arm cannot use another resident numerical mode')
         self.lock = Path(declaration["session_lock_path"]).open("a+")
         try:
             fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -164,6 +269,8 @@ class ResidentSession:
                             "resident_reference": declaration_reference, "resident_declaration": declaration,
                             "resident_ready": observed["ready"], "admin_identity": observed["identity"],
                             "host_process": process_identity(os.getpid()), "session_root": str(self.directory),
+                            'resident_id': observed['resident_id'], 'resident_pool_policy': pool_policy_reference,
+                            'resident_registration': registration_reference,
                             "acquired": acquired, "authorization": authorization}
             self.reference = write_new(self.directory / "session.json", self.session)
             identity = acquired["identity"] if declaration["mode"] == "REF" else acquired["session_identity"]

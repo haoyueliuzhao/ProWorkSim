@@ -35,7 +35,7 @@ def properties(unit, *, manager="user"):
     if not UNIT.fullmatch(unit):
         raise ValueError("Only a dedicated v054 episode service may be supervised")
     fields = ("Id", "InvocationID", "MainPID", "ControlGroup", "ActiveState",
-              "SubState", "KillMode", "SendSIGKILL", "Result")
+              "SubState", "KillMode", "SendSIGKILL", "Result", "LoadState")
     text = _systemctl("show", unit, "--property=" + ",".join(fields), manager=manager)
     return dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
 
@@ -129,14 +129,25 @@ def assert_quiet(scope):
     state = properties(scope["unit"], manager=scope.get("manager", "user"))
     if state.get("InvocationID") not in ("", scope["invocation_id"]):
         raise ValueError("A reused unit is not the registered process")
-    if (state.get("KillMode") != "control-group"
+    collected = state.get("LoadState") == "not-found"
+    if (state.get("ControlGroup") not in ("", scope["cgroup"])
+            or (collected and state.get("InvocationID") != "")):
+        raise ValueError("Quiet service identity differs from its registered scope")
+    if ((not collected and state.get("KillMode") != "control-group")
             or state.get("ActiveState") not in {"inactive", "failed"}
             or int(state.get("MainPID", "0")) != 0 or _populated(scope["cgroup"])):
         raise RuntimeError("Episode service or a descendant is still alive")
+    try:
+        actual = process_identity(scope["main"]["pid"])
+    except FileNotFoundError:
+        actual = None
+    if actual == scope["main"]:
+        raise RuntimeError("The registered main process still exists")
     return {"unit": scope["unit"], "invocation_id": scope["invocation_id"],
             "cgroup": scope["cgroup"], "populated": False,
             "active_state": state["ActiveState"], "result": state.get("Result"),
-            "main_pid": 0}
+            "main_pid": 0, "registered_main_exited": True,
+            "unit_garbage_collected": collected}
 
 
 def assert_outer_launcher_exited(scope):
@@ -163,7 +174,18 @@ def stop_owned(scope):
         if process_identity(int(state["MainPID"])) != scope["main"]:
             raise ValueError("Registered host process identity changed")
     # --no-block avoids tying supervision to a hung process or closed-ack.
-    _systemctl("stop", "--no-block", scope["unit"], manager=manager)
+    try:
+        _systemctl("stop", "--no-block", scope["unit"], manager=manager)
+    except subprocess.CalledProcessError as error:
+        # A short session sentinel can exit and be garbage-collected between
+        # show and stop. Only the exact vanished unit plus kernel/PID evidence
+        # permits closure; permissions and all other stop failures propagate.
+        if error.returncode != 5:
+            raise
+        quiet = assert_quiet(scope)
+        if not quiet["unit_garbage_collected"]:
+            raise
+        return {**quiet, "stop_returncode": 5, "stop_race": "natural_exit_then_unit_gc"}
     deadline = time.monotonic() + float(scope["stop_seconds"]) + 10
     while time.monotonic() < deadline:
         try:

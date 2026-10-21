@@ -1,4 +1,4 @@
-"""GPU6 resident launcher: unchanged raw owner once, persistent allocator and physical lease."""
+"""A registered GPU 0..7 raw resident: unchanged owner, persistent allocator and lease."""
 from __future__ import annotations
 
 import argparse
@@ -15,11 +15,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
 from proworksim.software_benchmark_candidates_v054 import checked, reference, write_new  # noqa: E402
 from proworksim.software_benchmark_gpu_lease_v054 import GpuLease  # noqa: E402
+from proworksim.software_benchmark_deployment_gpu_v054 import (  # noqa: E402
+    select_deployment_card, raw_owner_resource_binding, validate_card_identity, runtime_gpu_arguments,
+)
+from proworksim.software_benchmark_resident_pool_v054 import validate_pool_policy  # noqa: E402
 from proworksim.software_benchmark_lease_handoff_v054 import _pidfd_open, _pidfd_kill  # noqa: E402
 from proworksim.software_benchmark_match_v054 import CONTRACT  # noqa: E402
 from proworksim.software_benchmark_service_factory_v054 import MODEL, capacity_admission  # noqa: E402
 from proworksim.software_benchmark_supervision_v054 import process_identity  # noqa: E402
-from proworksim.storage import digest, json_bytes  # noqa: E402
+from proworksim.storage import atomic_write, digest, json_bytes  # noqa: E402
+
+UNIT = r"proworksim-v054-resident-mp-g[0-7]-[0-9a-f]{8}\.service"
 
 
 def wait_ready(path, process, timeout):
@@ -32,7 +38,7 @@ def wait_ready(path, process, timeout):
 
 def drain_registered_cgroup(group, unit):
     if (not group.startswith("/user.slice/") or not group.endswith("/" + unit)
-            or ".." in group.split("/") or not re.fullmatch(r"proworksim-v054-resident-mp-r[0-9]+\.service", unit)):
+            or ".." in group.split("/") or not re.fullmatch(UNIT, unit)):
         raise ValueError("Unexpected resident cgroup")
     while True:
         members = set()
@@ -64,9 +70,14 @@ def main():
     if spec_ref["sha256"] != args.sha256:
         raise ValueError("Resident startup specification changed")
     spec = json.loads(args.spec.read_text())
-    if (spec["version"] != "v054-match-resident-spec-v1" or spec["card"]["index"] != 6
-            or not re.fullmatch(r"proworksim-v054-resident-mp-r[0-9]+\.service", spec["unit"])):
-        raise ValueError("Only the explicit GPU6 raw resident deployment is supported")
+    validate_card_identity(spec['card'])
+    policy = validate_pool_policy(spec['pool_policy'])
+    if (spec["version"] != "v054-match-resident-spec-v2"
+            or spec['card']['index'] not in policy['physical_gpus']
+            or not re.fullmatch(UNIT, spec["unit"])
+            or not spec['unit'].startswith('proworksim-v054-resident-mp-g' + str(spec['card']['index']) + '-')
+            or not re.fullmatch(r'[a-z0-9-]+', spec.get('resident_id', ''))):
+        raise ValueError("Only an explicitly registered dynamic raw resident may be launched")
     unit = dict(line.split("=", 1) for line in subprocess.check_output([
         "systemctl", "--user", "show", spec["unit"], "--property=MainPID,InvocationID,ControlGroup"],
         text=True).splitlines())
@@ -75,7 +86,7 @@ def main():
     for frozen in spec["sources"]:
         checked(frozen)
     capacity_admission("MATCH", spec["capacity_receipt"])
-    from tools.prepare_model_capacity_v054 import eligible, gpu_rows, source_identity
+    from tools.prepare_model_capacity_v054 import gpu_rows, source_identity
     capacity = json.loads(checked(spec["capacity_receipt"]).read_text())
     if source_identity() != capacity["source"] or json.loads(checked(spec["contract"]).read_text()) != CONTRACT:
         raise ValueError("Original checkpoint identity or numerical contract differs")
@@ -88,23 +99,36 @@ def main():
     if not root.is_relative_to(ROOT / "runs/software-benchmark-v054") or not short.is_relative_to(ROOT / "runs/v054-gpu"):
         raise ValueError("Persistent artifacts must remain in the project runtime roots")
     root.mkdir(parents=True, exist_ok=True)
-    write_new(root / "launcher-started.json", {"source_spec": spec_ref,
-              "host_process": process_identity(os.getpid()), "automatic_restart": False})
-    short.mkdir(parents=True, mode=0o700, exist_ok=True)
-    cache = root / "cache"
-    cache.mkdir()
+    if (root / 'launcher-started.json').exists():
+        raise ValueError('A previous actual startup may not be replayed')
     lease, children = None, []
     def stop(*_):
         raise SystemExit("Explicit resident shutdown")
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     try:
-        lease = GpuLease(spec["card"]["uuid"])
-        card = next(card for card in eligible(gpu_rows(), "MATCH") if card["uuid"] == spec["card"]["uuid"])
+        reason = 'gpu_lease_busy'
+        try:
+            lease = GpuLease(spec["card"]["uuid"])
+            reason = 'gpu_capacity_gate'
+            card = select_deployment_card(gpu_rows(), spec['card'], 'MATCH_PROJECT')
+            if card['name'] not in policy['allowed_gpu_names']:
+                raise ValueError('Actual GPU type is outside the fixed deployment policy')
+        except BlockingIOError as error:
+            atomic_write(root / 'status.json', json_bytes({
+                'status': 'resource_not_ready', 'reason_code': reason,
+                'model_load_started': False, 'model_calls': 0,
+                'source_spec': spec_ref, 'error': str(error)}))
+            return 75
+        write_new(root / "launcher-started.json", {"source_spec": spec_ref,
+                  "host_process": process_identity(os.getpid()), "automatic_restart": False,
+                  'resident_id': spec['resident_id'], 'pool_policy': spec['pool_policy'],
+                  'observed_card': card})
+        short.mkdir(parents=True, mode=0o700, exist_ok=True)
+        cache = root / "cache"
+        cache.mkdir()
         write_new(root / "gpu-lease.json", lease.receipt)
-        binding = {"version": "software-learning-resources-v0.50-r3", "gpu_index": 6,
-                   "gpu_uuid": card["uuid"], "sampled_free_mib": card["free_mib"],
-                   "target_mib": min(73728, card["free_mib"] - 1024)}
+        binding = raw_owner_resource_binding(card)
         env = ["PYTHONPATH=" + str(ROOT / "src") + ":" + str(ROOT),
             "HF_HUB_OFFLINE=1", "TRANSFORMERS_OFFLINE=1", "HF_DATASETS_OFFLINE=1",
             "LITELLM_LOCAL_MODEL_COST_MAP=True", "VLLM_NO_USAGE_STATS=1", "DO_NOT_TRACK=1",
@@ -120,7 +144,9 @@ def main():
             "--socket", str(short / "codec.sock"), "--identity-output", str(codec_identity)], start_new_session=True)
         children.append(codec)
         wait_ready(short / "codec.sock", codec, 180)
-        owner = subprocess.Popen([runtime, "--write-project", "--gpu", "6", "/usr/bin/env", *env,
+        atomic_write(root / 'status.json', json_bytes({'status': 'loading', 'source_spec': spec_ref,
+                     'model_load_started': True, 'model_calls': 0, 'observed_card': card}))
+        owner = subprocess.Popen([runtime, "--write-project", *runtime_gpu_arguments(card), "/usr/bin/env", *env,
             "PROWORKSIM_V053_GPU_BINDING=" + json.dumps(binding),
             str(ROOT / "runs/v016-sdk/resident-venv/bin/python"),
             str(ROOT / "tools/serve_resident_owner_v054.py"), "--socket", str(short / "admin.sock"),
@@ -135,10 +161,13 @@ def main():
         children.append(owner)
         wait_ready(root / "owner-service/service-ready.json", owner, 1800)
         write_new(spec["ready_path"], {"ready": True, "resident": True, "source_spec": spec_ref,
-            "host_process": process_identity(os.getpid()), "gpu_index": 6, "gpu_uuid": card["uuid"],
+            "host_process": process_identity(os.getpid()), "gpu_index": card['index'], "gpu_uuid": card["uuid"],
+            'resident_id': spec['resident_id'], 'pool_policy': spec['pool_policy'], 'resource_binding': binding,
             "gpu_lease_held": True, "identity": reference(spec["identity_path"]),
             "admin": {"socket_path": str(short / "admin.sock")}, "unit": spec["unit"],
             "invocation_id": unit["InvocationID"], "cgroup": unit["ControlGroup"]})
+        atomic_write(root / 'status.json', json_bytes({'status': 'ready', 'source_spec': spec_ref,
+                     'model_load_started': True, 'model_calls': 0, 'ready': reference(spec['ready_path'])}))
         return owner.wait()
     finally:
         for child in reversed(children):

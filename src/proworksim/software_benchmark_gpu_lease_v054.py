@@ -19,7 +19,7 @@ class GpuLease:
             device = (root / (gpu_uuid + ".lock")).open("a+b")
             self.handles.append(device)
             fcntl.flock(device, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            for index in range(4):
+            for index in range(8):
                 gate = (root / ("resident-slot-" + str(index) + ".lock")).open("a+b")
                 try:
                     fcntl.flock(gate, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -28,11 +28,11 @@ class GpuLease:
                     continue
                 self.handles.append(gate)
                 self.receipt = {"gpu_uuid": gpu_uuid, "physical_device_lock": str(device.name),
-                                "global_resident_gate": str(gate.name), "maximum_residents": 4,
+                                "global_resident_gate": str(gate.name), "maximum_residents": 8,
                                 "GPU_memory_allocated_by_lease": 0}
                 break
             else:
-                raise BlockingIOError("All four resident leases are already held")
+                raise BlockingIOError("All eight resident leases are already held")
         except BaseException:
             self.close()
             raise

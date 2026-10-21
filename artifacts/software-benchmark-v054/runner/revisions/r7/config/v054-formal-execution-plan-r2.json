@@ -1,0 +1,52 @@
+{
+  "version": "v054-formal-execution-plan-r2",
+  "authorization_path": "config/v054-formal-authorization-r1.json",
+  "slots_path": "artifacts/software-benchmark-v054/manifests/slots.json",
+  "slots_sha256": "55899d0b83a5bab1082bccb50496fb6c1d7111ecb951fc4d61c222be19d88676",
+  "planned_distinct_tasks": 500,
+  "planned_slots": 1500,
+  "aggregate_input_output_token_upper_bound": 750000000,
+  "conditions": {
+    "REF": "config/v054-condition-REF.json",
+    "MATCH": "config/v054-condition-MATCH.json",
+    "PROJECT": "config/v054-condition-PROJECT.json"
+  },
+  "dispatch_order": "Scan original slot_index; dispatch earliest unclaimed slot whose fixed GPU is ready; retain original relative order within each GPU lane; no score-based selection",
+  "physical_gpu_by_arm": {
+    "REF": 7,
+    "MATCH": 6,
+    "PROJECT": 6
+  },
+  "maximum_active_generation_episodes": 2,
+  "maximum_active_official_graders": 2,
+  "resource_poll_seconds": 30,
+  "automatic_model_retries": 0,
+  "automatic_grading_retries": 0,
+  "resource_busy_policy": "Queue without claim only for explicit resource_not_ready with model_calls=0, entered=false and no global claim",
+  "system_fault_policy": "Pause new generation; already running episodes close under their own watchdog; score already locked candidates once",
+  "ref_endpoint": "http://127.0.0.1:18054",
+  "ref_maximum_residents": 1,
+  "state_recovery": "Persist intent before unique transient unit launch; reconcile durable worker completion and global claims; ambiguous launch or missing result pauses without replay",
+  "completion": "All 1500 unique generations closed and all required official r5 endpoints returned determinate reports; retain technical unknowns with original denominator",
+  "project_endpoints": [
+    "terminal_code",
+    "last_legal_delivery_if_present"
+  ],
+  "project_absent_legal_delivery": "R_delivery=0, no_legal_submission; no fabricated official grading",
+  "other_arms_delivery": "not_applicable",
+  "score_reuse": false,
+  "hidden_feedback_to_actor": false,
+  "capacity_bindings_required": true,
+  "formal_source_freeze_required": true,
+  "automatic_start_from_plan": false,
+  "training": false,
+  "model_adapter": null,
+  "supersedes": "config/v054-formal-execution-plan-r1.json",
+  "scheduling_authorization": {
+    "user_instruction": "三组实验，可以先安排已经准备完毕的任务",
+    "applies_before_first_formal_model_episode": true,
+    "scope": "Resource-ready dispatch only; original task, arm, seed and budget identities retained"
+  },
+  "actual_order_evidence": "generation_dispatches preserves intent ordinal, actual worker started receipt/time and global claim receipt/file timestamp",
+  "prior_source_snapshot": "artifacts/software-benchmark-v054/runner/revisions/r2/snapshot-index.json"
+}

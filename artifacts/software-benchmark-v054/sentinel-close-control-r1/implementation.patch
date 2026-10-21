@@ -1,0 +1,132 @@
+--- a/src/proworksim/software_benchmark_supervision_v054.py
++++ b/src/proworksim/software_benchmark_supervision_v054.py
+@@ -35,7 +35,7 @@
+     if not UNIT.fullmatch(unit):
+         raise ValueError("Only a dedicated v054 episode service may be supervised")
+     fields = ("Id", "InvocationID", "MainPID", "ControlGroup", "ActiveState",
+-              "SubState", "KillMode", "SendSIGKILL", "Result")
++              "SubState", "KillMode", "SendSIGKILL", "Result", "LoadState")
+     text = _systemctl("show", unit, "--property=" + ",".join(fields), manager=manager)
+     return dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
+ 
+@@ -129,14 +129,25 @@
+     state = properties(scope["unit"], manager=scope.get("manager", "user"))
+     if state.get("InvocationID") not in ("", scope["invocation_id"]):
+         raise ValueError("A reused unit is not the registered process")
+-    if (state.get("KillMode") != "control-group"
++    collected = state.get("LoadState") == "not-found"
++    if (state.get("ControlGroup") not in ("", scope["cgroup"])
++            or (collected and state.get("InvocationID") != "")):
++        raise ValueError("Quiet service identity differs from its registered scope")
++    if ((not collected and state.get("KillMode") != "control-group")
+             or state.get("ActiveState") not in {"inactive", "failed"}
+             or int(state.get("MainPID", "0")) != 0 or _populated(scope["cgroup"])):
+         raise RuntimeError("Episode service or a descendant is still alive")
++    try:
++        actual = process_identity(scope["main"]["pid"])
++    except FileNotFoundError:
++        actual = None
++    if actual == scope["main"]:
++        raise RuntimeError("The registered main process still exists")
+     return {"unit": scope["unit"], "invocation_id": scope["invocation_id"],
+             "cgroup": scope["cgroup"], "populated": False,
+             "active_state": state["ActiveState"], "result": state.get("Result"),
+-            "main_pid": 0}
++            "main_pid": 0, "registered_main_exited": True,
++            "unit_garbage_collected": collected}
+ 
+ 
+ def assert_outer_launcher_exited(scope):
+@@ -163,7 +174,18 @@
+         if process_identity(int(state["MainPID"])) != scope["main"]:
+             raise ValueError("Registered host process identity changed")
+     # --no-block avoids tying supervision to a hung process or closed-ack.
+-    _systemctl("stop", "--no-block", scope["unit"], manager=manager)
++    try:
++        _systemctl("stop", "--no-block", scope["unit"], manager=manager)
++    except subprocess.CalledProcessError as error:
++        # A short session sentinel can exit and be garbage-collected between
++        # show and stop. Only the exact vanished unit plus kernel/PID evidence
++        # permits closure; permissions and all other stop failures propagate.
++        if error.returncode != 5:
++            raise
++        quiet = assert_quiet(scope)
++        if not quiet["unit_garbage_collected"]:
++            raise
++        return {**quiet, "stop_returncode": 5, "stop_race": "natural_exit_then_unit_gc"}
+     deadline = time.monotonic() + float(scope["stop_seconds"]) + 10
+     while time.monotonic() < deadline:
+         try:
+--- a/src/proworksim/software_benchmark_resident_session_v054.py
++++ b/src/proworksim/software_benchmark_resident_session_v054.py
+@@ -160,6 +160,52 @@
+             "already_submitted_GPU_kernels_not_claimed_cancelled": True, "unsettled_usage": "unknown"}
+ 
+ 
++def released_session_evidence(session):
++    """A settled released claim cannot poison an independently idle resident."""
++    root = Path(session["session_root"])
++    path = root / "release.json"
++    if not path.exists():
++        return None
++    ticket = reference(root / "session.json")
++    if read_ref(ticket) != session:
++        raise ValueError("Saved resident session identity differs from the released claim")
++    release = json.loads(path.read_text())
++    if release.get("session") != ticket:
++        raise ValueError("Release is not bound to this exact saved session")
++    result = release["result"]
++    if result.get("claim_id") != session["claim_id"]:
++        raise ValueError("Release claim identity changed")
++    declaration = session["resident_declaration"]
++    if declaration["mode"] == "REF":
++        if (any(result.get(key) is not True for key in (
++                "released", "quiescent", "resident_still_loaded", "engine_paused", "cache_reset"))
++                or result.get("engine_unfinished") != 0 or result.get("weights_unloaded") is not False):
++            raise ValueError("REF release does not prove fully settled model/cache state")
++    else:
++        proof = result.get("quiescence", {})
++        if (result.get("state") != "released" or proof.get("owner_idle") is not True
++                or proof.get("model_busy") is not False or proof.get("active_session") is not None
++                or proof.get("learning_unchanged") is not True
++                or proof.get("rng_restored_exactly") is not True
++                or proof.get("weights_reloaded") is not False):
++            raise ValueError("Raw owner release does not prove independent-window closure")
++    ready = session["resident_ready"]
++    if process_identity(ready["host_process"]["pid"]) != ready["host_process"]:
++        raise ValueError("Released resident process identity changed")
++    status = admin_client(declaration, session["admin_identity"], timeout=2).call("status")
++    if declaration["mode"] == "REF":
++        idle = (status.get("poisoned") is False and status.get("phase") == "idle"
++                and status.get("active_claim") is None and status.get("inflight") == 0)
++    else:
++        idle = (status.get("resident") is True and "poisoned" in status
++                and status["poisoned"] is None and status.get("state") == "idle"
++                and status.get("active_claim") is None and status.get("inflight") is None)
++    if not idle:
++        raise ValueError("The released resident is not independently healthy and idle")
++    return {"release": reference(path), "session": ticket, "status": status,
++            "resident_host_process": ready["host_process"]}
++
++
+ def poison_session(session, reason):
+     root = Path(session["session_root"])
+     marker = root / "poison.json"
+@@ -167,6 +213,17 @@
+         return json.loads(marker.read_text())
+     declaration, ready = session["resident_declaration"], session["resident_ready"]
+     value = {"claim_id": session["claim_id"], "poisoned": True, "reason": reason, "automatic_reuse": False}
++    try:
++        settled = released_session_evidence(session)
++    except BaseException as error:
++        value["release_guard_error"] = {"type": type(error).__name__, "message": str(error)}
++    else:
++        if settled is not None:
++            notice = {"claim_id": session["claim_id"], "poisoned": False,
++                      "reason": reason, "resident_poison_skipped": "exact_released_session_and_live_idle",
++                      "administrative_episode_failure_preserved": True, "evidence": settled}
++            atomic_write(root / "post-release-failure.json", json_bytes(notice))
++            return notice
+     try:
+         value["admin"] = admin_client(declaration, session["admin_identity"], timeout=2).call(
+             "poison", claim_id=session["claim_id"], reason=reason)

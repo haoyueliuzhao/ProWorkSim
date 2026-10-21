@@ -119,8 +119,13 @@ def status(root=ROOT):
     for state in capacity_states:
         capacity_results.update(state.get("results", {}))
     capacity_admission = read(artifacts / "native-environment/model-capacity-admission.json")
-    authorization = read(root / "config/v054-formal-authorization-r1.json")
     formal_queue = read(run / "formal-queue-r1/state.json")
+    active_bindings = read(Path(formal_queue.get("bindings", {}).get("path",
+                                  str(run / "not-started-bindings.json"))))
+    authorization = read(Path(active_bindings.get("authorization", {}).get("path",
+                                  str(root / "config/v054-formal-authorization-r1.json"))))
+    pool_policy = active_bindings.get("resident_pool_policy")
+    prewarm_policy = active_bindings.get("prewarm_policy")
     resident_required = bool(read(root / "config/v054-condition-REF.json").get("residency_protocol"))
     resident = read(artifacts / "native-environment/resident-admission-r1.json")
     resident_ready = (resident.get("version") == "v054-resident-admission-v1"
@@ -219,6 +224,10 @@ def status(root=ROOT):
                                                 and (not resident_required or resident_ready)),
         "persistent_resident_required": resident_required,
         "persistent_resident_sessions_admitted": resident_ready,
+        "dynamic_gpu_policy": pool_policy,
+        "cpu_prewarm_policy": prewarm_policy,
+        "authorized_physical_gpus": authorization.get("physical_gpus", []),
+        "maximum_active_generation_episodes": authorization.get("maximum_active_generation_episodes"),
         "remaining_solver_gates": gates,
         "model_capacity_preparation": {
             "status": capacity.get("status", "not_started"),
