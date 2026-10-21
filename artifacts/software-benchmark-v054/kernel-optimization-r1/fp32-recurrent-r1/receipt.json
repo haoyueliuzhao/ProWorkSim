@@ -1,0 +1,232 @@
+{
+  "version": "v054-fp32-recurrent-control-r1",
+  "plan": {
+    "path": "/tmp/v054-fp32-recurrent-r1/plan.json",
+    "sha256": "5f834cad3463a36df710002073939a5ac8ab8e3a9dfbf226c57a1ac224da0dfa",
+    "bytes": 3661
+  },
+  "source": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/overlay/proworksim_fp32_recurrent.py",
+    "sha256": "12bdbfabfab9f346f43e53f518341ea8b7c8a3e30e19269048fba601ac4177d2",
+    "bytes": 6694
+  },
+  "status": "completed",
+  "cases": [
+    {
+      "name": "one_step_actual_width_zero_state",
+      "kind": "delta",
+      "checks": {
+        "output": {
+          "shape": [
+            1,
+            1,
+            32,
+            128
+          ],
+          "reference_dtype": "torch.bfloat16",
+          "optimized_dtype": "torch.bfloat16",
+          "shape_equal": true,
+          "dtype_equal": true,
+          "finite": true,
+          "bitwise_equal": true,
+          "max_absolute_error": 0.0,
+          "rmse": 0.0,
+          "reference_rms": 0.0019666284788399935,
+          "reference_max_absolute": 0.0189208984375,
+          "normalized_rmse": 0.0,
+          "normalized_max_absolute_error": 0.0,
+          "exact_required": false,
+          "passed": true
+        },
+        "state": {
+          "shape": [
+            1,
+            32,
+            128,
+            128
+          ],
+          "reference_dtype": "torch.float32",
+          "optimized_dtype": "torch.float32",
+          "shape_equal": true,
+          "dtype_equal": true,
+          "finite": true,
+          "bitwise_equal": false,
+          "max_absolute_error": 2.9802322387695312e-08,
+          "rmse": 1.0761996849240063e-09,
+          "reference_rms": 0.022370127961039543,
+          "reference_max_absolute": 0.335423082113266,
+          "normalized_rmse": 4.810878537656765e-08,
+          "normalized_max_absolute_error": 8.884994497078658e-08,
+          "exact_required": false,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "first_call_ms_including_compile": {
+        "reference": 68.33336967974901,
+        "optimized": 1105.442276224494
+      },
+      "steady_wall_ms": {
+        "reference": [
+          2.161961980164051,
+          0.4450548440217972,
+          2.5557763874530792,
+          2.5518666952848434,
+          2.5552762672305107
+        ],
+        "optimized": [
+          0.32786373049020767,
+          0.30220672488212585,
+          2.432340756058693,
+          2.4506747722625732,
+          2.4453196674585342
+        ]
+      },
+      "steady_wall_median_ms": {
+        "reference": 2.5518666952848434,
+        "optimized": 2.432340756058693
+      },
+      "observed_median_ratio_reference_over_optimized": 1.0491402937390348,
+      "timing_includes_python_dispatch_and_same_state_clone": true,
+      "shared_gpu_interference_uncontrolled": true,
+      "torch_peak_allocated_bytes": 10610176,
+      "torch_peak_reserved_bytes": 23068672,
+      "initial_state_unchanged": true,
+      "batch_size": 1,
+      "steps": 1,
+      "reference_input_dtype": "torch.bfloat16",
+      "initial_state_strides": null,
+      "per_step_qkv_strides": [
+        4096,
+        4096,
+        128,
+        1
+      ]
+    },
+    {
+      "name": "four_steps_actual_width_strided",
+      "kind": "delta",
+      "checks": {
+        "output": {
+          "shape": [
+            2,
+            4,
+            32,
+            128
+          ],
+          "reference_dtype": "torch.bfloat16",
+          "optimized_dtype": "torch.bfloat16",
+          "shape_equal": true,
+          "dtype_equal": true,
+          "finite": true,
+          "bitwise_equal": false,
+          "max_absolute_error": 1.52587890625e-05,
+          "rmse": 8.495995018620306e-08,
+          "reference_rms": 0.005047186277806759,
+          "reference_max_absolute": 0.034912109375,
+          "normalized_rmse": 1.6833131473626168e-05,
+          "normalized_max_absolute_error": 0.00043706293706293706,
+          "exact_required": false,
+          "passed": true
+        },
+        "state": {
+          "shape": [
+            2,
+            32,
+            128,
+            128
+          ],
+          "reference_dtype": "torch.float32",
+          "optimized_dtype": "torch.float32",
+          "shape_equal": true,
+          "dtype_equal": true,
+          "finite": true,
+          "bitwise_equal": false,
+          "max_absolute_error": 8.940696716308594e-08,
+          "rmse": 4.237415307528636e-09,
+          "reference_rms": 0.038309939205646515,
+          "reference_max_absolute": 0.3645511865615845,
+          "normalized_rmse": 1.106087713891251e-07,
+          "normalized_max_absolute_error": 2.4525216336933306e-07,
+          "exact_required": false,
+          "passed": true
+        }
+      },
+      "passed": true,
+      "first_call_ms_including_compile": {
+        "reference": 7.8998710960149765,
+        "optimized": 607.5880564749241
+      },
+      "steady_wall_ms": {
+        "reference": [
+          2.9579289257526398,
+          1.1553075164556503,
+          2.94379610568285,
+          2.957911230623722,
+          2.96887569129467
+        ],
+        "optimized": [
+          2.4931123480200768,
+          0.7332265377044678,
+          2.4833064526319504,
+          2.4800030514597893,
+          2.4828510358929634
+        ]
+      },
+      "steady_wall_median_ms": {
+        "reference": 2.957911230623722,
+        "optimized": 2.4828510358929634
+      },
+      "observed_median_ratio_reference_over_optimized": 1.191336567463421,
+      "timing_includes_python_dispatch_and_same_state_clone": true,
+      "shared_gpu_interference_uncontrolled": true,
+      "torch_peak_allocated_bytes": 38193664,
+      "torch_peak_reserved_bytes": 44040192,
+      "initial_state_unchanged": true,
+      "batch_size": 2,
+      "steps": 4,
+      "reference_input_dtype": "torch.bfloat16",
+      "initial_state_strides": [
+        524288,
+        16384,
+        1,
+        128
+      ],
+      "per_step_qkv_strides": [
+        16384,
+        4096,
+        128,
+        1
+      ]
+    }
+  ],
+  "model_loads": 0,
+  "model_requests": 0,
+  "official_scoring_calls": 0,
+  "operator_only": true,
+  "old_FLA_controls_repeated": false,
+  "installation": {
+    "version": "v054-fp32-recurrent-r1",
+    "symbol": "torch_recurrent_gated_delta_rule",
+    "source": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/overlay/proworksim_fp32_recurrent.py",
+    "original_source": "/data0/zhuxinrui/projects/ProWorkSim/runs/v016-sdk/resident-venv/lib/python3.12/site-packages/transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "implementation": "_recurrent_fp32",
+    "num_warps": 8,
+    "num_stages": 1,
+    "enable_fp_fusion": false,
+    "autotune": false,
+    "other_three_reference": true
+  },
+  "torch_version": "2.6.0+cu124",
+  "cuda_version": "12.4",
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "passed": true,
+  "torch_peak_allocated_bytes": 38193664,
+  "torch_peak_reserved_bytes": 44040192,
+  "optimized_single_step_kernel_calls": 40,
+  "reference_single_step_calls": 40,
+  "initial_rng_seed": 202610210651,
+  "thresholds_unchanged": true,
+  "full_model_equivalence_claimed": false,
+  "formal_deployment": false
+}

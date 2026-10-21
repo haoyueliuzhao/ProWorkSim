@@ -1,0 +1,43 @@
+Kernel model diagnostic r2 — post-observation engineering admission revision
+
+The r1 gate remains failed. In the previously observed neutral preparation,
+raw-logit nRMSE at decode position 47 was 0.031371 (>0.03); observed output IDs
+were equal for all 64 positions, first-prefill logits were byte-identical,
+and raw-T=1 full-vocabulary KL was at most about 1.5e-6. These observations
+motivate this disclosed revision; they are not independent confirmation and
+are not formal MATCH/PROJECT task results. No result is relabelled as passing
+r1, no formal-task score selects a configuration, and all old failed artifacts
+remain in place. controls/original-diagnostic-r1.py additionally retains the
+exact pre-revision staged diagnostic source.
+
+For any scalar c, softmax((logits+c)/T)=softmax(logits/T) mathematically.
+Raw-logit nRMSE can therefore reject a common shift which leaves sampling
+probabilities unchanged. This identity is a measurement rationale; it does
+not establish that every observed kernel difference is a constant shift.
+
+The r2 engineering gate compares all vocabulary coordinates of
+log_softmax(logits.float()/0.7), with actual MATCH/PROJECT sampling top_k=0,
+top_p=1.0. Both KL(reference||optimized)<=1e-4 and maximum absolute probability
+difference<=5e-4 are required at every legal same-prefix prefill/decode
+position. KL accumulates the FP32 sampler log probabilities in FP64 to reduce
+cancellation. Shape, finite, head alignment, RNG restoration, weights and cost
+checks remain necessary. Owner sampling must exactly match this fixed design.
+Original T=1 KL<=0.02 and raw nRMSE<=0.03 remain separately reported as
+original_gate_passed per step, pair and final receipt; the r2 pass does not
+claim the original gate passed. Each pair and cumulative comparison file is
+written before a failed gate raises. Original failed artifacts are untouched.
+
+The same six synthetic requests pair lengths 128/512/16384 with 64 output
+limits and the same paired seeds 202610210601/602/603. Generation, sampled
+outputs and the common-prefix comparison rule are unchanged; no teacher
+forcing or formal tasks are introduced. The previous six preparation calls
+used 1920 actual tokens. New diagnostic maximum 34432 plus six interleave
+requests maximum 61440 yields cumulative maximum 97792<=100000. Previous
+cost is accounted separately rather than zeroed or treated as this new run.
+
+Version, gates, revision and preparation_budget must match
+controls/plan-fields-r2.json exactly in a new hash-pinned plan, with a fresh
+diagnostic_output directory. All other installer, dependency, operator-control
+and provenance references remain exact and unchanged. The custom FP32 Triton
+kernel and installer are not changed. This stage itself runs zero model or GPU
+requests; the CPU control is limited to distribution math and persistence.

@@ -1,0 +1,10 @@
+{
+  "version": "v054-fp32-recurrent-measurement-annotation-r1",
+  "original_receipt_unchanged": true,
+  "field": "cases[].timing_includes_python_dispatch_and_same_state_clone",
+  "inherited_field_value": true,
+  "source_of_field": "Reused original run_case helper",
+  "actual_operation": "Each timed operation reads the same initial state, performs one or four updates with fresh output/state allocations, and torch.cat of outputs. It does not clone initial_state inside the measured operation. run_case clones the initial result state after the first timing only.",
+  "interpretation": "Timing includes Python dispatch, allocator operations, output concatenation and CUDA synchronization on a shared GPU. No isolated kernel latency or full-model speedup is established.",
+  "effect_on_numerical_checks": "None; initial input state immutability was separately tested in both cases."
+}

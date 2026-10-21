@@ -1,0 +1,121 @@
+{
+  "version": "v054-kernel-model-diagnostic-r2",
+  "backend_id": "project-fp32-recurrent-triton-r1",
+  "requests": [
+    [
+      "warm_reference",
+      "reference",
+      128,
+      202610210601
+    ],
+    [
+      "warm_optimized",
+      "optimized",
+      128,
+      202610210601
+    ],
+    [
+      "short_reference",
+      "reference",
+      512,
+      202610210602
+    ],
+    [
+      "short_optimized",
+      "optimized",
+      512,
+      202610210602
+    ],
+    [
+      "long_reference",
+      "reference",
+      16384,
+      202610210603
+    ],
+    [
+      "long_optimized",
+      "optimized",
+      16384,
+      202610210603
+    ]
+  ],
+  "gates": {
+    "sampling": {
+      "temperature": 0.7,
+      "top_k": 0,
+      "top_p": 1.0
+    },
+    "full_vocabulary_kl_reference_to_optimized_max": 0.0001,
+    "full_vocabulary_max_abs_probability_difference_max": 0.0005,
+    "original_raw_temperature": 1.0,
+    "original_kl_reference_to_optimized_max": 0.02,
+    "original_logit_nrmse_max": 0.03,
+    "original_gate_required_for_admission": false,
+    "all_logits_and_logprobs_finite": true,
+    "maximum_requests": 6,
+    "maximum_output_tokens_per_request": 64,
+    "maximum_total_tokens": 34432
+  },
+  "required_environment": {
+    "TRITON_LIBCUDA_PATH": "/opt/host-nvidia",
+    "FLA_DISABLE_TENSOR_CACHE": "1",
+    "USE_HUB_KERNELS": "NO"
+  },
+  "formal_tasks_used": 0,
+  "weight_update_allowed": false,
+  "enabled_symbols": [
+    "torch_recurrent_gated_delta_rule"
+  ],
+  "operator_control": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/admission.json",
+    "sha256": "5b7b31f77295f0470dd1a099ea17fcb495e9522940fb32ba81ba0ee486991097",
+    "bytes": 3203
+  },
+  "dependencies_manifest": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/overlay-manifest.json",
+    "sha256": "9c75e2608854f10e1342eaadbad000ffc18a78dec5d1608e5e334160f8f1d10d",
+    "bytes": 4948
+  },
+  "overlay_path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/overlay",
+  "diagnostic_output": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/model-qualification-r4/execution",
+  "generated_model_calls_planned": 6,
+  "independent_interleave_qualification_calls": 6,
+  "total_preparation_generation_upper_bound": 100000,
+  "already_consumed_candidate_generation_tokens": 1920,
+  "cumulative_token_upper_bound_including_prior_completed_requests": 97792,
+  "fixed_before_first_model_request_for_this_candidate": true,
+  "model_output_bitwise_equality_required": false,
+  "full_panel_equivalence_claimed": false,
+  "prior_numerical_preparation": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/model-qualification-r3/numerical-rejection-admission-audit.json",
+    "sha256": "aa674c80f5b6bf4456063df690c4239076a1734b4ffe2f53ddf006a5067abf8e",
+    "bytes": 3481
+  },
+  "kernel_install_entrypoint": {
+    "reference": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/overlay/proworksim_fp32_recurrent.py",
+      "sha256": "12bdbfabfab9f346f43e53f518341ea8b7c8a3e30e19269048fba601ac4177d2",
+      "bytes": 6694
+    },
+    "module": "proworksim_fp32_recurrent",
+    "function": "install"
+  },
+  "reason": "Post-observation engineering admission revision: compare full-vocabulary probabilities at unchanged actual sampling T=0.7; preserve original raw-logit gate failure as diagnostic. Same FP32 recurrence implementation; no formal scores used; no equivalence or independent-confirmation claim.",
+  "revision": {
+    "post_observation_protocol_revision": true,
+    "independent_confirmation_claimed": false,
+    "formal_task_results_used_for_selection": false,
+    "original_failed_results_preserved": true
+  },
+  "preparation_budget": {
+    "previous_actual_requests": 6,
+    "previous_actual_tokens": 1920,
+    "new_diagnostic_maximum_requests": 6,
+    "new_diagnostic_maximum_tokens": 34432,
+    "interleave_maximum_requests": 6,
+    "interleave_maximum_tokens": 61440,
+    "cumulative_maximum_tokens": 97792,
+    "preparation_token_limit": 100000
+  },
+  "fixed_before_first_model_request_for_this_protocol": true
+}

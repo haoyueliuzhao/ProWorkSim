@@ -1,0 +1,203 @@
+{
+  "version": "v054-resident-interleave-control-v1",
+  "preparation_generation_authorized": true,
+  "formal_execution_authorized": false,
+  "formal_slots_claimed": 0,
+  "session_protocol": "mp-interleave-v1",
+  "maximum_sessions": 2,
+  "maximum_generation_requests": 6,
+  "maximum_prompt_tokens": 8192,
+  "maximum_output_tokens": 2048,
+  "maximum_total_tokens": 61440,
+  "full_capacity_retested": false,
+  "automatic_retry": false,
+  "deployment": {
+    "resident_id": "mp-g6-kernel-r6",
+    "gpu_index": 6,
+    "gpu_uuid": "GPU-35ddcc29-b60c-a106-93e6-175ccf9abd0c",
+    "source_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/revision-root-r6/artifacts/software-benchmark-v054/runner/source-manifest.json",
+      "sha256": "cf42656268cad447f853756982a018f74c3eeccd0cb7fc84c953ca020c880b12",
+      "bytes": 574614
+    }
+  },
+  "run_revision": "r2",
+  "sessions": [
+    {
+      "slot_id": "synthetic-v054-interleave-baseline-a-r2",
+      "instance_id": "synthetic-interleaving-control",
+      "arm": "MATCH",
+      "seed": 202610210561,
+      "maximum_generation_requests": 2
+    },
+    {
+      "slot_id": "synthetic-v054-interleave-baseline-b-r2",
+      "instance_id": "synthetic-interleaving-control",
+      "arm": "PROJECT",
+      "seed": 202610210562,
+      "maximum_generation_requests": 1
+    },
+    {
+      "slot_id": "synthetic-v054-interleave-interleaved-a-r2",
+      "instance_id": "synthetic-interleaving-control",
+      "arm": "MATCH",
+      "seed": 202610210561,
+      "maximum_generation_requests": 2
+    },
+    {
+      "slot_id": "synthetic-v054-interleave-interleaved-b-r2",
+      "instance_id": "synthetic-interleaving-control",
+      "arm": "PROJECT",
+      "seed": 202610210562,
+      "maximum_generation_requests": 1
+    }
+  ],
+  "requests": {
+    "A1": {
+      "model": "raw-qwen3.5-9b-v054-match",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Synthetic isolation check A1. Reply only with ALPHA. Do not call tools."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "file_editor",
+            "description": "Synthetic preparation only",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "finish",
+            "description": "Synthetic preparation only",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "task_tracker",
+            "description": "Synthetic preparation only",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "description": "Synthetic preparation only",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "think",
+            "description": "Synthetic preparation only",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "temperature": 0.7,
+      "max_tokens": 2048,
+      "stream": false
+    },
+    "A2": {
+      "model": "raw-qwen3.5-9b-v054-match",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Synthetic isolation check A2. Reply only with BETA. Do not call tools."
+        }
+      ],
+      "tools": [],
+      "temperature": 0.7,
+      "max_tokens": 2048,
+      "stream": false
+    },
+    "B1": {
+      "model": "raw-qwen3.5-9b-v054-match",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Synthetic isolation check B1. Reply only with GAMMA. Do not call tools."
+        }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "terminal",
+            "description": "Synthetic preparation only",
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      ],
+      "temperature": 0.7,
+      "max_tokens": 2048,
+      "stream": false
+    }
+  },
+  "session_requests": {
+    "synthetic-v054-interleave-baseline-a-r2": [
+      "A1",
+      "A2"
+    ],
+    "synthetic-v054-interleave-baseline-b-r2": [
+      "B1"
+    ],
+    "synthetic-v054-interleave-interleaved-a-r2": [
+      "A1",
+      "A2"
+    ],
+    "synthetic-v054-interleave-interleaved-b-r2": [
+      "B1"
+    ]
+  },
+  "usage_ids": {
+    "A1": "agent",
+    "A2": "condenser",
+    "B1": null
+  },
+  "execution_plan": [
+    {
+      "phase": "baseline",
+      "order": [
+        "A1",
+        "A2",
+        "B1"
+      ]
+    },
+    {
+      "phase": "interleaved",
+      "order": [
+        "A1",
+        "B1",
+        "A2"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "version": "v054-fp32-recurrent-operator-plan-r1",
+  "fixed_before_operator_execution": true,
+  "purpose": "Only newly implemented FP32 T=1 recurrent kernel, no full model or benchmark task",
+  "seed": 202610210651,
+  "source": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/kernel-optimization-r1/fp32-recurrent-r1/overlay/proworksim_fp32_recurrent.py",
+    "sha256": "12bdbfabfab9f346f43e53f518341ea8b7c8a3e30e19269048fba601ac4177d2",
+    "bytes": 6694
+  },
+  "reference_source": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/v016-sdk/resident-venv/lib/python3.12/site-packages/transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "sha256": "762feb6c7426a7f15b5bf830df54c07438bf9e7c27b8cdb23179045920412c3b",
+    "bytes": 95685
+  },
+  "model_config": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/assets/models/Qwen3.5-9B-c20223623576/config.json",
+    "sha256": "d0883072e01861ed0b2d47be3c16c36a8e81c224c7ffaa310c6558fb3f932b05",
+    "bytes": 3126
+  },
+  "cases": [
+    {
+      "name": "one_step_actual_width_zero_state",
+      "batch_size": 1,
+      "steps": 1,
+      "heads": 32,
+      "key_dimension": 128,
+      "value_dimension": 128,
+      "initial_state": null,
+      "input_dtype": "bfloat16",
+      "state_dtype": "float32",
+      "qk_normalization": true
+    },
+    {
+      "name": "four_steps_actual_width_strided",
+      "batch_size": 2,
+      "steps": 4,
+      "heads": 32,
+      "key_dimension": 128,
+      "value_dimension": 128,
+      "initial_state": "fixed random float32 with transposed K/V strides",
+      "input_dtype": "bfloat16",
+      "state_dtype": "float32",
+      "qk_normalization": true,
+      "qkv_g_beta_are_noncontiguous_time_views": true
+    }
+  ],
+  "arithmetic": {
+    "state_and_reductions": "float32",
+    "scale": "query / sqrt(128), same reference operation",
+    "num_warps": 8,
+    "num_stages": 1,
+    "enable_fp_fusion": false,
+    "autotune": false,
+    "uses_dot_or_TF32": false,
+    "initial_state_modified": false,
+    "fallback": "original torch function for T!=1 or unsupported H/K/V"
+  },
+  "numerical_thresholds": {
+    "bf16_epsilon": 0.0078125,
+    "normalized_rmse_maximum": 0.015625,
+    "normalized_max_absolute_error_maximum": 0.03125,
+    "normalization_absolute_floor": 1e-06,
+    "output_dtype_shape_match": true,
+    "recurrent_state_dtype_shape_match": true,
+    "all_outputs_and_states_finite": true,
+    "conv_state_bitwise_equal": true,
+    "apply_relative_thresholds_to_recurrent_state": true,
+    "basis": "Prospective engineering gate of 2 and 4 BF16 epsilons for aggregate and max scaled error. This is not a formal error bound or model/score equivalence certification."
+  },
+  "timing": {
+    "first_call_includes_JIT_reported_separately": true,
+    "warmup_per_implementation": 2,
+    "steady_samples_per_implementation": 5,
+    "steady_execution_order": "alternate_reference_optimized_then_reverse",
+    "cuda_synchronize_before_and_after": true,
+    "report_wall_median_and_all_samples": true,
+    "shared_gpu_results_are_interference_affected": true
+  },
+  "resources": {
+    "physical_gpu": 5,
+    "minimum_free_mib": 3072,
+    "maximum_torch_allocator_bytes": 1073741824,
+    "maximum_owned_GPU_process_mib": 2048,
+    "host_monitor_interval_seconds": 1,
+    "maximum_elapsed_seconds": 900,
+    "maximum_cpu_threads": 2,
+    "existing_gpu_processes_may_not_be_modified": true,
+    "no_9B_model_load": true,
+    "no_formal_task_or_official_scoring": true,
+    "independent_environment_only": true
+  },
+  "original_operator_control_repeated": false,
+  "full_model_equivalence_claimed": false,
+  "formal_admission": false
+}

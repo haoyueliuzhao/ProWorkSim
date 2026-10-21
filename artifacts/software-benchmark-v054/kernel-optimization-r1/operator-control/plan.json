@@ -1,0 +1,67 @@
+{
+  "version": "v054-kernel-control-plan-r1",
+  "purpose": "Fixed synthetic operator numerical and timing admission; no model or benchmark task",
+  "model_configuration": "runs/assets/models/Qwen3.5-9B-c20223623576/config.json",
+  "reference_source": "runs/v016-sdk/resident-venv/lib/python3.12/site-packages/transformers/models/qwen3_5/modeling_qwen3_5.py",
+  "functions": ["causal_conv1d_fn", "causal_conv1d_update", "torch_chunk_gated_delta_rule", "torch_recurrent_gated_delta_rule"],
+  "seed": 202610210641,
+  "batch_size": 1,
+  "dtype": "bfloat16",
+  "recurrent_state_dtype": "float32",
+  "convolution_kernel": 4,
+  "activation": "silu",
+  "convolution_bias": null,
+  "key_dimension": 128,
+  "value_dimension": 128,
+  "key_head_repeat": 2,
+  "prefill_cases": [
+    {"name": "short_actual_width", "sequence_length": 128, "conv_channels": 8192, "value_heads": 32},
+    {"name": "long_head_slice", "sequence_length": 16384, "conv_channels": 256, "value_heads": 2}
+  ],
+  "decode_cases": [
+    {"name": "one_step_actual_width", "steps": 1, "conv_channels": 8192, "value_heads": 32},
+    {"name": "four_steps_actual_width", "steps": 4, "conv_channels": 8192, "value_heads": 32}
+  ],
+  "normalization": "use_qk_l2norm_in_kernel=true",
+  "decode_initial_state": "Both implementations receive the identical reference short-prefill state; a four-step chain then carries each implementation's own state between steps.",
+  "numerical_thresholds": {
+    "bf16_epsilon": 0.0078125,
+    "normalized_rmse_maximum": 0.015625,
+    "normalized_max_absolute_error_maximum": 0.03125,
+    "normalization_absolute_floor": 0.000001,
+    "output_dtype_shape_match": true,
+    "recurrent_state_dtype_shape_match": true,
+    "all_outputs_and_states_finite": true,
+    "conv_state_bitwise_equal": true,
+    "apply_relative_thresholds_to_recurrent_state": true,
+    "basis": "Prospective engineering gate of 2 and 4 BF16 epsilons for aggregate and max scaled error. This is not a formal error bound or model/score equivalence certification."
+  },
+  "timing": {
+    "first_call_includes_JIT_reported_separately": true,
+    "warmup_per_implementation": 2,
+    "steady_samples_per_implementation": 5,
+    "steady_execution_order": "alternate_reference_optimized_then_reverse",
+    "cuda_synchronize_before_and_after": true,
+    "report_wall_median_and_all_samples": true,
+    "shared_gpu_results_are_interference_affected": true
+  },
+  "resources": {
+    "physical_gpu": 5,
+    "minimum_free_mib": 3072,
+    "maximum_torch_allocator_bytes": 1073741824,
+    "maximum_owned_GPU_process_mib": 2048,
+    "host_monitor_interval_seconds": 1,
+    "maximum_elapsed_seconds": 900,
+    "maximum_cpu_threads": 2,
+    "existing_gpu_processes_may_not_be_modified": true,
+    "no_9B_model_load": true,
+    "no_formal_task_or_official_scoring": true,
+    "independent_environment_only": true
+  },
+  "interpretation_limits": [
+    "The long case slices independent heads/channels to obey the resource budget; it is not a full-width 16384-token memory/capacity test.",
+    "Shared GPU timing does not estimate isolated throughput or complete model speedup.",
+    "Passing operator checks does not certify final logits, sampled outputs, task outcomes or cross-revision scientific equivalence.",
+    "Failed cases retain original thresholds and are not tuned into passing results."
+  ]
+}
