@@ -1,6 +1,6 @@
 # ProWorkSim
 
-> 2026-10-21 16:12 更新：MATCH／PROJECT同卡两会话交错已实际准入并上线。GPU6同时承接两个独立回合，GPU7继续原REF服务；观察为39回合已闭合、3在途、1458待运行。六请求实际控制通过（1620 token），加上保留的首条检查脚本故障尝试，本轮准备共7次／2055 token。GPU6升级期间两次受控加载，GPU7未重载，正式题未重跑。见[实施与实际结果](docs/experiments/software-benchmark-v054-interleaved-execution-r1.md)。
+> 2026-10-21 19:19 更新：三组原库存已恢复，GPU3／6各两个MATCH／PROJECT会话，GPU7一个REF会话，共五回合并发；75个生成回合闭合、5在途、1420待运行，73槽必要评分已明确。单题评分超时保留为技术未知，新宿主协调器将局部异常留到末尾处理，原五个在途worker完整接管，未重载模型或重跑正式生成。见[恢复与异常处理](docs/experiments/software-benchmark-v054-recovery-and-deferred-scoring-r1.md)及[性能分析](docs/experiments/software-benchmark-v054-performance-recovery-r1.md)。此前[同卡交错准入及准备成本](docs/experiments/software-benchmark-v054-interleaved-execution-r1.md)另行保留。
 
 ## v0.54：完整500题三组评价运行中，保留常驻模型并扩展资源调度（2026-10-21）
 
