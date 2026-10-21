@@ -36,6 +36,7 @@ def test_cpu_durable_intent_no_replay_and_order(tmp_path):
             return unit == calls[0][0]
 
     value.system = AcceptedButUnacknowledged()
+    rows[0]["generation"].update(slot_id="1", slot_index=1, physical_gpu=6)
     value.start_job(rows[0]["generation"], kind="generation", directory=tmp_path / "job", argv=["unused"])
     assert value.state["status"] == "paused_technical_unknown"
     persisted = queue.read(tmp_path / "state.json")
@@ -43,9 +44,9 @@ def test_cpu_durable_intent_no_replay_and_order(tmp_path):
     resumed.state, resumed.system = persisted, value.system
     assert resumed.completion(resumed.state["rows"][0]["generation"]) is None
     assert len(calls) == 1
-    assert queue.head_slot(resumed.state["rows"]) is None  # No jumping to REF.
+    assert queue.head_slot(resumed.state["rows"], {6}) is None
     resumed.state["rows"][0]["generation"]["claimed"] = True
-    assert queue.head_slot(resumed.state["rows"])["slot"]["slot_index"] == 2
+    assert queue.head_slot(resumed.state["rows"], {6, 7})["slot"]["slot_index"] == 3
     value.system.active = lambda unit: False
     resumed.completion(resumed.state["rows"][0]["generation"])
     assert resumed.state["rows"][0]["generation"]["status"] == "technical_unknown"
@@ -107,3 +108,21 @@ def test_cpu_two_grader_leases_and_result_identity(tmp_path, monkeypatch):
     value.complete_score(record, "delivery", {"returncode": 0})
     assert score["status"] == "technical_unknown"
     assert value.state["status"] == "paused_technical_unknown"
+
+
+def test_resource_ready_lane_order_only():
+    rows = [{"slot": {"slot_index": i, "arm": arm}, "generation": {"status": "pending"}}
+            for i, arm in enumerate(("MATCH", "PROJECT", "REF", "REF", "MATCH"), 1)]
+    assert queue.head_slot(rows, {6, 7})["slot"]["slot_index"] == 1
+    assert queue.head_slot(rows, {7})["slot"]["slot_index"] == 3
+    rows[0]["generation"].update(status="running", claimed=False)
+    assert queue.head_slot(rows, {6, 7})["slot"]["slot_index"] == 3
+    rows[2]["generation"]["status"] = "running"
+    assert queue.head_slot(rows, {6, 7}) is None
+    rows[0]["generation"]["status"] = "closed"
+    assert queue.head_slot(rows, {6, 7})["slot"]["slot_index"] == 2
+    rows[1]["generation"]["retry_not_before"] = 100
+    assert queue.head_slot(rows, {6, 7}, timestamp=99) is None
+    rows[2]["generation"]["status"] = "closed"
+    assert queue.head_slot(rows, {6, 7}, timestamp=99)["slot"]["slot_index"] == 4
+    assert queue.head_slot(rows, {6, 7}, timestamp=100)["slot"]["slot_index"] == 2

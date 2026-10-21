@@ -97,3 +97,13 @@ controller 同时接受精确的 `NormalEpisodeBoundary` 和官方 `Conversation
 最终汇总为 `artifacts/software-benchmark-v054/runner/preparation-manifest.json`。其中执行器、500 入口、lazy factory、服务模板、源冻结和部署控制与真实容量准入分栏；CPU 准备成功不填写正式模型完成率，也不把仅生成评分请求表述为评分已完成。
 
 第二版封源仅跟进 REF 私有 `/usr` overlay 的 `cc → gcc`、`c++ → g++` 链接修复：实际 FlashInfer 采样扩展的编译／加载已在独立准备控制中通过，没有更改本单题服务 argv、模型窗口、输出或采样。第一版 source／preparation／service-template manifest、三组 condition，以及当时 REF wrapper／capacity monitor 源码完整保存在 `runner/revisions/r1`，由 `snapshot-index.json` 同时记录原身份和快照身份。第二版只更新当前源清单及其引用，原 CPU 三组、部署锁和预算边界控制均未重跑；最终真实 REF 容量结果仍由独立 admission 发布。
+
+第三版封源在首个正式模型回合开始之前，落实用户新授权的“先安排已就绪任务”：调度器从原固定题单中选择所需 GPU 当前可用的最早任务，同一 GPU 内保留原相对顺序，同时记录实际启动序列。原 1,500 个 slot、任务身份、各组 seed、条件和 750M 总 token 上限不变；只是避免 GPU6 队首等待阻塞可用 GPU7。第二版及当时严格队首调度的源码／计划保存于 `runner/revisions/r2`。这项调度修订使用独立的新计划文件，不修改先前计划，也没有重跑已通过的模型、工具、预算或部署控制。
+
+第四版封源只修复首次题目初始化暴露的 Docker 地址格式接缝：评分器要求原始 socket 文件路径，而 lazy 环境初始化的 ActorDocker 要求 `unix://` URI。runner 现在仅在调用 `ensure_native_instance` 的实参处加该前缀，评分器配置、lazy/scorer 源码和其他参数保持原值。修订前队列没有领取正式槽或模型尝试；第三版清单、condition 和运行器源码保存于 `runner/revisions/r3`。仅对改动的运行器做静态检查，旧控制未重跑。
+
+第五版环境接缝修订对应 Matplotlib 镜像中的 338 个 Qhull 文件：其真实 UID 197609／GID 197121 超过原线性映射范围。新 bootstrap 在既有 65,536 个 subordinate IDs 内使用原 manifest 未占用的槽位表达这些高 ID，不扩大全局分配，不改成 UID 0；原已观测低 UID／GID 保持原映射。独立高 UID 真实 user namespace 控制已经验证高低 ID、旧纯低 ID 映射和篡改拒绝。lazy 机制只允许 bootstrap／mapped launcher 两份源码通过明确的新旧身份继承，原 UID／工具／资源控制中其余源码仍逐项保持精确身份，9B／REF 容量结果不重新测试。
+
+`prepare_native_instance_v054.py --continue-exported` 仅供显式继续本次完整保留的导出：先核 task／image／mapping／环境及 archive 长度，再归档旧 manifest 和失败回执，应用属主元数据、生成 public environment，并执行原逐题初始化。该路径不会重新 Docker export、提取或散列 rootfs payload；首次 Matplotlib 已有的 253,136 条导出元数据直接复用。正式默认缓存统一为 `native-lazy-cache`；已合格的 Astropy 只登记原 `lazy-preparation.json` 的四个绝对引用，原模板、资格和数据目录均不复制、不移动、不重做。修订前第四版和受影响源码保存在 `runner/revisions/r4`，缓存路径源文件的额外快照有独立索引。
+
+同一高 UID 接缝还涉及 PROJECT 公开测试的新副本：旧 `/testbed` 中的高 UID 目录不能由宿主普通用户直接删除。受约束的 `prepare_public_tree_replacement_v054.py` 仅接受 manifest 证明的、尚未启动 worker 的 `public-test-N/actor/rootfs` 新副本，把即将被完整 bundle 替换的旧公开树交给宿主 owner；随后沿用原物化和 Git 控制保留流程。它不处理不可变模板、非公开目录或其他两组，也不向 actor 提供 sudo／bash。唯一窄控制实际使用高 host UID 624287 的旧目录，验证真实 runner 替换成功、根 `.git` 保留、公开树外和符号链接目标的属主不变。首 Matplotlib 的继续初始化也已真实 qualified；没有重导出、重测 9B／REF 或领取正式题槽。

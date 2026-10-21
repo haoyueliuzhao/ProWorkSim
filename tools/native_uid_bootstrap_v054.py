@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import pwd
 import signal
 import subprocess
 import sys
@@ -16,10 +17,88 @@ FIRST, COUNT = 558752, 65536
 OWNER_UID, OWNER_GID = 1021, 1022
 
 
-def mapped(value, *, group=False):
-    if not isinstance(value, int) or value < 0 or value > COUNT:
-        raise ValueError("Image numeric ownership is outside the explicitly mapped range")
-    return (OWNER_GID if group else OWNER_UID) if value == 0 else FIRST + value - 1
+def mapping_for_manifest(manifest):
+    """Retain low IDs; borrow unobserved high-end slots for observed large IDs.
+
+    Guest IDs are never rewritten. Only their host subordinate-ID placement
+    changes, and ownership and namespace launch use this same recorded plan.
+    """
+    result = {"version": "v054-observed-sparse-uid-gid-v1",
+              "host_subordinate_first": FIRST, "host_subordinate_count": COUNT,
+              "guest_root_host_uid": OWNER_UID, "guest_root_host_gid": OWNER_GID}
+    for key, owner in (("uid", OWNER_UID), ("gid", OWNER_GID)):
+        observed = {0}
+        for item in manifest["entries"]:
+            number = item[key]
+            if type(number) is not int or not 0 <= number < 2**32 - 1:
+                raise ValueError("Invalid original numeric image ownership")
+            observed.add(number)
+        high = sorted(number for number in observed if number > COUNT)
+        available = (number for number in range(COUNT, 0, -1) if number not in observed)
+        borrowed = []
+        for number in high:
+            slot = next(available, None)
+            if slot is None:
+                raise ValueError("Observed IDs exceed the existing subordinate allocation")
+            borrowed.append((slot, number))
+        rows, start = [[0, owner, 1]], 1
+        for slot in sorted(pair[0] for pair in borrowed):
+            if slot > start:
+                rows.append([start, FIRST + start - 1, slot - start])
+            start = slot + 1
+        if start <= COUNT:
+            rows.append([start, FIRST + start - 1, COUNT - start + 1])
+        rows.extend([number, FIRST + slot - 1, 1] for slot, number in borrowed)
+        rows.sort(key=lambda row: row[0])
+        result[key + "_map"] = rows
+        result["observed_" + key + "s"] = sorted(observed)
+        result["unmapped_unobserved_" + key + "s"] = sorted(slot for slot, _ in borrowed)
+        if len(rows) > 340 or len(map_text(rows).encode()) >= 4096:
+            raise ValueError("Sparse mapping exceeds this kernel's finite map-write bound")
+    return result
+
+
+def map_text(rows):
+    return "\n".join(" ".join(map(str, row)) for row in rows)
+
+
+def mapped(value, mapping, *, group=False):
+    for guest, host, length in mapping["gid_map" if group else "uid_map"]:
+        if guest <= value < guest + length:
+            return host + value - guest
+    raise ValueError("Image numeric ownership has no admitted host mapping")
+
+
+def check_subordinate_allocation():
+    owner = pwd.getpwuid(OWNER_UID).pw_name
+    for name in ("subuid", "subgid"):
+        allocated = False
+        for line in Path("/etc/" + name).read_text().splitlines():
+            if not line or line.startswith("#"):
+                continue
+            account, first, count = line.split(":")
+            if (account in {owner, str(OWNER_UID)} and int(first) <= FIRST
+                    and FIRST + COUNT <= int(first) + int(count)):
+                allocated = True
+        if not allocated:
+            raise ValueError("Existing owner subordinate allocation no longer covers this plan")
+
+
+def admitted_mapping(manifest):
+    mapping = mapping_for_manifest(manifest)
+    receipt = manifest.get("ownership_receipt", {})
+    if (manifest.get("numeric_ownership_equivalence_admitted") is not True
+            or receipt.get("numeric_ownership_applied") is not True):
+        raise ValueError("Namespace launch requires completed numeric ownership")
+    if receipt.get("uid_gid_mapping") is not None:
+        if receipt["uid_gid_mapping"] != mapping:
+            raise ValueError("Recorded ownership mapping differs from the observed IDs")
+    elif (mapping["unmapped_unobserved_uids"] or mapping["unmapped_unobserved_gids"]):
+        raise ValueError("High original IDs require an explicit sparse ownership receipt")
+    # Previously qualified low-ID templates retain their exact original map.
+    if any(receipt.get(key) != map_text(mapping[key]) for key in ("uid_map", "gid_map")):
+        raise ValueError("Ownership and namespace map text differ")
+    return mapping
 
 
 def checked_manifest(path, sha):
@@ -38,6 +117,8 @@ def checked_manifest(path, sha):
 
 def ownership(path, sha):
     manifest, root = checked_manifest(path, sha)
+    check_subordinate_allocation()
+    mapping = mapping_for_manifest(manifest)  # Validate every ID before any chown.
     original_root = root.lstat()
     if not root.is_dir() or original_root.st_uid not in (0, OWNER_UID):
         raise ValueError("Unexpected rootfs owner")
@@ -53,7 +134,7 @@ def ownership(path, sha):
                     child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
                     os.close(parent)
                     parent = child
-                os.chown(parts[-1], mapped(item["uid"]), mapped(item["gid"], group=True),
+                os.chown(parts[-1], mapped(item["uid"], mapping), mapped(item["gid"], mapping, group=True),
                          dir_fd=parent, follow_symlinks=False)
                 if item["kind"] != "symlink":
                     descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
@@ -63,7 +144,7 @@ def ownership(path, sha):
                     finally:
                         os.close(descriptor)
                 actual = os.stat(parts[-1], dir_fd=parent, follow_symlinks=False)
-                if (actual.st_uid, actual.st_gid) != (mapped(item["uid"]), mapped(item["gid"], group=True)):
+                if (actual.st_uid, actual.st_gid) != (mapped(item["uid"], mapping), mapped(item["gid"], mapping, group=True)):
                     raise ValueError("Numeric ownership application failed")
             finally:
                 os.close(parent)
@@ -71,12 +152,13 @@ def ownership(path, sha):
     finally:
         os.close(root_fd)
     print(json.dumps({"numeric_ownership_applied": True, "entries": len(manifest["entries"]),
-                      "uid_map": f"0 {OWNER_UID} 1\n1 {FIRST} {COUNT}",
-                      "gid_map": f"0 {OWNER_GID} 1\n1 {FIRST} {COUNT}"}))
+                      "uid_map": map_text(mapping["uid_map"]),
+                      "gid_map": map_text(mapping["gid_map"]), "uid_gid_mapping": mapping}))
 
 
 def clone(path, sha, destination):
-    _, root = checked_manifest(path, sha)
+    manifest, root = checked_manifest(path, sha)
+    admitted_mapping(manifest)
     destination = Path(destination)
     parent = destination.parent.resolve(strict=True)
     if (not parent.is_relative_to(ROOT / "runs/software-benchmark-v054")
@@ -87,9 +169,18 @@ def clone(path, sha, destination):
                     str(parent / destination.name)], check=True)
 
 
-def launch(command):
+def launch(command, environment_manifest, expected_root):
     if not command or Path(command[0]).resolve() != Path("/usr/bin/unshare"):
         raise ValueError("Bootstrap accepts only the fixed namespace launcher")
+    public_path = Path(environment_manifest).resolve(strict=True)
+    if not public_path.is_relative_to(ROOT / "runs/software-benchmark-v054"):
+        raise ValueError("Namespace public environment is outside this project")
+    public = json.loads(public_path.read_bytes())
+    manifest, root = checked_manifest(public["rootfs_manifest"], public["rootfs_manifest_sha256"])
+    if Path(expected_root).resolve(strict=True) != root:
+        raise ValueError("Worker rootfs differs from its numeric ownership manifest")
+    check_subordinate_allocation()
+    mapping = admitted_mapping(manifest)
     ready_r, ready_w = os.pipe()
     continue_r, continue_w = os.pipe()
     child = os.fork()  # Dedicated bootstrap before any SDK import or threads.
@@ -117,8 +208,8 @@ def launch(command):
     try:
         if os.read(ready_r, 1) != b"R":
             raise RuntimeError("Child did not establish its user namespace")
-        Path(f"/proc/{child}/uid_map").write_text(f"0 {OWNER_UID} 1\n1 {FIRST} {COUNT}\n")
-        Path(f"/proc/{child}/gid_map").write_text(f"0 {OWNER_GID} 1\n1 {FIRST} {COUNT}\n")
+        Path(f"/proc/{child}/uid_map").write_text(map_text(mapping["uid_map"]) + "\n")
+        Path(f"/proc/{child}/gid_map").write_text(map_text(mapping["gid_map"]) + "\n")
         os.write(continue_w, b"C")
     except BaseException:
         os.kill(child, signal.SIGKILL)
@@ -146,6 +237,8 @@ def main():
     copied.add_argument("sha256")
     copied.add_argument("destination")
     run = sub.add_parser("launch")
+    run.add_argument("--environment-manifest", required=True)
+    run.add_argument("--rootfs", required=True)
     run.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if os.geteuid() != 0 or int(os.environ.get("SUDO_UID", "-1")) != OWNER_UID:
@@ -157,7 +250,7 @@ def main():
         clone(args.manifest, args.sha256, args.destination)
         return 0
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
-    return launch(command)
+    return launch(command, args.environment_manifest, args.rootfs)
 
 
 if __name__ == "__main__":

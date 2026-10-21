@@ -22,11 +22,11 @@ from .software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT = Path(__file__).resolve().parents[2]
 HOST_PYTHON = ROOT / ".venv/bin/python"
-VERSION = "software-benchmark-formal-queue-v054-r1"
+VERSION = "software-benchmark-formal-queue-v054-r2"
 SLOTS_SHA = "55899d0b83a5bab1082bccb50496fb6c1d7111ecb951fc4d61c222be19d88676"
 QUEUE = ROOT / "runs/software-benchmark-v054/formal-queue-r1"
 AUTH = ROOT / "config/v054-formal-authorization-r1.json"
-PLAN = ROOT / "config/v054-formal-execution-plan-r1.json"
+PLAN = ROOT / "config/v054-formal-execution-plan-r2.json"
 SOURCE = ROOT / "artifacts/software-benchmark-v054/runner/source-manifest.json"
 BUSY = {"gpu_lease_busy", "ref_port_busy", "gpu_capacity_gate"}
 ACTIVE = {"intent", "running"}
@@ -167,14 +167,20 @@ def validate_frozen(bindings, *, initial=False):
             raise ValueError("Frozen source/configuration file changed: " + ref["path"])
 
 
-def head_slot(rows):
-    """Never jump over a pending or still-unclaimed predecessor."""
+def head_slot(rows, available_gpus, *, timestamp=None):
+    """Earliest resource-ready slot, retaining the original order on each GPU."""
+    timestamp = time.time() if timestamp is None else timestamp
+    blocked = set()
     for row in rows:
         generation = row["generation"]
+        gpu = 7 if row["slot"]["arm"] == "REF" else 6
+        if generation["status"] in ACTIVE:
+            blocked.add(gpu)
         if generation["status"] == "pending":
-            return row
-        if generation["status"] in ACTIVE and not generation.get("claimed", False):
-            return None
+            if (gpu not in blocked and gpu in available_gpus
+                    and timestamp >= generation.get("retry_not_before", 0)):
+                return row
+            blocked.add(gpu)  # A later same-GPU slot may never bypass this one.
         if generation["status"] == "technical_unknown":
             return None
     return None
@@ -332,6 +338,12 @@ class Coordinator:
         job = write_new(directory / "job.json", {"kind": kind, "argv": argv,
                         "unit": unit, "bindings": self.bindings_ref, "created_utc": now()})
         record.update(status="intent", unit=unit, job=job, worker_directory=str(directory))
+        if kind == "generation":
+            events = self.state.setdefault("generation_dispatches", [])
+            events.append({"dispatch_ordinal": len(events) + 1, "intent_utc": now(),
+                           "job": job, "slot_id": record["slot_id"],
+                           "slot_index": record["slot_index"], "physical_gpu": record["physical_gpu"],
+                           "worker_started": None, "claim": None})
         self.save()  # Durable intent precedes launch; uncertain handoff is never retried.
         response = self.system.launch(unit, job)
         atomic(directory / "launch.json", {"returncode": response.returncode,
@@ -442,6 +454,12 @@ class Coordinator:
             generation = row["generation"]
             if generation["status"] in ACTIVE:
                 try:
+                    event = next((item for item in self.state.get("generation_dispatches", [])
+                                  if item["job"] == generation["job"]), None)
+                    started = Path(generation["worker_directory"]) / "started.json"
+                    if event is not None and event["worker_started"] is None and started.exists():
+                        evidence = read(started)
+                        event.update(worker_started=reference(started), worker_started_utc=evidence["started_utc"])
                     claim = claim_path(row["slot"]["slot_id"])
                     if claim.exists():
                         value = read(claim)
@@ -450,6 +468,8 @@ class Coordinator:
                                 or value["authorization"] != self.bindings["authorization"]):
                             raise ValueError("Global episode claim identity differs")
                         generation["claimed"] = True
+                        if event is not None and event["claim"] is None:
+                            event.update(claim=reference(claim), claim_file_mtime_ns=claim.stat().st_mtime_ns)
                     completion = self.completion(generation)
                     if completion is not None:
                         self.complete_generation(row, completion)
@@ -487,25 +507,23 @@ class Coordinator:
             return
         rows = self.state["rows"]
         active = [x for x in rows if x["generation"]["status"] in ACTIVE]
-        row = head_slot(rows)
-        if row is None or len(active) >= 2:
+        if len(active) >= 2:
+            return
+        from tools.prepare_model_capacity_v054 import eligible, gpu_rows
+        observed = gpu_rows()
+        cards = {card["index"]: card for arm in ("REF", "MATCH") for card in eligible(observed, arm)}
+        busy = {self.plan["physical_gpu_by_arm"][x["slot"]["arm"]] for x in active}
+        row = head_slot(rows, set(cards) - busy)
+        if row is None:
+            self.state["waiting"] = {"reason": "no_resource_ready_lane_head", "slot_claimed": False,
+                                     "observed_ready_gpus": sorted(set(cards) - busy)}
             return
         slot, generation = row["slot"], row["generation"]
         gpu_index = self.plan["physical_gpu_by_arm"][slot["arm"]]
-        if any(self.plan["physical_gpu_by_arm"][x["slot"]["arm"]] == gpu_index for x in active):
-            return
-        if time.time() < generation.get("retry_not_before", 0):
-            return
         if claim_path(slot["slot_id"]).exists():
             raise ValueError("Pending slot already has a global once-only claim; never replay")
-        from tools.prepare_model_capacity_v054 import eligible, gpu_rows
         arm = "REF" if slot["arm"] == "REF" else "MATCH"
-        cards = eligible(gpu_rows(), arm)
-        if not cards:
-            self.state["waiting"] = {"slot_id": slot["slot_id"], "gpu_index": gpu_index,
-                                     "reason": "gpu_capacity_gate", "slot_claimed": False}
-            return
-        card = cards[0]
+        card = cards[gpu_index]
         if card["index"] != gpu_index:
             raise ValueError("Capacity mode selected a GPU outside this frozen two-card plan")
         from .software_benchmark_service_factory_v054 import build_service
@@ -520,7 +538,8 @@ class Coordinator:
                     model_service=load_ref(service_ref), registry_reference=self.bindings["registry"],
                     scorer_manifest_reference=self.bindings["scorer_manifest"], output=root / "config.json",
                     authorization=self.bindings["authorization"])
-        generation.update(config=config, service=service_ref, episode_output=str(root / "episode"), claimed=False)
+        generation.update(config=config, service=service_ref, episode_output=str(root / "episode"), claimed=False,
+                          slot_id=slot["slot_id"], slot_index=slot["slot_index"], physical_gpu=gpu_index)
         self.state.pop("waiting", None)
         self.start_job(generation, kind="generation", directory=root / "worker",
                        argv=[str(HOST_PYTHON), str(ROOT / "tools/run_benchmark_episode_v054.py"),

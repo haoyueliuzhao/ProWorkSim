@@ -15,13 +15,17 @@ import uuid
 
 from .software_benchmark_actor_v054 import ActorDocker, checked_public_task
 from .software_benchmark_baseline_v054 import validate_mapping
-from .software_benchmark_native_rootfs_v054 import canonical, clone_prepared_rootfs, prepare_rootfs
+from .software_benchmark_native_rootfs_v054 import (
+    canonical, clone_prepared_rootfs, digest, image_environment, prepare_rootfs,
+)
 from .software_benchmark_resources_v054 import create_episode_resources, release_episode_resources
 from .software_benchmark_scorer_v054 import checked_file, file_reference
 from .software_benchmark_supervision_v054 import launch_owned, stop_owned
 
 ROOT = Path(__file__).resolve().parents[2]
 MECHANISM = ROOT / "artifacts/software-benchmark-v054/native-environment/real-image-control-r2.json"
+SPARSE_CONTROL = ROOT / "artifacts/software-benchmark-v054/native-environment/sparse-uid-control-r1.json"
+SPARSE_MECHANISM = ROOT / "artifacts/software-benchmark-v054/native-environment/native-mechanism-sparse-r1.json"
 
 
 def environment_from_mapping(task, mapping_reference):
@@ -72,10 +76,81 @@ def _mechanism():
             or proof["resource_slice"]["kernel_limits"] != {
                 "cpu.max": "400000 100000", "memory.max": "17179869184", "pids.max": "16384"}):
         raise ValueError("Shared native UID/tool/resource mechanism has not passed")
-    # Reuse only the exact mechanism whose real-image control was recorded.
+    replacements = {str(ROOT / name) for name in (
+        "tools/native_uid_bootstrap_v054.py", "tools/run_native_worker_mapped_v054.sh")}
+    if not SPARSE_CONTROL.exists():
+        for frozen in proof["sources"]:
+            checked_file(frozen)
+        return file_reference(MECHANISM)
+    sparse = json.loads(SPARSE_CONTROL.read_bytes())
+    if (sparse.get("passed") is not True or sparse.get("model_calls") != 0
+            or sparse.get("gpu_launches") != 0
+            or any(sparse.get(key) is not True for key in (
+                "low_uid_mapping_preserved", "high_uid_gid_preserved", "existing_subordinate_range_only"))):
+        raise ValueError("Sparse high-ID extension has not passed its necessary namespace control")
+    before = {item["path"]: item for item in sparse["previous_sources"]}
+    after = {item["path"]: item for item in sparse["sources"]}
+    if set(before) != replacements or set(after) != replacements:
+        raise ValueError("Only the two explicitly qualified UID bootstrap/launcher sources may change")
     for frozen in proof["sources"]:
-        checked_file(frozen)
-    return file_reference(MECHANISM)
+        if frozen["path"] in replacements:
+            if before[frozen["path"]] != frozen:
+                raise ValueError("Sparse extension was not derived from the recorded real-image mechanism")
+            checked_file(after[frozen["path"]])
+        else:
+            checked_file(frozen)
+    combined = {"version": "v054-native-mechanism-sparse-inheritance-v1",
+                "base_real_image_control": file_reference(MECHANISM),
+                "sparse_uid_extension_control": file_reference(SPARSE_CONTROL),
+                "unchanged_UID_tool_resource_evidence_reused": True,
+                "model_calls": 0, "gpu_launches": 0}
+    raw = canonical(combined)
+    if SPARSE_MECHANISM.exists():
+        if SPARSE_MECHANISM.read_bytes() != raw:
+            raise ValueError("Existing sparse mechanism inheritance evidence changed")
+    else:
+        with SPARSE_MECHANISM.open("xb") as stream:
+            stream.write(raw)
+    return file_reference(SPARSE_MECHANISM)
+
+
+def continue_exported_rootfs(environment, mapping, root):
+    """Explicitly finish ownership of a complete retained export; never re-export or rehash payloads."""
+    manifest_path = root / "rootfs-manifest.json"
+    raw = manifest_path.read_bytes()
+    manifest = json.loads(raw)
+    archive, prepared = root / "rootfs.tar", root / "rootfs"
+    if (manifest.get("prepared_root") != str(prepared) or not prepared.is_dir() or prepared.is_symlink()
+            or not archive.is_file() or archive.is_symlink() or archive.stat().st_size != manifest["archive_bytes"]
+            or manifest.get("source_environment_sha256") != digest(canonical(environment))
+            or manifest.get("image_id") != environment["image"]["image_id"]
+            or manifest.get("instance_id") != environment["task"]["instance_id"]
+            or manifest.get("baseline_mapping") != environment["baseline_mapping"]
+            or manifest.get("native_real_task_control_passed") is not False
+            or manifest.get("numeric_ownership_equivalence_admitted") is not False
+            or (root / "initialization").exists()):
+        raise ValueError("Continuation requires this exact complete export before ownership/initialization admission")
+    for source, target in ((manifest_path, root / "rootfs-manifest-before-ownership-continuation.json"),
+                           (root / "preparation-failure.json", root / "preparation-failure-before-ownership-continuation.json")):
+        if source.exists():
+            with target.open("xb") as stream:
+                stream.write(source.read_bytes())
+    helper = ROOT / "tools/native_uid_bootstrap_v054.py"
+    result = subprocess.run(["sudo", "-n", "/usr/bin/python3", str(helper), "ownership", str(manifest_path),
+                             digest(raw)], check=True, capture_output=True, text=True)
+    manifest.update(ownership_policy="original_numeric_uid_gid_in_subordinate_user_namespace",
+                    numeric_ownership_equivalence_admitted=True, ownership_receipt=json.loads(result.stdout))
+    manifest_path.write_bytes(canonical(manifest))
+    public = image_environment(Path(mapping["actor_config_blob"]).read_bytes(),
+                               image_id=environment["image"]["image_id"], public_python=environment["public_python"])
+    public.update(rootfs_manifest=str(manifest_path), rootfs_manifest_sha256=digest(manifest_path.read_bytes()))
+    (root / "public-environment.json").write_bytes(canonical(public))
+    (root / "export-continuation.json").write_bytes(canonical({
+        "instance_id": manifest["instance_id"], "archive_sha256_reused": manifest["archive_sha256"],
+        "archive_bytes": manifest["archive_bytes"], "rootfs_entries": len(manifest["entries"]),
+        "additional_exports": 0, "payload_bytes_rehashed": 0, "model_calls": 0, "slot_claimed": False}))
+    archive.unlink()
+    return manifest_path
 
 
 def qualify_instance(environment, root, stdlib, inherited):
@@ -160,7 +235,7 @@ def qualify_instance(environment, root, stdlib, inherited):
 
 
 def ensure_native_instance(instance_id, *, mapping_reference, cache_root, stdlib,
-                           public_tasks_reference, docker_socket):
+                           public_tasks_reference, docker_socket, continue_exported=False):
     """Return absolute paths only after this exact task's real initialization."""
     rows = json.loads(checked_file(public_tasks_reference).read_bytes())
     if len(rows) != 500 or len({row["instance_id"] for row in rows}) != 500:
@@ -187,13 +262,18 @@ def ensure_native_instance(instance_id, *, mapping_reference, cache_root, stdlib
                 checked_file(receipt[key])
             return {key: receipt[key]["path"] for key in (
                 "rootfs_environment", "rootfs_manifest", "environment", "qualification")}
-        if root.exists():
+        if root.exists() and not continue_exported:
             raise RuntimeError("An incomplete preparation is retained; repair explicitly before claiming a slot")
+        if continue_exported and not root.exists():
+            raise ValueError("Explicit continuation requires the existing exported directory")
         try:
-            manifest_path = prepare_rootfs(
-                environment=environment, controller=ActorDocker(docker_socket),
-                config_blob=mapping["actor_config_blob"], destination=root,
-                preserve_numeric_ownership=True)
+            if continue_exported:
+                manifest_path = continue_exported_rootfs(environment, mapping, root)
+            else:
+                manifest_path = prepare_rootfs(
+                    environment=environment, controller=ActorDocker(docker_socket),
+                    config_blob=mapping["actor_config_blob"], destination=root,
+                    preserve_numeric_ownership=True)
             (root / "environment.json").write_bytes(canonical(environment))
             qualification = qualify_instance(environment, root, stdlib, inherited)
             manifest = json.loads(manifest_path.read_bytes())

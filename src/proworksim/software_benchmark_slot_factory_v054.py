@@ -67,7 +67,7 @@ def build_slot_config(*, slot_id, condition_reference, model_service, registry_r
         "model_start_timeout": model_service.get("startup_timeout_seconds", 600),
         "model_local": str(ROOT / "runs/assets/models/Qwen3.5-9B-c20223623576"),
         "public_test_registry": registry_reference, "public_test_entry": entry,
-        "lazy_native_preparation": {"cache_root": str(ROOT / "runs/software-benchmark-v054/native-lazy-r3")},
+        "lazy_native_preparation": {"cache_root": str(ROOT / "runs/software-benchmark-v054/native-lazy-cache")},
         "stdlib": str(ROOT / "runs/software-benchmark-v054/native-binding-control/r3/REF/control-stdlib"),
         "sdk_runtime": str(ROOT / "runs/software-benchmark-v054/native-binding-control/r3/sdk-runtime"),
         "dataset_revision": "78f471bf655a3137b2e8a75af1501690ec009ec3",

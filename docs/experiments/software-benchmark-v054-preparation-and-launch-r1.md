@@ -2,6 +2,14 @@
 
 日期：2026-10-21，Asia/Shanghai。本文汇总在当前服务器上的实际准备结果。用户随后明确要求“先占用GPU6,7”及“尽快完成环境准备进行实验”，新正式授权单独记录于 `config/v054-formal-authorization-r1.json`；此前未授权、准备失败和中间版本回执均保留。
 
+## 最新正式运行状态：12:26:11
+
+正式评测已经启动。北京时间2026-10-21 **12:26:11**，队列状态变为 `paused_technical_unknown`：REF槽5的 `django__django-11276` 未通过lazy环境初始化，失败发生在正式槽领取前，`claimed=false`、`entered=false`、`model_calls=0`、`GPU_loads=0`。队列暂停后续新调度，已进入的回合依原有监控闭合；该环境故障没有被填写成模型修复失败。
+
+首个任务为 `matplotlib__matplotlib-25479`。MATCH槽1和REF槽3先在GPU6／7并行，随后均已正常预算闭合，候选已交给官方评分器；PROJECT槽2正在GPU6运行。这里不根据过程token量或闭合事件填入官方resolved值，也不报告完成率。首两回合的生成闭合不代表完整500题面板或三组评测已经完成。
+
+实际服务为 `proworksim-v054-formal-queue-r2.service`，正式 `bindings-r3` 的SHA为 `512c770ad3cfcb248f241de475ccd7e77689cd36e52b02adc961a219ce607b5c`。运行时、配置和源码均已冻结；本文只记录已发生的状态变化。
+
 ## 数据与共同初态
 
 SWE-bench Verified 固定官方 `test` 500题、12个仓库已完整取得。数据revision为 `78f471bf655a3137b2e8a75af1501690ec009ec3`，ModelScope固定镜像文件与既定官方parquet的大小及SHA完全相同。三组共用同一500题，预定1500槽和全部seed保持原样；不存在按成绩换题、只保留可运行子集或恢复原SWE-smith 280槽的操作。
@@ -20,6 +28,10 @@ REF和MATCH使用相同原生OpenHands 1.49.6五工具、模板、历史和conde
 
 真实原生环境已经验证数字UID／GID、私有namespace、SDK与Actor分离，以及共同4CPU／16GiB／16,384 pids内核限制。首题最终r3按需初始化也实际通过，后续每题在领取正式槽和GPU前初始化；不预展开500份rootfs。共享模板仍会随任务累积，占用不等于恒定上界。公开测试与已可信闭合的episode临时副本在保存日志、执行身份、完整候选和回执后清理；失败且未取得可信候选时保留排障现场。
 
+首个正式任务的Matplotlib镜像另暴露338个Qhull文件具有UID 197609／GID 197121，超过原低ID线性映射范围。修订仅在现有65,536个subordinate IDs中使用未被该manifest占用的槽位，保留实际guest高ID及已观测低ID，不扩大全局分配。一次必要真实user namespace控制通过；原UID／工具／资源机制未变化的部分继续按源码身份复用。已完成的253,136条rootfs导出元数据和payload直接继续属主处理／初始化，没有重新export或重新散列payload，首Matplotlib随后实际qualified。
+
+同一接缝也影响PROJECT公开测试：高host UID目录不能由普通宿主用户直接删除。因此仅在尚未启动worker的新测试clone内，由受约束helper处理即将被bundle替换的旧 `/testbed`，再沿用原物化与Git控制保留流程。一个实际高UID旧子目录的替换控制通过，并验证 `.git` 保留、公开树外及符号链接目标属主不变。不可变模板、REF／MATCH工作区和官方评分语义均未调整，也没有向PROJECT暴露sudo／bash。原Astropy合格模板仅通过引用登记复用，未复制、移动或重新验证大目录。
+
 新必要控制覆盖：退出chroot后的公开输出读取拒绝符号链接逃逸；临时副本只在可信quiescence后删除；宿主死亡后，传给model service的同一flock描述符继续持有，直到该服务的全部子孙退出才释放。正式入口将普通预算／软时限终止与未知账单分开，正常终止仍锁定唯一候选，不能因耗尽合法预算把整批误判为公共故障。
 
 官方评分器保持 `swebench==5.0.2`，r5只绑定最终Actor映射并核对例外证据。一个真实官方容器评分接缝已经产生 `official_report`，空候选未解决；该结果不是模型成绩。后续映射修订没有重复执行隐藏评分测试，评分结果仍只在可信评测侧可见。相关记录见[执行器](software-benchmark-v054-runner-preparation.md)、[按需环境](software-benchmark-v054-lazy-runtime-r3.md)。
@@ -30,6 +42,8 @@ REF和MATCH使用相同原生OpenHands 1.49.6五工具、模板、历史和conde
 
 MATCH r2真实容量检查已通过：两次请求输入／输出为7,406／39和16,384／2，实际总计23,831 token，未结预约为0。owner结束时权重状态未改变、随机状态恢复、服务cgroup为空。完整输入上限已实际触达；模型提前停止不等于降低输出上限，也不证明生成了最大输出长度。
 
+REF r6也已实际通过：两次请求输入／输出为7,404／73和98,304／46，共105,827 token，未结预约为0。98,304完整输入上限已触达；实际短输出不代表生成了32,768上限。完成后服务已经关闭，cgroup为空、外层launcher已回收。两种数值服务的容量阶段合计 **4次真实生成、129,658 token、0未结预约**，与程序化CPU计账、正式任务用量及准备期间GPU驻留分别记录。最终资格保存在 `artifacts/software-benchmark-v054/native-environment/model-capacity-admission.json`。
+
 REF准备过程中出现的具体环境缺口分别保留，不能当作模型不会修代码：
 
 | 记录 | 实际阻点 | 修复范围 |
@@ -38,8 +52,9 @@ REF准备过程中出现的具体环境缺口分别保留，不能当作模型�
 | r2 REF | Triton依赖私有环境中不存在的`/sbin/ldconfig`发现驱动 | 使用其正式支持的`TRITON_LIBCUDA_PATH=/opt/host-nvidia` |
 | r3 REF | ZMQ IPC路径超过Linux Unix socket限制 | 使用独立短`VLLM_RPC_BASE_PATH`，保留原缓存和数值设置 |
 | r4 REF | 采样内核预热找不到CUDA编译器 | 只读挂载服务器已有CUDA13.0，显式`CUDA_HOME` |
+| r5 REF | nvcc已可运行，但最后链接报`c++: not found`；私有alternatives链接失效 | 仅在REF私有`/usr` overlay补`cc → gcc`、`c++ → g++`，不修改宿主全局工具链或数值配置 |
 
-r4已实际加载权重并完成torch.compile后才遇到采样编译缺口；前述失败均发生在API readiness／合成生成之前，没有把失败请求重采为正式成绩。REF当前独立r5继续验证，已通过的MATCH不重复。完整准备尝试及源封存见 `artifacts/software-benchmark-v054/native-environment/capacity-history/`，最终真实容量资格独立写入 `model-capacity-admission.json`，在形成前不声称三组模型服务全部就绪。
+r4已实际加载权重并完成torch.compile后才遇到采样编译缺口；r5进一步到达采样链接阶段。私有命令链接修复后，实际FlashInfer采样扩展编译／加载通过，REF r6再完成上述两次真实请求。前述失败均发生在API readiness／合成生成之前，保留为环境准备失败；已通过的MATCH没有重复执行。完整准备尝试及各自源封存见 `artifacts/software-benchmark-v054/native-environment/capacity-history/`，没有将这些准备尝试计入正式基准成绩。
 
 REF已有198项固定Python依赖；新增通用C++／Python头文件工具链通过清华HTTPS直连取得72个包、92,412,656字节，使用APT认证索引和包SHA，未改宿主已安装软件。CUDA部分直接复用现有Toolkit13.0.2、nvcc13.0.88，无新增下载；记录16个核心文件SHA和其余文件元数据，明确这是既有本地安装身份，原安装包签名未追溯。实际宿主驱动仍为580.178.04，来自只读`/opt/host-nvidia`，不以toolkit版本代替驱动版本。
 
@@ -47,6 +62,18 @@ REF已有198项固定Python依赖；新增通用C++／Python头文件工具链�
 
 用户要求占位后，GPU6先预留约58GiB、GPU7预留76GiB。GPU6预留期间其他用户短暂占用了约19GiB，因此保留的是实际可用显存；没有停止其他用户任务。占位交接给本项目容量检查，检查退出后再预留以供正式实验。占位和环境准备的GPU驻留单独计，不算模型生成token。
 
-正式运行使用[持久队列](software-benchmark-v054-formal-queue-r1.md)：GPU7执行REF，GPU6执行MATCH／PROJECT，最多两个生成槽及两个可信CPU评分worker；严格遵循原slot_index领取顺序。每题独立初态，不复用历史补丁、反馈或模型KV。每槽500,000输入加输出token，128次尝试和决定，5,400／6,000秒边界；三组共1,500槽、生成上界750,000,000 token。
+正式运行使用[持久队列plan-r2](software-benchmark-v054-formal-queue-r2.md)：GPU7执行REF，GPU6执行MATCH／PROJECT，最多两个生成槽及两个可信CPU评分worker。按用户“先安排已就绪任务”的最新要求，调度器在原slot_index顺序中选择所需GPU当前可用的最早未领取槽，保持每张卡内的原相对顺序并记录实际启动序列，避免GPU6等待阻塞可用GPU7。严格全局队首版本及准备失败现场保留；这次调整发生在首个正式模型回合之前，没有改动固定题单、seed、科学条件或预算。每题独立初态，不复用历史补丁、反馈或模型KV。每槽500,000输入加输出token，128次尝试和决定，5,400／6,000秒边界；三组共1,500槽、生成上界750,000,000 token。
 
-原始授权记录不自动等于容量通过或队列已启动。最终源manifest、两种真实容量回执和r5评分身份闭合后，才冻结正式bindings并交接GPU。正常模型结果由官方评分true／false确定，容器、导出、账单或评分不确定性单列；公共故障暂停新生成，已进入槽不重采。PROJECT另保留合法交付端点，REF／MATCH该指标不适用。报告一直保留每组500题的计划分母，不将同题三组当作1500个独立任务。
+最终源manifest、两种真实容量回执和r5评分身份已闭合，正式bindings已冻结并完成GPU交接。正常模型结果由官方评分true／false确定，容器、导出、账单或评分不确定性单列；公共故障暂停新生成，已进入槽不重采。PROJECT另保留合法交付端点，REF／MATCH该指标不适用。报告一直保留每组500题的计划分母，不将同题三组当作1500个独立任务。当前Django的未领取槽准备故障及后续处理仍须单列，不能通过换题或重采掩盖。
+
+## 启动后的历史用量快照：12:22:40
+
+下表是北京时间2026-10-21 **12:22:40** 的正式生成账本快照，当时尚无已记录运行故障；它早于12:26:11的新调度暂停，不能作为最终回合账单。
+
+| 条件／槽 | GPU | 已结算模型请求 | 已知实际输入＋输出token | 另列在途状态 |
+| --- | --- | ---: | ---: | --- |
+| MATCH／1 | 6 | 37 | 380,836 | 另1次请求在途，实际用量尚未结算 |
+| REF／3 | 7 | 4 | 45,717 | 另1次请求在途，实际用量尚未结算 |
+| PROJECT／2 | 6 | 尚未开始 | 不适用 | 当时等待GPU6；12:26:11已运行 |
+
+该快照合计41次已结算请求、426,553个已知实际token，另有2次在途请求。没有把在途预约当作实际token，也没有将容量准备的129,658 token混入此表。调用数、预算闭合和过程用量都不能代替官方逐题代码结果、PROJECT合法交付结果或完成率。

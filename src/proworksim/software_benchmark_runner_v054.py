@@ -150,6 +150,10 @@ class PublicTests:
         bundle = json.loads(checked(bundle_ref).read_text())
         # All writes happen in a fresh test clone, while its processes are absent.
         worktree = actor / "testbed"
+        subprocess.run(["sudo", "-n", "/usr/bin/python3",
+            str(ROOT / "tools/prepare_public_tree_replacement_v054.py"),
+            "--manifest", clone["rootfs_manifest"], "--sha256", clone["rootfs_manifest_sha256"]],
+            check=True, capture_output=True, text=True)
         replace_public_tree(worktree, bundle, output / "candidate-tree")
         entry = self.config["public_test_entry"]
         if entry["source"] != "public_repository" or entry["cwd"] != "/testbed" or not entry["admitted"]:
@@ -308,7 +312,7 @@ def _run(config, output, leases):
                 mapping_reference=config["scorer_request_base"]["baseline_mapping"],
                 cache_root=Path(config["lazy_native_preparation"]["cache_root"]),
                 stdlib=Path(config["stdlib"]), public_tasks_reference=config["public_tasks"],
-                docker_socket=config["scorer_request_base"]["docker_socket"])
+                docker_socket="unix://" + config["scorer_request_base"]["docker_socket"])
             config = {**config, "rootfs_environment": prepared["rootfs_environment"],
                       "environment": reference(prepared["environment"])}
             write_new(output / "native-preparation.json", prepared)

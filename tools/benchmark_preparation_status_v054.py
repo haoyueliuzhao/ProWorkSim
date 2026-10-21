@@ -120,6 +120,7 @@ def status(root=ROOT):
         capacity_results.update(state.get("results", {}))
     capacity_admission = read(artifacts / "native-environment/model-capacity-admission.json")
     authorization = read(root / "config/v054-formal-authorization-r1.json")
+    formal_queue = read(run / "formal-queue-r1/state.json")
     formal_authorized = (authorization.get("execution_authorized") is True
                          and authorization.get("planned_model_episodes") == 1500
                          and authorization.get("slots_sha256") ==
@@ -223,7 +224,14 @@ def status(root=ROOT):
         "formal_execution_authorized": formal_authorized,
         "model_execution_authorized": formal_authorized,
         "formal_authorization": authorization.get("version"),
-        "automatic_formal_model_dispatch": False,
+        "automatic_formal_model_dispatch": formal_queue.get("status") == "running",
+        "formal_queue": {
+            "status": formal_queue.get("status", "not_started"),
+            "generation_states": dict(Counter(row.get("generation", {}).get("status", "unknown")
+                                               for row in formal_queue.get("rows", []))),
+            "dispatch_count": len(formal_queue.get("generation_dispatches", [])),
+            "planned_denominator_per_arm": 500,
+        },
         "bounded_capacity_monitor_registered": bool(capacity.get("monitor")),
         "model_calls_from_this_reporter": 0,
     }

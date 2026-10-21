@@ -1,8 +1,10 @@
 # ProWorkSim
 
-## v0.54：Verified 三组评测准备（2026-10-21）
+## v0.54：Verified 三组评测已启动，环境故障暂停新调度（2026-10-21）
 
-[新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。用户于2026-10-21明确要求准备完成后进行实验；[新授权](config/v054-formal-authorization-r1.json)覆盖三组共1,500回合、最多7.5亿输入加输出token，仍须通过真实容量与最终源码准入。预算是上限，不启动训练或多智能体；旧准备阶段的未授权记录保留。
+[新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。[新授权](config/v054-formal-authorization-r1.json)覆盖三组共1,500回合、最多7.5亿输入加输出token；真实模型容量、最终源码和正式bindings已冻结，评测已经启动。预算是上限，不启动训练或多智能体；旧准备阶段的未授权记录保留。
+
+**截至北京时间2026-10-21 12:26:11，队列为 `paused_technical_unknown`，已暂停新调度。** 首题 `matplotlib__matplotlib-25479` 的MATCH槽1与REF槽3已正常预算闭合，候选已交给官方评分器；PROJECT槽2正在GPU6运行。REF槽5的 `django__django-11276` 在lazy初始化时未通过准入，`claimed=false`、`entered=false`、模型调用和GPU加载均0。该记录属于槽领取前的环境准备故障，不记成模型修复失败；计划分母继续保留500题／组。详见[准备与正式运行交接](docs/experiments/software-benchmark-v054-preparation-and-launch-r1.md)。
 
 用户授权的[文件接口修复](docs/experiments/software-benchmark-v054-file-repair.md)已实现：取消原200文件／2MB准入上限，新增受管创建、删除、跨目录重命名及分页，保留完整文件元数据、同版本提交和最后工作树／最后合法提交双端点。17项必要合成CPU控制及真实OpenHands SDK构造检查通过，新增模型调用为0。
 
@@ -10,7 +12,9 @@
 
 [三组单题执行器](docs/experiments/software-benchmark-v054-runner-preparation.md)已接通真实工具、公开测试、计账、关闭、完整候选与PROJECT双端点，三个程序化CPU回合通过；[实际原生环境](docs/experiments/software-benchmark-v054-native-environment-r2.md)已验证UID、共同4CPU／16GiB内核约束及官方容器评分接缝。[500个共同初态](docs/experiments/software-benchmark-v054-actor-ancestry-r3.md)已全部准入并保持官方运行时版本，完整公开入口500条已绑定。[按需原生环境](docs/experiments/software-benchmark-v054-lazy-runtime-r3.md)在正式槽领取前初始化。这些均不计为模型成绩，也不声称已跑完500个完整测试套件。
 
-[REF编译工具链和模型容量准备](docs/experiments/software-benchmark-v054-model-preparation-r1.md)单独保留原始记录；随后按用户要求预留GPU6／7，并交接实际容量验证。MATCH／PROJECT共用服务已通过16,384满输入和准确记账，REF的私有驱动定位及IPC路径修复独立记录，不重跑已过的MATCH。运行 `python3 tools/benchmark_preparation_status_v054.py` 可分别查看资产、CPU环境、真实GPU容量和正式授权；此命令只读取既有回执及文件stat，不重验大文件或启动模型。
+[REF编译工具链和模型容量准备](docs/experiments/software-benchmark-v054-model-preparation-r1.md)保留全部中间记录。MATCH／PROJECT共用数值服务的容量检查为23,831 token；REF r6两次真实请求输入／输出分别7,404／73、98,304／46，共105,827 token。容量阶段合计4次真实生成、129,658 token、未结预约0；未重跑已通过的MATCH。REF私有驱动、短IPC、CUDA工具链及 `cc`／`c++` 链接修复均单独记录。首Matplotlib的高UID稀疏映射和PROJECT临时公开树替换也已完成必要控制，复用已有导出和模型资格。
+
+[正式调度plan-r2](docs/experiments/software-benchmark-v054-formal-queue-r2.md)按原题单顺序选择当前GPU可用的任务，保持每张卡内的原相对顺序；MATCH槽1与REF槽3先在GPU6／7并行，任务、seed和预算不变。服务为 `proworksim-v054-formal-queue-r2.service`，`bindings-r3` SHA为 `512c770ad3cfcb248f241de475ccd7e77689cd36e52b02adc961a219ce607b5c`。较早的12:22:40快照记录MATCH已结算37次请求／380,836 token、REF已结算4次／45,717 token，另各1次请求在途，当时PROJECT等待GPU6；这些是过程用量，不是最终回合用量、成绩或完成率。运行 `python3 tools/benchmark_preparation_status_v054.py` 只读取既有回执及文件stat，不重验大文件或启动模型。
 
 ## 服务器 249：迁移与运行入口（2026-10-19）
 

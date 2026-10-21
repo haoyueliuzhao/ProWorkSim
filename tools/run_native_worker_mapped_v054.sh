@@ -12,11 +12,25 @@ if [[ ${1:-} == --inside ]]; then
         "$runtime_root" /data0/zhuxinrui "$temporary_root" rw "" "" "$@"
 fi
 runtime_root=/data0/zhuxinrui/proworksim-runtime
+arguments=("$@")
+environment_manifest=
+rootfs=
+for ((index=0; index<${#arguments[@]}; index++)); do
+    case ${arguments[index]} in
+        --environment-manifest) environment_manifest=${arguments[index+1]:-} ;;
+        --rootfs) rootfs=${arguments[index+1]:-} ;;
+    esac
+done
+[[ -n "$environment_manifest" && -n "$rootfs" ]] || {
+    printf '%s\n' 'A pinned rootfs and public environment manifest are required.' >&2
+    exit 2
+}
 temporary_parent="$repository_root/runs/software-benchmark-v054/native-worker-tmp"
 mkdir -p "$temporary_parent"
 temporary_root=$(mktemp -d "$temporary_parent/mapped.XXXXXXXX")
 trap 'rm -rf -- "$temporary_root"' EXIT
-sudo -n /usr/bin/python3 "$repository_root/tools/native_uid_bootstrap_v054.py" launch -- \
+sudo -n /usr/bin/python3 "$repository_root/tools/native_uid_bootstrap_v054.py" launch \
+    --environment-manifest "$environment_manifest" --rootfs "$rootfs" -- \
     /usr/bin/unshare --mount --net --pid --fork \
     /bin/bash "$repository_root/tools/run_native_worker_mapped_v054.sh" --inside \
     "$runtime_root" "$temporary_root" \
