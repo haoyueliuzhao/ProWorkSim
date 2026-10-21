@@ -110,7 +110,7 @@ def _git(repo, args, *, data=None, stdout=subprocess.PIPE):
     return process.stdout
 
 
-def export_git_patch(baseline, candidate, path, *, policy=None):
+def export_git_patch(baseline, candidate, path, *, policy=None, gitlinks=None):
     """Write a binary-capable patch and verify its exact index-tree round trip.
 
     Raw blobs bypass attributes, clean filters and newline conversion. The
@@ -166,7 +166,7 @@ def export_git_patch(baseline, candidate, path, *, policy=None):
             _git(repo, ["apply", "--cached", "--binary", "--", str(path.resolve())])
         if _git(repo, ["write-tree"]).decode().strip() != after_tree:
             raise ValueError("Exported patch failed exact binary/mode/symlink round trip")
-    return {
+    result = {
         "patch": reference(path), "base_git_tree": before_tree,
         "candidate_git_tree": after_tree, "round_trip_verified": True,
         "base_tree_sha256": before_manifest["tree_sha256"],
@@ -175,6 +175,9 @@ def export_git_patch(baseline, candidate, path, *, policy=None):
         "rename_representation": "delete-and-add; exact target bytes and modes retained",
         "binary_patch": True, "editable_path_filter_used": False,
     }
+    from .software_benchmark_gitlinks_v054 import annotate_patch
+    return annotate_patch(result, baseline.get("gitlinks", []) if gitlinks is None else gitlinks,
+                          baseline, candidate)
 
 
 def _select_last_submission_locked(prepared):
@@ -234,6 +237,8 @@ def _select_last_submission_locked(prepared):
         entry_metadata=bundle["entry_metadata"])
     return {
         "task_id": prepared.case["case_id"], "baseline": copy.deepcopy(baseline),
+        "gitlinks": (prepared.source_provider.gitlink_descriptors(prepared.case["case_id"])
+                     if hasattr(prepared.source_provider, "gitlink_descriptors") else []),
         "candidate": copy.deepcopy(bundle), "policy": policy, "manifest": manifest,
         "binding": {
             "delivery": delivery, "fixed_patch": patch,
@@ -286,7 +291,7 @@ def _write_selected(root, selected, *, endpoint, reuse=None):
         policy_ref = write_new(root / "file-policy.json", selected["policy"])
         patch = export_git_patch(
             selected["baseline"], selected["candidate"], root / "candidate.patch",
-            policy=selected["policy"])
+            policy=selected["policy"], gitlinks=selected.get("gitlinks"))
         patch_ref = write_new(root / "patch-receipt.json", patch)
     else:
         candidate_ref, manifest_ref = reuse["candidate"], reuse["tree"]
@@ -335,6 +340,8 @@ def lock_episode_candidates(prepared, *, run_root):
             entry_metadata=bundle["entry_metadata"])
         terminal = {
             "task_id": prepared.case["case_id"], "baseline": copy.deepcopy(baseline),
+            "gitlinks": (prepared.source_provider.gitlink_descriptors(prepared.case["case_id"])
+                         if hasattr(prepared.source_provider, "gitlink_descriptors") else []),
             "candidate": copy.deepcopy(bundle), "policy": policy, "manifest": manifest,
             "binding": {
                 "endpoint": "terminal_code", "actor_id": actor,

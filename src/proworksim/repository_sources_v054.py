@@ -189,8 +189,8 @@ def tree_manifest(files, entry_metadata):
             "tree_sha256": digest(json_bytes(entries))}
 
 
-def snapshot_repository(source_root, *, file_policy=None):
-    """Read all ordinary files and symlinks, excluding only root Git metadata.
+def snapshot_repository(source_root, *, file_policy=None, gitlinks=None):
+    """Read all ordinary files and symlinks, excluding Git control metadata.
 
     No link is traversed and no suffix, hidden filename, size or gold-dependent
     selection is used. The caller must prevent concurrent source writers.
@@ -199,6 +199,8 @@ def snapshot_repository(source_root, *, file_policy=None):
     if not root.is_dir():
         raise RepositorySourceError("The public repository root must be a directory")
     policy = normalize_policy(file_policy)
+    from .software_benchmark_gitlinks_v054 import bind_gitlinks
+    links = bind_gitlinks(root, gitlinks)
     files, metadata = {}, {}
     total = 0
     for folder, directories, names in os.walk(root, topdown=True, followlinks=False):
@@ -206,13 +208,13 @@ def snapshot_repository(source_root, *, file_policy=None):
         paths = []
         for name in sorted(directories):
             child = directory / name
-            if directory == root and name == ".git":
+            if name == ".git":
                 directories.remove(name)
             elif child.is_symlink():
                 directories.remove(name)
                 paths.append(child)
         for name in sorted(names):
-            if directory == root and name == ".git":
+            if name == ".git":
                 continue
             paths.append(directory / name)
         directories.sort()
@@ -263,7 +265,8 @@ def snapshot_repository(source_root, *, file_policy=None):
     return {"files": dict(sorted(files.items())), "entry_metadata": dict(sorted(metadata.items())),
             "tree": tree_manifest(files, metadata), "file_policy": policy,
             "capture_scope": "complete_preisolated_public_worktree",
-            "excluded_control_metadata": [".git"], "truncated": False}
+            "excluded_control_metadata": [".git at every repository depth"],
+            "gitlinks": links, "truncated": False}
 
 
 def _validate_identity(task_id, problem_statement, source_identity):
@@ -278,10 +281,10 @@ def _validate_identity(task_id, problem_statement, source_identity):
 
 
 def capture_repository(source_root, snapshot_root, *, task_id, problem_statement,
-                       source_identity, file_policy=None):
+                       source_identity, file_policy=None, gitlinks=None):
     """Persist one complete source snapshot and return its manifest path."""
     _validate_identity(task_id, problem_statement, source_identity)
-    snapshot = snapshot_repository(source_root, file_policy=file_policy)
+    snapshot = snapshot_repository(source_root, file_policy=file_policy, gitlinks=gitlinks)
     output = Path(snapshot_root).resolve()
     if output == Path(source_root).resolve() or Path(source_root).resolve() in output.parents:
         raise RepositorySourceError("Snapshot storage must be outside the captured public repository")
@@ -328,6 +331,8 @@ class RepositorySources:
             if len(body) != reference["bytes"] or digest(body) != reference["sha256"]:
                 raise RepositorySourceError("The complete repository snapshot changed")
             snapshot = json.loads(body)
+            from .software_benchmark_gitlinks_v054 import checked_gitlinks
+            gitlinks = checked_gitlinks(snapshot.get("gitlinks", []))
             policy = normalize_policy(row["file_policy"])
             files, metadata = snapshot["files"], snapshot["entry_metadata"]
             validate_tree(files, metadata, policy)
@@ -337,13 +342,18 @@ class RepositorySources:
                     or snapshot.get("capture_scope") != "complete_preisolated_public_worktree"):
                 raise RepositorySourceError("The repository manifest does not bind a complete tree")
             self._cases[task_id] = {"row": copy.deepcopy(row), "files": files, "entry_metadata": metadata,
-                                    "file_policy": policy, "tree": observed}
+                                    "file_policy": policy, "tree": observed,
+                                    "gitlinks": gitlinks}
         self.case_ids = tuple(self._cases)
 
     def _entry(self, case_id):
         if case_id not in self._cases:
             raise RepositorySourceError("Unknown repository task")
         return self._cases[case_id]
+
+    def gitlink_descriptors(self, case_id):
+        from .software_benchmark_gitlinks_v054 import checked_gitlinks
+        return checked_gitlinks(self._entry(case_id)["gitlinks"])
 
     def build_case(self, case_id):
         entry = self._entry(case_id)
@@ -381,6 +391,8 @@ class RepositorySources:
             raise RepositorySourceError("v054 candidates must carry complete entry_metadata")
         policy = entry["file_policy"]
         validate_tree(files, entry_metadata, policy)
+        from .software_benchmark_gitlinks_v054 import check_gitlink_payload
+        check_gitlink_payload(files, entry["gitlinks"])
         for path in set(files) | set(entry["files"]):
             if is_readonly(path, policy) and (
                     path not in files or path not in entry["files"]

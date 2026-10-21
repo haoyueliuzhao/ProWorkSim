@@ -8,7 +8,8 @@ if [[ ${1:-} == --inside ]]; then
     shift 4
     mount --make-rprivate /
     mount --bind "$actor_root/testbed" "$runtime_root/sysroot/testbed"
-    exec /bin/bash /data0/zhuxinrui/proworksim-runtime/enter-namespace.sh \
+    repository_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+    exec /bin/bash "$repository_root/tools/enter_benchmark_runtime_v054.sh" \
         "$runtime_root" /data0/zhuxinrui "$temporary_root" rw "" "" "$@"
 fi
 runtime_root=$1

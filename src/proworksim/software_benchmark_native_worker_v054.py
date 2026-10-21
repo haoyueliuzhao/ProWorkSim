@@ -102,6 +102,14 @@ def validate_rootfs(root, environment, *, preparation_only):
         raise ValueError("Worker rootfs differs from the pinned image/environment binding")
     admitted = (manifest.get("numeric_ownership_equivalence_admitted") is True
                 and manifest.get("native_real_task_control_passed") is True)
+    if manifest.get("numeric_ownership_equivalence_admitted") is True:
+        for kind in ("uid", "gid"):
+            expected = [[int(part) for part in line.split()] for line in
+                        manifest["ownership_receipt"][kind + "_map"].splitlines()]
+            actual = [[int(part) for part in line.split()] for line in
+                      Path("/proc/self/" + kind + "_map").read_text().splitlines()]
+            if actual != expected:
+                raise ValueError("Worker namespace does not preserve prepared numeric " + kind)
     if not admitted and not preparation_only:
         raise ValueError("Official native rootfs lacks actual-image/UID qualification; CPU preparation only")
     return {"kind": "official_image", "rootfs_manifest_sha256": environment["rootfs_manifest_sha256"],
@@ -246,6 +254,8 @@ def enter_root(root, stdlib, public_environment):
         raise RuntimeError("Worker privilege restrictions did not apply")
     return {
         "pid": os.getpid(), "uid": os.getuid(), "capabilities_all_zero": True,
+        "uid_map": Path("/proc/self/uid_map").read_text().strip(),
+        "gid_map": Path("/proc/self/gid_map").read_text().strip(),
         "no_new_privileges": True, "dumpable": False,
         "private_proc_pid1_root": os.readlink("/proc/1/root"),
         "network_interfaces": [line.split(":", 1)[0].strip()

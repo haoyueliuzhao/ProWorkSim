@@ -1,14 +1,16 @@
 # ProWorkSim
 
-## v0.54：Verified 500题方案与受管文件修复（2026-10-20）
+## v0.54：Verified 三组评测准备（2026-10-21）
 
-[新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。主对照1000回合预算上限5亿token，REF候选另500回合／2.5亿；这些是方案数字，**新增模型运行尚未授权**，不启动训练或多智能体。
+[新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。用户于2026-10-21明确要求准备完成后进行实验；[新授权](config/v054-formal-authorization-r1.json)覆盖三组共1,500回合、最多7.5亿输入加输出token，仍须通过真实容量与最终源码准入。预算是上限，不启动训练或多智能体；旧准备阶段的未授权记录保留。
 
 用户授权的[文件接口修复](docs/experiments/software-benchmark-v054-file-repair.md)已实现：取消原200文件／2MB准入上限，新增受管创建、删除、跨目录重命名及分页，保留完整文件元数据、同版本提交和最后工作树／最后合法提交双端点。17项必要合成CPU控制及真实OpenHands SDK构造检查通过，新增模型调用为0。
 
-[固定Verified数据及500题／1500槽](docs/experiments/software-benchmark-v054-data-preparation.md)已从ModelScope国内直连取得并物化；[官方评分器](docs/experiments/software-benchmark-v054-scorer-preparation.md)已独立安装，500条规格兼容；[REF/MATCH原生接口](docs/experiments/software-benchmark-v054-native-sdk-preparation.md)的五工具、模板及condenser已在CPU构造中确认相同。[REF依赖](docs/experiments/software-benchmark-v054-ref-environment.md)已完成198项固定包的离线安装及CPU检查；[MATCH数值接入](docs/experiments/software-benchmark-v054-match-seam.md)和[两组共用的准确计数](docs/experiments/software-benchmark-v054-exact-native-transport.md)已通过合成CPU控制；[镜像资产](docs/experiments/software-benchmark-v054-image-preparation.md)、实际容器接入和GPU容量仍待闭合，不能称全部环境就绪。使用 `python3 tools/benchmark_preparation_status_v054.py` 读取现有回执汇总，不重复扫描大文件、不启动模型；旧v053的280槽继续保持未启动。
+[固定Verified数据及500题／1500槽](docs/experiments/software-benchmark-v054-data-preparation.md)与全部500个官方镜像已在本地，1,195个唯一内容块共131,932,243,128字节完整。下载沿用国内入口直连与固定SHA；不走代理、不重新拉取已有内容。三组共享完整题单，旧v053的280槽保持未启动。
 
-[原生工具隔离](docs/experiments/software-benchmark-v054-native-worker-preparation.md)和[每题生命周期／宿主超时监督](docs/experiments/software-benchmark-v054-episode-lifecycle.md)已通过必要CPU控制。实际镜像中的UID等价、共同资源限制和真实模型运行装配仍待准入；合成检查不计作500题成绩。
+[三组单题执行器](docs/experiments/software-benchmark-v054-runner-preparation.md)已接通真实工具、公开测试、计账、关闭、完整候选与PROJECT双端点，三个程序化CPU回合通过；[实际原生环境](docs/experiments/software-benchmark-v054-native-environment-r2.md)已验证UID、共同4CPU／16GiB内核约束及官方容器评分接缝。[500个共同初态](docs/experiments/software-benchmark-v054-actor-ancestry-r3.md)已全部准入并保持官方运行时版本，完整公开入口500条已绑定。[按需原生环境](docs/experiments/software-benchmark-v054-lazy-runtime-r3.md)在正式槽领取前初始化。这些均不计为模型成绩，也不声称已跑完500个完整测试套件。
+
+[REF编译工具链和模型容量准备](docs/experiments/software-benchmark-v054-model-preparation-r1.md)单独保留原始记录；随后按用户要求预留GPU6／7，并交接实际容量验证。MATCH／PROJECT共用服务已通过16,384满输入和准确记账，REF的私有驱动定位及IPC路径修复独立记录，不重跑已过的MATCH。运行 `python3 tools/benchmark_preparation_status_v054.py` 可分别查看资产、CPU环境、真实GPU容量和正式授权；此命令只读取既有回执及文件stat，不重验大文件或启动模型。
 
 ## 服务器 249：迁移与运行入口（2026-10-19）
 

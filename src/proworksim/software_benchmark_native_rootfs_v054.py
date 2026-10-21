@@ -159,7 +159,7 @@ def image_environment(config_bytes, *, image_id, public_python):
 
 
 def prepare_rootfs(*, environment, controller, config_blob, destination,
-                   minimum_free_bytes=64 * 1024**3):
+                   minimum_free_bytes=64 * 1024**3, preserve_numeric_ownership=False):
     """Export an already loaded image without starting any task process."""
     destination = Path(destination).resolve()
     destination.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -209,6 +209,8 @@ def prepare_rootfs(*, environment, controller, config_blob, destination,
         "base_commit": environment["task"]["base_commit"],
         "archive_sha256": archive_hash.hexdigest(), "archive_bytes": archive_bytes,
         "source_environment_sha256": digest(canonical(environment)), **tree,
+        "baseline_mapping": environment.get("baseline_mapping"),
+        "actor_head": environment.get("actor_head"), "actor_tree": environment.get("actor_tree"),
         "original_image_user": public_env["original_image_user"],
         "official_grading_image_modified": False, "containers_started": 0,
         "native_real_task_control_passed": False, "numeric_ownership_equivalence_admitted": False,
@@ -216,8 +218,46 @@ def prepare_rootfs(*, environment, controller, config_blob, destination,
     }
     manifest_path = destination / "rootfs-manifest.json"
     manifest_path.write_bytes(canonical(manifest))
+    if preserve_numeric_ownership:
+        helper = Path(__file__).resolve().parents[2] / "tools/native_uid_bootstrap_v054.py"
+        result = subprocess.run([
+            "sudo", "-n", "/usr/bin/python3", str(helper), "ownership", str(manifest_path),
+            digest(manifest_path.read_bytes())], check=True, capture_output=True, text=True)
+        ownership = json.loads(result.stdout)
+        manifest.update(
+            ownership_policy="original_numeric_uid_gid_in_subordinate_user_namespace",
+            numeric_ownership_equivalence_admitted=True, ownership_receipt=ownership)
+        manifest_path.write_bytes(canonical(manifest))
     public_env.update(rootfs_manifest=str(manifest_path),
                       rootfs_manifest_sha256=digest(manifest_path.read_bytes()))
     (destination / "public-environment.json").write_bytes(canonical(public_env))
     archive_path.unlink()
     return manifest_path
+
+
+def clone_prepared_rootfs(environment_manifest, destination):
+    """Fresh episode root; preserve mapped numeric owners without SDK mounts."""
+    environment_manifest = Path(environment_manifest).resolve()
+    public = json.loads(environment_manifest.read_bytes())
+    source_manifest = Path(public["rootfs_manifest"])
+    raw = source_manifest.read_bytes()
+    if digest(raw) != public["rootfs_manifest_sha256"]:
+        raise ValueError("Rootfs template manifest identity changed")
+    manifest = json.loads(raw)
+    if manifest.get("numeric_ownership_equivalence_admitted") is not True:
+        raise ValueError("Template lacks exact numeric ownership preparation")
+    destination = Path(destination).resolve()
+    destination.mkdir(mode=0o700, parents=True, exist_ok=False)
+    helper = Path(__file__).resolve().parents[2] / "tools/native_uid_bootstrap_v054.py"
+    subprocess.run(["sudo", "-n", "/usr/bin/python3", str(helper), "clone",
+                    str(source_manifest), digest(raw), str(destination / "rootfs")], check=True)
+    manifest.update(prepared_root=str(destination / "rootfs"),
+                    cloned_from_manifest_sha256=digest(raw),
+                    cloned_from_environment_sha256=digest(environment_manifest.read_bytes()))
+    path = destination / "rootfs-manifest.json"
+    path.write_bytes(canonical(manifest))
+    public.update(rootfs_manifest=str(path), rootfs_manifest_sha256=digest(path.read_bytes()))
+    env = destination / "public-environment.json"
+    env.write_bytes(canonical(public))
+    return {"rootfs": str(destination / "rootfs"), "environment_manifest": str(env),
+            "rootfs_manifest": str(path), "rootfs_manifest_sha256": digest(path.read_bytes())}

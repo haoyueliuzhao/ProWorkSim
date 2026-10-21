@@ -114,7 +114,7 @@ def bundle_from_archive(stream, *, prefix="testbed", file_policy=None):
     with tarfile.open(fileobj=stream, mode="r|*") as archive:
         for entry in archive:
             name = _archive_name(entry.name, prefix)
-            if not name or name == ".git" or name.startswith(".git/"):
+            if not name or ".git" in PurePosixPath(name).parts:
                 continue
             if entry.isdir():
                 continue
@@ -270,7 +270,7 @@ def prepare_public_source(environment, controller, destination, *, file_policy=N
     manifest = capture_repository(
         checkout, destination / "snapshot", task_id=task["instance_id"],
         problem_statement=task["problem_statement"], source_identity=source_identity,
-        file_policy=file_policy)
+        file_policy=file_policy, gitlinks=environment.get("gitlinks", []))
     receipt = {
         "version": VERSION, "environment_sha256": sha256(canonical(environment)),
         "source_manifest": str(manifest), "tree": tree_manifest(**bundle),
@@ -305,10 +305,21 @@ def project_public_runner(environment, controller, entry):
         output.mkdir(parents=True, exist_ok=False)
         container = controller.create(environment, arm="PROJECT")
         try:
+            staged_git = None
+            nested = [item["path"] for item in environment.get("submodules", [])]
+            if nested:
+                from .software_benchmark_gitlinks_v054 import NESTED_GIT_CONTROL
+                staged_git = controller.run(
+                    "exec", container, "/usr/bin/python3", "-I", "-c", NESTED_GIT_CONTROL,
+                    "stage", "/testbed", json.dumps(nested)).stdout.decode().strip()
             controller.run(
                 "exec", "--workdir", "/testbed", container, "/bin/bash", "-c",
                 "find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf -- {} +")
             controller.run("cp", "-", container + ":/testbed", input=payload)
+            if staged_git is not None:
+                controller.run(
+                    "exec", container, "/usr/bin/python3", "-I", "-c", NESTED_GIT_CONTROL,
+                    "restore", "/testbed", staged_git)
             timed_out = False
             started = time.monotonic()
             try:

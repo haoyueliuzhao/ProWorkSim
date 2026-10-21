@@ -28,7 +28,7 @@ def lock_native_candidate(episode, *, baseline_reference, public_worktree,
             source_identity={
                 **{key: public_task[key] for key in ("instance_id", "repo", "base_commit")},
                 "dataset_revision": dataset_revision,
-            }, file_policy=file_policy)
+            }, file_policy=file_policy, gitlinks=baseline.get("gitlinks", []))
         candidate_path = manifest.parent / "initial-tree.json"
         candidate = read_json(candidate_path)
         patch = export_git_patch(

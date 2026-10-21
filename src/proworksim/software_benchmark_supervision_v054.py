@@ -6,6 +6,7 @@ its exclusively leased model worker in the registered user services.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -20,18 +21,22 @@ VERSION = "software-benchmark-supervision-v054"
 UNIT = re.compile(r"proworksim-v054-episode-[a-f0-9]{32}-[a-z]+\.service")
 
 
-def _systemctl(*arguments):
+def _systemctl(*arguments, manager="user"):
+    if manager not in {"user", "system"}:
+        raise ValueError("Unknown service manager")
+    command = (["systemctl", "--user"] if manager == "user" else
+               (["systemctl"] if arguments[0] == "show" else ["sudo", "-n", "systemctl"]))
     return subprocess.run(
-        ["systemctl", "--user", *arguments], check=True,
+        [*command, *arguments], check=True,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15).stdout
 
 
-def properties(unit):
+def properties(unit, *, manager="user"):
     if not UNIT.fullmatch(unit):
         raise ValueError("Only a dedicated v054 episode service may be supervised")
     fields = ("Id", "InvocationID", "MainPID", "ControlGroup", "ActiveState",
               "SubState", "KillMode", "SendSIGKILL", "Result")
-    text = _systemctl("show", unit, "--property=" + ",".join(fields))
+    text = _systemctl("show", unit, "--property=" + ",".join(fields), manager=manager)
     return dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
 
 
@@ -43,7 +48,9 @@ def process_identity(pid):
 
 
 def _populated(cgroup):
-    if not cgroup.startswith("/user.slice/") or ".." in cgroup.split("/"):
+    allowed = cgroup.startswith("/user.slice/") or re.fullmatch(
+        r"/proworksimv054ep[a-f0-9]{32}\.slice/proworksim-v054-episode-[a-f0-9]{32}-[a-z]+\.service", cgroup)
+    if not allowed or ".." in cgroup.split("/"):
         raise ValueError("Unexpected episode cgroup path")
     events = Path("/sys/fs/cgroup" + cgroup) / "cgroup.events"
     try:
@@ -54,32 +61,48 @@ def _populated(cgroup):
 
 
 def launch_owned(command, *, claim_id, role, runtime_seconds=6000, stop_seconds=5,
-                 stdin=None, stdout=None, stderr=None):
+                 stdin=None, stdout=None, stderr=None, resources=None):
     """Return outer launcher and actual host service identity, preserving pipes."""
     if not re.fullmatch(r"[a-f0-9]{32}", claim_id) or not re.fullmatch(r"[a-z]+", role):
         raise ValueError("Invalid episode ownership identity")
     unit = f"proworksim-v054-episode-{claim_id}-{role}.service"
+    options = []
+    manager = "user"
+    if resources is not None:
+        from .software_benchmark_resources_v054 import inspect_resources
+        inspect_resources(resources)
+        if resources["claim_id"] != claim_id:
+            raise ValueError("Resource slice belongs to a different episode")
+        options.append("--slice=" + resources["slice"])
+        manager = resources.get("manager", "user")
+    launcher_command = (["systemd-run", "--user"] if manager == "user" else
+                        ["sudo", "-n", "systemd-run", "--uid=" + str(os.getuid()),
+                         "--gid=" + str(os.getgid())])
     process = subprocess.Popen([
-        "systemd-run", "--user", "--quiet", "--pipe", "--wait", "--unit=" + unit,
+        *launcher_command, "--quiet", "--pipe", "--wait", "--unit=" + unit,
         "--property=KillMode=control-group", "--property=SendSIGKILL=yes",
         "--property=TimeoutStopSec=" + str(stop_seconds),
         "--property=RuntimeMaxSec=" + str(runtime_seconds),
-        "--", *map(str, command),
+        *options, "--", *map(str, command),
     ], stdin=stdin, stdout=stdout, stderr=stderr, start_new_session=True)
     launcher = process_identity(process.pid)
     deadline = time.monotonic() + 10
     try:
         while time.monotonic() < deadline:
             try:
-                state = properties(unit)
+                state = properties(unit, manager=manager)
             except subprocess.CalledProcessError:
                 state = {}  # systemd-run and user manager registration are asynchronous.
             if int(state.get("MainPID", "0")) and state.get("ControlGroup"):
+                if resources is not None:
+                    from .software_benchmark_resources_v054 import assert_member
+                    assert_member(resources, state["ControlGroup"])
                 return process, {
                     "unit": unit, "claim_id": claim_id, "role": role,
                     "invocation_id": state["InvocationID"], "cgroup": state["ControlGroup"],
                     "main": process_identity(int(state["MainPID"])), "outer_launcher": launcher,
                     "runtime_seconds": runtime_seconds, "stop_seconds": stop_seconds,
+                    "resources": resources, "manager": manager,
                 }
             if process.poll() is not None:
                 raise RuntimeError("Owned service exited before identity admission")
@@ -96,14 +119,14 @@ def launch_owned(command, *, claim_id, role, runtime_seconds=6000, stop_seconds=
                 process.kill()
                 process.wait(timeout=3)
         try:
-            _systemctl("stop", unit)
+            _systemctl("stop", unit, manager=manager)
         except subprocess.CalledProcessError:
             pass  # Unit was never registered.
         raise
 
 
 def assert_quiet(scope):
-    state = properties(scope["unit"])
+    state = properties(scope["unit"], manager=scope.get("manager", "user"))
     if state.get("InvocationID") not in ("", scope["invocation_id"]):
         raise ValueError("A reused unit is not the registered process")
     if (state.get("KillMode") != "control-group"
@@ -129,7 +152,8 @@ def assert_outer_launcher_exited(scope):
 
 def stop_owned(scope):
     """No Python RPC lock or worker acknowledgement is involved in this stop."""
-    state = properties(scope["unit"])
+    manager = scope.get("manager", "user")
+    state = properties(scope["unit"], manager=manager)
     if state.get("InvocationID") == "" and state.get("ActiveState") == "inactive":
         return assert_quiet(scope)
     if (state.get("InvocationID") != scope["invocation_id"]
@@ -139,14 +163,14 @@ def stop_owned(scope):
         if process_identity(int(state["MainPID"])) != scope["main"]:
             raise ValueError("Registered host process identity changed")
     # --no-block avoids tying supervision to a hung process or closed-ack.
-    _systemctl("stop", "--no-block", scope["unit"])
+    _systemctl("stop", "--no-block", scope["unit"], manager=manager)
     deadline = time.monotonic() + float(scope["stop_seconds"]) + 10
     while time.monotonic() < deadline:
         try:
             return assert_quiet(scope)
         except RuntimeError:
             time.sleep(0.05)
-    _systemctl("kill", "--kill-who=all", "--signal=KILL", scope["unit"])
+    _systemctl("kill", "--kill-who=all", "--signal=KILL", scope["unit"], manager=manager)
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
         try:
@@ -176,11 +200,29 @@ def watchdog(spec_path, receipt_path):
             break
         time.sleep(0.05)
     reports, errors = [], []
-    for scope in spec["scopes"]:
-        try:
-            reports.append(stop_owned(scope))
-        except Exception as error:
-            errors.append({"unit": scope["unit"], "error": repr(error)})
+    registry_lock = None
+    try:
+        if spec.get("scope_registry"):
+            registry = Path(spec["scope_registry"])
+            registry_lock = registry.with_name("scope-registry.lock").open("a")
+            fcntl.flock(registry_lock, fcntl.LOCK_EX)
+            scopes = json.loads(registry.read_text())
+            if (any(item["claim_id"] != spec["claim_id"] for item in scopes)
+                    or len({item["unit"] for item in scopes}) != len(scopes)
+                    or any(item not in scopes for item in spec["scopes"])):
+                raise ValueError("Dynamic public-test scope inventory differs from this claim")
+            spec["scopes"] = scopes
+            guard = json.loads(Path(spec["guard_path"]).read_text())
+            guard["stop_requested"] = True
+            atomic_write(Path(spec["guard_path"]), json_bytes(guard))
+        for scope in spec["scopes"]:
+            try:
+                reports.append(stop_owned(scope))
+            except Exception as error:
+                errors.append({"unit": scope["unit"], "error": repr(error)})
+    finally:
+        if registry_lock is not None:
+            registry_lock.close()
     result = {
         "version": VERSION, "claim_id": spec["claim_id"], "reason": reason,
         "scopes": spec["scopes"], "stopped": reports, "errors": errors,
