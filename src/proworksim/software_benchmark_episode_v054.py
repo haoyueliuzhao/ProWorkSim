@@ -4,6 +4,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 import copy
 import json
+import re
 from pathlib import Path
 import threading
 import time
@@ -22,7 +23,7 @@ class Episode:
     """An entered claim is never resumed or resampled, including infrastructure faults."""
 
     def __init__(self, slots_reference, slot_id, *, binding, authorization=None,
-                 synthetic=False, synthetic_claim_root=None, clock=time.monotonic):
+                 synthetic=False, synthetic_claim_root=None, clock=time.monotonic, planned_claim_id=None):
         slots = json.loads(checked(slots_reference).read_text())
         matches = [row for row in slots["slots"] if row["slot_id"] == slot_id]
         if len(matches) != 1:
@@ -45,10 +46,12 @@ class Episode:
             raise ValueError("Bind configuration, environment and owner admission receipts")
         for item in binding.values():
             checked(item)
+        if planned_claim_id is not None and not re.fullmatch(r"[a-f0-9]{32}", planned_claim_id):
+            raise ValueError("Preclaim session nonce must be an exact fresh claim ID")
         claims.mkdir(parents=True, exist_ok=True)
         self.root = claims / digest(slot_id.encode())
         self.root.mkdir(exist_ok=False)  # Atomic global once-only slot claim.
-        self.claim_id, self.phase = claim_nonce(), "claimed"
+        self.claim_id, self.phase = planned_claim_id or claim_nonce(), "claimed"
         self.lock, self.owner, self.snapshot = threading.RLock(), None, None
         self.scopes, self.started, self.inflight = [], None, None
         self.guard_path = self.root / "watchdog-guard.json"

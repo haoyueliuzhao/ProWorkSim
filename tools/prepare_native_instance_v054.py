@@ -19,6 +19,8 @@ def main():
     parser.add_argument("--docker-socket", required=True)
     parser.add_argument("--continue-exported", action="store_true",
                         help="Finish an explicitly retained complete export; no new Docker export or payload hashing")
+    parser.add_argument("--continue-initialization", action="store_true",
+                        help="Continue a retained, quiescent, zero-model failed public initialization")
     args = parser.parse_args()
     mapping, public = file_reference(args.mapping), file_reference(args.public_tasks)
     if mapping["sha256"] != args.mapping_sha256 or public["sha256"] != args.public_tasks_sha256:
@@ -26,7 +28,8 @@ def main():
     value = ensure_native_instance(
         args.instance_id, mapping_reference=mapping, cache_root=args.cache_root,
         stdlib=args.stdlib, public_tasks_reference=public, docker_socket=args.docker_socket,
-        continue_exported=args.continue_exported)
+        continue_exported=args.continue_exported,
+        continue_initialization=args.continue_initialization)
     print(json.dumps({**value, "status": "qualified", "slot_claimed": False, "model_calls": 0}))
 
 

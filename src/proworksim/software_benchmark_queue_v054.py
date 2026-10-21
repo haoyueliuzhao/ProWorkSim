@@ -22,13 +22,13 @@ from .software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT = Path(__file__).resolve().parents[2]
 HOST_PYTHON = ROOT / ".venv/bin/python"
-VERSION = "software-benchmark-formal-queue-v054-r2"
+VERSION = "software-benchmark-formal-queue-v054-r3-resident"
 SLOTS_SHA = "55899d0b83a5bab1082bccb50496fb6c1d7111ecb951fc4d61c222be19d88676"
 QUEUE = ROOT / "runs/software-benchmark-v054/formal-queue-r1"
 AUTH = ROOT / "config/v054-formal-authorization-r1.json"
 PLAN = ROOT / "config/v054-formal-execution-plan-r2.json"
 SOURCE = ROOT / "artifacts/software-benchmark-v054/runner/source-manifest.json"
-BUSY = {"gpu_lease_busy", "ref_port_busy", "gpu_capacity_gate"}
+BUSY = {"gpu_lease_busy", "ref_port_busy", "gpu_capacity_gate", "resident_session_busy"}
 ACTIVE = {"intent", "running"}
 
 
@@ -106,7 +106,7 @@ def check_plan(authorization, plan, slots):
             raise ValueError("Frozen same-task arm/seed assignment changed")
 
 
-def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output):
+def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, resident_registry):
     """Freeze only actual capacity and final source evidence; allocate no GPU."""
     slots_ref = reference(ROOT / "artifacts/software-benchmark-v054/manifests/slots.json")
     if slots_ref["sha256"] != SLOTS_SHA:
@@ -142,8 +142,35 @@ def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output):
     if Path(scorer_ref["path"]).name != "installation-manifest-r5.json":
         raise ValueError("Use the mapped official r5 installation manifest")
     conditions = {arm: condition_reference(arm) for arm in ("REF", "MATCH", "PROJECT")}
+    resident_ref = reference(resident_registry)
+    registry = load_ref(resident_ref)
+    if registry.get("version") != "v054-resident-registry-v1" or set(registry["residents"]) != {"REF", "MATCH_PROJECT"}:
+        raise ValueError("Freeze the two independent resident deployments before dispatch")
+    resident_files = [resident_ref]
+    for mode, item in registry["residents"].items():
+        declaration = load_ref(item)
+        if declaration["mode"] != mode or declaration["gpu_index"] != (7 if mode == "REF" else 6):
+            raise ValueError("Resident physical mode changed")
+        resident_files.extend([item, declaration["source_spec"]])
+        deployment = load_ref(declaration["source_spec"])
+        for field in ("preparation_permit", "contract", "load_admission"):
+            if field in deployment:
+                resident_files.append(deployment[field])
+    handoff_ref = reference(ROOT / "artifacts/software-benchmark-v054/native-environment/resident-admission-r1.json")
+    handoff = load_ref(handoff_ref)
+    if (handoff.get("version") != "v054-resident-admission-v1" or handoff.get("registry") != resident_ref
+            or handoff.get("source_manifest") != source_ref or handoff.get("formal_claims") != 0
+            or set(handoff["admitted_modes"]) != {"REF", "MATCH_PROJECT"}):
+        raise ValueError("Actual two-session resident admission is required before formal reuse")
+    resident_files.append(handoff_ref)
+    for mode, item in registry["residents"].items():
+        admitted = handoff["admitted_modes"][mode]
+        if admitted.get("passed") is not True or admitted.get("resident_spec") != load_ref(item)["source_spec"]:
+            raise ValueError("Actual handoff evidence belongs to a different resident specification")
+        checked(admitted["check_receipt"])
+        resident_files.append(admitted["check_receipt"])
     references = [reference(AUTH), reference(PLAN), slots_ref, source_ref, registry_ref,
-                  scorer_ref, *capacities.values(), *admission_refs, *conditions.values(), *files]
+                  scorer_ref, *capacities.values(), *admission_refs, *conditions.values(), *resident_files, *files]
     unique = {item["path"]: item for item in references}
     for item in unique.values():
         checked(item)
@@ -151,6 +178,7 @@ def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output):
              "authorization": reference(AUTH), "plan": reference(PLAN), "slots": slots_ref,
              "source_manifest": source_ref, "registry": registry_ref, "scorer_manifest": scorer_ref,
              "capacities": capacities, "capacity_admission": admission_refs[0], "conditions": conditions,
+             "resident_registry": resident_ref, "resident_admission": handoff_ref, "residency_protocol": "independent_resident_with_exclusive_episode_sessions_v1",
              "frozen_files": [{"reference": item, "stat": stat_id(item["path"])}
                               for item in unique.values()],
              "model_loads": 0, "slot_claims": 0, "automatic_start": False}
@@ -307,6 +335,24 @@ class Coordinator:
                           scoring_counts=dict(Counter(y["status"] for x in rows for y in x["scores"].values())),
                           fully_closed_slots=sum(self.closed(x) for x in rows), planned_slots=1500,
                           planned_distinct_tasks=500, token_upper_bound=750000000)
+        strata = {}
+        for row in rows:
+            binding = row.get("original_execution_bindings", row.get("next_execution_bindings", self.bindings_ref))
+            group = strata.setdefault(binding["sha256"], {"bindings": binding, "rows": []})
+            group["rows"].append(row)
+        mixed = len(strata) > 1
+        self.state["mixed_runtime_revisions"] = mixed
+        self.state["cross_revision_full_panel_estimate_allowed"] = not mixed
+        self.state["runtime_revision_progress"] = {}
+        for key, group in strata.items():
+            detail = {"bindings": group["bindings"], "planned_slots_in_revision": len(group["rows"]), "arms": {}}
+            for arm in ("REF", "MATCH", "PROJECT"):
+                arm_rows = [r for r in group["rows"] if r["slot"]["arm"] == arm]
+                known = [r["scores"]["code"] for r in arm_rows if r["scores"].get("code", {}).get("status") == "official_report"]
+                detail["arms"][arm] = {"planned_slots_in_revision": len(arm_rows), "determinate": len(known),
+                    "resolved": sum(x["resolved"] for x in known), "complete_original_500_panel": len(arm_rows) == 500,
+                    "full_panel_rate": sum(x["resolved"] for x in known) / 500 if len(arm_rows) == len(known) == 500 else None}
+            self.state["runtime_revision_progress"][key] = detail
         self.state["code_progress"] = {}
         for arm in ("REF", "MATCH", "PROJECT"):
             scores = [r["scores"].get("code", {}) for r in rows if r["slot"]["arm"] == arm]
@@ -315,8 +361,9 @@ class Coordinator:
             self.state["code_progress"][arm] = {
                 "planned_denominator": 500, "determinate": len(known), "resolved": success,
                 "not_yet_determinate": 500 - len(known),
-                "full_panel_rate": success / 500 if len(known) == 500 else None,
-                "success_rate_bounds": [success / 500, (success + 500 - len(known)) / 500]}
+                "full_panel_rate": success / 500 if len(known) == 500 and not mixed else None,
+                "success_rate_bounds": [success / 500, (success + 500 - len(known)) / 500] if not mixed else None,
+                "mixed_revision_inventory_progress_only": mixed}
         atomic(self.root / "state.json", self.state)
 
     @staticmethod
@@ -509,9 +556,11 @@ class Coordinator:
         active = [x for x in rows if x["generation"]["status"] in ACTIVE]
         if len(active) >= 2:
             return
-        from tools.prepare_model_capacity_v054 import eligible, gpu_rows
-        observed = gpu_rows()
-        cards = {card["index"]: card for arm in ("REF", "MATCH") for card in eligible(observed, arm)}
+        from .software_benchmark_resident_session_v054 import available_residents
+        resident_rows = available_residents(self.bindings["resident_registry"])
+        cards = {index: {"index": index, "uuid": row["declaration"]["gpu_uuid"],
+                        "admission": "existing_qualified_project_resident_not_free_memory"}
+                 for index, row in resident_rows.items()}
         busy = {self.plan["physical_gpu_by_arm"][x["slot"]["arm"]] for x in active}
         row = head_slot(rows, set(cards) - busy)
         if row is None:
@@ -533,7 +582,8 @@ class Coordinator:
         root = self.root / "slots" / str(slot["slot_index"]) / ("preclaim-" + str(attempt))
         root.mkdir(parents=True, exist_ok=False)
         service_ref = build_service(arm=slot["arm"], capacity_reference=self.bindings["capacities"][arm],
-                                    card=card, directory=root / "service")
+                                    card=card, directory=root / "service",
+                                    resident_reference=resident_rows[gpu_index]["declaration_reference"])
         config = build_slot_config(slot_id=slot["slot_id"], condition_reference=self.bindings["conditions"][slot["arm"]],
                     model_service=load_ref(service_ref), registry_reference=self.bindings["registry"],
                     scorer_manifest_reference=self.bindings["scorer_manifest"], output=root / "config.json",
@@ -562,7 +612,9 @@ class Coordinator:
                 self.dispatch_scores()
                 self.dispatch_generation()
             if self.state["status"] == "running" and all(self.closed(row) for row in self.state["rows"]):
-                self.state["status"] = "completed_all_1500_with_official_reports"
+                self.state["status"] = ("completed_planned_inventory_with_revision_strata"
+                    if len({r.get("original_execution_bindings", r.get("next_execution_bindings", self.bindings_ref))["sha256"]
+                            for r in self.state["rows"]}) > 1 else "completed_all_1500_with_official_reports")
             self.save()
         except Exception as error:
             self.pause("controller_fault", {"type": type(error).__name__, "message": str(error)})
@@ -585,7 +637,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     freeze = commands.add_parser("freeze")
-    for key in ("ref-capacity", "match-capacity", "scorer-manifest", "output"):
+    for key in ("ref-capacity", "match-capacity", "scorer-manifest", "resident-registry", "output"):
         freeze.add_argument("--" + key, required=True, type=Path)
     run = commands.add_parser("run")
     run.add_argument("--bindings", required=True, type=Path)
@@ -596,7 +648,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.command == "freeze":
         print(json.dumps(freeze_bindings(ref_capacity=args.ref_capacity, match_capacity=args.match_capacity,
-              scorer_manifest=args.scorer_manifest, output=args.output)))
+              scorer_manifest=args.scorer_manifest, resident_registry=args.resident_registry, output=args.output)))
         return 0
     if args.command == "worker":
         item = reference(args.job)

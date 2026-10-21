@@ -1,10 +1,14 @@
 # ProWorkSim
 
-## v0.54：Verified 三组评测已启动，环境故障暂停新调度（2026-10-21）
+> 2026-10-21 13:11 更新：两种实际常驻会话交接均已通过（新增准备4次调用、15,730 token，未结0），正式队列已恢复为 `proworksim-v054-formal-queue-r3.service`。GPU6保留MATCH／PROJECT模型、GPU7保留REF模型；旧三回合不重跑且按原运行版本单列。见[常驻修订记录](docs/experiments/software-benchmark-v054-resident-revision-r1.md)。
+
+## v0.54：首任务三回合已闭合，常驻交接期间暂停正式派发（2026-10-21）
 
 [新方案](docs/experiments/software-benchmark-v054-protocol.md)改为SWE-bench Verified完整500题的REF／MATCH／PROJECT比较：MATCH与REF保持相同原生OpenHands接口，PROJECT使用明确修订的真实受管S1。[新授权](config/v054-formal-authorization-r1.json)覆盖三组共1,500回合、最多7.5亿输入加输出token；真实模型容量、最终源码和正式bindings已冻结，评测已经启动。预算是上限，不启动训练或多智能体；旧准备阶段的未授权记录保留。
 
-**截至北京时间2026-10-21 12:26:11，队列为 `paused_technical_unknown`，已暂停新调度。** 首题 `matplotlib__matplotlib-25479` 的MATCH槽1与REF槽3已正常预算闭合，候选已交给官方评分器；PROJECT槽2正在GPU6运行。REF槽5的 `django__django-11276` 在lazy初始化时未通过准入，`claimed=false`、`entered=false`、模型调用和GPU加载均0。该记录属于槽领取前的环境准备故障，不记成模型修复失败；计划分母继续保留500题／组。详见[准备与正式运行交接](docs/experiments/software-benchmark-v054-preparation-and-launch-r1.md)。
+**正式派发仍暂停，尚未恢复。** 首题 `matplotlib__matplotlib-25479` 的MATCH槽1、PROJECT槽2、REF槽3均已闭合，合计98次模型调用、1,429,486个实际输入＋输出token，未结0；官方评分的三个 `R_code` 均为false，旧回合没有重跑。这只是一道任务的三条件结果，不能外推完整500题面板。此前12:26:11，REF槽5的 `django__django-11276` 在领取槽前未通过lazy初始化，模型调用和GPU加载均0；该环境准备记录单列保留。详见[准备与正式运行交接](docs/experiments/software-benchmark-v054-preparation-and-launch-r1.md)。
+
+[常驻修订](docs/experiments/software-benchmark-v054-resident-revision-r1.md)用于避免逐题卸载权重后丢失可用显存。GPU6已通过两个独立synthetic会话交接：MATCH输入／输出433／2、PROJECT338／2，共775 token；同一PID、仅加载一次模型，结束后继续驻留。每槽仍独立seed、账本、历史和工作区。常驻REF r1在导入阶段失败、模型请求0；shim已通过独立环境导入核验，当前常驻REF r2仍在加载。源码修订r7已冻结，这些准备结果不计入正式成绩，也不表示已恢复调度。
 
 用户授权的[文件接口修复](docs/experiments/software-benchmark-v054-file-repair.md)已实现：取消原200文件／2MB准入上限，新增受管创建、删除、跨目录重命名及分页，保留完整文件元数据、同版本提交和最后工作树／最后合法提交双端点。17项必要合成CPU控制及真实OpenHands SDK构造检查通过，新增模型调用为0。
 
@@ -14,7 +18,7 @@
 
 [REF编译工具链和模型容量准备](docs/experiments/software-benchmark-v054-model-preparation-r1.md)保留全部中间记录。MATCH／PROJECT共用数值服务的容量检查为23,831 token；REF r6两次真实请求输入／输出分别7,404／73、98,304／46，共105,827 token。容量阶段合计4次真实生成、129,658 token、未结预约0；未重跑已通过的MATCH。REF私有驱动、短IPC、CUDA工具链及 `cc`／`c++` 链接修复均单独记录。首Matplotlib的高UID稀疏映射和PROJECT临时公开树替换也已完成必要控制，复用已有导出和模型资格。
 
-[正式调度plan-r2](docs/experiments/software-benchmark-v054-formal-queue-r2.md)按原题单顺序选择当前GPU可用的任务，保持每张卡内的原相对顺序；MATCH槽1与REF槽3先在GPU6／7并行，任务、seed和预算不变。服务为 `proworksim-v054-formal-queue-r2.service`，`bindings-r3` SHA为 `512c770ad3cfcb248f241de475ccd7e77689cd36e52b02adc961a219ce607b5c`。较早的12:22:40快照记录MATCH已结算37次请求／380,836 token、REF已结算4次／45,717 token，另各1次请求在途，当时PROJECT等待GPU6；这些是过程用量，不是最终回合用量、成绩或完成率。运行 `python3 tools/benchmark_preparation_status_v054.py` 只读取既有回执及文件stat，不重验大文件或启动模型。
+[正式调度plan-r2](docs/experiments/software-benchmark-v054-formal-queue-r2.md)按原题单顺序选择当前GPU可用的任务，保持每张卡内的原相对顺序；旧MATCH槽1与REF槽3先在GPU6／7并行，任务、seed和预算不变。旧三回合的启动服务为 `proworksim-v054-formal-queue-r2.service`，`bindings-r3` SHA为 `512c770ad3cfcb248f241de475ccd7e77689cd36e52b02adc961a219ce607b5c`。12:22:40的在途用量快照保留于交接文档；当前旧三回合已全部结算，不能继续把历史在途请求列为未结。运行 `python3 tools/benchmark_preparation_status_v054.py` 只读取既有回执及文件stat，不重验大文件或启动模型。
 
 ## 服务器 249：迁移与运行入口（2026-10-19）
 

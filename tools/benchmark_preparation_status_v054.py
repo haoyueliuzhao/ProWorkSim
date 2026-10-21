@@ -121,6 +121,11 @@ def status(root=ROOT):
     capacity_admission = read(artifacts / "native-environment/model-capacity-admission.json")
     authorization = read(root / "config/v054-formal-authorization-r1.json")
     formal_queue = read(run / "formal-queue-r1/state.json")
+    resident_required = bool(read(root / "config/v054-condition-REF.json").get("residency_protocol"))
+    resident = read(artifacts / "native-environment/resident-admission-r1.json")
+    resident_ready = (resident.get("version") == "v054-resident-admission-v1"
+                      and set(resident.get("admitted_modes", {})) == {"REF", "MATCH_PROJECT"}
+                      and all(item.get("passed") is True for item in resident["admitted_modes"].values()))
     formal_authorized = (authorization.get("execution_authorized") is True
                          and authorization.get("planned_model_episodes") == 1500
                          and authorization.get("slots_sha256") ==
@@ -164,6 +169,8 @@ def status(root=ROOT):
     for arm in ("MATCH", "REF"):
         if capacity_results.get(arm, {}).get("status") != "capacity_and_synthetic_accounting_passed":
             gates.append(arm + "_actual_model_capacity_and_accounting")
+    if resident_required and not resident_ready:
+        gates.append("actual_persistent_resident_two_session_handoff")
     return {
         "version": "v054-preparation-status-v2",
         "at_utc": datetime.now(timezone.utc).isoformat(),
@@ -208,7 +215,10 @@ def status(root=ROOT):
         "scoring_environment_prepared": (
             dataset_ready and loaded == 500
             and scorer.get("all_500_specs_compatible") is True and scoring_seam_ready),
-        "all_three_solver_environments_ready": cpu_ready and capacity_ready,
+        "all_three_solver_environments_ready": (cpu_ready and capacity_ready
+                                                and (not resident_required or resident_ready)),
+        "persistent_resident_required": resident_required,
+        "persistent_resident_sessions_admitted": resident_ready,
         "remaining_solver_gates": gates,
         "model_capacity_preparation": {
             "status": capacity.get("status", "not_started"),

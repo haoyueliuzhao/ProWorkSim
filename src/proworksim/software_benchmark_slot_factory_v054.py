@@ -58,6 +58,8 @@ def build_slot_config(*, slot_id, condition_reference, model_service, registry_r
         "slots": slots, "public_tasks": public, "public_task": task, "preparation_only": False,
         "configuration": condition_reference, "owner_admission": model_service["owner_admission"],
         "model_service": service_reference,
+        "resident_reference": model_service.get("resident_reference"),
+        "resident_session_directory": model_service.get("session_directory"),
         "authorization": authorization,
         "all_solver_admissions_passed": bool(authorization is not None and model_service.get("admission_passed") is True),
         "model_command": command, "model_ready": model_service["ready_path"],

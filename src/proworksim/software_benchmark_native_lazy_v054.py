@@ -153,6 +153,51 @@ def continue_exported_rootfs(environment, mapping, root):
     return manifest_path
 
 
+def continue_failed_initialization(environment, root):
+    """Reuse an exact owned template after a quiescent, zero-model CPU failure."""
+    manifest_path = root / "rootfs-manifest.json"
+    manifest = json.loads(manifest_path.read_bytes())
+    public_path = root / "public-environment.json"
+    public = json.loads(public_path.read_bytes())
+    old_directory = root / "initialization"
+    prior_path = old_directory / "receipt.json"
+    prior = json.loads(prior_path.read_bytes())
+    failure_path = root / "preparation-failure.json"
+    failure = json.loads(failure_path.read_bytes())
+    if (manifest.get("source_environment_sha256") != digest(canonical(environment))
+            or manifest.get("baseline_mapping") != environment["baseline_mapping"]
+            or manifest.get("instance_id") != environment["task"]["instance_id"]
+            or manifest.get("image_id") != environment["image"]["image_id"]
+            or manifest.get("numeric_ownership_equivalence_admitted") is not True
+            or manifest.get("native_real_task_control_passed") is not False
+            or public.get("rootfs_manifest") != str(manifest_path)
+            or public.get("rootfs_manifest_sha256") != digest(manifest_path.read_bytes())
+            or (root / "environment.json").read_bytes() != canonical(environment)
+            or prior.get("passed") is not False or prior.get("model_calls") != 0
+            or prior.get("slot_claimed") is not False or prior.get("benchmark_tests_run") != 0
+            or prior.get("hidden_grader_called") is not False
+            or prior.get("baseline_mapping") != environment["baseline_mapping"]
+            or prior.get("quiescence", {}).get("populated") is not False
+            or prior.get("resource_release", {}).get("released") is not True
+            or prior.get("temporary_rootfs_removed_after_quiescence") is not True
+            or failure.get("slot_claimed") is not False or failure.get("model_calls") != 0
+            or failure.get("baseline_mapping") != environment["baseline_mapping"]
+            or (old_directory / "clone/rootfs").exists()
+            or (root / "lazy-preparation.json").exists()):
+        raise ValueError("Only a completed zero-model failed initialization can continue")
+    identifier = digest(prior_path.read_bytes())[:16]
+    history = root / ("initialization-failure-" + identifier)
+    old_directory.rename(history)
+    failure_path.rename(root / ("preparation-failure-" + identifier + ".json"))
+    (root / ("initialization-continuation-" + identifier + ".json")).write_bytes(canonical({
+        "previous_initialization": file_reference(history / "receipt.json"),
+        "template_manifest": file_reference(manifest_path),
+        "source": file_reference(Path(__file__)),
+        "additional_exports": 0, "ownership_repeated": False,
+        "payload_bytes_rehashed": 0, "model_calls": 0, "slot_claimed": False}))
+    return manifest_path
+
+
 def qualify_instance(environment, root, stdlib, inherited):
     """One public initialization per task; do not repeat the full UID/tool suite."""
     directory = root / "initialization"
@@ -187,7 +232,7 @@ def qualify_instance(environment, root, stdlib, inherited):
             "assert observed_version==expected['version'],(observed_version,expected['version'])\n"
             "module_file=os.path.realpath(module.__file__)\n"
             "assert module_file.startswith('/testbed/'),module_file\n"
-            "git=subprocess.check_output(['git','-C','/testbed','rev-parse','HEAD','HEAD^{tree}'],text=True).splitlines()\n"
+            "git=subprocess.check_output(['git','-C','/testbed','rev-parse','HEAD','HEAD^{tree}'],universal_newlines=True).splitlines()\n"
             "assert git==[expected['head'],expected['tree']],git\n"
             "assert os.getuid()==0 and os.getgid()==0\n"
             "print(json.dumps({'python':sys.executable,'version':observed_version,'module_file':module_file,'git':git}))\n")
@@ -235,8 +280,11 @@ def qualify_instance(environment, root, stdlib, inherited):
 
 
 def ensure_native_instance(instance_id, *, mapping_reference, cache_root, stdlib,
-                           public_tasks_reference, docker_socket, continue_exported=False):
+                           public_tasks_reference, docker_socket, continue_exported=False,
+                           continue_initialization=False):
     """Return absolute paths only after this exact task's real initialization."""
+    if continue_exported and continue_initialization:
+        raise ValueError("Choose one explicit preparation continuation")
     rows = json.loads(checked_file(public_tasks_reference).read_bytes())
     if len(rows) != 500 or len({row["instance_id"] for row in rows}) != 500:
         raise ValueError("The fixed full 500-task public projection is required")
@@ -262,12 +310,14 @@ def ensure_native_instance(instance_id, *, mapping_reference, cache_root, stdlib
                 checked_file(receipt[key])
             return {key: receipt[key]["path"] for key in (
                 "rootfs_environment", "rootfs_manifest", "environment", "qualification")}
-        if root.exists() and not continue_exported:
+        if root.exists() and not (continue_exported or continue_initialization):
             raise RuntimeError("An incomplete preparation is retained; repair explicitly before claiming a slot")
-        if continue_exported and not root.exists():
+        if (continue_exported or continue_initialization) and not root.exists():
             raise ValueError("Explicit continuation requires the existing exported directory")
         try:
-            if continue_exported:
+            if continue_initialization:
+                manifest_path = continue_failed_initialization(environment, root)
+            elif continue_exported:
                 manifest_path = continue_exported_rootfs(environment, mapping, root)
             else:
                 manifest_path = prepare_rootfs(

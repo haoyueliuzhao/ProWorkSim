@@ -66,6 +66,8 @@ def capacity_admission(arm, capacity_reference):
 
 
 def validate_service(service, arm):
+    if service.get("deployment_mode") == "resident-session-v1":
+        return validate_resident_session_service(service, arm)
     if (service.get("factory_version") != VERSION or service.get("arm") != arm
             or service.get("condition") != condition_reference(arm)
             or service.get("factory_source") != reference(__file__)
@@ -121,7 +123,10 @@ def templates():
             "maximum_global_residents": 4, "model_loads": 0, "formal_execution_authorized": False}
 
 
-def build_service(*, arm, capacity_reference, card, directory):
+def build_service(*, arm, capacity_reference, card, directory, resident_reference=None):
+    if resident_reference is not None:
+        return build_resident_session_service(arm=arm, capacity_reference=capacity_reference,
+            card=card, directory=directory, resident_reference=resident_reference)
     admitted_capacity = capacity_admission(arm, capacity_reference)
     capacity = json.loads(checked(capacity_reference).read_text())
     mode = "REF" if arm == "REF" else "MATCH"
@@ -176,3 +181,60 @@ def build_service(*, arm, capacity_reference, card, directory):
         "command": [os.sys.executable, str(ROOT / "tools/run_formal_model_service_v054.py"),
                     "--spec", specification["path"], "--spec-sha256", specification["sha256"]],
         "formal_execution_authorized": False, "model_loads_from_factory": 0})
+
+
+def validate_resident_session_service(service, arm):
+    spec_path = checked(service["service_spec"])
+    spec = json.loads(spec_path.read_text())
+    declaration = json.loads(checked(service["resident_reference"]).read_text())
+    expected_command = [str(ROOT / ".venv/bin/python"), str(ROOT / "tools/hold_resident_session_v054.py"),
+                        "--session", str(Path(spec["root"]) / "session.json")]
+    if (service["factory_source"] != reference(__file__) or service["arm"] != arm
+            or service["condition"] != condition_reference(arm)
+            or service["capacity_admission"] != capacity_admission(arm, service["capacity_receipt"])
+            or service["command"] != expected_command
+            or spec["resident_reference"] != service["resident_reference"]
+            or declaration["mode"] != ("REF" if arm == "REF" else "MATCH_PROJECT")
+            or declaration["gpu_uuid"] != service["gpu_uuid"]
+            or service["admission_passed"] is not True):
+        raise ValueError("Resident session differs from its frozen service/condition")
+    recorded = spec_path.parent / "model-service.json"
+    if json.loads(recorded.read_text()) != service:
+        raise ValueError("Resident service declaration changed")
+    return reference(recorded)
+
+
+def build_resident_session_service(*, arm, capacity_reference, card, directory, resident_reference):
+    admitted = capacity_admission(arm, capacity_reference)
+    declaration = json.loads(checked(resident_reference).read_text())
+    deployment = json.loads(checked(declaration["source_spec"]).read_text())
+    if (declaration["mode"] != ("REF" if arm == "REF" else "MATCH_PROJECT")
+            or declaration["gpu_index"] != (7 if arm == "REF" else 6)
+            or card["index"] != declaration["gpu_index"] or card["uuid"] != declaration["gpu_uuid"]
+            or deployment["capacity_receipt"] != capacity_reference):
+        raise ValueError("Resident is outside the admitted physical/numerical mode")
+    root = Path(directory).resolve()
+    if not root.is_relative_to(ROOT / "runs/software-benchmark-v054"):
+        raise ValueError("Session output must be an independent project episode directory")
+    root.mkdir(mode=0o700, parents=True, exist_ok=False)
+    condition = condition_reference(arm)
+    owner_admission = write_new(root / "owner-admission.json", {
+        "arm": arm, "capacity_receipt": capacity_reference, "capacity_admission": admitted,
+        "condition": condition, "capacity_passed": True, "formal_execution_authorized": False,
+        "model_manifest": reference(MODEL / "proworksim-manifest.json"), "resident_reference": resident_reference})
+    spec = write_new(root / "service-spec.json", {"root": str(root), "arm": arm,
+        "condition": condition, "resident_reference": resident_reference,
+        "capacity_receipt": capacity_reference, "factory_source": reference(__file__)})
+    return write_new(root / "model-service.json", {"factory_version": VERSION,
+        "deployment_mode": "resident-session-v1", "factory_source": reference(__file__),
+        "arm": arm, "condition": condition, "admission_passed": True, "capacity_receipt": capacity_reference,
+        "capacity_admission": admitted, "model_manifest": reference(MODEL / "proworksim-manifest.json"),
+        "owner_admission": owner_admission, "resident_reference": resident_reference,
+        "session_directory": str(root), "service_spec": spec, "gpu_uuid": card["uuid"],
+        "startup_timeout_seconds": 30, "ready_path": str(root / "session-ready.json"),
+        "identity_path": str(root / "session-identity.json"), "socket_path": None,
+        "endpoint": declaration["admin"].get("endpoint"),
+        "api_key_file": declaration["admin"].get("api_key_file"),
+        "command": [str(ROOT / ".venv/bin/python"), str(ROOT / "tools/hold_resident_session_v054.py"),
+                    "--session", str(root / "session.json")], "formal_execution_authorized": False,
+        "model_loads_from_factory": 0, "weights_retained_by_independent_resident": True})

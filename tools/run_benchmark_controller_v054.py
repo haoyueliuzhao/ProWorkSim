@@ -46,8 +46,13 @@ def main():
             if config["arm"] == "REF":
                 transport = LoopbackHTTP(config["ref_endpoint"])
                 if not config["preparation_only"]:
-                    from proworksim.software_benchmark_ref_deployment_v054 import AuthenticatedLoopbackHTTP
-                    transport = AuthenticatedLoopbackHTTP(config["ref_endpoint"], config["ref_api_key_file"])
+                    if config.get("ref_session_token"):
+                        from proworksim.software_benchmark_ref_resident_v054 import SessionAuthenticatedLoopbackHTTP
+                        transport = SessionAuthenticatedLoopbackHTTP(
+                            config["ref_endpoint"], config["ref_api_key_file"], config["ref_session_token"])
+                    else:
+                        from proworksim.software_benchmark_ref_deployment_v054 import AuthenticatedLoopbackHTTP
+                        transport = AuthenticatedLoopbackHTTP(config["ref_endpoint"], config["ref_api_key_file"])
                 original = RefExactAdapter(
                     transport=transport, folder=output / "ref-ledger",
                     slot_id=config["slot_id"], seed=config["seed"],

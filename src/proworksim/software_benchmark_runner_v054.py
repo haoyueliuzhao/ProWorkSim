@@ -27,7 +27,7 @@ from .software_benchmark_owner_ipc_v054 import OwnerClient, wire_json
 from .software_benchmark_resources_v054 import create_episode_resources, release_episode_resources
 from .software_benchmark_ref_deployment_v054 import RefPortReservation
 from .software_benchmark_rootfs_io_v054 import cleanup_episode_rootfs, read_actor_bytes
-from .software_benchmark_supervision_v054 import launch_owned, start_watchdog, stop_owned
+from .software_benchmark_supervision_v054 import claim_nonce, launch_owned, start_watchdog, stop_owned
 from .storage import atomic_write, digest, json_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -131,7 +131,20 @@ class HostEpisode(Episode):
     def accept_quiescence(self):
         if hasattr(self, "registry"):
             self.scopes = json.loads(self.registry.read_text())
-        return super().accept_quiescence()
+        original = super().accept_quiescence()
+        release = getattr(self, "resident_release_reference", None)
+        if release is None:
+            return original
+        checked(release)
+        proof = {**json.loads(checked(original).read_text()), "owned_scope_quiescence": original,
+                 "resident_session_release": release, "model_scope_kind": "CPU_session_sentinel",
+                 "GPU_resident_remains_loaded": True}
+        path = self.root / "resident-quiescence.json"
+        if path.exists():
+            if json.loads(path.read_text()) != proof:
+                raise ValueError("Resident candidate-quiescence identity changed")
+            return reference(path)
+        return write_new(path, proof)
 
 
 class PublicTests:
@@ -323,7 +336,28 @@ def _run(config, output, leases):
                       "error": {"type": type(error).__name__, "message": str(error)}}
             write_new(output / "result.json", result)
             return result
-    if not synthetic:
+    resident_session, planned_claim_id = None, None
+    if not synthetic and config.get("resident_reference"):
+        from .software_benchmark_resident_session_v054 import ResidentSession
+        planned_claim_id = claim_nonce()
+        slot = next(row for row in json.loads(checked(config["slots"]).read_text())["slots"]
+                    if row["slot_id"] == config["slot_id"])
+        try:
+            resident_session = ResidentSession(config["resident_reference"], slot=slot,
+                claim_id=planned_claim_id, authorization=config["authorization"],
+                directory=config["resident_session_directory"])
+            leases.append(resident_session)
+            config = {**config, **resident_session.config_fields(),
+                      "model_command": [*config["model_command"], "--session-sha256",
+                                        resident_session.reference["sha256"]]}
+        except BlockingIOError as error:
+            result = {"version": VERSION, "slot_id": config["slot_id"], "preparation_only": False,
+                      "status": "resource_not_ready", "reason_code": "resident_session_busy",
+                      "slot_claimed": False, "entered": False, "model_calls": 0, "GPU_loads": 0,
+                      "error": {"type": type(error).__name__, "message": str(error)}}
+            write_new(output / "result.json", result)
+            return result
+    elif not synthetic:
         reason = "gpu_lease_busy"
         try:
             leases.append(GpuLease(config["gpu_uuid"]))
@@ -352,7 +386,7 @@ def _run(config, output, leases):
         config["slots"], config["slot_id"], binding={"configuration": config["configuration"],
         "environment": config["environment"], "owner": config["owner_admission"]},
         authorization=config.get("authorization"), synthetic=synthetic,
-        synthetic_claim_root=output / "synthetic-claims" if synthetic else None)
+        synthetic_claim_root=output / "synthetic-claims" if synthetic else None, planned_claim_id=planned_claim_id)
     if (config["arm"] != episode.slot["arm"]
             or config["seed"] != episode.slot["seed"]
             or config["public_task"]["instance_id"] != episode.slot["instance_id"]):
@@ -395,12 +429,14 @@ def _run(config, output, leases):
         episode.register_scope(actor_scope)
         ready = read_frame(worker.stdout)
         write_new(output / "worker-ready.json", ready)
-        if not synthetic:
+        if not synthetic and resident_session is None:
             lease_path = ROOT / "runs/v054-gpu" / (episode.claim_id[:12] + "-lease.sock")
             handoff = LeaseHandoff(lease_path, leases)
             config = {**config, "model_command": [*config["model_command"], "--host-lease", str(lease_path)]}
         model, model_scope = launch_owned(
             config["model_command"], claim_id=episode.claim_id, role="model",
+            resources=resources if resident_session is not None else None,
+            stop_seconds=20 if resident_session is not None else 5,
             runtime_seconds=service_lifetime,
             stdin=subprocess.DEVNULL, stdout=(output / "model.stdout").open("xb"),
             stderr=(output / "model.stderr").open("xb"))
@@ -442,8 +478,15 @@ def _run(config, output, leases):
         child = json.loads((output / "controller-result.json").read_text())
         if child["status"] != "closed":
             raise RuntimeError("Controller did not close normally")
+        finish = None
         if owner_client is not None:
-            write_new(output / "owner-finish.json", owner_client.call("finish", entries=[child]))
+            finish = owner_client.call("finish", entries=[child])
+            write_new(output / "owner-finish.json", finish)
+        if resident_session is not None:
+            result["resident_release"] = resident_session.release(
+                controller_result=child, finish_receipt=finish["receipt"] if finish is not None else None)
+            episode.resident_release_reference = result["resident_release"]
+            result["model_scope_kind"] = "CPU_session_sentinel_independent_GPU_resident"
         episode.close_dispatch("controller_returned_and_owner_guard_closed")
         episode.watchdog.wait(timeout=40)
         for process, _ in processes + tests.children:
@@ -474,6 +517,8 @@ def _run(config, output, leases):
     except BaseException as error:
         result.update(status="technical_unknown", error={"type": type(error).__name__, "message": str(error)},
                       entered=(episode.root / "entered.json").exists(), automatic_retry=False)
+        if resident_session is not None:
+            result["resident_poison"] = resident_session.poison("episode_failed: " + str(error))
         if hasattr(episode, "watchdog") and episode.watchdog.poll() is None:
             episode.close_dispatch("host_runner_exception")
             episode.watchdog.wait(timeout=40)
