@@ -7,6 +7,11 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
+try:
+    from .verified_image_prepare_v054 import cached_blob_proof, file_stat
+except ImportError:
+    from verified_image_prepare_v054 import cached_blob_proof, file_stat
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -17,6 +22,45 @@ def read(path):
         return json.loads(path.read_bytes())
     except (OSError, ValueError) as error:
         return {"status": "receipt_unreadable", "error": type(error).__name__}
+
+
+def complete_blob_summary(inventory, prior_proofs, planned):
+    """Reuse complete SHA receipts plus unchanged stat; never read blob payloads."""
+    expected = inventory.get("blobs", {})
+    complete = {}
+    for digest, blob in expected.items():
+        if blob.get("digest") != digest:
+            continue
+        try:
+            proof = cached_blob_proof(blob)
+            if proof is None:
+                proof = prior_proofs.get(digest, {})
+                path = Path(proof.get("path", ""))
+                if (not path.is_file() or path.suffix in {".part", ".partial", ".writing"}
+                        or proof.get("sha256") != digest.split(":", 1)[1]
+                        or file_stat(path) != proof.get("stat")):
+                    continue
+            if (proof.get("bytes") == blob["bytes"]
+                    and proof.get("stat", {}).get("bytes") == blob["bytes"]):
+                complete[digest] = blob["bytes"]
+        except (OSError, ValueError, KeyError, TypeError):
+            continue  # Missing/changing receipts are incomplete, never partial credit.
+    ready = set()
+    for row in inventory.get("images", []):
+        descriptors = [row.get("config", {}), *row.get("layers", [])]
+        if (row.get("instance_id") in planned and row.get("layers")
+                and all(item.get("digest") in complete
+                        and complete[item["digest"]] == item.get("size")
+                        for item in descriptors)):
+            ready.add(row["instance_id"])
+    return {
+        "unique_compressed_blob_count": len(expected),
+        "complete_blob_count_from_receipts": len(complete),
+        "complete_blob_bytes_from_receipts": sum(complete.values()),
+        "images_with_complete_blob_dependencies": len(ready),
+        "complete_blob_evidence": "Per-blob verified receipt or prior proof, exact size and unchanged file stat; deduplicated by fixed digest",
+        "blob_payloads_rehashed": False,
+    }
 
 
 def status(root=ROOT):
@@ -59,8 +103,13 @@ def status(root=ROOT):
     ref = read(artifacts / "native-environment/ref-followup-status.json")
     apiba = read(run / "images/apiba-prefetch-r1/state.json")
     proof = read(run / "images/preparation-r1/blob-proofs.json")
-    proved_bytes = sum(item.get("bytes", 0) for item in proof.values()
-                       if isinstance(item, dict))
+    blob_summary = complete_blob_summary(inventory, proof, planned)
+    apiba_summary = {key: apiba.get(key) for key in (
+        "source", "status", "inventory_sha256", "planned_instances", "unique_blob_count",
+        "maximum_connections", "registry_start_interval_seconds", "model_calls", "gpu_requests")}
+    apiba_summary["outcome_counts"] = dict(Counter(
+        outcome.get("status", "unknown") for outcome in apiba.get("outcomes", {}).values()
+        if isinstance(outcome, dict)))
     dataset_ready = (
         data.get("dataset_rows") == 500 and len(planned) == 500
         and slots.get("planned_slot_count") == 1500
@@ -71,7 +120,7 @@ def status(root=ROOT):
     return {
         "version": "v054-preparation-status-v1",
         "at_utc": datetime.now(timezone.utc).isoformat(),
-        "scope": "Saved receipts only; no repeated asset validation or execution.",
+        "scope": "Saved receipts and file stat only; no repeated payload hashing or execution.",
         "data_ready": dataset_ready,
         "planned_tasks": len(planned),
         "planned_slots": slots.get("planned_slot_count", 0),
@@ -83,9 +132,9 @@ def status(root=ROOT):
             "preflight_states": dict(Counter(
                 row.get("preflight_status", "not_checked") for row in relevant)),
             "unique_compressed_bytes": inventory.get("unique_compressed_blob_bytes"),
-            "complete_blob_bytes_from_receipts": proved_bytes,
+            **blob_summary,
             "partial_download_bytes_included": False,
-            "alternative_domestic_source": apiba,
+            "alternative_domestic_source": apiba_summary,
         },
         "official_scorer_500_specs_ready": scorer.get("all_500_specs_compatible") is True,
         "official_container_seam": seam,
