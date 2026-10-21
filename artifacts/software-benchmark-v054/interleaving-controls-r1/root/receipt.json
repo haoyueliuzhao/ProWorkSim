@@ -1,0 +1,809 @@
+{
+  "version": "v054-interleave-root-integration-cpu-control-r1",
+  "passed": true,
+  "checks": {
+    "queue_cancel_uses_original_NativeDispatchGate": true,
+    "queue_cancel_normal_administrative_close": true,
+    "queue_cancel_decision_retained_and_no_attempt_charge_or_hold": true,
+    "queue_cancel_zero_dispatch": true,
+    "queue_cancel_host_stop_remains_false": true,
+    "queue_cancel_bound_receipt_recorded": true,
+    "grant_cross_soft_uses_original_NativeDispatchGate": true,
+    "grant_cross_soft_normal_administrative_close": true,
+    "grant_cross_soft_decision_retained_and_no_attempt_charge_or_hold": true,
+    "grant_cross_soft_zero_dispatch": true,
+    "grant_cross_soft_host_stop_remains_false": true,
+    "grant_cross_soft_cancels_uncommitted_turn": true,
+    "host_soft_uses_original_NativeDispatchGate": true,
+    "host_soft_normal_administrative_close": true,
+    "host_soft_decision_retained_and_no_attempt_charge_or_hold": true,
+    "host_soft_zero_dispatch": true,
+    "host_soft_host_stop_remains_false": true,
+    "host_soft_never_enqueued": true,
+    "happy_uses_original_NativeDispatchGate": true,
+    "happy_complete_without_error": true,
+    "grant_before_mark_confirm_commit": true,
+    "happy_original_660_deadline_not_reset": true,
+    "happy_one_original_attempt": true,
+    "happy_actual_usage_settles_once": true,
+    "late_cancel_uses_original_NativeDispatchGate": true,
+    "late_cancel_is_fault_not_normal_boundary": true,
+    "late_cancel_attempt_hold_not_zeroed": true,
+    "late_cancel_recorded_failed_dispatch": true,
+    "late_cancel_original_cleanup_preserves_uncertain_charge": true,
+    "match_count_typed_normal_boundary": true,
+    "match_count_authoritative_server_ledger_preserved": true,
+    "match_count_no_transport_unknown": true,
+    "match_count_host_stop_false": true,
+    "match_complete_typed_normal_boundary": true,
+    "match_complete_authoritative_server_ledger_preserved": true,
+    "match_complete_no_transport_unknown": true,
+    "match_complete_host_stop_false": true,
+    "queue_second_MP_session_admitted": true,
+    "queue_third_same_resident_rejected": true,
+    "queue_global_eight_limit": true,
+    "queue_not_concurrent_with_legacy_same_GPU": true,
+    "queue_legacy_stays_one_session": true,
+    "queue_prefers_empty_resident_before_second_session": true,
+    "queue_live_unreflected_claims_count": true,
+    "migration_same_slots_and_budgets_accepted": true,
+    "migration_changed_budget_rejected": true,
+    "migration_three_sessions_rejected": true,
+    "controller_statically_routes_new_deadline_adapters_and_context": true,
+    "source_files_unchanged_during_control": true
+  },
+  "cases": {
+    "queue_cancel": {
+      "events": [
+        "queued",
+        "worker_cancel"
+      ],
+      "raised": "AdministrativeSoftDeadline",
+      "message": "interleaved_request_queue_deadline_before_dispatch",
+      "host_guard": {
+        "stop_requested": false,
+        "request_deadline": null
+      },
+      "guard_deadlines_at_queue_and_commit": [
+        1660.0
+      ],
+      "budget": {
+        "version": "shared-team-budget-v0.33",
+        "team_id": "synthetic-queue_cancel",
+        "members": [
+          "member_001"
+        ],
+        "limits": {
+          "max_decisions": 128,
+          "max_attempts": 128,
+          "max_total_tokens": 500000
+        },
+        "require_exact_resident": false,
+        "binding": null,
+        "records": {
+          "call-queue_cancel": {
+            "member": "member_001",
+            "call_id": "call-queue_cancel",
+            "status": "cancelled_before_dispatch",
+            "attempt_started": false,
+            "reservation": {
+              "token_reservation": 2100
+            },
+            "cancellation": {
+              "reason": "interleaved_request_queue_deadline_before_dispatch",
+              "dispatch_started": false,
+              "actual_usage": 0,
+              "charged_tokens": 0
+            }
+          }
+        },
+        "integrity_failure": null,
+        "decisions": 1,
+        "attempts": 0,
+        "charged_tokens": 0,
+        "held_tokens": 0,
+        "remaining_decisions": 127,
+        "remaining_attempts": 128,
+        "available_tokens": 500000,
+        "state_sha256": "59d2f7d31d25de7249b2696d613802a69134e4505c383da7a5a29130f0443b05"
+      },
+      "deadline": {
+        "version": "administrative-deadline-v0.47",
+        "soft_seconds": 5400,
+        "hard_seconds": 6000,
+        "started_monotonic": 1000.0,
+        "soft_deadline_monotonic": 6400.0,
+        "hard_deadline_monotonic": 7000.0,
+        "actual_soft_cutoff_triggered": false,
+        "cutoff_prevented_remaining_work": true,
+        "no_new_dispatch_after_cutoff": true,
+        "all_dispatched_attempts_settled": true,
+        "no_new_stage_after_cutoff": true,
+        "final_submission_locked": false,
+        "unique_final_acceptance": false,
+        "final_assessment_calls": 0,
+        "locked_submission": null,
+        "closed_before_hard_deadline": false,
+        "hard_deadline_expired": false,
+        "closed_monotonic": null,
+        "dispatches": {},
+        "cancelled_before_dispatch": [
+          {
+            "stage": "cancelled_before_dispatch",
+            "member_id": "member_001",
+            "call_id": "call-queue_cancel",
+            "monotonic_at": 1010.0,
+            "actual_generation_started": false,
+            "attempt_started": false,
+            "charged_tokens": 0,
+            "decision_retained": true,
+            "reason": "interleaved_request_queue_deadline_before_dispatch",
+            "team_budget": {
+              "version": "shared-team-budget-v0.33",
+              "team_id": "synthetic-queue_cancel",
+              "members": [
+                "member_001"
+              ],
+              "limits": {
+                "max_decisions": 128,
+                "max_attempts": 128,
+                "max_total_tokens": 500000
+              },
+              "require_exact_resident": false,
+              "binding": null,
+              "records": {
+                "call-queue_cancel": {
+                  "member": "member_001",
+                  "call_id": "call-queue_cancel",
+                  "status": "cancelled_before_dispatch",
+                  "attempt_started": false,
+                  "reservation": {
+                    "token_reservation": 2100
+                  },
+                  "cancellation": {
+                    "reason": "interleaved_request_queue_deadline_before_dispatch",
+                    "dispatch_started": false,
+                    "actual_usage": 0,
+                    "charged_tokens": 0
+                  }
+                }
+              },
+              "integrity_failure": null,
+              "decisions": 1,
+              "attempts": 0,
+              "charged_tokens": 0,
+              "held_tokens": 0,
+              "remaining_decisions": 127,
+              "remaining_attempts": 128,
+              "available_tokens": 500000,
+              "state_sha256": "59d2f7d31d25de7249b2696d613802a69134e4505c383da7a5a29130f0443b05"
+            }
+          }
+        ],
+        "stage_transitions": [],
+        "events": [],
+        "scope": "Administrative time policy. Only requests committed to actual transport before soft cutoff may finish; no model call or later architecture stage is added during close."
+      },
+      "programmed_calls": 0,
+      "real_model_calls": 0
+    },
+    "grant_cross_soft": {
+      "events": [
+        "queued",
+        "grant",
+        "worker_cancel",
+        "cancel_uncommitted_ticket"
+      ],
+      "raised": "AdministrativeSoftDeadline",
+      "message": "No new native transport dispatch after the v047 soft deadline",
+      "host_guard": {
+        "stop_requested": false,
+        "request_deadline": null
+      },
+      "guard_deadlines_at_queue_and_commit": [
+        7000.0
+      ],
+      "budget": {
+        "version": "shared-team-budget-v0.33",
+        "team_id": "synthetic-grant_cross_soft",
+        "members": [
+          "member_001"
+        ],
+        "limits": {
+          "max_decisions": 128,
+          "max_attempts": 128,
+          "max_total_tokens": 500000
+        },
+        "require_exact_resident": false,
+        "binding": null,
+        "records": {
+          "call-grant_cross_soft": {
+            "member": "member_001",
+            "call_id": "call-grant_cross_soft",
+            "status": "cancelled_before_dispatch",
+            "attempt_started": false,
+            "reservation": {
+              "token_reservation": 2100
+            },
+            "cancellation": {
+              "reason": "soft_deadline_before_dispatch",
+              "dispatch_started": false,
+              "actual_usage": 0,
+              "charged_tokens": 0
+            }
+          }
+        },
+        "integrity_failure": null,
+        "decisions": 1,
+        "attempts": 0,
+        "charged_tokens": 0,
+        "held_tokens": 0,
+        "remaining_decisions": 127,
+        "remaining_attempts": 128,
+        "available_tokens": 500000,
+        "state_sha256": "663480c0ba63b0894139f4397515bb2fed8786cd4d8236733ba521824de64687"
+      },
+      "deadline": {
+        "version": "administrative-deadline-v0.47",
+        "soft_seconds": 5400,
+        "hard_seconds": 6000,
+        "started_monotonic": 1000.0,
+        "soft_deadline_monotonic": 6400.0,
+        "hard_deadline_monotonic": 7000.0,
+        "actual_soft_cutoff_triggered": true,
+        "cutoff_prevented_remaining_work": true,
+        "no_new_dispatch_after_cutoff": true,
+        "all_dispatched_attempts_settled": true,
+        "no_new_stage_after_cutoff": true,
+        "final_submission_locked": false,
+        "unique_final_acceptance": false,
+        "final_assessment_calls": 0,
+        "locked_submission": null,
+        "closed_before_hard_deadline": false,
+        "hard_deadline_expired": false,
+        "closed_monotonic": null,
+        "dispatches": {},
+        "cancelled_before_dispatch": [
+          {
+            "stage": "cancelled_before_dispatch",
+            "member_id": "member_001",
+            "call_id": "call-grant_cross_soft",
+            "monotonic_at": 6410.0,
+            "actual_generation_started": false,
+            "attempt_started": false,
+            "charged_tokens": 0,
+            "decision_retained": true,
+            "reason": "soft_deadline_before_dispatch",
+            "team_budget": {
+              "version": "shared-team-budget-v0.33",
+              "team_id": "synthetic-grant_cross_soft",
+              "members": [
+                "member_001"
+              ],
+              "limits": {
+                "max_decisions": 128,
+                "max_attempts": 128,
+                "max_total_tokens": 500000
+              },
+              "require_exact_resident": false,
+              "binding": null,
+              "records": {
+                "call-grant_cross_soft": {
+                  "member": "member_001",
+                  "call_id": "call-grant_cross_soft",
+                  "status": "cancelled_before_dispatch",
+                  "attempt_started": false,
+                  "reservation": {
+                    "token_reservation": 2100
+                  },
+                  "cancellation": {
+                    "reason": "soft_deadline_before_dispatch",
+                    "dispatch_started": false,
+                    "actual_usage": 0,
+                    "charged_tokens": 0
+                  }
+                }
+              },
+              "integrity_failure": null,
+              "decisions": 1,
+              "attempts": 0,
+              "charged_tokens": 0,
+              "held_tokens": 0,
+              "remaining_decisions": 127,
+              "remaining_attempts": 128,
+              "available_tokens": 500000,
+              "state_sha256": "663480c0ba63b0894139f4397515bb2fed8786cd4d8236733ba521824de64687"
+            }
+          }
+        ],
+        "stage_transitions": [],
+        "events": [
+          {
+            "kind": "soft_cutoff_triggered",
+            "monotonic_at": 6410.0,
+            "elapsed_seconds": 5410.0,
+            "phase": "before_native_dispatch",
+            "remaining_work_prevented": true,
+            "new_model_calls_allowed": false,
+            "new_stages_allowed": false
+          }
+        ],
+        "scope": "Administrative time policy. Only requests committed to actual transport before soft cutoff may finish; no model call or later architecture stage is added during close."
+      },
+      "programmed_calls": 0,
+      "real_model_calls": 0
+    },
+    "host_soft": {
+      "events": [
+        "worker_cancel"
+      ],
+      "raised": "AdministrativeSoftDeadline",
+      "message": "Original soft cutoff before FIFO admission",
+      "host_guard": {
+        "stop_requested": false,
+        "request_deadline": null
+      },
+      "guard_deadlines_at_queue_and_commit": [],
+      "budget": {
+        "version": "shared-team-budget-v0.33",
+        "team_id": "synthetic-host_soft",
+        "members": [
+          "member_001"
+        ],
+        "limits": {
+          "max_decisions": 128,
+          "max_attempts": 128,
+          "max_total_tokens": 500000
+        },
+        "require_exact_resident": false,
+        "binding": null,
+        "records": {
+          "call-host_soft": {
+            "member": "member_001",
+            "call_id": "call-host_soft",
+            "status": "cancelled_before_dispatch",
+            "attempt_started": false,
+            "reservation": {
+              "token_reservation": 2100
+            },
+            "cancellation": {
+              "reason": "soft_deadline_before_dispatch",
+              "dispatch_started": false,
+              "actual_usage": 0,
+              "charged_tokens": 0
+            }
+          }
+        },
+        "integrity_failure": null,
+        "decisions": 1,
+        "attempts": 0,
+        "charged_tokens": 0,
+        "held_tokens": 0,
+        "remaining_decisions": 127,
+        "remaining_attempts": 128,
+        "available_tokens": 500000,
+        "state_sha256": "99fadeb13157e8bf54c846bcf17469a01bb2465ce5547114807301a9d7e4216b"
+      },
+      "deadline": {
+        "version": "administrative-deadline-v0.47",
+        "soft_seconds": 5400,
+        "hard_seconds": 6000,
+        "started_monotonic": 1000.0,
+        "soft_deadline_monotonic": 6400.0,
+        "hard_deadline_monotonic": 7000.0,
+        "actual_soft_cutoff_triggered": true,
+        "cutoff_prevented_remaining_work": true,
+        "no_new_dispatch_after_cutoff": true,
+        "all_dispatched_attempts_settled": true,
+        "no_new_stage_after_cutoff": true,
+        "final_submission_locked": false,
+        "unique_final_acceptance": false,
+        "final_assessment_calls": 0,
+        "locked_submission": null,
+        "closed_before_hard_deadline": false,
+        "hard_deadline_expired": false,
+        "closed_monotonic": null,
+        "dispatches": {},
+        "cancelled_before_dispatch": [
+          {
+            "stage": "cancelled_before_dispatch",
+            "member_id": "member_001",
+            "call_id": "call-host_soft",
+            "monotonic_at": 6401.0,
+            "actual_generation_started": false,
+            "attempt_started": false,
+            "charged_tokens": 0,
+            "decision_retained": true,
+            "reason": "soft_deadline_before_dispatch",
+            "team_budget": {
+              "version": "shared-team-budget-v0.33",
+              "team_id": "synthetic-host_soft",
+              "members": [
+                "member_001"
+              ],
+              "limits": {
+                "max_decisions": 128,
+                "max_attempts": 128,
+                "max_total_tokens": 500000
+              },
+              "require_exact_resident": false,
+              "binding": null,
+              "records": {
+                "call-host_soft": {
+                  "member": "member_001",
+                  "call_id": "call-host_soft",
+                  "status": "cancelled_before_dispatch",
+                  "attempt_started": false,
+                  "reservation": {
+                    "token_reservation": 2100
+                  },
+                  "cancellation": {
+                    "reason": "soft_deadline_before_dispatch",
+                    "dispatch_started": false,
+                    "actual_usage": 0,
+                    "charged_tokens": 0
+                  }
+                }
+              },
+              "integrity_failure": null,
+              "decisions": 1,
+              "attempts": 0,
+              "charged_tokens": 0,
+              "held_tokens": 0,
+              "remaining_decisions": 127,
+              "remaining_attempts": 128,
+              "available_tokens": 500000,
+              "state_sha256": "99fadeb13157e8bf54c846bcf17469a01bb2465ce5547114807301a9d7e4216b"
+            }
+          }
+        ],
+        "stage_transitions": [],
+        "events": [],
+        "scope": "Administrative time policy. Only requests committed to actual transport before soft cutoff may finish; no model call or later architecture stage is added during close."
+      },
+      "programmed_calls": 0,
+      "real_model_calls": 0
+    },
+    "happy": {
+      "events": [
+        "queued",
+        "grant",
+        "budget_mark",
+        "worker_confirm",
+        "commit"
+      ],
+      "raised": null,
+      "message": null,
+      "host_guard": {
+        "stop_requested": false,
+        "request_deadline": null
+      },
+      "guard_deadlines_at_queue_and_commit": [
+        1660.0,
+        1660.0
+      ],
+      "budget": {
+        "version": "shared-team-budget-v0.33",
+        "team_id": "synthetic-happy",
+        "members": [
+          "member_001"
+        ],
+        "limits": {
+          "max_decisions": 128,
+          "max_attempts": 128,
+          "max_total_tokens": 500000
+        },
+        "require_exact_resident": false,
+        "binding": null,
+        "records": {
+          "call-happy": {
+            "member": "member_001",
+            "call_id": "call-happy",
+            "status": "settled",
+            "attempt_started": true,
+            "reservation": {
+              "token_reservation": 2100
+            },
+            "dispatch_started": true,
+            "charge": {
+              "charged_tokens": 3,
+              "usage_status": "reported_actual_trace",
+              "reported_usage": {
+                "prompt_tokens": 2,
+                "completion_tokens": 1,
+                "total_tokens": 3
+              },
+              "response_body_sha256": "92bd08b413b5bbf5c13fc58238e4b5de53f41d80a5911ab5e3e4bea04784ac59",
+              "response_id": "programmed-only"
+            }
+          }
+        },
+        "integrity_failure": null,
+        "decisions": 1,
+        "attempts": 1,
+        "charged_tokens": 3,
+        "held_tokens": 0,
+        "remaining_decisions": 127,
+        "remaining_attempts": 127,
+        "available_tokens": 499997,
+        "state_sha256": "5787a8c3b840c5f4a033faa86f3ada41bb442e49de50cd5d74c96b3da774932d"
+      },
+      "deadline": {
+        "version": "administrative-deadline-v0.47",
+        "soft_seconds": 5400,
+        "hard_seconds": 6000,
+        "started_monotonic": 1000.0,
+        "soft_deadline_monotonic": 6400.0,
+        "hard_deadline_monotonic": 7000.0,
+        "actual_soft_cutoff_triggered": false,
+        "cutoff_prevented_remaining_work": false,
+        "no_new_dispatch_after_cutoff": true,
+        "all_dispatched_attempts_settled": true,
+        "no_new_stage_after_cutoff": true,
+        "final_submission_locked": false,
+        "unique_final_acceptance": false,
+        "final_assessment_calls": 0,
+        "locked_submission": null,
+        "closed_before_hard_deadline": false,
+        "hard_deadline_expired": false,
+        "closed_monotonic": null,
+        "dispatches": {
+          "call-happy": {
+            "member_id": "member_001",
+            "dispatched_at": 1005.0,
+            "status": "returned",
+            "returned_at": 1012.0
+          }
+        },
+        "cancelled_before_dispatch": [],
+        "stage_transitions": [],
+        "events": [],
+        "scope": "Administrative time policy. Only requests committed to actual transport before soft cutoff may finish; no model call or later architecture stage is added during close."
+      },
+      "programmed_calls": 1,
+      "real_model_calls": 0
+    },
+    "late_cancel": {
+      "events": [
+        "queued",
+        "grant",
+        "budget_mark",
+        "worker_confirm",
+        "commit"
+      ],
+      "raised": "RuntimeError",
+      "message": "FIFO admission expired after trusted dispatch commitment",
+      "host_guard": {
+        "stop_requested": false,
+        "request_deadline": null
+      },
+      "guard_deadlines_at_queue_and_commit": [
+        1660.0,
+        1660.0
+      ],
+      "budget": {
+        "version": "shared-team-budget-v0.33",
+        "team_id": "synthetic-late_cancel",
+        "members": [
+          "member_001"
+        ],
+        "limits": {
+          "max_decisions": 128,
+          "max_attempts": 128,
+          "max_total_tokens": 500000
+        },
+        "require_exact_resident": false,
+        "binding": null,
+        "records": {
+          "call-late_cancel": {
+            "member": "member_001",
+            "call_id": "call-late_cancel",
+            "status": "settled",
+            "attempt_started": true,
+            "reservation": {
+              "token_reservation": 2100
+            },
+            "dispatch_started": true,
+            "charge": {
+              "charged_tokens": 2100,
+              "usage_status": "uncertain_attempt_charged_reservation",
+              "reported_usage": null,
+              "response_body_sha256": "38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed"
+            }
+          }
+        },
+        "integrity_failure": null,
+        "decisions": 1,
+        "attempts": 1,
+        "charged_tokens": 2100,
+        "held_tokens": 0,
+        "remaining_decisions": 127,
+        "remaining_attempts": 127,
+        "available_tokens": 497900,
+        "state_sha256": "44f0cc2b0b986510dc1b6ea184ab4fe166663f907f749a8a933274b50421d020"
+      },
+      "deadline": {
+        "version": "administrative-deadline-v0.47",
+        "soft_seconds": 5400,
+        "hard_seconds": 6000,
+        "started_monotonic": 1000.0,
+        "soft_deadline_monotonic": 6400.0,
+        "hard_deadline_monotonic": 7000.0,
+        "actual_soft_cutoff_triggered": false,
+        "cutoff_prevented_remaining_work": false,
+        "no_new_dispatch_after_cutoff": true,
+        "all_dispatched_attempts_settled": true,
+        "no_new_stage_after_cutoff": true,
+        "final_submission_locked": false,
+        "unique_final_acceptance": false,
+        "final_assessment_calls": 0,
+        "locked_submission": null,
+        "closed_before_hard_deadline": false,
+        "hard_deadline_expired": false,
+        "closed_monotonic": null,
+        "dispatches": {
+          "call-late_cancel": {
+            "member_id": "member_001",
+            "dispatched_at": 1005.0,
+            "status": "raised_exception",
+            "returned_at": 1005.0
+          }
+        },
+        "cancelled_before_dispatch": [],
+        "stage_transitions": [],
+        "events": [],
+        "scope": "Administrative time policy. Only requests committed to actual transport before soft cutoff may finish; no model call or later architecture stage is added during close."
+      },
+      "programmed_calls": 1,
+      "real_model_calls": 0
+    },
+    "MATCH_cancellation": [
+      {
+        "operation": "match_count",
+        "ledger": {
+          "attempts": 2,
+          "decisions": 1,
+          "known_actual_tokens": 9,
+          "complete_actual_tokens": 9,
+          "uncertain_reserved_tokens": 0,
+          "inflight": null,
+          "calls": [
+            {
+              "cpu_fixture_only": true
+            }
+          ],
+          "per_usage_id": {}
+        },
+        "host_guard": {
+          "stop_requested": false,
+          "request_deadline": null
+        }
+      },
+      {
+        "operation": "match_complete",
+        "ledger": {
+          "attempts": 2,
+          "decisions": 1,
+          "known_actual_tokens": 9,
+          "complete_actual_tokens": 9,
+          "uncertain_reserved_tokens": 0,
+          "inflight": null,
+          "calls": [
+            {
+              "cpu_fixture_only": true
+            }
+          ],
+          "per_usage_id": {}
+        },
+        "host_guard": {
+          "stop_requested": false,
+          "request_deadline": null
+        }
+      }
+    ],
+    "queue": {
+      "actual_selector": "/tmp/v054-interleave-root-r1/src/proworksim/software_benchmark_queue_v054.py",
+      "synthetic_rows_only": true
+    },
+    "migration": {
+      "authorization_before": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-formal-authorization-r2-dynamic-pool.json",
+        "sha256": "63a20979f4560f6ffeaf5d748e123cdf286fc22084f6f19d9d40928e763327f3",
+        "bytes": 62556
+      },
+      "authorization_after": {
+        "path": "/tmp/v054-interleave-root-r1/config/v054-formal-authorization-r3-interleaved.json",
+        "sha256": "b9dba5888ea84d7eb5ee13a926f1101b43feed89e5bd1ae0b7c4b1a294401763",
+        "bytes": 62879
+      },
+      "plan_before": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-formal-execution-plan-r3-dynamic-pool.json",
+        "sha256": "18961e5b7b090cbc89ee13a90b9952e4a1ac696c70c53157da1cfeb901900bb1",
+        "bytes": 3177
+      },
+      "plan_after": {
+        "path": "/tmp/v054-interleave-root-r1/config/v054-formal-execution-plan-r4-interleaved.json",
+        "sha256": "0045a138c2b1f32db4c6643f641dd2144f68f9dd1cf79e08c561fe4e46ff50d9",
+        "bytes": 3408
+      },
+      "pool_policy": {
+        "synthetic_control_reference_only": true
+      },
+      "fixed_slots_and_budget_unchanged": true,
+      "poll_seconds_before": 5,
+      "poll_seconds_after": 5
+    },
+    "controller_static_routing": {
+      "scope": "AST binding check only; no SDK controller instantiated or executed"
+    }
+  },
+  "failures": {},
+  "sources": [
+    {
+      "path": "/tmp/v054-interleave-root-r1/src/proworksim/software_benchmark_interleaved_transport_v054.py",
+      "sha256": "9e101bd816e6f2f96a33eae67770c2ab9de0246987267c891bf42a78baf61ff6",
+      "bytes": 10046
+    },
+    {
+      "path": "/tmp/v054-interleave-mp-r1/src/proworksim/software_benchmark_interleaved_owner_v054.py",
+      "sha256": "b15b8cc1ce43bfe26cf8a801cdec5d3b371e503e2ca2209e52a060300357901e",
+      "bytes": 43230
+    },
+    {
+      "path": "/tmp/v054-interleave-root-r1/src/proworksim/software_benchmark_queue_v054.py",
+      "sha256": "9295cc955695118e1fc2af76562eaf2110c5b8935d7ae528631abec54a923bd0",
+      "bytes": 42003
+    },
+    {
+      "path": "/tmp/v054-interleave-root-r1/src/proworksim/software_benchmark_runner_transport_v054.py",
+      "sha256": "3b615284a5f4d932984a3fbd2dc8dd323e0b79fd8a741cfb246c88fd1fb53852",
+      "bytes": 5987
+    },
+    {
+      "path": "/tmp/v054-interleave-root-r1/tools/run_benchmark_controller_v054.py",
+      "sha256": "625c6d1d8870eb15c434af482eaf9d8d9a3b51afff9f0dca5c1aeef17da4b865",
+      "bytes": 10680
+    },
+    {
+      "path": "/tmp/v054-interleave-root-r1/tools/resume_formal_preclaim_v054.py",
+      "sha256": "c1b1e44f6b7e03d9b30ef20aca38de493ff78fa850c7ff05862bec4f1d80f14a",
+      "bytes": 18346
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_calibration_collector_v051.py",
+      "sha256": "817aa534bb05ebb6cbd8674a3891cc880e95a802c3509efbcc877633e80da8d0",
+      "bytes": 34664
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_organization_runtime_v047.py",
+      "sha256": "b58cb05062126b1d384c248a859cdb7e93189ddc3ad9f85bf90c4b24944901f6",
+      "bytes": 41919
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/team_budget_v033.py",
+      "sha256": "cc4b78d9fe32abd5889f1c27016d2d7c5e9c2461a4da664756998e6771d47549",
+      "bytes": 15174
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/stage_budget_v047.py",
+      "sha256": "420b38685ef89f2f66d22a6396ed5889b9f4139834e8085979934520adf27475",
+      "bytes": 12310
+    }
+  ],
+  "model_calls": 0,
+  "GPU_queries": 0,
+  "GPU_loads": 0,
+  "formal_slots_claimed": 0,
+  "SDK_conversations_created": 0,
+  "real_components": [
+    "SingleMemberBudget(require_exact_resident=False only for accounting fixture)",
+    "Original NativeDispatchGate",
+    "DispatchDeadline",
+    "staged interleaved transport classes",
+    "staged queue selector",
+    "staged migration validation"
+  ],
+  "programmed_components": [
+    "turn/call transport, worker and recorder; no numerical owner instantiated"
+  ]
+}

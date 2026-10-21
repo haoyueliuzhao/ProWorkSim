@@ -10,7 +10,7 @@ import os
 from .software_benchmark_candidates_v054 import checked, reference, write_new
 from .software_benchmark_match_v054 import CONTRACT
 from .software_benchmark_deployment_gpu_v054 import validate_card_identity
-from .software_benchmark_resident_pool_v054 import validate_registration
+from .software_benchmark_resident_pool_v054 import declared_session_capacity, validate_registration
 from .storage import digest, json_bytes
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -200,6 +200,15 @@ def validate_resident_session_service(service, arm):
             or spec.get('resident_registration') != service['resident_registration']
             or spec.get('resident_pool_policy') != service['resident_pool_policy']):
         raise ValueError('Session escaped its current immutable resident registration')
+    capacity = declared_session_capacity(declaration)
+    session_contract = ({"session_protocol": "mp-interleave-v1", "maximum_sessions": 2}
+                        if capacity == 2 else {})
+    for key, value in session_contract.items():
+        if service.get(key) != value or spec.get(key) != value:
+            raise ValueError("Session service lost its frozen interleave protocol")
+    if capacity == 1 and (service.get("maximum_sessions", 1) != 1
+                          or spec.get("maximum_sessions", 1) != 1):
+        raise ValueError("A single-session deployment cannot claim extra slots")
     expected_command = [str(ROOT / ".venv/bin/python"), str(ROOT / "tools/hold_resident_session_v054.py"),
                         "--session", str(Path(spec["root"]) / "session.json")]
     if (service["factory_source"] != reference(__file__) or service["arm"] != arm
@@ -230,6 +239,9 @@ def build_resident_session_service(*, arm, capacity_reference, card, directory, 
             or registration['declaration'] != resident_reference):
         raise ValueError('Resident declaration is not this active admitted registration')
     declaration = json.loads(checked(resident_reference).read_text())
+    capacity = declared_session_capacity(declaration)
+    session_contract = ({"session_protocol": "mp-interleave-v1", "maximum_sessions": 2}
+                        if capacity == 2 else {})
     deployment = json.loads(checked(declaration["source_spec"]).read_text())
     if (declaration["mode"] != ("REF" if arm == "REF" else "MATCH_PROJECT")
             or (arm == 'REF' and declaration['gpu_index'] != 7)
@@ -242,15 +254,16 @@ def build_resident_session_service(*, arm, capacity_reference, card, directory, 
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     condition = condition_reference(arm)
     owner_admission = write_new(root / "owner-admission.json", {
+        **session_contract,
         "arm": arm, "capacity_receipt": capacity_reference, "capacity_admission": admitted,
         "condition": condition, "capacity_passed": True, "formal_execution_authorized": False,
         'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
         "model_manifest": reference(MODEL / "proworksim-manifest.json"), "resident_reference": resident_reference})
-    spec = write_new(root / "service-spec.json", {"root": str(root), "arm": arm,
+    spec = write_new(root / "service-spec.json", {**session_contract, "root": str(root), "arm": arm,
         "condition": condition, "resident_reference": resident_reference,
         'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
         "capacity_receipt": capacity_reference, "factory_source": reference(__file__)})
-    return write_new(root / "model-service.json", {"factory_version": VERSION,
+    return write_new(root / "model-service.json", {**session_contract, "factory_version": VERSION,
         "deployment_mode": "resident-session-v1", "factory_source": reference(__file__),
         "arm": arm, "condition": condition, "admission_passed": True, "capacity_receipt": capacity_reference,
         "capacity_admission": admitted, "model_manifest": reference(MODEL / "proworksim-manifest.json"),

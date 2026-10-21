@@ -90,3 +90,14 @@ r9修复收窄到两处：仅在 `systemctl stop` 返回码5、原unit确已被�
 恢复后的只读观察为20closed、2running、1478pending，GPU6运行PROJECT槽10（Sphinx9229），GPU7运行REF槽41（Sphinx7454）。两个模型host PID仍为3178406和3199584；同次瞬时UTL为95%和100%，不代表持续平均利用率。其他GPU最大剩余37,292MiB，尚未达到46,080MiB准入门槛，故实际仍为两卡并发，不能把上限8写成已启动8张卡。实际排程依据冻结的准备就绪条件，可跳过尚未qualified的早序任务；原ID和seed保持，不按成绩选题。
 
 同卡两个独立回合在公开测试期间交错生成的后续方案见[异步并发设计](software-benchmark-v054-async-concurrency-design-r1.md)。本轮没有实现该方案，也没有承诺消除CPU测试造成的GPU计算间歇。
+
+
+### r9恢复派发快照
+
+在上述静态检查点之后，根调度已完成r9切换并恢复：queue使用 `proworksim-v054-formal-queue-r5.service`，pool为r2，prewarm策略身份前缀 `5bb9c97b`。新 `formal-bindings-r6.json` 的SHA256为 `56af6225e5b28eaadcb920287b02069f8595d8e985cfe36625b13a34bd075c3e`，源码清单SHA256为 `c74c8bcad20afbee9a1e6b2e68cf912eebc45c1070e6f8da854b9ba6f7fccd31`。
+
+恢复后的即时状态为20个回合已闭合、2个运行中、1,478个待运行：槽10 `PROJECT sphinx-doc__sphinx-9229` 在GPU6，槽41 `REF sphinx-doc__sphinx-7454` 在GPU7。GPU6／GPU7 resident宿主PID分别仍为3178406／3199584，未因本次修复卸载模型。该次观测GPU利用率为95%／100%；其余显卡的最大空闲显存为37,292MiB，低于MATCH／PROJECT原46,080MiB门槛，因此策略允许最多8路并不等于此刻8路已经启动。这些数值是恢复时快照，后续进度以队列状态为准。
+
+## 后续同卡实现
+
+用户在本报告后明确要求继续推进同卡交错。MATCH／PROJECT两会话已在独立r11修订中实现、完成实际六请求准入并恢复正式派发，REF仍单会话。该修订另报7次准备调用／2055 token及两次MP加载（含一次checker格式错误后的受控替换），未重跑正式题。详见[后续实施报告](software-benchmark-v054-interleaved-execution-r1.md)；本报告中“尚未上线”等表述保留为先前阶段事实。

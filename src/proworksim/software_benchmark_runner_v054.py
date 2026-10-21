@@ -23,7 +23,8 @@ from .software_benchmark_gpu_lease_v054 import GpuLease
 from .software_benchmark_lease_handoff_v054 import LeaseHandoff
 from .software_benchmark_native_closure_v054 import lock_native_candidate, lock_project_candidates
 from .software_benchmark_native_rootfs_v054 import clone_prepared_rootfs
-from .software_benchmark_owner_ipc_v054 import OwnerClient, wire_json
+from .software_benchmark_owner_ipc_v054 import wire_json
+from .software_benchmark_interleaved_transport_v054 import owner_client as make_owner_client
 from .software_benchmark_resources_v054 import create_episode_resources, release_episode_resources
 from .software_benchmark_ref_deployment_v054 import RefPortReservation
 from .software_benchmark_rootfs_io_v054 import cleanup_episode_rootfs, read_actor_bytes
@@ -459,7 +460,7 @@ def _run(config, output, leases):
             raise RuntimeError("Model did not inherit the physical/global deployment leases")
         identity = json.loads(Path(config["model_identity"]).read_text())
         if config["arm"] != "REF":
-            owner_client = OwnerClient(config["model_socket"], identity)
+            owner_client = make_owner_client(config["model_socket"], identity, guard_path=episode.guard_path)
         tests = PublicTests(episode, config, resources, output)
         ipc_directory = ROOT / "runs/software-benchmark-v054/ipc"
         ipc_directory.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -482,6 +483,8 @@ def _run(config, output, leases):
         episode.register_scope(controller_scope)
         wait_file(output / "controller-ready.json", controller, timeout=120)
         start = episode.enter_remote(owner_client, ref_seed=episode.slot["seed"])
+        if owner_client is not None and hasattr(owner_client, "hard_deadline"):
+            owner_client.hard_deadline = start["hard_at"]
         result["entered"] = True
         write_new(output / "start.json", start)
         returned = controller.wait(timeout=max(1, episode.hard_at - time.monotonic()) + 20)

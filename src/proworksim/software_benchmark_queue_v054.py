@@ -22,11 +22,11 @@ from .software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT = Path(__file__).resolve().parents[2]
 HOST_PYTHON = ROOT / ".venv/bin/python"
-VERSION = "software-benchmark-formal-queue-v054-r4-dynamic-pool"
+VERSION = "software-benchmark-formal-queue-v054-r5-interleaved"
 SLOTS_SHA = "55899d0b83a5bab1082bccb50496fb6c1d7111ecb951fc4d61c222be19d88676"
 QUEUE = ROOT / "runs/software-benchmark-v054/formal-queue-r1"
-AUTH = ROOT / "config/v054-formal-authorization-r2-dynamic-pool.json"
-PLAN = ROOT / "config/v054-formal-execution-plan-r3-dynamic-pool.json"
+AUTH = ROOT / "config/v054-formal-authorization-r3-interleaved.json"
+PLAN = ROOT / "config/v054-formal-execution-plan-r4-interleaved.json"
 SOURCE = ROOT / "artifacts/software-benchmark-v054/runner/source-manifest.json"
 BUSY = {"gpu_lease_busy", "ref_port_busy", "gpu_capacity_gate", "resident_session_busy"}
 ACTIVE = {"intent", "running"}
@@ -100,6 +100,8 @@ def check_plan(authorization, plan, slots):
             or authorization["physical_gpus"] != list(range(8))
             or plan["maximum_active_generation_episodes"] != 8
             or plan["maximum_active_official_graders"] != 2
+            or plan.get("maximum_sessions_by_mode") != {"MATCH_PROJECT": 2, "REF": 1}
+            or authorization.get("same_gpu_session_policy", {}).get("global_episode_limit") != 8
             or plan["physical_gpu_by_arm"] != {"REF": [7], "MATCH": list(range(8)), "PROJECT": list(range(8))}):
         raise ValueError("Only the original authorized 1500-slot / 750M panel is supported")
     for task in {x["instance_id"] for x in rows}:
@@ -171,7 +173,7 @@ def freeze_bindings(*, ref_capacity, match_capacity, scorer_manifest, output, re
              "source_manifest": source_ref, "registry": registry_ref, "scorer_manifest": scorer_ref,
              "capacities": capacities, "capacity_admission": admission_refs[0], "conditions": conditions,
              "resident_pool_policy": pool_ref, "prewarm_policy": prewarm_ref,
-             "residency_protocol": "append_only_dynamic_pool_independent_sessions_v1",
+             "residency_protocol": "append_only_pool_two_MP_sessions_FIFO_compute_v2",
              "frozen_files": [{"reference": item, "stat": stat_id(item["path"])}
                               for item in unique.values()],
              "model_loads": 0, "slot_claims": 0, "automatic_start": False}
@@ -189,18 +191,32 @@ def validate_frozen(bindings, *, initial=False):
 
 
 def select_pool_slot(rows, residents, *, timestamp=None, maximum_active=8, is_prepared=None):
-    """Earliest pending fixed slot plus a distinct eligible registered resident."""
+    """Earliest original task on an admitted independent resident session."""
     timestamp = time.time() if timestamp is None else timestamp
     active = [row for row in rows if row["generation"]["status"] in ACTIVE]
     if len(active) >= maximum_active:
         return None
-    busy_ids = {row["generation"].get("resident_id") for row in active}
+    busy_ids = Counter(row["generation"].get("resident_id") for row in active)
     busy_gpus = {row["generation"].get("physical_gpu") for row in active}
+    occupancy = {}
+    free = {}
+    for key, item in residents.items():
+        capacity = item.get("session_capacity", 1)
+        if type(capacity) is not int or capacity not in (1, 2):
+            raise ValueError("Unadmitted resident session capacity")
+        if capacity == 2 and (item["declaration"].get("session_protocol") != "mp-interleave-v1"
+                              or item["declaration"]["mode"] != "MATCH_PROJECT"):
+            raise ValueError("Only qualified MP interleaving may offer two sessions")
+        # Include durable launch intents and live reserved sessions. Taking max
+        # avoids double counting the same claim observed through both channels.
+        used = max(busy_ids[key], len(item.get("active_claims", [])))
+        if item["declaration"]["gpu_index"] in busy_gpus and busy_ids[key] == 0:
+            continue  # A different/legacy resident owns that physical device.
+        if used < capacity:
+            free[key], occupancy[key] = item, used
     preparing_instances = {row["slot"]["instance_id"] for row in active
                            if row["slot"].get("instance_id") is not None
                            and not row["generation"].get("claimed", False)}
-    free = {key: item for key, item in residents.items()
-            if key not in busy_ids and item["declaration"]["gpu_index"] not in busy_gpus}
     blocked_modes = set()
     for row in rows:
         if row["generation"]["status"] != "pending":
@@ -215,10 +231,10 @@ def select_pool_slot(rows, residents, *, timestamp=None, maximum_active=8, is_pr
         if timestamp < row["generation"].get("retry_not_before", 0):
             blocked_modes.add(mode)
             continue
-        eligible = [(item["declaration"]["gpu_index"], key, item) for key, item in free.items()
+        eligible = [(occupancy[key], item["declaration"]["gpu_index"], key, item) for key, item in free.items()
                     if item["declaration"]["mode"] == mode]
         if eligible and (is_prepared is None or is_prepared(row)):
-            _, resident_id, resident = min(eligible, key=lambda item: (item[0], item[1]))
+            _, _, resident_id, resident = min(eligible, key=lambda item: (item[0], item[1], item[2]))
             return row, resident_id, resident
     return None
 
@@ -638,7 +654,8 @@ class Coordinator:
             self.start_job(generation, kind="generation", directory=root / "worker",
                            argv=[str(HOST_PYTHON), str(ROOT / "tools/run_benchmark_episode_v054.py"),
                                  "--config", config["path"], "--output", str(root / "episode")])
-            residents.pop(resident_id)
+            # The next selection recounts this new durable intent; a qualified
+            # MP resident may still have a second free independent session.
 
     def tick(self):
         try:

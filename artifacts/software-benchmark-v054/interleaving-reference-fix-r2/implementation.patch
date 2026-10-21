@@ -1,0 +1,171 @@
+--- a/tools/check_match_interleave_v054.py
++++ b/tools/check_match_interleave_v054.py
+@@ -3,6 +3,7 @@
+ 
+ import argparse
+ import copy
++import hashlib
+ import json
+ import os
+ from pathlib import Path
+@@ -23,7 +24,9 @@
+ PROTOCOL = "mp-interleave-v1"
+ 
+ 
+-def plan():
++def plan(run_revision="r1"):
++    if run_revision not in {"r1", "r2"}:
++        raise ValueError("Only the explicitly declared original or repair control revision is admitted")
+     requests = {}
+     for label, word in (("A1", "ALPHA"), ("A2", "BETA"), ("B1", "GAMMA")):
+         names = sorted(TOOL_NAMES) if label == "A1" else [] if label == "A2" else ["terminal"]
+@@ -38,7 +41,7 @@
+     for phase in ("baseline", "interleaved"):
+         for name, arm, seed, labels in (("A", "MATCH", 202610210561, ["A1", "A2"]),
+                                         ("B", "PROJECT", 202610210562, ["B1"])):
+-            slot = {"slot_id": f"synthetic-v054-interleave-{phase}-{name.lower()}-r1",
++            slot = {"slot_id": f"synthetic-v054-interleave-{phase}-{name.lower()}-{run_revision}",
+                     "instance_id": "synthetic-interleaving-control", "arm": arm, "seed": seed,
+                     "maximum_generation_requests": len(labels)}
+             sessions.append(slot)
+@@ -49,7 +52,7 @@
+                                {"phase": "interleaved", "order": ["A1", "B1", "A2"]}]}
+ 
+ 
+-def make_permit(*, resident_id, gpu_index, gpu_uuid, source_manifest):
++def make_permit(*, resident_id, gpu_index, gpu_uuid, source_manifest, run_revision="r1"):
+     if (not re.fullmatch(r"[a-z0-9-]+", resident_id) or type(gpu_index) is not int
+             or gpu_index not in range(8) or not re.fullmatch(
+                 r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", gpu_uuid)):
+@@ -61,24 +64,74 @@
+             "maximum_output_tokens": 2048, "maximum_total_tokens": 61440,
+             "full_capacity_retested": False, "automatic_retry": False,
+             "deployment": {"resident_id": resident_id, "gpu_index": gpu_index,
+-                           "gpu_uuid": gpu_uuid, "source_manifest": source_manifest}, **plan()}
+-
+-
+-def preparation_permit(*, resident_id, gpu_index, gpu_uuid, source_manifest):
++                           "gpu_uuid": gpu_uuid, "source_manifest": source_manifest},
++            **({"run_revision": run_revision} if run_revision != "r1" else {}), **plan(run_revision)}
++
++
++def preparation_permit(*, resident_id, gpu_index, gpu_uuid, source_manifest, run_revision="r1"):
+     """One shared permit builder for the provisioner and this explicit control CLI."""
+     return make_permit(resident_id=resident_id, gpu_index=gpu_index, gpu_uuid=gpu_uuid,
+-                       source_manifest=source_manifest)
++                       source_manifest=source_manifest, run_revision=run_revision)
+ 
+ 
+ def validate_permit(value):
+     deployment = value["deployment"]
+     checked(deployment["source_manifest"])
+-    if value != make_permit(**deployment):
++    if value != make_permit(**deployment, run_revision=value.get("run_revision", "r1")):
+         raise ValueError("Only the fixed six short requests and four synthetic sessions are authorized")
+ 
+ 
+ def read_ref(value):
+     return json.loads(checked(value).read_text())
++
++
++def read_native_reference(value):
++    """The original MATCH writer has path+SHA references, without a byte count.
++
++    Validate that exact narrow schema here; generic v054 checked() stays strict.
++    Parse the same bytes that were hashed, rather than reopening the file.
++    """
++    if (not isinstance(value, dict) or set(value) not in (
++            {"path", "sha256"}, {"path", "sha256", "bytes"})
++            or not isinstance(value.get("path"), str)
++            or not isinstance(value.get("sha256"), str)
++            or re.fullmatch(r"[a-f0-9]{64}", value["sha256"]) is None):
++        raise ValueError("Invalid immutable MATCH native evidence reference")
++    path = Path(value["path"])
++    if not path.is_absolute() or str(path.resolve()) != value["path"]:
++        raise ValueError("MATCH native evidence path changed")
++    raw = path.read_bytes()
++    if (hashlib.sha256(raw).hexdigest() != value["sha256"]
++            or ("bytes" in value and (type(value["bytes"]) is not int or value["bytes"] != len(raw)))):
++        raise ValueError("Immutable MATCH native evidence content changed")
++    return json.loads(raw)
++
++
++def accounted_usage(response, arm):
++    """Retain owner-settled usage before offline projection/schema validation."""
++    body = response["body"]
++    usage = body["usage"]
++    if (any(type(usage.get(key)) is not int for key in (
++            "prompt_tokens", "completion_tokens", "total_tokens"))
++            or not 0 < usage["prompt_tokens"] <= 8192
++            or not 0 < usage["completion_tokens"] <= 2048
++            or usage["total_tokens"] != usage["prompt_tokens"] + usage["completion_tokens"]):
++        raise ValueError("Returned original usage is incomplete or outside the synthetic permit")
++    if arm == "MATCH":
++        ledger = response["ledger"]
++        calls = ledger.get("calls", [])
++        if (not calls or ledger.get("inflight") is not None
++                or ledger.get("uncertain_reserved_tokens", 0)
++                or ledger.get("attempts") != len(calls)
++                or calls[-1]["usage"] != usage
++                or body["id"] != "v054-match-" + calls[-1]["native_attempt_id"]
++                or type(ledger.get("complete_actual_tokens")) is not int
++                or ledger["complete_actual_tokens"] != ledger.get("known_actual_tokens")
++                or sum(row["usage"]["total_tokens"] for row in calls) != ledger["complete_actual_tokens"]):
++            raise ValueError("Returned MATCH usage lacks a completely settled original owner ledger")
++    elif arm != "PROJECT" or response.get("http_status") != 200:
++        raise ValueError("Only a completed original MATCH/PROJECT response can establish usage")
++    return copy.deepcopy(usage)
+ 
+ 
+ def comparisons(projections):
+@@ -103,7 +156,7 @@
+         if ledger.get("inflight") is not None or ledger.get("complete_actual_tokens") is None:
+             raise ValueError("MATCH response has unsettled usage")
+         native_ref = ledger["calls"][-1]["response"]
+-        native = read_ref(native_ref)
++        native = read_native_reference(native_ref)
+         trace = {"input_ids": native["input"]["input_ids"], "output_ids": native["output_ids"],
+                  "behavior_logprobs": native["behavior_logprobs"]}
+         raw = native["raw_generated_text"]
+@@ -168,7 +221,8 @@
+         "maximum_sessions": 2, "maximum_generation_requests": 6, "formal_slots_claimed": 0,
+         "formal_task_content_used": False, "full_capacity_retested": False,
+         "declaration": reference(declaration_path), "authorization": authorized,
+-        "resident_identity": identity, "automatic_retry": False}
++        "resident_identity": identity, "automatic_retry": False,
++        "control_run_revision": permit.get("run_revision", "r1")}
+ 
+     def acquire(slot):
+         folder = root / slot["slot_id"]
+@@ -230,9 +284,11 @@
+         response = (client.call("match_complete", request=request, usage_id=permit["usage_ids"][label])
+                     if slot["arm"] == "MATCH" else client.call("project_complete", request=request))
+         response_ref = write_new(folder / (label + "-response.json"), response)
++        usage = accounted_usage(response, slot["arm"])
++        accounted.append({"response": response_ref, "usage": usage,
++                          "basis": "original_owner_settled_response_before_offline_projection"})
++        pending.update(response=response_ref, verified_actual_usage=usage)
+         value = projection(response, slot["arm"])
+-        accounted.append({"response": response_ref, "usage": value["output"]["usage"]})
+-        pending.update(response=response_ref, verified_actual_usage=value["output"]["usage"])
+         if counted is not None and counted["prompt_tokens"] != value["output"]["usage"]["prompt_tokens"]:
+             raise ValueError("The exact MATCH counter differs from complete native usage")
+         evidence = response["interleave_evidence"]
+@@ -324,6 +380,7 @@
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("--make-authorization", type=Path)
+     parser.add_argument("--resident-id")
++    parser.add_argument("--run-revision", choices=("r1", "r2"), default="r1")
+     parser.add_argument("--gpu-index", type=int)
+     parser.add_argument("--gpu-uuid")
+     parser.add_argument("--source-manifest", type=Path)
+@@ -335,7 +392,8 @@
+         if any(value is None for value in (args.resident_id, args.gpu_index, args.gpu_uuid, args.source_manifest)):
+             parser.error("Preparation needs resident ID, physical GPU UUID/index and sealed source manifest")
+         result = write_new(args.make_authorization, make_permit(resident_id=args.resident_id,
+-            gpu_index=args.gpu_index, gpu_uuid=args.gpu_uuid, source_manifest=reference(args.source_manifest)))
++            gpu_index=args.gpu_index, gpu_uuid=args.gpu_uuid, source_manifest=reference(args.source_manifest),
++            run_revision=args.run_revision))
+     else:
+         if args.declaration is None or args.authorization is None or args.output is None:
+             parser.error("Explicit declaration, independent permit and fresh output are required")

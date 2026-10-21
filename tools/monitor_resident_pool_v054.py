@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from proworksim.software_benchmark_candidates_v054 import checked, reference, write_new
-from proworksim.software_benchmark_resident_pool_v054 import POLICY_VERSION, read_ref, validate_pool_policy
+from proworksim.software_benchmark_resident_pool_v054 import read_ref, validate_pool_policy
 from proworksim.software_benchmark_resident_provisioner_v054 import Provisioner, ROOT
 
 
@@ -33,13 +33,15 @@ def main():
         if inherited["registry"] != registry:
             raise ValueError("Existing real handoff evidence belongs to another registry")
         output.mkdir(parents=True, exist_ok=False)
-        value = {"version": POLICY_VERSION, "pool_root": str(output),
+        value = {"version": "v054-resident-pool-policy-v2-interleaved", "pool_root": str(output),
             "physical_gpus": list(range(8)), "maximum_residents": 8,
             "minimum_free_mib": 46080, "minimum_total_mib": 81920,
             "allowed_gpu_names": ["NVIDIA A800-SXM4-80GB"],
             "allow_co_residency": True, "require_idle": False,
             "maximum_actual_load_attempts_per_gpu": 1,
-            "maximum_preparation_calls_per_new_resident": 2,
+            "maximum_preparation_calls_per_new_resident": 6,
+            "inherit_modes": ["REF"], "MP_session_protocol": "mp-interleave-v1",
+            "maximum_MP_sessions_per_resident": 2, "maximum_REF_sessions_per_resident": 1,
             "automatic_retry_after_load_failure": False,
             "model_loading_authorized": True, "preparation_generation_authorized": True,
             "ref_to_mp_after_all_500_scored": True, "training_authorized": False,
@@ -51,8 +53,8 @@ def main():
             "formal_authorization_not_changed": True,
             "formal_tasks_added": 0, "formal_task_replays": 0,
             "eligibility": "Only exact GPU model, total/free capacity and physical/global leases; other users' jobs and utilization are not exclusion gates",
-            "new_device_qualification": "Reuse original identical numerical/model capacity proof; this device gets fresh capacity/startup and exactly two independent synthetic session calls, not a full-context capacity rerun",
-            "runtime_revision": "dynamic-resident-pool-r1"}
+            "new_device_qualification": "Reuse original identical numerical/model capacity proof; this device gets fresh capacity/startup and six short requests in isolated and interleaved sessions; no full-context capacity rerun",
+            "runtime_revision": "two_MP_sessions_FIFO_compute-r1"}
         item = write_new(output / "policy.json", value)
         validate_pool_policy(item)
         print(json.dumps({"policy": item, "model_loads": 0, "formal_claims": 0}))

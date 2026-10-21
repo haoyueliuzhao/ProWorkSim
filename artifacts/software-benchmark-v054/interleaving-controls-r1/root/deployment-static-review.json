@@ -1,0 +1,42 @@
+{
+  "version": "v054-mp-interleave-deployment-contract-static-review-r1",
+  "status": "consistent_by_static_review",
+  "sources": [
+    {
+      "path": "/tmp/v054-interleave-root-r1/src/proworksim/software_benchmark_resident_provisioner_v054.py",
+      "sha256": "a975cda1aac3928af4d476a2ad5afa5757e6aa784e810025ab3e3d2401c59847",
+      "bytes": 22939
+    },
+    {
+      "path": "/tmp/v054-interleave-deploy-r1/tools/run_match_resident_v054.py",
+      "sha256": "d447ea0eb1d99c65457a21f3a0288a31f931e08ff4eebeee39a9d5583ec53675",
+      "bytes": 12692
+    },
+    {
+      "path": "/tmp/v054-interleave-deploy-r1/tools/check_match_interleave_v054.py",
+      "sha256": "14aef78cacafeb9668fab010b78f2bb66c134bab38d7b4b70bd3ccc2deb6020b",
+      "bytes": 19994
+    },
+    {
+      "path": "/tmp/v054-interleave-deploy-r1/tools/serve_interleaved_owner_v054.py",
+      "sha256": "f0182a40d5df351b8b25c15cdfac71a68820028ad545f90ab88e027518442bb8",
+      "bytes": 194
+    }
+  ],
+  "scope": "Source review only; make_deployment, systemd launch and GPU/control execution were not invoked",
+  "agreements": [
+    "Dual branch calls the unique preparation_permit builder with resident_id/gpu_index/gpu_uuid/source_manifest; no extra permit fields are appended to dual permits.",
+    "Spec-v3, declaration and launch readiness consistently use session_protocol=mp-interleave-v1 and maximum_sessions=2; CLI only uses --max-sessions 2.",
+    "owner_entrypoint is the full frozen reference for tools/serve_interleaved_owner_v054.py; the exact same reference and the new manager module are included in sources.",
+    "Spec source_manifest is the same policy source reference passed to permit.deployment.source_manifest; checker requires exact equality.",
+    "Spec preparation_permit, startup --resident-preparation-permit and checker --authorization refer to the same immutable file.",
+    "Checker receives the generated declaration path and fresh root/handoff directory; completion is read from handoff/receipt.json.",
+    "Dual admission records interleaving_check_receipt equal to check_receipt; failed control does not register the resident.",
+    "Existing physical UUID/free-memory admission and original numerical loader are retained; no arbitrary script entrypoint is permitted."
+  ],
+  "issues_found": [],
+  "model_calls": 0,
+  "GPU_queries": 0,
+  "GPU_loads": 0,
+  "formal_slots_claimed": 0
+}

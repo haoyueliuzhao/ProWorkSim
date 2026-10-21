@@ -19,6 +19,7 @@ from .software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICY_VERSION = "v054-resident-pool-policy-v1"
+INTERLEAVED_POLICY_VERSION = "v054-resident-pool-policy-v2-interleaved"
 EVENT_VERSION = "v054-resident-pool-event-v1"
 ADMISSION_VERSION = "v054-pool-resident-admission-v1"
 _REF_CACHE = {}
@@ -43,9 +44,35 @@ def read_ref(item):
     return copy.deepcopy(cached[1])
 
 
+def declared_session_capacity(declaration, *, ready=None, identity=None):
+    """Only an explicitly frozen MP deployment admits two isolated sessions."""
+    protocol = declaration.get("session_protocol")
+    if protocol is None:
+        if declaration.get("maximum_sessions", 1) != 1:
+            raise ValueError("Unversioned residents cannot claim extra session slots")
+        return 1
+    deployment = read_ref(declaration["source_spec"])
+    if (declaration["mode"] != "MATCH_PROJECT" or protocol != "mp-interleave-v1"
+            or declaration.get("maximum_sessions") != 2
+            or deployment.get("session_protocol") != protocol
+            or deployment.get("maximum_sessions") != 2):
+        raise ValueError("Session capacity differs from the frozen interleave deployment")
+    for value in (ready, identity):
+        if value is not None and (value.get("session_protocol") != protocol
+                                  or value.get("maximum_sessions") != 2):
+            raise ValueError("Live resident identity lacks the declared two-session protocol")
+    return 2
+
+
 def validate_pool_policy(policy_ref):
     policy = read_ref(policy_ref)
-    if (policy.get("version") != POLICY_VERSION
+    interleaved = policy.get("version") == INTERLEAVED_POLICY_VERSION
+    if interleaved and (policy.get("inherit_modes") != ["REF"]
+            or policy.get("MP_session_protocol") != "mp-interleave-v1"
+            or policy.get("maximum_MP_sessions_per_resident") != 2
+            or policy.get("maximum_REF_sessions_per_resident") != 1):
+        raise ValueError("Unrecognized fixed two-session MATCH/PROJECT pool policy")
+    if (policy.get("version") not in {POLICY_VERSION, INTERLEAVED_POLICY_VERSION}
             or policy.get("physical_gpus") != list(range(8))
             or policy.get("maximum_residents") != 8
             or policy.get("minimum_free_mib") != 46080
@@ -54,7 +81,7 @@ def validate_pool_policy(policy_ref):
             or policy.get("allow_co_residency") is not True
             or policy.get("require_idle") is not False
             or policy.get("maximum_actual_load_attempts_per_gpu") != 1
-            or policy.get("maximum_preparation_calls_per_new_resident") != 2
+            or policy.get("maximum_preparation_calls_per_new_resident") != (6 if interleaved else 2)
             or policy.get("automatic_retry_after_load_failure") is not False
             or policy.get("model_loading_authorized") is not True
             or policy.get("preparation_generation_authorized") is not True
@@ -98,10 +125,16 @@ def _static_registration(event, policy_ref):
             or ready.get("gpu_index") != event["gpu_index"]
             or ready.get("gpu_lease_held") is not True):
         raise ValueError("Resident readiness does not match its deployment")
-    read_ref(ready["identity"])
+    live_identity = read_ref(ready["identity"])
+    capacity = declared_session_capacity(declaration, ready=ready, identity=live_identity)
     control = read_ref(admission["check_receipt"])
     policy = read_ref(policy_ref)
+    interleaved = policy.get("version") == INTERLEAVED_POLICY_VERSION
+    if (capacity == 2 and (not interleaved or admission.get("kind") != "new_interleaved_model_device")):
+        raise ValueError("Two-session owner requires its new independently qualified registration")
     if admission.get("kind") == "inherited_live_resident":
+        if event["mode"] not in policy.get("inherit_modes", ["REF", "MATCH_PROJECT"]):
+            raise ValueError("This pool revision does not inherit that live resident mode")
         inherited = read_ref(policy["inherited_admission"])["admitted_modes"][event["mode"]]
         registry = read_ref(policy["inherited_registry"])
         if (registry["residents"][event["mode"]] != event["declaration"]
@@ -111,7 +144,43 @@ def _static_registration(event, policy_ref):
                 or inherited["unsettled_tokens"] != 0
                 or admission.get("model_reloaded") is not False):
             raise ValueError("Existing resident inheritance lost its original evidence")
+    elif admission.get("kind") == "new_interleaved_model_device":
+        spec = read_ref(event["source_spec"])
+        identity = control.get("resident_identity", {})
+        binding = identity.get("resource_binding", {})
+        if (not interleaved or capacity != 2 or event["mode"] != "MATCH_PROJECT"
+                or spec.get("version") != "v054-match-resident-spec-v3"
+                or spec.get("pool_policy") != policy_ref
+                or spec.get("resident_id") != event["resident_id"]
+                or admission.get("interleaving_check_receipt") != admission["check_receipt"]
+                or control.get("version") != "v054-mp-interleave-control-r1"
+                or control.get("status") != "passed"
+                or control.get("session_protocol") != "mp-interleave-v1"
+                or control.get("maximum_sessions") != 2
+                or control.get("declaration") != event["declaration"]
+                or control.get("authorization") != spec.get("preparation_permit")
+                or control.get("actual_model_generation_requests") != 6
+                or control.get("completed_sessions") != 4
+                or control.get("unsettled_requests") != 0
+                or control.get("formal_slots_claimed") != 0
+                or control.get("model_loads") != 1
+                or any(control.get(key) is not True for key in (
+                    "same_resident_PID_and_model", "isolated_sessions", "per_request_FIFO_serialization",
+                    "all_three_outputs_equal", "all_three_token_traces_equal", "all_three_rng_transitions_equal"))
+                or control.get("weights_reloaded_between_sessions") is not False
+                or binding.get("gpu_uuid") != event["gpu_uuid"]
+                or binding.get("gpu_index") != event["gpu_index"]
+                or identity != live_identity):
+            raise ValueError("Interleaved owner lacks its actual six-request independent-session qualification")
+        inherited = read_ref(policy["match_template_declaration"])
+        baseline = read_ref(inherited["source_spec"])
+        if (spec["contract"] != baseline["contract"]
+                or spec["capacity_receipt"] != baseline["capacity_receipt"]
+                or spec["model_manifest"] != baseline["model_manifest"]):
+            raise ValueError("Interleaving changed original numerical/model/capacity identity")
     elif admission.get("kind") == "new_same_model_device":
+        if interleaved or capacity != 1:
+            raise ValueError("Sequential preparation cannot qualify a two-session pool revision")
         identity = control.get("resident_identity", {})
         binding = identity.get("resource_binding", {})
         spec = read_ref(event["source_spec"])

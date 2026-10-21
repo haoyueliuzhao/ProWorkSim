@@ -71,7 +71,7 @@ def verify_resource_revision(old_bindings, new_bindings):
     """Only the newly authorized resource changes may differ from the old plan."""
     old_auth, new_auth = read_ref(old_bindings["authorization"]), read_ref(new_bindings["authorization"])
     auth_fields = {"version", "supersedes", "authorization_source", "physical_gpus",
-                   "maximum_active_generation_episodes", "dynamic_gpu_policy"}
+                   "maximum_active_generation_episodes", "dynamic_gpu_policy", "same_gpu_session_policy"}
     if ({k: v for k, v in old_auth.items() if k not in auth_fields}
             != {k: v for k, v in new_auth.items() if k not in auth_fields}
             or new_auth["physical_gpus"] != list(range(8))
@@ -79,10 +79,19 @@ def verify_resource_revision(old_bindings, new_bindings):
             or new_auth.get("dynamic_gpu_policy", {}).get("terminate_other_jobs") is not False
             or new_auth["dynamic_gpu_policy"].get("only_unclaimed_original_slots") is not True):
         raise ValueError("New authorization exceeds the explicit dynamic resource revision")
+    if new_auth.get("version") == "v054-formal-authorization-r3-interleaved":
+        expected = {"MATCH_PROJECT": 2, "REF": 1, "global_episode_limit": 8,
+                    "single_GPU_generation_inflight": 1, "same_model_and_fixed_original_slots": True,
+                    "queue_wait_counts_toward_original_time_limits": True, "automatic_replays": 0}
+        if new_auth.get("same_gpu_session_policy") != expected:
+            raise ValueError("Interleaving authorization changed frozen session/time/accounting limits")
+    elif "same_gpu_session_policy" in new_auth:
+        raise ValueError("Unrecognized interleaving authorization")
     old_plan, new_plan = read_ref(old_bindings["plan"]), read_ref(new_bindings["plan"])
     plan_fields = {"version", "supersedes", "authorization_path", "maximum_active_generation_episodes",
                    "physical_gpu_by_arm", "dispatch_order", "scheduling_authorization", "resident_pool",
-                   "actual_order_evidence", "ref_gpu7_conversion", "resource_poll_seconds", "prior_source_snapshot"}
+                   "actual_order_evidence", "ref_gpu7_conversion", "resource_poll_seconds", "prior_source_snapshot",
+                   "maximum_sessions_by_mode", "GPU_request_order"}
     if ({k: v for k, v in old_plan.items() if k not in plan_fields}
             != {k: v for k, v in new_plan.items() if k not in plan_fields}
             or new_plan["maximum_active_generation_episodes"] != 8
@@ -91,6 +100,11 @@ def verify_resource_revision(old_bindings, new_bindings):
             or new_plan["physical_gpu_by_arm"] != {"REF": [7], "MATCH": list(range(8)), "PROJECT": list(range(8))}
             or not new_bindings.get("resident_pool_policy")):
         raise ValueError("New plan changed more than the authorized dynamic pool/poll policy")
+    if new_plan.get("version") == "v054-formal-execution-plan-r4-interleaved":
+        if new_plan.get("maximum_sessions_by_mode") != {"MATCH_PROJECT": 2, "REF": 1}:
+            raise ValueError("Unrecognized per-resident session limit")
+    elif "maximum_sessions_by_mode" in new_plan:
+        raise ValueError("Unrecognized interleaving plan")
     return {"authorization_before": old_bindings["authorization"], "authorization_after": new_bindings["authorization"],
             "plan_before": old_bindings["plan"], "plan_after": new_bindings["plan"],
             "pool_policy": new_bindings["resident_pool_policy"], "fixed_slots_and_budget_unchanged": True,

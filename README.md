@@ -1,6 +1,6 @@
 # ProWorkSim
 
-> 2026-10-21 更新：r9队列 `proworksim-v054-formal-queue-r5.service` 已恢复；恢复后的观察为20回合已闭合、2在途、1478待运行。GPU6／7沿用原模型PID，跨卡并发上限8，额外卡按剩余容量准入，CPU提前准备与PROJECT状态读取缓存已上线。同卡多题交错仍是[设计](docs/experiments/software-benchmark-v054-async-concurrency-design-r1.md)，尚未实现。详见[性能与修复记录](docs/experiments/software-benchmark-v054-throughput-optimization-r1.md)。
+> 2026-10-21 16:12 更新：MATCH／PROJECT同卡两会话交错已实际准入并上线。GPU6同时承接两个独立回合，GPU7继续原REF服务；观察为39回合已闭合、3在途、1458待运行。六请求实际控制通过（1620 token），加上保留的首条检查脚本故障尝试，本轮准备共7次／2055 token。GPU6升级期间两次受控加载，GPU7未重载，正式题未重跑。见[实施与实际结果](docs/experiments/software-benchmark-v054-interleaved-execution-r1.md)。
 
 ## v0.54：完整500题三组评价运行中，保留常驻模型并扩展资源调度（2026-10-21）
 

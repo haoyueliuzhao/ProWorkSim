@@ -28,6 +28,29 @@ from proworksim.storage import atomic_write, digest, json_bytes  # noqa: E402
 UNIT = r"proworksim-v054-resident-mp-g[0-7]-[0-9a-f]{8}\.service"
 
 
+def owner_program(spec):
+    """Select one frozen trusted entrypoint; never execute an arbitrary spec path."""
+    old = ROOT / "tools/serve_resident_owner_v054.py"
+    if spec["version"] == "v054-match-resident-spec-v2":
+        if any(key in spec for key in ("owner_entrypoint", "maximum_sessions", "session_protocol")):
+            raise ValueError("The original resident spec cannot silently acquire new session semantics")
+        return old, []
+    if (spec["version"] != "v054-match-resident-spec-v3"
+            or spec.get("session_protocol") != "mp-interleave-v1"
+            or type(spec.get("maximum_sessions")) is not int or spec["maximum_sessions"] != 2):
+        raise ValueError("The interleaved deployment fixes exactly two independent sessions")
+    expected = ROOT / "tools/serve_interleaved_owner_v054.py"
+    entry = spec["owner_entrypoint"]
+    if checked(entry).resolve() != expected.resolve() or entry not in spec["sources"]:
+        raise ValueError("The fixed new entrypoint must be included in the exact source seal")
+    manager = ROOT / "src/proworksim/software_benchmark_interleaved_owner_v054.py"
+    matches = [item for item in spec["sources"] if Path(item["path"]).resolve() == manager.resolve()]
+    if len(matches) != 1:
+        raise ValueError("Exactly one frozen interleaved manager source is required")
+    checked(matches[0])
+    return expected, ["--max-sessions", "2"]
+
+
 def wait_ready(path, process, timeout):
     until = time.monotonic() + timeout
     while not Path(path).exists():
@@ -72,12 +95,13 @@ def main():
     spec = json.loads(args.spec.read_text())
     validate_card_identity(spec['card'])
     policy = validate_pool_policy(spec['pool_policy'])
-    if (spec["version"] != "v054-match-resident-spec-v2"
+    if (spec["version"] not in {"v054-match-resident-spec-v2", "v054-match-resident-spec-v3"}
             or spec['card']['index'] not in policy['physical_gpus']
             or not re.fullmatch(UNIT, spec["unit"])
             or not spec['unit'].startswith('proworksim-v054-resident-mp-g' + str(spec['card']['index']) + '-')
             or not re.fullmatch(r'[a-z0-9-]+', spec.get('resident_id', ''))):
         raise ValueError("Only an explicitly registered dynamic raw resident may be launched")
+    owner_entrypoint, owner_options = owner_program(spec)
     unit = dict(line.split("=", 1) for line in subprocess.check_output([
         "systemctl", "--user", "show", spec["unit"], "--property=MainPID,InvocationID,ControlGroup"],
         text=True).splitlines())
@@ -149,7 +173,7 @@ def main():
         owner = subprocess.Popen([runtime, "--write-project", *runtime_gpu_arguments(card), "/usr/bin/env", *env,
             "PROWORKSIM_V053_GPU_BINDING=" + json.dumps(binding),
             str(ROOT / "runs/v016-sdk/resident-venv/bin/python"),
-            str(ROOT / "tools/serve_resident_owner_v054.py"), "--socket", str(short / "admin.sock"),
+            str(owner_entrypoint), *owner_options, "--socket", str(short / "admin.sock"),
             "--model-local", str(MODEL), "--model-manifest", str(MODEL / "proworksim-manifest.json"),
             "--contract", spec["contract"]["path"], "--output", str(root / "owner-service"),
             "--identity-output", spec["identity_path"], "--verified-source-receipt",
@@ -160,12 +184,20 @@ def main():
             "--codec-socket", str(short / "codec.sock"), "--codec-identity", str(codec_identity)], start_new_session=True)
         children.append(owner)
         wait_ready(root / "owner-service/service-ready.json", owner, 1800)
+        session_properties = {}
+        if spec["version"] == "v054-match-resident-spec-v3":
+            owner_identity = json.loads(Path(spec["identity_path"]).read_text())
+            if (owner_identity.get("session_protocol") != "mp-interleave-v1"
+                    or owner_identity.get("maximum_sessions") != 2):
+                raise ValueError("Loaded manager identity does not match the two-session specification")
+            session_properties = {"session_protocol": "mp-interleave-v1", "maximum_sessions": 2,
+                                  "owner_entrypoint": spec["owner_entrypoint"]}
         write_new(spec["ready_path"], {"ready": True, "resident": True, "source_spec": spec_ref,
             "host_process": process_identity(os.getpid()), "gpu_index": card['index'], "gpu_uuid": card["uuid"],
             'resident_id': spec['resident_id'], 'pool_policy': spec['pool_policy'], 'resource_binding': binding,
             "gpu_lease_held": True, "identity": reference(spec["identity_path"]),
             "admin": {"socket_path": str(short / "admin.sock")}, "unit": spec["unit"],
-            "invocation_id": unit["InvocationID"], "cgroup": unit["ControlGroup"]})
+            "invocation_id": unit["InvocationID"], "cgroup": unit["ControlGroup"], **session_properties})
         atomic_write(root / 'status.json', json_bytes({'status': 'ready', 'source_spec': spec_ref,
                      'model_load_started': True, 'model_calls': 0, 'ready': reference(spec['ready_path'])}))
         return owner.wait()

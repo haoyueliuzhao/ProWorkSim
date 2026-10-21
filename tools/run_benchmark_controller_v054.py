@@ -29,7 +29,12 @@ def main():
     while not Path(config["start"]).exists():
         time.sleep(0.05)
     start = json.loads(Path(config["start"]).read_text())
-    gate = HostDeadline(start)
+    from proworksim.software_benchmark_interleaved_transport_v054 import (
+        interleaved, owner_client, InterleavedHostDeadline, InterleavedMatchAdapter,
+        InterleavedProjectOwner, unwrap_interleave_boundary, context_transport as interleaved_context,
+    )
+    concurrent = interleaved(config["model_identity_value"])
+    gate = InterleavedHostDeadline(start) if concurrent else HostDeadline(start)
     rpc = NativeToolRPC(ready=json.loads(Path(config["ready"]).read_text()),
                         reader=sys.stdin, writer=sys.stdout)
     result = {"version": "v054-single-slot-controller-v1", "arm": config["arm"],
@@ -61,8 +66,10 @@ def main():
                     programmed_http_fixture=config["preparation_only"])
                 adapter = GuardedRefAdapter(original, gate, start["started"])
             else:
-                adapter = RemoteMatchAdapter(
-                    OwnerClient(config["model_socket"], config["model_identity_value"]),
+                adapter_type = InterleavedMatchAdapter if concurrent else RemoteMatchAdapter
+                adapter = adapter_type(
+                    owner_client(config["model_socket"], config["model_identity_value"],
+                                 guard_path=start["guard_path"], hard_deadline=start["hard_at"]),
                     gate, output / "match-ledger-copy")
             llm = build_llm(adapter)
             conversation = build_isolated_conversation(
@@ -72,7 +79,8 @@ def main():
             try:
                 conversation.run()
             except BaseException as error:
-                boundary = unwrap_normal_boundary(error)
+                queue_boundary = unwrap_interleave_boundary(error) if concurrent else None
+                boundary = queue_boundary or unwrap_normal_boundary(error)
                 if boundary is None:
                     raise
                 snapshot = adapter.ledger.snapshot()
@@ -81,6 +89,8 @@ def main():
                         or snapshot.get("uncertain_reserved_tokens", 0)
                         or snapshot["complete_actual_tokens"] != snapshot["known_actual_tokens"]):
                     raise RuntimeError("A normal boundary cannot conceal uncertain model usage")
+                if queue_boundary is not None:
+                    result["scheduler_boundary"] = queue_boundary.evidence
                 result["terminal_boundary"] = {"reason": str(boundary),
                     "known_usage": True, "generation_retried": False}
             result.update(
@@ -98,9 +108,11 @@ def main():
                 DispatchDeadline, SoftwareContextTransport, _CollectionOwner,
                 budget_snapshot, close_runtime, context_transport, run_fragment,
             )
-            client = OwnerClient(config["model_socket"], config["model_identity_value"])
+            client = owner_client(config["model_socket"], config["model_identity_value"],
+                                  guard_path=start["guard_path"], hard_deadline=start["hard_at"])
             tokenizer = AutoTokenizer.from_pretrained(config["model_local"], local_files_only=True)
-            owner = RemoteProjectOwner(client, tokenizer, gate, window_id=start["window_id"])
+            owner_type = InterleavedProjectOwner if concurrent else RemoteProjectOwner
+            owner = owner_type(client, tokenizer, gate, window_id=start["window_id"])
             public_client = OwnerClient(config["public_test_socket"], config["public_test_identity"], timeout=1860)
             public_number = 0
 
@@ -117,12 +129,18 @@ def main():
             deadline = DispatchDeadline()
             deadline.started = deadline.last_clock = start["started"]
             deadline.soft_at, deadline.hard_at = start["soft_at"], start["hard_at"]
-            context = context_transport(owner, output / "managed-transport", deadline,
-                                        transport_factory=SoftwareContextTransport)
+            context = (interleaved_context(owner, output / "managed-transport", deadline)
+                       if concurrent else context_transport(owner, output / "managed-transport", deadline,
+                                                           transport_factory=SoftwareContextTransport))
             facade = _CollectionOwner(owner, context)
             runtime, _, _ = build_runtime(facade, prepared, output / "managed-runtime", deadline=deadline)
             boundary = run_fragment(prepared, runtime, on_opportunity=lambda outcome: atomic_write(
                 output / "managed-live-ledger.json", json_bytes(budget_snapshot(runtime, prepared))))
+            if concurrent and context.native_dispatch_gate.scheduler_boundaries:
+                boundary["administrative_framework_closure_reason"] = boundary["closure_reason"]
+                boundary["scheduler_boundaries"] = context.native_dispatch_gate.scheduler_boundaries
+                boundary["closure_reason"] = "interleaved_request_queue_deadline_before_dispatch"
+                result["scheduler_boundaries"] = boundary["scheduler_boundaries"]
             write_new(output / "managed-boundary.json", boundary)
             ledger = budget_snapshot(runtime, prepared)
             result.update(actual_managed_S1_runtime=True, original_Gamma1_transport=True,

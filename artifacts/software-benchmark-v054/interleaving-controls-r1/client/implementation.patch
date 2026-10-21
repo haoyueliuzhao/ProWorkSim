@@ -1,0 +1,491 @@
+--- a/src/proworksim/software_benchmark_resident_pool_v054.py
++++ b/src/proworksim/software_benchmark_resident_pool_v054.py
+@@ -19,6 +19,7 @@
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+ POLICY_VERSION = "v054-resident-pool-policy-v1"
++INTERLEAVED_POLICY_VERSION = "v054-resident-pool-policy-v2-interleaved"
+ EVENT_VERSION = "v054-resident-pool-event-v1"
+ ADMISSION_VERSION = "v054-pool-resident-admission-v1"
+ _REF_CACHE = {}
+@@ -43,9 +44,35 @@
+     return copy.deepcopy(cached[1])
+ 
+ 
++def declared_session_capacity(declaration, *, ready=None, identity=None):
++    """Only an explicitly frozen MP deployment admits two isolated sessions."""
++    protocol = declaration.get("session_protocol")
++    if protocol is None:
++        if declaration.get("maximum_sessions", 1) != 1:
++            raise ValueError("Unversioned residents cannot claim extra session slots")
++        return 1
++    deployment = read_ref(declaration["source_spec"])
++    if (declaration["mode"] != "MATCH_PROJECT" or protocol != "mp-interleave-v1"
++            or declaration.get("maximum_sessions") != 2
++            or deployment.get("session_protocol") != protocol
++            or deployment.get("maximum_sessions") != 2):
++        raise ValueError("Session capacity differs from the frozen interleave deployment")
++    for value in (ready, identity):
++        if value is not None and (value.get("session_protocol") != protocol
++                                  or value.get("maximum_sessions") != 2):
++            raise ValueError("Live resident identity lacks the declared two-session protocol")
++    return 2
++
++
+ def validate_pool_policy(policy_ref):
+     policy = read_ref(policy_ref)
+-    if (policy.get("version") != POLICY_VERSION
++    interleaved = policy.get("version") == INTERLEAVED_POLICY_VERSION
++    if interleaved and (policy.get("inherit_modes") != ["REF"]
++            or policy.get("MP_session_protocol") != "mp-interleave-v1"
++            or policy.get("maximum_MP_sessions_per_resident") != 2
++            or policy.get("maximum_REF_sessions_per_resident") != 1):
++        raise ValueError("Unrecognized fixed two-session MATCH/PROJECT pool policy")
++    if (policy.get("version") not in {POLICY_VERSION, INTERLEAVED_POLICY_VERSION}
+             or policy.get("physical_gpus") != list(range(8))
+             or policy.get("maximum_residents") != 8
+             or policy.get("minimum_free_mib") != 46080
+@@ -54,7 +81,7 @@
+             or policy.get("allow_co_residency") is not True
+             or policy.get("require_idle") is not False
+             or policy.get("maximum_actual_load_attempts_per_gpu") != 1
+-            or policy.get("maximum_preparation_calls_per_new_resident") != 2
++            or policy.get("maximum_preparation_calls_per_new_resident") != (6 if interleaved else 2)
+             or policy.get("automatic_retry_after_load_failure") is not False
+             or policy.get("model_loading_authorized") is not True
+             or policy.get("preparation_generation_authorized") is not True
+@@ -98,10 +125,16 @@
+             or ready.get("gpu_index") != event["gpu_index"]
+             or ready.get("gpu_lease_held") is not True):
+         raise ValueError("Resident readiness does not match its deployment")
+-    read_ref(ready["identity"])
++    live_identity = read_ref(ready["identity"])
++    capacity = declared_session_capacity(declaration, ready=ready, identity=live_identity)
+     control = read_ref(admission["check_receipt"])
+     policy = read_ref(policy_ref)
++    interleaved = policy.get("version") == INTERLEAVED_POLICY_VERSION
++    if (capacity == 2 and (not interleaved or admission.get("kind") != "new_interleaved_model_device")):
++        raise ValueError("Two-session owner requires its new independently qualified registration")
+     if admission.get("kind") == "inherited_live_resident":
++        if event["mode"] not in policy.get("inherit_modes", ["REF", "MATCH_PROJECT"]):
++            raise ValueError("This pool revision does not inherit that live resident mode")
+         inherited = read_ref(policy["inherited_admission"])["admitted_modes"][event["mode"]]
+         registry = read_ref(policy["inherited_registry"])
+         if (registry["residents"][event["mode"]] != event["declaration"]
+@@ -111,7 +144,43 @@
+                 or inherited["unsettled_tokens"] != 0
+                 or admission.get("model_reloaded") is not False):
+             raise ValueError("Existing resident inheritance lost its original evidence")
++    elif admission.get("kind") == "new_interleaved_model_device":
++        spec = read_ref(event["source_spec"])
++        identity = control.get("resident_identity", {})
++        binding = identity.get("resource_binding", {})
++        if (not interleaved or capacity != 2 or event["mode"] != "MATCH_PROJECT"
++                or spec.get("version") != "v054-match-resident-spec-v3"
++                or spec.get("pool_policy") != policy_ref
++                or spec.get("resident_id") != event["resident_id"]
++                or admission.get("interleaving_check_receipt") != admission["check_receipt"]
++                or control.get("version") != "v054-mp-interleave-control-r1"
++                or control.get("status") != "passed"
++                or control.get("session_protocol") != "mp-interleave-v1"
++                or control.get("maximum_sessions") != 2
++                or control.get("declaration") != event["declaration"]
++                or control.get("authorization") != spec.get("preparation_permit")
++                or control.get("actual_model_generation_requests") != 6
++                or control.get("completed_sessions") != 4
++                or control.get("unsettled_requests") != 0
++                or control.get("formal_slots_claimed") != 0
++                or control.get("model_loads") != 1
++                or any(control.get(key) is not True for key in (
++                    "same_resident_PID_and_model", "isolated_sessions", "per_request_FIFO_serialization",
++                    "all_three_outputs_equal", "all_three_token_traces_equal", "all_three_rng_transitions_equal"))
++                or control.get("weights_reloaded_between_sessions") is not False
++                or binding.get("gpu_uuid") != event["gpu_uuid"]
++                or binding.get("gpu_index") != event["gpu_index"]
++                or identity != live_identity):
++            raise ValueError("Interleaved owner lacks its actual six-request independent-session qualification")
++        inherited = read_ref(policy["match_template_declaration"])
++        baseline = read_ref(inherited["source_spec"])
++        if (spec["contract"] != baseline["contract"]
++                or spec["capacity_receipt"] != baseline["capacity_receipt"]
++                or spec["model_manifest"] != baseline["model_manifest"]):
++            raise ValueError("Interleaving changed original numerical/model/capacity identity")
+     elif admission.get("kind") == "new_same_model_device":
++        if interleaved or capacity != 1:
++            raise ValueError("Sequential preparation cannot qualify a two-session pool revision")
+         identity = control.get("resident_identity", {})
+         binding = identity.get("resource_binding", {})
+         spec = read_ref(event["source_spec"])
+--- a/src/proworksim/software_benchmark_resident_session_v054.py
++++ b/src/proworksim/software_benchmark_resident_session_v054.py
+@@ -15,11 +15,14 @@
+ from .software_benchmark_owner_ipc_v054 import OwnerClient
+ from .software_benchmark_supervision_v054 import process_identity
+ from .software_benchmark_deployment_gpu_v054 import validate_card_identity
+-from .software_benchmark_resident_pool_v054 import registrations, validate_registration, validate_pool_policy
++from .software_benchmark_resident_pool_v054 import (
++    declared_session_capacity, registrations, validate_registration, validate_pool_policy,
++)
+ from .storage import atomic_write, json_bytes
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+ VERSION = "v054-resident-session-v1"
++INTERLEAVE_PROTOCOL = "mp-interleave-v1"
+ 
+ 
+ def read_ref(item):
+@@ -32,6 +35,82 @@
+         from .software_benchmark_ref_resident_v054 import RefResidentClient
+         return RefResidentClient(admin["endpoint"], admin["api_key_file"], timeout_seconds=timeout or 45)
+     return OwnerClient(admin["socket_path"], identity, timeout=timeout or 5)
++
++
++def session_capacity(declaration, *, ready=None, identity=None):
++    return declared_session_capacity(declaration, ready=ready, identity=identity)
++
++
++def session_lock_paths(declaration):
++    base = Path(declaration["session_lock_path"])
++    if session_capacity(declaration) == 1:
++        return [base]
++    return [base.with_name(base.name + ".slot-" + str(index)) for index in range(2)]
++
++
++def lock_session_slot(declaration):
++    """Two local leases match two owner slots; no GPU lease is reacquired."""
++    for index, path in enumerate(session_lock_paths(declaration)):
++        stream = path.open("a+")
++        try:
++            fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
++        except BlockingIOError:
++            stream.close()
++        else:
++            return stream, index
++    raise BlockingIOError("All declared resident session slots are leased")
++
++
++def interleaved_status(status):
++    """Validate both isolated claims and the single dispatched numerical turn."""
++    active = status.get("active_claims")
++    sessions = status.get("sessions")
++    if (status.get("resident") is not True or "poisoned" not in status
++            or status["poisoned"] is not None or not isinstance(active, list)
++            or not isinstance(sessions, dict) or len(active) > 2 or len(set(active)) != len(active)
++            or any(not isinstance(claim, str) or not re.fullmatch(r"[a-f0-9]{32}", claim)
++                   for claim in active)):
++        raise ValueError("Invalid interleaved resident health or claim inventory")
++    occupied = []
++    for claim in active:
++        entry = sessions.get(claim, {})
++        slot = entry.get("session_slot")
++        if (type(slot) is not int or slot not in (0, 1)
++                or entry.get("phase") not in {"acquired", "collecting", "closing"}
++                or any(value is not False and not isinstance(value, str)
++                       for value in (entry.get("queued"), entry.get("dispatched")))):
++            raise ValueError("An active interleaved claim lost its slot or turn identity")
++        occupied.append(slot)
++    if (len(set(occupied)) != len(occupied)
++            or status.get("available_session_slots") != sorted({0, 1} - set(occupied))
++            or status.get("state") != ("busy" if active else "idle")):
++        raise ValueError("Interleaved slot availability differs from the active claims")
++    inflight = status.get("inflight")
++    dispatched = [(claim, sessions[claim]["dispatched"]) for claim in active
++                  if sessions[claim]["dispatched"] is not False]
++    if inflight is None:
++        if dispatched:
++            raise ValueError("A dispatched turn has no bound resident operation")
++    elif (not isinstance(inflight, dict) or len(dispatched) != 1
++          or (inflight.get("claim_id"), inflight.get("ticket_id")) != dispatched[0]
++          or not isinstance(inflight.get("operation"), str)):
++        raise ValueError("More than one turn, or an unbound turn, is executing")
++    return list(active)
++
++
++def require_interleaved_release(result, claim_id):
++    proof = result.get("quiescence", {})
++    if (result.get("state") != "released" or result.get("claim_id") != claim_id
++            or any(proof.get(key) is not True for key in (
++                "session_quiescent", "queued_removed", "learning_unchanged", "rng_restored_exactly",
++                "session_rng_closed", "model_object_retained", "old_session_socket_removed",
++                "resident_still_loaded"))
++            or proof.get("own_inflight") != 0 or proof.get("weights_reloaded") is not False
++            or not isinstance(proof.get("other_active_claims"), list)
++            or claim_id in proof["other_active_claims"]
++            or proof.get("resident_generator_active") == claim_id):
++        raise ValueError("Interleaved release lacks this exact session's complete closure")
++    return proof
+ 
+ 
+ def admitted_resident(declaration_reference, *, query=True, pool_policy_reference=None,
+@@ -51,7 +130,7 @@
+         # Formal session acquisition below still requires a current registration.
+         policy = validate_pool_policy(declaration['pool_policy'])
+         deployment = read_ref(declaration['source_spec'])
+-        if (deployment.get('version') != 'v054-match-resident-spec-v2'
++        if (deployment.get('version') not in {'v054-match-resident-spec-v2', 'v054-match-resident-spec-v3'}
+                 or deployment.get('pool_policy') != declaration['pool_policy']
+                 or deployment.get('resident_id') != declaration['resident_id']
+                 or declaration['mode'] != 'MATCH_PROJECT'
+@@ -101,10 +180,15 @@
+                 or identity.get('original_generate_native') is not True
+                 or identity.get('numerical_methods_replaced') is not False):
+             raise ValueError('Actual raw owner numerical/physical binding differs from registration')
++    capacity = session_capacity(declaration, ready=ready, identity=identity)
+     status = admin_client(declaration, identity).call("status") if query else None
++    active_claims = None
+     if status is not None:
+         healthy = status.get("poisoned") is False
+-        if declaration["mode"] == "MATCH_PROJECT":
++        if capacity == 2:
++            active_claims = interleaved_status(status)
++            healthy = True
++        elif declaration["mode"] == "MATCH_PROJECT":
+             # The raw-owner manager uses None for healthy and a diagnostic
+             # object for poisoned; its occupied state is named "busy".
+             active = status.get("active_claim")
+@@ -116,7 +200,10 @@
+                                 and re.fullmatch(r"[a-f0-9]{32}", active) is not None)))
+         if not healthy:
+             raise RuntimeError("Registered resident is poisoned or its health evidence is invalid; no automatic reuse")
+-    return {"declaration": declaration, "declaration_reference": declaration_reference,
++        if capacity == 1:
++            active_claims = [status["active_claim"]] if status.get("active_claim") is not None else []
++    return {"session_capacity": capacity, "active_claims": active_claims,
++            "declaration": declaration, "declaration_reference": declaration_reference,
+             "ready": ready, "ready_reference": reference(ready_path), "identity": identity, "status": status,
+             "unit_state": unit_state, 'registration': registration_reference,
+             'resident_id': registration['resident_id'] if registration else declaration.get('resident_id'),
+@@ -131,7 +218,7 @@
+         item = registration['declaration']
+         observed = admitted_resident(item, pool_policy_reference=pool_policy_reference,
+                                      registration_reference=registration['event_reference'])
+-        if observed is not None and observed["status"].get("active_claim") is None:
++        if observed is not None and len(observed["active_claims"]) < observed["session_capacity"]:
+             declaration = observed["declaration"]
+             if declaration['gpu_uuid'] in seen_devices:
+                 raise ValueError('Two active residents claim the same physical GPU')
+@@ -181,6 +268,8 @@
+                 "released", "quiescent", "resident_still_loaded", "engine_paused", "cache_reset"))
+                 or result.get("engine_unfinished") != 0 or result.get("weights_unloaded") is not False):
+             raise ValueError("REF release does not prove fully settled model/cache state")
++    elif session_capacity(declaration) == 2:
++        require_interleaved_release(result, session["claim_id"])
+     else:
+         proof = result.get("quiescence", {})
+         if (result.get("state") != "released" or proof.get("owner_idle") is not True
+@@ -196,12 +285,18 @@
+     if declaration["mode"] == "REF":
+         idle = (status.get("poisoned") is False and status.get("phase") == "idle"
+                 and status.get("active_claim") is None and status.get("inflight") == 0)
++    elif session_capacity(declaration) == 2:
++        active = interleaved_status(status)
++        own = status["sessions"].get(session["claim_id"])
++        idle = (session["claim_id"] not in active and (own is None or (
++            own.get("phase") == "closed" and own.get("queued") is False
++            and own.get("dispatched") is False)))
+     else:
+         idle = (status.get("resident") is True and "poisoned" in status
+                 and status["poisoned"] is None and status.get("state") == "idle"
+                 and status.get("active_claim") is None and status.get("inflight") is None)
+     if not idle:
+-        raise ValueError("The released resident is not independently healthy and idle")
++        raise ValueError("The released session is not independently closed in a healthy resident")
+     return {"release": reference(path), "session": ticket, "status": status,
+             "resident_host_process": ready["host_process"]}
+ 
+@@ -220,10 +315,47 @@
+     else:
+         if settled is not None:
+             notice = {"claim_id": session["claim_id"], "poisoned": False,
+-                      "reason": reason, "resident_poison_skipped": "exact_released_session_and_live_idle",
++                      "reason": reason, "resident_poison_skipped": ("exact_released_session_and_live_own_claim_closed"
++                          if session_capacity(declaration) == 2 else "exact_released_session_and_live_idle"),
+                       "administrative_episode_failure_preserved": True, "evidence": settled}
+             atomic_write(root / "post-release-failure.json", json_bytes(notice))
+             return notice
++    if session_capacity(declaration) == 2:
++        client = admin_client(declaration, session["admin_identity"], timeout=2)
++        try:
++            aborted = client.call("abort_session", claim_id=session["claim_id"], reason=reason)
++            if (aborted.get("claim_id") != session["claim_id"]
++                    or type(aborted.get("shared_poisoned")) is not bool):
++                raise ValueError("Session abort lost its exact claim/shared-fault identity")
++            if aborted["shared_poisoned"] is False:
++                if (aborted.get("session_aborted") is not True
++                        or aborted.get("own_dispatched") is not False
++                        or aborted.get("resident_still_loaded") is not True
++                        or not isinstance(aborted.get("not_dispatched_receipts"), list)):
++                    raise ValueError("Session-local abort lacks proof that no own turn is dispatched")
++                for item in aborted["not_dispatched_receipts"]:
++                    checked(item)
++                value.update(poisoned=False, session_aborted=True, shared_poisoned=False,
++                             admin=aborted, other_sessions_undisturbed=True)
++                atomic_write(marker, json_bytes(value))
++                return value
++            value.update(admin=aborted, shared_poisoned=True)
++        except BaseException as error:
++            value["admin_error"] = {"type": type(error).__name__, "message": str(error)}
++            try:
++                # A fresh administrative client is permitted solely to close
++                # dispatch; it never retries a numerical request.
++                value["shared_guard"] = admin_client(
++                    declaration, session["admin_identity"], timeout=2).call(
++                        "poison_shared", reason="unproved_session_abort: " + reason)
++            except BaseException as guard_error:
++                value["shared_guard_error"] = {"type": type(guard_error).__name__, "message": str(guard_error)}
++        try:
++            value["suspended"] = suspend_registered(declaration, ready)
++        except BaseException as error:
++            value["suspension_error"] = {"type": type(error).__name__, "message": str(error)}
++        atomic_write(marker, json_bytes(value))
++        return value
+     try:
+         value["admin"] = admin_client(declaration, session["admin_identity"], timeout=2).call(
+             "poison", claim_id=session["claim_id"], reason=reason)
+@@ -255,17 +387,24 @@
+         declaration = observed["declaration"]
+         if declaration['mode'] != ('REF' if slot['arm'] == 'REF' else 'MATCH_PROJECT'):
+             raise ValueError('A task arm cannot use another resident numerical mode')
+-        self.lock = Path(declaration["session_lock_path"]).open("a+")
++        self.lock, session_slot = lock_session_slot(declaration)
++        capacity = observed["session_capacity"]
+         try:
+-            fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+             client = admin_client(declaration, observed["identity"])
++            extra = {"session_slot": session_slot} if capacity == 2 else {}
+             acquired = client.call("acquire", slot=slot, claim_id=claim_id, authorization=authorization,
+-                                   host_process=process_identity(os.getpid()))
++                                   host_process=process_identity(os.getpid()), **extra)
+             if acquired.get("state") == "busy":
+                 raise BlockingIOError("Registered resident session is already leased")
+             if acquired.get("claim_id") != claim_id:
+                 raise ValueError("Resident acquired a different claim nonce")
+-            self.session = {"version": VERSION, "claim_id": claim_id, "slot": slot,
++            if capacity == 2 and (acquired.get("session_slot") != session_slot
++                    or acquired.get("session_protocol") != INTERLEAVE_PROTOCOL
++                    or acquired.get("maximum_sessions") != 2):
++                raise ValueError("Acquired resident session differs from its leased slot/protocol")
++            session_contract = ({"session_slot": session_slot, "maximum_sessions": 2,
++                                 "session_protocol": INTERLEAVE_PROTOCOL} if capacity == 2 else {})
++            self.session = {**session_contract, "version": VERSION, "claim_id": claim_id, "slot": slot,
+                             "resident_reference": declaration_reference, "resident_declaration": declaration,
+                             "resident_ready": observed["ready"], "admin_identity": observed["identity"],
+                             "host_process": process_identity(os.getpid()), "session_root": str(self.directory),
+@@ -307,12 +446,15 @@
+                 raise ValueError("REF release did not prove cache/request quiescence")
+         else:
+             result = client.call("release", claim_id=session["claim_id"], finish_receipt=finish_receipt)
+-            proof = result.get("quiescence", {})
+-            if (result.get("state") != "released" or proof.get("owner_idle") is not True
+-                    or proof.get("model_busy") is not False or proof.get("active_session") is not None
+-                    or proof.get("learning_unchanged") is not True or proof.get("rng_restored_exactly") is not True
+-                    or proof.get("weights_reloaded") is not False):
+-                raise ValueError("Raw owner release did not prove independent-window restoration")
++            if session_capacity(session["resident_declaration"]) == 2:
++                require_interleaved_release(result, session["claim_id"])
++            else:
++                proof = result.get("quiescence", {})
++                if (result.get("state") != "released" or proof.get("owner_idle") is not True
++                        or proof.get("model_busy") is not False or proof.get("active_session") is not None
++                        or proof.get("learning_unchanged") is not True or proof.get("rng_restored_exactly") is not True
++                        or proof.get("weights_reloaded") is not False):
++                    raise ValueError("Raw owner release did not prove independent-window restoration")
+         if result.get("claim_id") != session["claim_id"]:
+             raise ValueError("Release claim identity changed")
+         path = self.directory / "release.json"
+--- a/src/proworksim/software_benchmark_service_factory_v054.py
++++ b/src/proworksim/software_benchmark_service_factory_v054.py
+@@ -10,7 +10,7 @@
+ from .software_benchmark_candidates_v054 import checked, reference, write_new
+ from .software_benchmark_match_v054 import CONTRACT
+ from .software_benchmark_deployment_gpu_v054 import validate_card_identity
+-from .software_benchmark_resident_pool_v054 import validate_registration
++from .software_benchmark_resident_pool_v054 import declared_session_capacity, validate_registration
+ from .storage import digest, json_bytes
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+@@ -200,6 +200,15 @@
+             or spec.get('resident_registration') != service['resident_registration']
+             or spec.get('resident_pool_policy') != service['resident_pool_policy']):
+         raise ValueError('Session escaped its current immutable resident registration')
++    capacity = declared_session_capacity(declaration)
++    session_contract = ({"session_protocol": "mp-interleave-v1", "maximum_sessions": 2}
++                        if capacity == 2 else {})
++    for key, value in session_contract.items():
++        if service.get(key) != value or spec.get(key) != value:
++            raise ValueError("Session service lost its frozen interleave protocol")
++    if capacity == 1 and (service.get("maximum_sessions", 1) != 1
++                          or spec.get("maximum_sessions", 1) != 1):
++        raise ValueError("A single-session deployment cannot claim extra slots")
+     expected_command = [str(ROOT / ".venv/bin/python"), str(ROOT / "tools/hold_resident_session_v054.py"),
+                         "--session", str(Path(spec["root"]) / "session.json")]
+     if (service["factory_source"] != reference(__file__) or service["arm"] != arm
+@@ -230,6 +239,9 @@
+             or registration['declaration'] != resident_reference):
+         raise ValueError('Resident declaration is not this active admitted registration')
+     declaration = json.loads(checked(resident_reference).read_text())
++    capacity = declared_session_capacity(declaration)
++    session_contract = ({"session_protocol": "mp-interleave-v1", "maximum_sessions": 2}
++                        if capacity == 2 else {})
+     deployment = json.loads(checked(declaration["source_spec"]).read_text())
+     if (declaration["mode"] != ("REF" if arm == "REF" else "MATCH_PROJECT")
+             or (arm == 'REF' and declaration['gpu_index'] != 7)
+@@ -242,15 +254,16 @@
+     root.mkdir(mode=0o700, parents=True, exist_ok=False)
+     condition = condition_reference(arm)
+     owner_admission = write_new(root / "owner-admission.json", {
++        **session_contract,
+         "arm": arm, "capacity_receipt": capacity_reference, "capacity_admission": admitted,
+         "condition": condition, "capacity_passed": True, "formal_execution_authorized": False,
+         'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
+         "model_manifest": reference(MODEL / "proworksim-manifest.json"), "resident_reference": resident_reference})
+-    spec = write_new(root / "service-spec.json", {"root": str(root), "arm": arm,
++    spec = write_new(root / "service-spec.json", {**session_contract, "root": str(root), "arm": arm,
+         "condition": condition, "resident_reference": resident_reference,
+         'resident_pool_policy': pool_policy_reference, 'resident_registration': registration_reference,
+         "capacity_receipt": capacity_reference, "factory_source": reference(__file__)})
+-    return write_new(root / "model-service.json", {"factory_version": VERSION,
++    return write_new(root / "model-service.json", {**session_contract, "factory_version": VERSION,
+         "deployment_mode": "resident-session-v1", "factory_source": reference(__file__),
+         "arm": arm, "condition": condition, "admission_passed": True, "capacity_receipt": capacity_reference,
+         "capacity_admission": admitted, "model_manifest": reference(MODEL / "proworksim-manifest.json"),
+--- /dev/null
++++ b/docs/experiments/software-benchmark-v054-interleaved-client-lifecycle-r1.md
+@@ -0,0 +1,37 @@
++# v054 MATCH/PROJECT 双会话客户端与准入修订 r1
++
++本修订仅改变同一常驻 MATCH/PROJECT 模型的会话容量与生命周期控制。每个已准入常驻模型允许最多两个独立任务会话；实际数值请求仍由服务器逐请求串行执行。REF 保留单会话。任务、seed、工具、采样、上下文、输出限制及每回合 token/时间预算没有在这些客户端文件中修改。
++
++## 部署和会话绑定
++
++新部署必须在 declaration、source spec、service-ready 与实际 owner identity 四处一致声明 `session_protocol="mp-interleave-v1"` 和 `maximum_sessions=2`。缺少该显式协议的历史部署只能占用一个会话。服务工厂将协议同步固定到 owner admission、service spec 和 model-service，并在验证阶段再次核对。
++
++每个双会话部署以原 `session_lock_path` 派生 `.slot-0` 和 `.slot-1` 两把宿主 flock。获得本地槽后，客户端把对应 `session_slot` 传给 owner，且要求 acquire 返回同一槽、claim、协议和容量。第三个会话无法获得锁时在 formal claim 之前返回资源等待。不会为每个会话重新获取或卸载物理 GPU 常驻租约。
++
++`available_residents` 保留 resident ID 为键，并增加 `session_capacity` 和 `active_claims`。健康判断核对活动 claim 对应的独占槽、可用槽补集，以及至多一个绑定的 dispatched ticket。已存在一个任务的双会话常驻模型仍可向调度器报告另一个空槽；这不意味着两个数值生成同时运行。
++
++## 逐会话关闭和故障边界
++
++正常 release 必须证明本 claim 已静默、没有本 claim 的 in-flight 请求、队列已移除、原学习/RNG guard 已闭合、该会话 RNG 已关闭、旧 socket 已移除且模型对象仍驻留。不再要求整个 resident 全局空闲，另一会话可以正在执行。
++
++已有 r9 关闭修复继续保留。release 后的行政错误先验证保存的 release 与当前 session 文件及 claim 精确绑定，再确认当前 owner 中该 claim 已关闭；另一 claim 的 queued/dispatched 状态不构成该会话的未关闭证据，因此不会因此暂停整卡。
++
++没有合法 release 时，双会话客户端请求 owner 的 `abort_session`。只有 owner 明确证明该 claim 没有 dispatched 工作、已移除自身队列并终止自身会话，客户端才记录局部失败并保持另一会话运行。该记录不会把失败任务重分类为成功，也不会授权重新生成该题。
++
++若本 claim 已 dispatched 且共享状态未知，或管理通信无法取得可信取消证据，则封闭共享派发并按原绑定的 resident 身份暂停其进程组。暂停不代表已经提交的 GPU kernel 被即时取消，未知费用仍保留未知。客户端不自动恢复或重试数值请求。
++
++原 660 秒请求边界不由此补丁延长。排队截止时间、未 dispatched 票据回执及 outer ledger 的映射由配套 owner/runner 修订提供；本客户端不会把排队取消伪装成已执行的生成，也不自行重发。
++
++## 新 pool 的准入
++
++新 policy 版本为 `v054-resident-pool-policy-v2-interleaved`。保留原 8 个 resident 上限与显存门，单个新 resident 的准备调用上限为 6；`inherit_modes=["REF"]`，旧 MATCH/PROJECT 常驻进程仅可作为原数值模板，不能被假定已支持交错。
++
++新的 MATCH/PROJECT 注册使用 `kind="new_interleaved_model_device"` 和 `v054-match-resident-spec-v3`。`interleaving_check_receipt` 与 `check_receipt` 必须指向同一份实际控制回执。该回执必须绑定部署、准备授权、实际 owner 身份及物理 GPU，报告 6 次生成、4 个完成会话、零未结请求、同一个 resident PID/模型、独立会话、逐请求 FIFO 串行，以及三次对应输出/token trace/RNG transition 同值。旧版仅有顺序两会话的准备证据不能通过本门。
++
++新 pool 使用独立根目录和策略，保留旧事件链引用；没有放宽旧链中仅允许完整 REF 闭合后退休的规则。
++
++## 本分支的必要 CPU 控制
++
++新增一项综合 CPU 控制使用真实 flock 与程序化管理端，验证双槽/第三槽拒绝、B 派发期间 A 的正常 release、A 释放后行政故障不暂停 B、未派发会话故障隔离、已派发未知的共享故障处理、REF 单槽，以及拒绝旧两调用凭据冒充新交错准入。
++
++控制最终通过，pytest 用时 0.13 秒。首次执行只在测试夹具的临时模块 ROOT 与项目策略路径不一致处失败，修正夹具路径后重新运行同一项通过；没有执行旧 GPU 控制或重复容量测试。模型调用、GPU 加载、正式 claim 都为零。准入 JSON 在该 CPU 控制中是显式合成材料，因此该结果不证明真实 GPU 交错数值等价，也不构成正式运行授权或准入；真实六请求控制仍须由配套流程完成。

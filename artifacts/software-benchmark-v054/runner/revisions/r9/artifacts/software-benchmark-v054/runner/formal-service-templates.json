@@ -1,0 +1,87 @@
+{
+  "version": "v054-formal-service-factory-v1",
+  "conditions": {
+    "REF": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-condition-REF.json",
+      "sha256": "d36a8db399c13935a1635168c46dc9cd675b590dcbdae32b9026b6179bc0b498",
+      "bytes": 4219
+    },
+    "MATCH": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-condition-MATCH.json",
+      "sha256": "a8d989ba80b19c34828f9fd2eb287514a98c2cc2ee8d68bba5ff5140ea33d6aa",
+      "bytes": 3789
+    },
+    "PROJECT": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-condition-PROJECT.json",
+      "sha256": "6b03894d3a2d6e6b215cedde662f6a1b651bd3a8da5023a3e50d2f93991e3cc1",
+      "bytes": 4086
+    }
+  },
+  "REF": {
+    "argv": [
+      "serve",
+      "/data0/zhuxinrui/projects/ProWorkSim/runs/assets/models/Qwen3.5-9B-c20223623576",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "18054",
+      "--served-model-name",
+      "raw-qwen3.5-9b-v054-ref",
+      "--tensor-parallel-size",
+      "1",
+      "--dtype",
+      "bfloat16",
+      "--gpu-memory-utilization",
+      "0.8",
+      "--max-model-len",
+      "131072",
+      "--max-num-seqs",
+      "1",
+      "--no-enable-prefix-caching",
+      "--generation-config",
+      "vllm",
+      "--language-model-only",
+      "--enable-auto-tool-choice",
+      "--tool-call-parser",
+      "qwen3_coder",
+      "--reasoning-parser",
+      "qwen3"
+    ],
+    "endpoint": "http://127.0.0.1:18054",
+    "maximum_REF_residents": 1,
+    "singleton_lock": "runs/v054-gpu/locks/ref-port-18054.lock",
+    "authentication": "new owner-only API key per service; authenticated exact transport",
+    "occupied_port": "fail before loading; never attach to another service"
+  },
+  "MATCH_PROJECT": {
+    "entrypoint": "tools/serve_formal_owner_v054.py",
+    "contract": {
+      "context_limit": 18432,
+      "max_output_tokens": 2048,
+      "enable_thinking": false,
+      "preserve_thinking": false,
+      "temperature": 0.7,
+      "top_p": 1.0,
+      "top_k": 0,
+      "repetition_penalty": 1.0,
+      "eos_token_ids": [
+        248044,
+        248046
+      ],
+      "pad_token_id": 248044,
+      "max_generation_seconds": 600
+    },
+    "capacity_smoke_only": false,
+    "MATCH_codec": "separate pinned CPU codec child in the same model service scope",
+    "numerical_path": "original raw CalibrationActor plus shared r3/r5 cache protocol"
+  },
+  "dynamic_inputs_required": [
+    "actual passed capacity receipt",
+    "observed GPU card",
+    "per-slot fresh output paths",
+    "separate formal execution/budget permit"
+  ],
+  "maximum_global_residents": 8,
+  "model_loads": 0,
+  "formal_execution_authorized": false
+}

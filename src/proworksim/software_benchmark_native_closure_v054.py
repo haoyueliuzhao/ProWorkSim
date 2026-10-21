@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .repository_sources_v054 import capture_repository
+from .software_benchmark_native_artifact_v054 import capture_native_candidate, export_native_git_patch
 from .software_benchmark_candidates_v054 import (
-    checked, export_git_patch, lock_episode_candidates, reference, write_new,
+    checked, lock_episode_candidates, reference, write_new,
 )
 from .storage import read_json
 
@@ -22,7 +22,7 @@ def lock_native_candidate(episode, *, baseline_reference, public_worktree,
         root = Path(output)
         root.mkdir(parents=True, exist_ok=False)
         baseline = read_json(checked(baseline_reference))
-        manifest = capture_repository(
+        manifest = capture_native_candidate(
             public_worktree, root / "terminal-snapshot",
             task_id=public_task["instance_id"], problem_statement=public_task["problem_statement"],
             source_identity={
@@ -31,7 +31,7 @@ def lock_native_candidate(episode, *, baseline_reference, public_worktree,
             }, file_policy=file_policy, gitlinks=baseline.get("gitlinks", []))
         candidate_path = manifest.parent / "initial-tree.json"
         candidate = read_json(candidate_path)
-        patch = export_git_patch(
+        patch = export_native_git_patch(
             baseline, candidate, root / "candidate.patch", policy=file_policy)
         result = write_new(root / "lock.json", {
             "version": VERSION, "claim_id": episode.claim_id, "slot": episode.slot,

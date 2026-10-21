@@ -53,11 +53,19 @@ def make_deployment(policy_ref, card, attempt):
     unit = f"proworksim-v054-resident-mp-g{card['index']}-{token}.service"
     short = ROOT / "runs/v054-gpu" / token
     owner_root = root / "resident"
-    permit = copy.deepcopy(read_ref(template["preparation_permit"]))
-    permit.update(deployment={"resident_id": resident_id, "gpu_uuid": card["uuid"],
-                              "gpu_index": card["index"], "pool_policy": policy_ref},
-                  prior_preparation_authorization=template["preparation_permit"],
-                  separate_device_preparation=True)
+    dual = policy.get("MP_session_protocol") == "mp-interleave-v1"
+    if dual:
+        from tools.check_match_interleave_v054 import preparation_permit
+        permit = preparation_permit(resident_id=resident_id, gpu_index=card["index"],
+                                    gpu_uuid=card["uuid"], source_manifest=policy["source_manifest"],
+                                    run_revision="r2")
+    else:
+        permit = copy.deepcopy(read_ref(template["preparation_permit"]))
+    if not dual:
+        permit.update(deployment={"resident_id": resident_id, "gpu_uuid": card["uuid"],
+                                  "gpu_index": card["index"], "pool_policy": policy_ref},
+                      prior_preparation_authorization=template["preparation_permit"],
+                      separate_device_preparation=True)
     permit_ref = write_new(root / "preparation-permit.json", permit)
     source = read_ref(policy["source_manifest"])
     source_by_path = {str(Path(item["path"]).resolve()): item for item in source["files"]}
@@ -65,8 +73,17 @@ def make_deployment(policy_ref, card, attempt):
                 "src/proworksim/software_benchmark_resident_owner_v054.py",
                 "src/proworksim/software_benchmark_resident_pool_v054.py",
                 "src/proworksim/software_benchmark_deployment_gpu_v054.py"]
+    if dual:
+        required.extend(["tools/serve_interleaved_owner_v054.py", "tools/check_match_interleave_v054.py",
+                         "src/proworksim/software_benchmark_interleaved_owner_v054.py",
+                         "src/proworksim/software_benchmark_interleaved_transport_v054.py"])
     sources = [source_by_path[str(ROOT / name)] for name in required]
-    spec = {**template, "version": "v054-match-resident-spec-v2", "resident_id": resident_id,
+    protocol = {"session_protocol": "mp-interleave-v1", "maximum_sessions": 2} if dual else {}
+    spec = {**template, "version": "v054-match-resident-spec-v3" if dual else "v054-match-resident-spec-v2",
+            **protocol,
+            **({"source_manifest": policy["source_manifest"]} if dual else {}),
+            **({"owner_entrypoint": source_by_path[str(ROOT / "tools/serve_interleaved_owner_v054.py")]} if dual else {}),
+            "resident_id": resident_id,
             "pool_policy": policy_ref, "unit": unit, "card": card,
             "root": str(owner_root), "short": str(short),
             "identity_path": str(owner_root / "identity.json"),
@@ -81,7 +98,7 @@ def make_deployment(policy_ref, card, attempt):
                 "co_residency_is_not_model_quality_evidence": True}}
     spec_ref = write_new(root / "spec.json", spec)
     declaration_ref = write_new(root / "declaration.json", {
-        "version": "v054-resident-declaration-v2", "resident_id": resident_id,
+        "version": "v054-resident-declaration-v2", **protocol, "resident_id": resident_id,
         "pool_policy": policy_ref, "mode": "MATCH_PROJECT", "gpu_index": card["index"],
         "gpu_uuid": card["uuid"], "unit": unit, "source_spec": spec_ref,
         "ready_path": spec["ready_path"], "identity_path": spec["identity_path"],
@@ -95,7 +112,10 @@ def make_deployment(policy_ref, card, attempt):
 
 def admission(policy_ref, declaration_ref, check_ref, resident_id, *, inherited=False):
     declaration = read_ref(declaration_ref)
-    return {"version": ADMISSION_VERSION, "kind": "inherited_live_resident" if inherited else "new_same_model_device",
+    dual = declaration.get("session_protocol") == "mp-interleave-v1"
+    return {"version": ADMISSION_VERSION, "kind": "inherited_live_resident" if inherited else
+                "new_interleaved_model_device" if dual else "new_same_model_device",
+            **({"interleaving_check_receipt": check_ref} if dual else {}),
             "passed": True, "pool_policy": policy_ref, "resident_id": resident_id,
             "declaration": declaration_ref, "source_spec": declaration["source_spec"],
             "ready": reference(declaration["ready_path"]), "check_receipt": check_ref,
@@ -124,6 +144,8 @@ def import_existing(policy_ref):
     root = Path(policy["pool_root"]) / "inherited"
     root.mkdir(parents=True, exist_ok=True)
     for mode, declaration_ref in registry["residents"].items():
+        if mode not in policy.get("inherit_modes", ["REF", "MATCH_PROJECT"]):
+            continue
         resident_id = "inherited-" + mode.lower()
         pool = read_pool(policy_ref)
         if resident_id in pool["active"]:
@@ -202,13 +224,14 @@ class Provisioner:
                 return
             from .software_benchmark_resident_session_v054 import admitted_resident
             observed = admitted_resident(job["declaration"])
-            if observed is None or observed["status"]["active_claim"] is not None:
+            if observed is None or observed["status"].get("active_claims", []) or observed["status"].get("active_claim") is not None:
                 raise ValueError("A new unregistered resident is unexpectedly occupied")
             job.update(status="handoff_intent", resident_ready=observed["ready_reference"],
                        check_unit="proworksim-v054-check-" + job["resident_id"] + ".service")
             self.save()
             result = launch(job["check_unit"], [str(HOST_PYTHON),
-                str(ROOT / "tools/check_match_resident_handoff_v054.py"),
+                str(ROOT / ("tools/check_match_interleave_v054.py" if spec.get("session_protocol") == "mp-interleave-v1"
+                            else "tools/check_match_resident_handoff_v054.py")),
                 "--declaration", job["declaration"]["path"],
                 "--authorization", spec["preparation_permit"]["path"],
                 "--output", str(root / "handoff")], root)
