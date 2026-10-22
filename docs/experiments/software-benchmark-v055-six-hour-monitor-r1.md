@@ -102,3 +102,42 @@ r2准备实际开始于 **00:44:39**，于 **00:47:21** 返回 `qualified`。本
 `runs/software-benchmark-v055/partial-export-recovery-r2/first-queue-adoption-observation.json` 记录 **00:47:49** 的首次队列接入观察：原先从未进入的DeepSeek六个槽均已取得 `qualified` 环境并首次进入 `running`，Qwen三个槽仍按原队列顺序保持pending。该对比表明阻塞环境已恢复并被原队列消费，不表示这些正式回合已完成生成或通过官方评分；其后结果仍计入各自原组和原500题分母。
 
 六小时窗口仍在进行。后续小时观察、准备恢复结果、窗口终止状态和六小时净进度由后续真实记录补充。
+
+## 第一次小时观察：01:12:51
+
+编号01的实际观察时间为 **2026年10月23日01:12:51.199363（北京时间）**，采集局部错误为0。相对编号00的00:20:00.512895，实际间隔为 **3170.686468秒，即52.844774分钟**；没有把迟到的基线按完整60分钟计算速率。
+
+| 组别 | 生成闭合 | 生成技术未知 | 运行中 | 待运行 | 较基线新增闭合 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen REF | 493 | 7 | 0 | 0 | 18 |
+| Qwen MATCH | 354 | 4 | 3 | 139 | 16 |
+| Qwen PROJECT | 355 | 3 | 3 | 139 | 18 |
+| DeepSeek REF 非思考 | 497 | 3 | 0 | 0 | 1 |
+| DeepSeek REF 思考 | 493 | 7 | 0 | 0 | 1 |
+| DeepSeek MATCH 非思考 | 479 | 21 | 0 | 0 | 1 |
+| DeepSeek MATCH 思考 | 434 | 66 | 0 | 0 | 1 |
+| DeepSeek PROJECT 非思考 | 464 | 36 | 0 | 0 | 9 |
+| DeepSeek PROJECT 思考 | 472 | 28 | 0 | 0 | 6 |
+| 合计 | **4041** | **175** | **6** | **278** | **71** |
+
+本间隔Qwen新增正常生成闭合 **52**、生成技术未知 **1**，按实际间隔为 **59.040842回合/小时**；其中REF为20.437215，MATCH／PROJECT合计38.603628回合/小时。DeepSeek新增正常生成闭合 **19**、生成技术未知 **2**，区间速率 **21.572615回合/小时**。DeepSeek这段时间进入首轮库存收尾，后一速率包含收尾后的空闲时间，不能当作仍有足量待运行任务时的稳态吞吐或性能下降证据。以上只计算生成正常闭合，不把技术未知加入“成功速率”。
+
+DeepSeek原3000槽此时为 **2839生成闭合、161生成技术未知，pending与running均为0**；状态明确为 `primary_inventory_finished`，最后state更新时间01:02:05。manager为 `inactive/dead`、`MainPID=0`、`Result=success`，结合库存终态判定为正常收尾，不因它不再刷新state而重启。共享准备状态已记录 **500/500 qualified**；基线中的单题环境阻塞已消除。首轮库存结束不代表完整实验结论已经得出：代码评分另有 **42个technical_unknown端点**，PROJECT交付评分另有 **5个technical_unknown端点**，这些与161个生成技术未知分别保留，不能合并为独立失败任务数或填成模型失败，也不能把只读resolved计数当作完整500题最终点估计。
+
+Qwen REF的500槽已达到 **493闭合＋7技术未知** 的生成库存边界；MATCH／PROJECT仍有278个pending、6个running，pending全部按准备元数据分类为 `ready_waiting`。REF→MP转换在本快照中为 `failed_manual_action_required`，错误为 **`KeyError('invocation_id')`**，并保留原 `retirement_intent`。该具体故障已进入独立修复处理；此观察点尚无成功转接证据，不能写成GPU7已承接MATCH／PROJECT。Qwen队列、pool monitor和共享缓存回收manager均仍为active/running，既有MATCH／PROJECT任务继续。
+
+本次宿主1分钟load为8.9424，可用内存约 **941.4GiB**；主、副、第三卷普通可用空间约 **461.1、312.5、338.6GiB**。Qwen最近一次生成磁盘准入通过，预计发出该任务后扣预约余量428,047,139,006B，仍高于100GiB门；CPU、内存、磁盘与预算没有出现新的准入阻塞证据。DeepSeek已结算 **539.96575482元**，总承诺 **550.45151482元**，含未知及补充保留10.48576元、在途保留0元，剩余未承诺预算 **1449.54848518元**。账本halt与cooldown均为空，HTTP 429累计仍为0。
+
+本记录只整理既有编号01观察，没有补采系统数据或执行修复。独立不可覆盖副本：[snapshot-01.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/snapshot-01.json)、[summary-01.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/summary-01.json)。六小时窗口继续，转换修复的实际结果需用后续独立证据追加。
+
+## GPU7转接故障实际恢复：01:27—01:29
+
+针对编号01观察中的 `KeyError('invocation_id')`，独立身份恢复已完成，原失败与retirement intent保留。北京时间 **01:27:44.635** 完成原REF驻留实例退役；**01:27:45**，原pool monitor开始GPU7上的第一次MATCH／PROJECT驻留模型加载；**01:29:17** 新实例达到 `qualified_registered`。该过程是明确记录的REF→MP资源转换，没有把先前失败时点改写成已成功转接。
+
+身份修复工具本身的模型调用为0；随后完整资源转接的资格验证实际包含 **6次准备性模型生成请求，共1620 token，未结算请求0，模型加载1次**。因此不能将“修复工具0模型调用”表述成整个转接没有模型调用。资格请求属于驻留实例准备，不增加正式500题面板的回合数。
+
+**01:29:59.718311** 的既有 `first-mp-dispatch-observation.json` 记录Qwen队列继续为running，实际生成并发已从6路升至 **8路**。新实例 `mp-g7-0303dcc7` 在GPU7同时承接两个首次运行的正式槽：`v054-PROJECT-pytest-dev__pytest-7236` 与 `v054-MATCH-django__django-11433`。该观察证明GPU7已通过资格准入并进入正式派发；仅凭这一时点不能宣称已获得稳定小时吞吐提升，实际速度仍待后续小时快照比较。
+
+本节只整理已落盘的修复及首次派发证据，没有新查系统、额外采样或执行新操作。原始观察：[first-mp-dispatch-observation.json](../../runs/software-benchmark-v054/ref-handoff-identity-recovery-r2/first-mp-dispatch-observation.json)。
+
+原monitor不会在MP注册后继续更新conversion中的 `ref_retired_waiting_for_mp_capacity` 标签；后续观察以GPU7的 `qualified_registered` 与实际派发为准，不能仅凭这个保留字段判定仍在等待容量。
