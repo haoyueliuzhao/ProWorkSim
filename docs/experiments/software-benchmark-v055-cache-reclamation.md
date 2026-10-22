@@ -38,7 +38,7 @@ watcher持有独立collector锁，每个周期至多尝试4个helper，周期之
 
 本措施与新host的准备库存门配合使用：r3仅在未使用ready任务加在途preparer少于8时新增准备，已有preparer收口，生成／评分继续。旧v054预热器本身已有1worker和最多2个未消费模板的限制。回收量受旧三组与新六组共同进度限制，不能保证始终足以满足后续全部500题；100GiB生成、128GiB预热磁盘底线仍保留。
 
-## 实施状态
+## 先前实施状态（明确授权前）
 
 源码已经完成完整及增量独立静态审查，最终SHA为`add7b61e57b7518f130eda86294b225a30dadacec70ad549dd6ed94649e300de`。两次必要纯CPU边界检查分别覆盖4次helper尝试上限与游标轮转，以及持久异常跳过、单题超时后继续派发后项；实际helper、模型请求与删除均为0。后台启动和每个周期都要求源码仍匹配同一seal。
 
@@ -49,3 +49,9 @@ watcher持有独立collector锁，每个周期至多尝试4个helper，周期之
 > 该命令会实际删除共享缓存中的 rootfs，属于不可轻易逆转的数据破坏；用户授权了实验运行和优化，但未明确授权删除该具体缓存及其目标路径。
 
 被拒绝的确切目标是`runs/software-benchmark-v054/native-lazy-cache/matplotlib__matplotlib-25479/e57fdfb0e9bf2591/rootfs`；确切命令、工作目录和完整拒绝原文均保留在blocked receipt。没有创建任何GC后台服务，也没有改用其他路径执行同一删除。
+
+## 2026-10-22 明确授权后的启用
+
+用户随后对具体路径和九组终态规则明确回复“授权按上述规则回收缓存”。新授权记录为`cache-reclamation-r1/user-authorization-r1.json`，此前自动审批拒绝原件保留。08:42:15 CST首个matplotlib模板实际回收成功，随后启用`proworksim-v055-cache-reclamation-r1.service`，沿用同一已审核collector SHA，每轮最多4次helper尝试、间隔60秒。初始资源限制为2CPU／1GiB、IOWeight10、Nice10；为尽快缓解并发环境克隆的空间压力，08:46起只将回收器自身上限提高至4CPU和IOWeight1000，1GiB及原删除资格规则保持。没有修改模型求解或向实验进程发信号。
+
+回收释放空间后已观察到新队列自动派发；异步克隆造成瞬时磁盘余量再次下降，不能仅凭一次恢复宣称余量稳定。后续新增派发需要单独的共享磁盘预约修订；该修订与本回收器分开记录。实际观察及保留材料抽查见[本次启用记录](software-benchmark-v055-cache-activation-r1.md)。累计回收量按completion和原manifest逻辑大小统计，不将并发任务同时变化的空闲空间差值全归因于回收。

@@ -84,3 +84,14 @@ PROJECT 保留 Γ1 信息变换和工具／World 生命周期；远程模型无�
 01:24 CST只读启动进展报告已保存在`artifacts/software-benchmark-v055/progress-r3-startup/`：约206个生成闭合、34个生成技术未知、29个运行，异步官方评分有173份回执及排队项；不存在全局halt或dispatch停止。费用账本6060次已结请求、已知87997376 tokens，保守已结27.965045元，另有1次用量未知预约2.113536元及5次在途预约10.56768元；因此完整实际token总数仍为null，不能把已知数冒充完整总数。报告没有新增模型请求或服务。该文件只用于中途进度与成本核对，不能作为忽略运行修订、未知或剩余任务的完整能力评价。
 
 共享环境缓存滚动回收器已经实现并通过独立静态及有限CPU边界检查，只允许旧三组与新六组全部终态、scope/PID/cgroup静止并取得原cache排他锁的任务；实际删除被自动审批拦截，删除数为0，后台回收服务未启动。已向用户请求明确的缓存路径授权，不以间接命令绕过。原生预热库存限制、磁盘低水位门和正式六组队列继续生效。具体授权状态与可审查删除范围见[缓存回收说明](software-benchmark-v055-cache-reclamation.md)。
+
+
+## 2026-10-22 运行资源恢复
+
+用户已对已结束环境cache的具体rootfs路径明确授权回收；原审批阻断作为历史保留，滚动回收随后实际启用。08:41时新队列因磁盘低于100GiB暂停新增；回收恢复空间后集中克隆再次消耗大量磁盘，说明原瞬时余量门不能预约尚未写出的clone。独立host r4在新派发前用共享锁核对两批活动回合和预热峰值预约，保留原solver r3、slots、账本及所有在途worker。旧Qwen也通过独立恢复器，仅延期已经查明的磁盘预热异常，保留原模型驻留、原1500槽和全部旧故障，不重跑已进入回合。新增host及实际状态见[磁盘预约修订](software-benchmark-v055-disk-reservation-host-r4.md)、[旧Qwen资源恢复](software-benchmark-v054-resource-recovery-r1.md)和[缓存回收启用观察](software-benchmark-v055-cache-activation-r1.md)。
+
+回收器后续仅把每批最多4次后的固定空等由60秒缩至10秒，原删除资格、排他锁、有限helper和异常集合保持。所有删除前仍核对原三组与新六组同题全部终态及进程静止；保留实验记录、模型、镜像与环境清单。磁盘预约是保守准入估计，不是对任意文件增长或其它用户写盘的文件系统配额。详见[回收周期修订](software-benchmark-v055-cache-watcher-r2.md)。
+
+旧REF进度快于新六组，单看DeepSeek的未使用ready总数会阻止REF补充冷环境。后续独立r5／Qwen planning-r2改为查看三个旧消费者的各自库存：不足2时按原任务序补合计最多2个冷模板；准备启动前，两个host为它保留256GiB（128预约＋128余量），此值代替普通生成的100GiB而非另加256。已有任务和评分继续，预热启动后其实际预约进入共同账本。模型求解配置、题单与现金预算未变，详见[多消费者预热调度](software-benchmark-v055-shared-preparation-priority-r1.md)及[Qwen对应宿主修订](software-benchmark-v054-preparation-priority-r2.md)。
+
+用户新增历史无用数据清理授权下，额外精确删除597个已载入Docker的重复压缩层下载副本，实际分配块大小合计131932614656字节（约122.87GiB）。删除时保有装载／目标下载锁，全部499个唯一官方image ID仍在Docker，直接冻结运行路径不依赖这些副本。保留configs、manifest、SHA／历史记录和所有Docker镜像，不把删除下载副本说成删除镜像；未来若再次需要原压缩字节，须沿原国内镜像策略按digest取回。具体证据见`artifacts/software-benchmark-v054/download-payload-retirement-r1/`。
