@@ -1,0 +1,104 @@
+{
+  "version": "v055-readonly-provider-output-bound-halt-audit-r1",
+  "observed_utc": "2026-10-22T02:19:13.330940+00:00",
+  "ledger_path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v055/budget-r1/ledger.sqlite3",
+  "readonly": true,
+  "ledger_mutations": 0,
+  "model_calls": 0,
+  "halted": "provider_usage_exceeded_authorized_request_bound",
+  "violating_rows": [
+    {
+      "request_id": "v055-PROJECT-thinking-astropy__astropy-13236:0024",
+      "slot_id": "v055-PROJECT-thinking-astropy__astropy-13236",
+      "condition": "PROJECT-thinking",
+      "usage_id": "agent",
+      "status": "uncertain",
+      "request_sha256": "96037af4c40efd76fc93d3933823766cdbf7f184ef083d760912879052cd5985",
+      "reserved_nanoyuan": 2113536000,
+      "settled_nanoyuan": null,
+      "max_output_tokens": 2048,
+      "prompt_upper_bound": 16237,
+      "reserved_utc": "2026-10-22T01:52:16.946677+00:00",
+      "settled_utc": null,
+      "usage_json": null,
+      "response_id": null,
+      "response_model": null,
+      "system_fingerprint": null,
+      "response_sha256": null,
+      "failure_json": "{\"reason\":\"provider_usage_exceeded_authorized_request_bound\"}",
+      "settled_peak_nanoyuan": null,
+      "tariff_basis_json": null
+    }
+  ],
+  "totals": [
+    {
+      "status": "settled",
+      "request_count": 22745,
+      "reserved_nanoyuan": 49476403200000,
+      "settled_nanoyuan": 123800741360
+    },
+    {
+      "status": "uncertain",
+      "request_count": 2,
+      "reserved_nanoyuan": 4227072000,
+      "settled_nanoyuan": null
+    }
+  ],
+  "evidence": {
+    "deepseek-ledger/request-0024.json": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v055/queue-r1/workers/generation-7f5b8b483e1d6ea41c2ba892/episode/deepseek-ledger/request-0024.json",
+      "sha256": "bf3aea61b34d01248b07369f0ad6a873380b794d3e9c253df639b30f86a928d9",
+      "bytes": 73792,
+      "mtime_utc": "2026-10-22T01:52:16.916268+00:00"
+    },
+    "deepseek-ledger/ledger.json": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v055/queue-r1/workers/generation-7f5b8b483e1d6ea41c2ba892/episode/deepseek-ledger/ledger.json",
+      "sha256": "6167b3f15aee0e480f685aeb0cd9d42b4299d9c3581050d1649ab3a52973cc7a",
+      "bytes": 29642,
+      "mtime_utc": "2026-10-22T01:52:26.752313+00:00"
+    },
+    "controller-result.json": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v055/queue-r1/workers/generation-7f5b8b483e1d6ea41c2ba892/episode/controller-result.json",
+      "sha256": "a7b55c95f8947abf7a093d90bdf4021498032466b7daa9da6d9c5be112239cf6",
+      "bytes": 97686,
+      "mtime_utc": "2026-10-22T01:52:26.868313+00:00"
+    },
+    "result.json": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v055/queue-r1/workers/generation-7f5b8b483e1d6ea41c2ba892/episode/result.json",
+      "sha256": "9eccef093195135e1191f8b22d10a3900b3da88bcf98d4c630650a45477fa032",
+      "bytes": 1624,
+      "mtime_utc": "2026-10-22T01:52:34.056344+00:00"
+    }
+  },
+  "response_0024_exists": false,
+  "known_request": {
+    "max_tokens": 2048,
+    "thinking": "enabled",
+    "model": "deepseek-flash",
+    "prompt_counter_estimate": 16237
+  },
+  "deduction": {
+    "completion_tokens_strictly_greater_than": 2048,
+    "exact_completion_tokens_known": false,
+    "exact_fee_known": false,
+    "input_and_usage_partitions_passed_before_halt_branch": true,
+    "proof": "For output <= 2048, peak_cost <= 1048576*2000+2048*8000 = 2113536000 nanoyuan, equal to reservation; reaching the OR violation therefore implies output > 2048."
+  },
+  "evidence_loss": "Old settle violation branch stored only reason and discarded usage/response identity; response file is emitted only after successful client.complete. No response body recovery is asserted.",
+  "official_sources": {
+    "max_tokens": "https://api-docs.deepseek.com/api/create-chat-completion/",
+    "pricing_and_absolute_output_cap": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/"
+  },
+  "reviewable_recovery_proposal": {
+    "old_request_rows_unchanged": true,
+    "cap_cny_unchanged": 2000,
+    "absolute_model_input_bound": 1048576,
+    "absolute_model_output_bound": 393216,
+    "new_peak_reservation_nanoyuan": 5242880000,
+    "additional_hold_for_each_old_uncertain_nanoyuan": 3129344000,
+    "two_old_uncertain_incremental_holds_nanoyuan": 6258688000,
+    "hold_is_documented_model_bound_not_measured_actual_cost": true,
+    "future_valid_usage_but_output_over_requested_max": "Retain usage and fee evidence, withhold response from agent, defer this task; do not automatically replay.",
+    "migration_not_executed": true
+  }
+}
