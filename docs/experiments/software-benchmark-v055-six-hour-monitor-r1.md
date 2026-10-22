@@ -140,4 +140,60 @@ Qwen REF的500槽已达到 **493闭合＋7技术未知** 的生成库存边界�
 
 本节只整理已落盘的修复及首次派发证据，没有新查系统、额外采样或执行新操作。原始观察：[first-mp-dispatch-observation.json](../../runs/software-benchmark-v054/ref-handoff-identity-recovery-r2/first-mp-dispatch-observation.json)。
 
+原monitor不会把历史conversion标签 `ref_retired_waiting_for_mp_capacity` 自动更新为complete；后续应结合GPU7设备项的 `qualified_registered` 与真实正式派发证据判读，不能仅凭该历史标签误报GPU7仍在等待容量。
+
+## 第二次小时观察：02:12:51
+
+编号02实际观察于 **2026年10月23日02:12:51.199204（北京时间）**，距编号01为 **3599.999841秒**，局部采集错误为0。Qwen三组此时合计 **1241生成闭合、15生成技术未知、8运行、236待运行**。
+
+| Qwen组别 | 生成闭合 | 生成技术未知 | 运行中 | 待运行 | 本间隔新增闭合 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| REF | 493 | 7 | 0 | 0 | 0 |
+| MATCH | 375 | 4 | 3 | 118 | 21 |
+| PROJECT | 373 | 4 | 5 | 118 | 18 |
+
+MATCH／PROJECT本间隔新增正常生成闭合 **39**，按实际间隔为 **39.000002回合/小时**，另新增1个PROJECT生成技术未知。此区间包含01:29才完成8路正式派发的过渡阶段；前一区间MATCH／PROJECT合计为38.603628回合/小时，现有两个区间不能支持“已稳定提速”的结论。当前8路实际运行与236个 `ready_waiting` 说明队列继续推进，不需要为追求某个瞬时速率重载驻留模型。
+
+DeepSeek六组库存及账本与编号01相同：**2839闭合、161生成技术未知、0运行、0pending**，状态仍为 `primary_inventory_finished`；代码评分42个技术未知端点、PROJECT交付评分5个技术未知端点继续独立保留。manager保持 `inactive/dead`、`Result=success`，这是已收尾库存的正常状态。本间隔DeepSeek无新请求费用：已结算539.96575482元，总承诺550.45151482元，在途保留0元，halt/cooldown为空、累计HTTP 429为0，未因其停止增加生成数而重启。九组总生成闭合为 **4080/4500**，另176生成技术未知、8运行、236pending；该计数不是官方通过率。
+
+GPU7设备项继续为 `qualified_registered`，原有正式派发证据有效；conversion保留的 `ref_retired_waiting_for_mp_capacity` 是历史标签，不表示本时点仍未转接。GPU3、GPU6在这一次瞬时观测中的利用率为0，GPU5为95%、GPU7为100%；单个瞬时0值不能证明resident故障或停工，未据此重启或改派在途任务。
+
+本时点1分钟load为10.5869，可用内存约 **941.3GiB**；主、副、第三卷普通可用空间约 **477.6、309.0、338.6GiB**。Qwen磁盘预约元数据无错误，最近生成准入通过，预计新任务启动并扣预约后余量419,677,922,366B，高于100GiB门；没有新的CPU／内存、磁盘或预算门阻塞证据。Qwen、pool及cache manager保持active/running，DeepSeek正常收尾未重启。
+
+本节只使用已生成的编号02材料，没有新采样或查询系统。独立不可覆盖副本：[snapshot-02.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/snapshot-02.json)、[summary-02.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/summary-02.json)。
+
+## Qwen管理器r7交接与后续只读补充：02:33:51
+
+北京时间 **02:33:51** 已部署独立 `proworksim-v054-formal-queue-supervision-r7.service`，启动PID为3078377，revision为 `runs/software-benchmark-v054/supervision-host-r7/revision.json`，SHA-256 `a39b1b7c25794df9d12bd738dc90e78bd4423c9a466444bbf08238f2d5e4438f`。既有 `first-adoption-observation.json` 于 **02:34:09.797944** 记录新队列running、对应 `supervision_host` 绑定，8个旧在途槽仍为running且job身份相同。该证据只证明此次manager交接和旧job延续，不提前判定新回合的最终结果。
+
+原r6 manager已正常退役。冻结的r1 collector、原schedule和六个原timer保持不变，因此原编号03—06快照仍会查询r6的精确unit名；后续看到r6 inactive，须与本次交接及r7补充记录结合，不误报为当前Qwen队列停机。
+
+为保留原观察协议，已准备独立最小补充采样器 `tools/observe_qwen_manager_r7_hourly_v055_r1.py`，只读取r7 unit属性、Qwen `supervision_host` 绑定及生成生命周期计数，并关联对应原编号03—06快照。它不重新观察GPU或账本，不重算完整队列hash，不修改原快照、队列或服务。输出为 `manager-r7-03.json` 至 `manager-r7-06.json`，使用不可覆盖写入并记录实际UTC／北京时间；原快照迟到或局部读取失败单独记错，不丢失已经取得的r7信息。
+
+补充计划 `runs/software-benchmark-v055/six-hour-monitor-r1/manager-r7-plan.json` 冻结四个时刻 **03:12:56、04:12:56、05:12:56、06:12:56（北京时间）**，对应原观察时刻后5秒。计划SHA-256为 `e0d304b9077bd551072b72068e377456bdd3abac2784c2aaa0ccdd06debd3e33`；补充collector SHA-256为 `459c50a1a9bc8e0e1a4ec2036d4a6c0211c6ebad5c8e3a2bc282b60288efba93`，部署器 `tools/schedule_qwen_manager_r7_hourly_v055_r1.py` SHA-256为 `463277e003938a61afadeaa6924d89fa69f606761d7f6f13b238c362643062f7`。部署器只创建四个独立一次性只读timer，名字为 `proworksim-v055-six-hour-monitor-r1-manager-r7-<编号>.timer`，不接触原timers。准备时仅执行Ruff、语法与固定索引／时刻参数检查，没有运行补充采样器、创建systemd服务或调用模型。
+
+主协调者随后于 **02:38:09** 实际执行补充部署，编号03—06的四份独立部署回执均为 `returncode=0`，此时四个观察时刻仍在未来。部署成功不等于未来采样已发生；每次实际观察时间和局部错误继续按不可覆盖输出记录。原计划文件保留准备时的 `deployment_status=prepared_not_executed`，实际已部署由较后的intent和四份回执证明，不回写冻结计划。独立副本：[补充计划](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-plan.json)、[部署intent](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-deployment-intent.json)、[03](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-deployment-03.json)、[04](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-deployment-04.json)、[05](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-deployment-05.json)、[06](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-deployment-06.json)。新宿主已接管旧8个job，主协调者随后观察到4个canonical未来worker带有overlay标记；这一阶段尚未取得新overlay正式闭合证据，留待03时观察统一记录，不提前作成功判定。
+
+## 第三次小时观察：03:12:51及r7补充03:12:56
+
+编号03实际观察于 **2026年10月23日03:12:51.162618（北京时间）**，距编号02为 **3599.963414秒**，采集错误0。Qwen合计 **1289生成闭合、15生成技术未知、8运行、188待运行**。
+
+| Qwen组别 | 生成闭合 | 生成技术未知 | 运行中 | 待运行 | 本间隔新增闭合 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| REF | 493 | 7 | 0 | 0 | 0 |
+| MATCH | 399 | 4 | 3 | 94 | 24 |
+| PROJECT | 397 | 4 | 5 | 94 | 24 |
+
+本间隔MATCH／PROJECT共新增正常生成闭合 **48**，生成技术未知新增 **0**，按实际间隔为 **48.000488回合/小时**。相较上一过渡小时的39闭合，观察到约 **23.08%** 的区间吞吐增加；两个区间的任务组成不同，且本区间发生了r7监督修订，不能将差值全部归因于GPU7转接，也不能据此保证长期稳定增速。8路继续运行、188个pending均有ready元数据，正式任务仍沿原队列推进。
+
+独立r7补充实际于 **03:12:56.191875** 取得，局部错误0：`proworksim-v054-formal-queue-supervision-r7.service` 为active/running，PID **3078377**，`expected_revision_binding_matches=true`，队列状态running、state年龄 **4.815305秒**。原r1快照中r6为 `inactive/dead`、`LoadState=not-found`、MainPID0，是前述正常退役后的状态；结合r7实际观测，不构成当前队列掉线。补充记录链接到原编号03快照的准确SHA，原观察与schedule没有被改写。
+
+DeepSeek继续保持首轮终态 **2839闭合、161生成技术未知、0运行、0pending**，六组分项及代码评分42个未知／交付评分5个未知端点未变；正常收尾的manager仍inactive，不启动新生成或自动重放未知任务。费用保持已结算539.96575482元、总承诺550.45151482元，含未知保留10.48576元，在途保留0元，累计HTTP 429仍为0，halt/cooldown为空。九组累计 **4128生成闭合、176生成技术未知、8运行、188pending**，仍以原4500槽为计划分母。
+
+宿主1分钟load为9.4951，可用内存约 **950.0GiB**；主、副、第三卷普通可用空间约 **519.7、309.0、338.6GiB**。Qwen磁盘预约元数据无错误，最近生成准入通过，预计扣预约后的启动余量453,772,319,996B，高于100GiB底线。本次未见CPU／内存、磁盘或API预算的新阻塞证据。
+
+本节只整理已有原样本和r7补充，没有新采样、GPU查询或运行变更。独立不可覆盖副本：[snapshot-03.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/snapshot-03.json)、[summary-03.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/summary-03.json)、[manager-r7-03.json](../../artifacts/software-benchmark-v055/six-hour-monitor-r1/manager-r7-03.json)。
+
 原monitor不会在MP注册后继续更新conversion中的 `ref_retired_waiting_for_mp_capacity` 标签；后续观察以GPU7的 `qualified_registered` 与实际派发为准，不能仅凭这个保留字段判定仍在等待容量。
+
+03:14:08的必要启用核查显示，r7新增canonical为21 closed／6 running，kernel为8 closed／2 running。各选一条已closed回合核对原静止证据，均3/3 scope quiet、errors为空，overlay与原source mode匹配；两例均没有触发重取。它们证明新监督路径实际接入并能正常闭合，不能据此宣称目标竞态已被现场复现或完全消除。详见`software-benchmark-v054-supervision-proc-exit-r1.md`及其独立runtime-observation-r1。
