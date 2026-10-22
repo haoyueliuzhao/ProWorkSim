@@ -48,3 +48,18 @@
 首次第三盘item `07082286685481f18fc5b09c` 已产生完整内容与metadata回读verified回执和released回执，源目录已移除，保留压缩包实际设备为66308。主盘、副盘此前也已有成功released项，因此目前三卷均有真实归档后释放证据；这不代表余下所有项都已完成。有限批次会继续，个别异常仍由原生state和日志单列。
 
 [固定观察快照](../../artifacts/software-benchmark-v055/terminal-rootfs-archive-r2/progress-at-three-volume-proof.json)与[首个第三盘释放回执](../../artifacts/software-benchmark-v055/terminal-rootfs-archive-r2/first-tertiary-released.json)。后台worker只更新runs，不持续改写这份Git快照。
+
+## 最终完成：2026年10月23日00:11:01（北京时间）
+
+有限批次已结束，**51/51项全部released，失败0**。原23:55:55的21/51观察及所有旧回执保持不变，本次追加独立final证据。
+
+| 源卷 | 释放项数 | 原展开allocated字节 | 保留压缩包allocated字节 | 净释放字节 |
+| --- | ---: | ---: | ---: | ---: |
+| 主盘data0 | 9 | 28,613,926,912 | 10,998,120,448 | 17,615,806,464 |
+| 副盘data1 | 26 | 90,334,273,536 | 34,748,919,808 | 55,585,353,728 |
+| 第三盘data2 | 16 | 50,969,923,584 | 19,658,862,592 | 31,311,060,992 |
+| 合计 | **51** | **169,918,124,032** | **65,405,902,848** | **104,512,221,184** |
+
+本批净释放 **97.334591GiB**，少量侧车与审计metadata未扣。收尾核验范围限于最终batch state与51份已有released小型回执的状态及计量加总，没有再次读取压缩payload或执行全量归档验证，也未新增删除操作。每项已有完整回读verified证据、静默后的released证据、同盘归档包和恢复标记继续保留；模型结果、未知状态与任务队列未修改。
+
+[冻结终态batch state](../../artifacts/software-benchmark-v055/terminal-rootfs-archive-r2/final-batch-state.json)和[最终汇总及51项回执引用](../../artifacts/software-benchmark-v055/terminal-rootfs-archive-r2/final-summary.json)独立保存本次完成证据。有限批次不会继续扫描或吸收新异常；自动共享模板回收属于另一服务，其九消费者终态要求保持不变。
