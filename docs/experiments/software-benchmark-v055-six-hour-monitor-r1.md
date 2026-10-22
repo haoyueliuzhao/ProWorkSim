@@ -16,7 +16,7 @@
 
 观察工具只读取原队列、账本、systemd、GPU与宿主资源信息，并写入本监控目录的独立快照和摘要。它不调用模型、派发工作、遍历rootfs、重新计算权重或镜像负载哈希，也不修改队列、账本和服务。首次摘要记录 `model_calls=0`、`job_dispatches=0`、`runtime_or_services_mutated=false`、`errors=[]`。
 
-为避免助手会话延迟造成漏采，已通过 `tools/schedule_nine_conditions_hourly_v055_r1.py` 部署6个一次性systemd timer/service，编号1至6，名称为 `proworksim-v055-six-hour-monitor-r1-sample-<编号>.timer` 及对应 `.service`。它们分别对应上述01:12:51至06:12:51时刻，timer精度设为1秒；实际采样时间仍记录在输出中，不宣称调度能保证零延迟。每个service限制1 CPU、512 MiB内存、最长120秒，`Restart=no`，仅调用冻结的只读collector。部署器已通过Ruff；`runs/software-benchmark-v055/six-hour-monitor-r1/timer-deployment-01.json` 至 `timer-deployment-06.json` 的部署返回码均为0。六个有限采样单元不承担实验派发或无人值守修复，也不是新增永久daemon。
+为避免助手会话延迟造成漏采，已通过 `tools/schedule_nine_conditions_hourly_v055_r1.py` 部署6个一次性systemd user timer/service，编号1至6，名称为 `proworksim-v055-six-hour-monitor-r1-sample-<编号>.timer` 及对应 `.service`。它们分别对应上述01:12:51至06:12:51时刻，timer精度设为1秒；实际采样时间仍记录在输出中，不宣称调度能保证零延迟。每个service声明 `CPUQuota=100%`、`MemoryMax=512M`、`RuntimeMaxSec=120`、`Restart=no`，仅调用冻结的只读collector。上述为unit配置：本机user.slice未下放cpu controller，因此不能把 `CPUQuota=100%` 写成已生效的1 CPU硬限制；这些采样单元未进行对应cgroup实际硬约束核验。它们只做单次只读聚合，没有因此重装timer或更改采样器。部署器已通过Ruff；`runs/software-benchmark-v055/six-hour-monitor-r1/timer-deployment-01.json` 至 `timer-deployment-06.json` 的部署返回码均为0。六个有限采样单元不承担实验派发或无人值守修复，也不是新增永久daemon。
 
 ## 首次观察：00:20:00
 
@@ -89,4 +89,16 @@ watcher自然退出且helper已结束后可按原seal恢复。`.completed`、`.f
 - 保留生成100 GiB、准备128 GiB的磁盘底线及增长预约。挂载或卷身份异常时继续拒绝派发；仅在核对原device与marker后修复原bind，不让任务写到丢失挂载下的主盘目录。
 - 不热改封存源码，不重复旧adoption。修复与观察分开保存实际时间、触发证据、范围、变更及恢复后观察；未恢复的问题保持明确的技术未知／资源限制，不填成模型失败。
 
-截至此初稿，只确认上述首次观察、安全恢复审计及六个未来有限采样单元部署完成。后续小时观察、实际修复、窗口终止状态和六小时净进度由后续真实记录补充。
+## 窗口内修复进展：00:44:38
+
+针对首次观察中阻塞九个未进入槽的单题环境问题，已开展独立的partial-export恢复。首次r1尝试在导出前失败，原失败记录保留，没有将其覆盖为成功。后续r2改用system unit，于 **2026年10月23日00:44:38** 实际启动，启动时PID为2457109。操作侧实读其cgroup：`cpu.max=400000 100000`、`memory.max=17179869184`、`pids.max=16384`，对应4 CPU配额、16 GiB内存及16384任务上限。这里的实读证明只属于该r2准备worker，不能外推为前述user采样单元的CPU硬限制已生效。
+
+该次交接保持r9的原service定义与执行参数，仅在停止manager并登记恢复worker后恢复同名manager。00:44:38阶段的队列状态为 `preparing`；这一时点仅证明恢复准备已启动，不表示当时环境已通过准入或正式九槽已完成。后续须按真实结果更新，保留任何新失败，不能重新执行已有durable intent来重试。
+
+### 00:47:21准备成功及00:47:49队列接入
+
+r2准备实际开始于 **00:44:39**，于 **00:47:21** 返回 `qualified`。本次恢复只对固定本地image重新导出1次，修复模型调用为0；没有更换镜像版本、参考题目成绩选环境或重放已进入的生成回合。首次r1失败仍作为独立历史保留。
+
+`runs/software-benchmark-v055/partial-export-recovery-r2/first-queue-adoption-observation.json` 记录 **00:47:49** 的首次队列接入观察：原先从未进入的DeepSeek六个槽均已取得 `qualified` 环境并首次进入 `running`，Qwen三个槽仍按原队列顺序保持pending。该对比表明阻塞环境已恢复并被原队列消费，不表示这些正式回合已完成生成或通过官方评分；其后结果仍计入各自原组和原500题分母。
+
+六小时窗口仍在进行。后续小时观察、准备恢复结果、窗口终止状态和六小时净进度由后续真实记录补充。
