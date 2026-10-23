@@ -52,3 +52,5 @@ OpenHands 提供基础 Agent 框架；ProWorkSim 在其上增加协作所需的�
 下一步应先修复已发现的工具参数与执行器不一致，改善受管搜索及交付操作，再单独验证具体规则。多人协作是否值得这些额外步骤，需要在相同总预算下另做团队对照。
 
 [详细统计、配置与证据附录](software-benchmark-v055-nine-condition-results-detailed-appendix-r1.md)
+
+[REF三组预算约束专项核验](software-benchmark-v055-ref-budget-constraint-audit-r1.md)
