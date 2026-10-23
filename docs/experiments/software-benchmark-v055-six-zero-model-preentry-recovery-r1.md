@@ -80,3 +80,17 @@ watcher宿主及scorer Python进程单元另设4CPU／4GiB；Docker官方评分�
 首轮与恢复必须在集中reconciliation视图中分开列出：旧六个unknown不可静默覆盖；可把这次经证明0模型前置故障后的首次实际执行作为单独运维修订结果报告。整个恢复不新增不同任务、不另抽seed、不重跑其余155项。
 
 最终发布证据：[恢复summary索引](../../artifacts/software-benchmark-v055/exception-reconciliation-r1/preentry-recovery-r1/summary.json)、[逐项生成和评分最终summary](../../artifacts/software-benchmark-v055/exception-reconciliation-r1/preentry-recovery-r1/first-scoring/summary.json)、[生成闭合及成本观察](../../artifacts/software-benchmark-v055/exception-reconciliation-r1/preentry-recovery-r1/generation-final-observation.json)。归档只复制小型元数据与引用，没有重复复制rootfs、解压历史归档或发布模型消息／补丁正文。
+
+## 按结束后清理授权完成的精确磁盘回收
+
+用户随后明确要求实验完成后释放GPU并清理磁盘。本子任务仅处理这次六槽的临时rootfs及同一astropy题的legacy模板，不触及其它历史工作区或一般native-lazy-cache回收。GPU释放由独立操作记录负责。
+
+窄检查确认：3个正常closed回合的actor/rootfs，以及两份PROJECT公开测试clone，早已由原生命周期自动清理；本轮未再次删除或重复计入收益。剩余3个unknown的actor/rootfs有原all_quiet=true、errors为空与resource_release=true证据，使用独立适配器 `tools/cleanup_deepseek_preentry_v055_r1.py` 精确绑定三路径、新claim锁及system-manager unit，复用原GNU pax tar＋zstd1、完整内容／metadata回读、源稳定检查及descriptor-safe释放实现，没有重跑不变codec控制。
+
+三项均已完整验证并释放展开副本，**3/3成功、0失败**，原展开allocated 9,095,716,864B减保留压缩包allocated 3,461,226,496B，净释放 **5,634,490,368B（5.247528GiB）**；同盘压缩包、members清单、verified／released回执和恢复marker继续保留。每次归档及释放均在对应原scope-registry锁与恢复worker锁内重新核对原／新unit、登记PID／cgroup／slice静默及无内部mount。新独立有限namespace不包含其它任务路径。恢复仍只能写新目录，不能覆盖原位置或改判实验结果。
+
+另以 `tools/reclaim_preentry_astropy_template_v055_r1.py` 对精确路径 `runs/software-benchmark-v054/native-lazy-r3/astropy__astropy-12907/843dcc65484d2d05/rootfs` 复用原严格模板deleter。持原legacy模板锁与同题cache别名锁，核对3个旧Qwen消费者、6个旧零模型claim、6个新恢复及3个评分均终态／静默后，回收 **3,024,695,296B（2.816967GiB）**。旧qualified回执和manifest保留为历史证据，实际源路径及native-lazy-cache同题别名均有eviction marker；后续新实验必须在新的准备generation重建，不把历史qualified当作payload仍存在。
+
+本子任务合计净释放 **8,659,185,664B（8.064495GiB）**，少量新sidecar与审计metadata未扣。主盘普通可用空间在本批前后观察为772.952438→781.006306GiB；其它实验或并行回收可能改变同一盘free，所以净收益按source allocated减保留archive allocated计量，不以整盘差值替代。原API账本、claim、正式候选／补丁、评分、项目源码、配置、模型与Docker镜像保持；三份未知现场以无损归档形式保存。
+
+清理summary：`runs/software-benchmark-v055/pre-entry-recovery-r1/cleanup-r1/summary.json`，SHA-256 `0880d5313f1f37c52e71e1ab6db3a3d85527bfe7a35491d7207ed353cc2f71e8`。发布小证据见[cleanup-r1/summary.json](../../artifacts/software-benchmark-v055/exception-reconciliation-r1/preentry-recovery-r1/cleanup-r1/summary.json)及其索引；本轮没有模型调用或任务重放。
