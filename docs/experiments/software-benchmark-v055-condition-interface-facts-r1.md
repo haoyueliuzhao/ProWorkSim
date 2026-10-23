@@ -4,7 +4,7 @@
 
 ## 范围与身份
 
-九组均来自 SWE-bench Verified 官方 test 的同一完整 500 题计划，数据版本为 `78f471bf655a3137b2e8a75af1501690ec009ec3`。每组一个实际 Agent，不挂项目训练适配器、不训练。REF 与 MATCH 使用同一原生 OpenHands 工具与模板；PROJECT 使用实际受管 S1 接口。
+九组均来自 SWE-bench Verified 官方 test 的同一完整 500 题计划，数据版本为 `78f471bf655a3137b2e8a75af1501690ec009ec3`。每组一个实际 Agent，不挂项目训练适配器、不训练。三种条件均以 OpenHands SDK 为基础：REF 与 MATCH 使用同一原生工具与模板；PROJECT 在同一 SDK 上接入 ProWorkSim 实际受管 S1 接口、观察组织和协作规则。差别位于工具与项目执行层，不是更换基础 Agent 框架。
 
 - Qwen：`Qwen/Qwen3.5-9B` 原始权重，版本 `c202236235762e1c871ad0ccb60c8ee5ba337b9a`。模型清单 SHA-256 为 `030031b27513e399360f26a8db31746e719bb15a3d2f4d68874c1dba3ccc60a6`。
 - DeepSeek：API 名 `deepseek-flash`，冻结条件记录的文档版本为 `DeepSeek-V4.1-Flash-1017`。条件明确记录该别名**不是不可变权重哈希**；不能把它写成本地固定权重实验。

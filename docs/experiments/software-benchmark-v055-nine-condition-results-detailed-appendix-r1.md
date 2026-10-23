@@ -52,11 +52,13 @@ Qwen 使用原始 Qwen3.5-9B 检查点。DeepSeek 使用官方 API 别名 `deeps
 
 ## 3. 三种条件实际改变了什么
 
+三种条件均基于 OpenHands SDK。REF／MATCH 使用原生工具和执行方式；PROJECT 在同一基础框架之上接入 ProWorkSim 的受管工具、观察组织和协作规则。本比较研究的是推理配置与项目执行层的影响，不是不同基础 Agent 框架之间的比较。
+
 | 条件 | 实际 Agent／接口 | 上下文与单次输出 | 研究含义 |
 | --- | --- | --- | --- |
 | REF | OpenHands SDK/tools 1.49.6 原生 Agent/Conversation；Terminal、FileEditor、TaskTracker、Think、Finish；原生历史摘要 | 总窗口 131,072，输入上限 98,304，完整输出上限 32,768 | 预先选定的外部参照配置；不是已找到的官方 Qwen9B 论文复现包 |
 | MATCH | 与 REF 相同的工具、system 模板、终端执行和 condenser 算法 | 总窗口 18,432，输入上限 16,384，完整输出上限 2,048 | 将原生接口置于项目的推理及可匹配资源配置 |
-| PROJECT | ProWorkSim 实际 S1 World、受管工具、Γ1 观察组织、分页及合法交付流程 | 与相应 MATCH 相同 | 测量项目定制执行层整体影响，包含工具、说明、历史、执行和交付 |
+| PROJECT | 同一 OpenHands SDK 上的 ProWorkSim 实际 S1 World、受管工具、Γ1 观察组织、分页及合法交付流程 | 与相应 MATCH 相同 | 测量项目定制执行层整体影响，包含工具、说明、历史、执行和交付 |
 
 共同上限为每题 500,000 输入＋输出 token、128 次实际模型尝试、128 次 Agent 决定、90 分钟软期限和 100 分钟硬期限。Agent 与原生 condenser 共用账本；思考 token 也占输出和总预算。模型开始新请求前预约完整输入与最大输出，余额不足时可在尚余少量 token 的情况下停止。
 
