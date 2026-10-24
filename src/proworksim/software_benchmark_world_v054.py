@@ -18,13 +18,19 @@ from .tool_outcomes import ToolRejection
 from .work_interface import _schema_errors
 from .world_core import WorldCore
 
-VERSION = "software-benchmark-world-v054-file-operations"
+VERSION = "software-benchmark-world-v056-interface-r1"
 INTERFACE_REVISION = VERSION
 PURPOSE = "software_benchmark_interface_preparation"
 PROJECT, MEMBERS = previous.PROJECT, previous.MEMBERS
 PAGE_FILES, PAGE_CHARACTERS, PAGE_MATCHES = 40, 4096, 20
 _PATH = {"type": "string", "minLength": 1}
-_CURSOR = {"type": "string", "minLength": 1}
+_CURSOR = {
+    "type": ["string", "null"],
+    "description": (
+        "Omit, null or empty string to start the first page. To continue, copy next_cursor "
+        "exactly from this operation on this source version; editing invalidates it."
+    ),
+}
 TOOLS = copy.deepcopy(previous.TOOLS)
 for _tool in TOOLS:
     if _tool["name"] in {"list_files", "read_file", "search_file", "diff_workspace"}:
@@ -37,7 +43,15 @@ for _tool in TOOLS:
     elif _tool["name"] == "search_file":
         _tool["description"] = "Search one UTF-8 file literally; at most20 matches with bounded previews. Continue with next_cursor."
     elif _tool["name"] == "diff_workspace":
-        _tool["description"] = "Read one bounded page of the real cumulative change description; binary changes are identified without decoding."
+        # v028's offset/max_chars/source_reference contract is not implemented by
+        # the current-version v054 cursor executor. Publish its actual contract.
+        _tool["parameters"]["properties"] = {"cursor": copy.deepcopy(_CURSOR)}
+        _tool["parameters"]["required"] = []
+        _tool["description"] = (
+            "Read up to4096 characters of your current workspace's cumulative diff against "
+            "the frozen baseline. Continue with next_cursor; editing invalidates it. "
+            "Binary changes are identified without decoding."
+        )
     elif _tool["name"] == "write_file":
         _tool["description"] = "Replace an existing writable UTF-8 file completely within the frozen source policy; records a new version."
     elif _tool["name"] == "run_tests":
@@ -78,7 +92,7 @@ def _cursor(identity, position):
 
 
 def _position(cursor, identity, length):
-    if cursor is None:
+    if cursor is None or cursor == "":
         return 0
     if (not isinstance(cursor, str) or re.fullmatch(r"[0-9]+:[0-9a-f]{64}", cursor) is None
             or cursor.split(":", 1)[1] != digest(json_bytes(identity))):
@@ -136,7 +150,8 @@ def member_instruction(case, **_):
     return (
         "Resolve the original public repository issue. You are the only executor, member_001. "
         "Use read_task for its exact pages and list_files/read_file for the current repository. "
-        "Cursors bind one source version; after editing obtain new cursors. "
+        "Omit cursor, or use null/empty string, for a first page. For continuation copy "
+        "next_cursor exactly; cursors bind one operation and source version, so edits invalidate them. "
         "Use write_file or unique replace_file for existing UTF-8 files, create_file for a new "
         "file, delete_file or rename_file for existing writable entries. Read-only source policy "
         "remains enforced; binary/link contents are not text-editable. No shell is available. "
@@ -279,7 +294,7 @@ class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
         identity = {"tool": "read_file", "path": path, "source_reference": reference}
         if not 1 <= max_lines <= 180 or start_line < 1:
             raise ValueError("Use positive line positions and at most180 lines")
-        position = None if cursor is not None else sum(
+        position = None if cursor not in (None, "") else sum(
             len(line) for line in text.splitlines(keepends=True)[:start_line - 1])
         page = _text_page(text, identity, cursor, position=position, max_lines=max_lines)
         self._event(actor, "read", source_reference=reference, path=path,
