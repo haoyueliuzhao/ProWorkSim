@@ -1,0 +1,875 @@
+{
+  "version": "v056-grader-environment-positive-control-analysis-r1",
+  "created_utc": "2026-10-24T10:47:41.665517+00:00",
+  "script": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/analyze_ref_budget_environment_controls_v056.py",
+    "sha256": "dc5279269c7288b3207170624ff6ffaaca13b23d8e661f125caf2a51157aa70a",
+    "bytes": 8991
+  },
+  "diagnostics_helper": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/analyze_ref_budget_failures_v056.py",
+    "sha256": "c7c82dff3f7250d5be7b37470e0c0179319b8087431dbec6289fc8084446a159",
+    "bytes": 11961
+  },
+  "control_plan": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/plan.json",
+    "sha256": "1296fe9afcb6827fd506084cf629910f9d19dd84013c94e51616304fe433c50b",
+    "bytes": 2813
+  },
+  "original_failure_diagnostics": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/failure-analysis-r1/official-failures.json",
+    "sha256": "087143f446f4202919dae56a780fb4ed7b56c89abb81f6d97d60c475e0ca457b",
+    "bytes": 572895
+  },
+  "controls_completed": 3,
+  "gold_patch_applied_controls": 3,
+  "gold_resolved_controls": 0,
+  "containers_quiescent": 3,
+  "original_model_slots_with_same_task_and_environment": 12,
+  "original_slots_matching_both_gold_nonpass_sets": 10,
+  "rows": [
+    {
+      "instance_id": "psf__requests-2931",
+      "control_resolved": false,
+      "control_F2P_success_count": 1,
+      "control_F2P_nonpass_count": 0,
+      "control_P2P_success_count": 82,
+      "control_P2P_nonpass_count": 2,
+      "control_F2P_nonpass_names": [],
+      "control_P2P_nonpass_names": [
+        "test_requests.py::TestTimeout::test_connect_timeout",
+        "test_requests.py::TestTimeout::test_total_timeout_connect"
+      ],
+      "symptoms_in_test_region": {
+        "dns_resolution_failure": false,
+        "network_unreachable": true,
+        "recursive_httpbin_fixture": true,
+        "missing_trustme": false,
+        "httpbin_org_seen": false,
+        "unroutable_10_255_255_1_seen": true
+      },
+      "representative_official_nonpass_test": "test_requests.py::TestTimeout::test_connect_timeout",
+      "nonpass_test_block_excerpt": "_______________________ TestTimeout.test_connect_timeout _______________________\n\nself = <requests.packages.urllib3.connection.HTTPConnection object at 0x7fdff2e50130>\n\n    def _new_conn(self):\n        \"\"\" Establish a socket connection and set nodelay settings on it.\n    \n        :return: New socket connection.\n        \"\"\"\n        extra_kw = {}\n        if self.source_address:\n            extra_kw['source_address'] = self.source_address\n    \n        if self.socket_options:\n            extra_kw['socket_options'] = self.socket_options\n    \n        try:\n>           conn = connection.create_connection(\n                (self.host, self.port), self.timeout, **extra_kw)\n\nrequests/packages/urllib3/connection.py:136: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nrequests/packages/urllib3/util/connection.py:91: in create_connection\n    raise err\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\naddress = ('10.255.255.1', 80), timeout = 0.1, source_address = None\nsocket_options = [(6, 1, 1)]\n\n    def create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,\n                          source_address=None, socket_options=None):\n        \"\"\"Connect to *address* and return the socket object.\n    \n        Convenience function.  Connect to *address* (a 2-tuple ``(host,\n        port)``) and return the socket object.  Passi",
+      "network_error_in_that_test": {
+        "character_offset": 2667,
+        "text": "t is not socket._GLOBAL_DEFAULT_TIMEOUT:\n                    sock.settimeout(timeout)\n                if source_address:\n                    sock.bind(source_address)\n>               sock.connect(sa)\nE               OSError: [Errno 101] Network is unreachable\n\nrequests/packages/urllib3/util/connection.py:81: OSError\n\nDuring handling of the above exception, another exception occurred:\n\nself = <requests.packages.urllib3.connectionpool.HTTPConnectionPool object at 0x7fdff2e50c10>\nmethod = 'GET', url = '/', body = None\nheaders = {'User-Agent': 'python-requests/2.9.0', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive'}\nretries = Retry(total=0, connect=None, read=False, redirect=None)\nredirect = False, assert_same_host = False\ntimeout = <requests.packages.urllib3.util.timeout.Timeout object at 0x7fdff2e50fd0>\npool_timeout = None, release_conn = True\nresponse_kw = {'decode_content': False, 'preload_content': False}, conn ="
+      },
+      "fixture_excerpt": {
+        "character_offset": 818,
+        "text": "ength _____________\nfile /testbed/test_requests.py, line 121\n      def test_no_content_length(self, httpbin):\nfile /testbed/test_requests.py, line 51\n  @pytest.fixture\n  def httpbin(httpbin):\nE       recursive dependency involving fixture 'httpbin' detected\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpsbin_url, list_of_tuples, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\n/testbed/test_requests.py:51\n_________ ERROR at setup of TestRequests.test_override_content_length __________\nfile /testbed/test_req"
+      },
+      "missing_module_excerpt": null,
+      "receipt": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-2931/receipt.json",
+        "sha256": "0942025b75c30d973cad5e4252fac4dba2890316389fdc986a4592f9d5a1c4ac",
+        "bytes": 8000
+      },
+      "identity": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-2931/official-output/identity.json",
+        "sha256": "64953efbf01a930aa4e37986f67dd186ba5dd996da48cb0052eb4c96c084d432",
+        "bytes": 5601
+      },
+      "test_log": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-2931/official-output/logs/run_evaluation/v056-env-gold-r1-1bbc689ff8f4e4aa7dc57176dc09bbad4de9821e/GOLD_ENVIRONMENT_CONTROL/psf__requests-2931/test_output.txt",
+        "sha256": "da4b8ffe118b6befe1d4a8559e95420b379772efa9eba47e9db5592f79712b8b",
+        "bytes": 135176
+      },
+      "quiescence": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-2931/quiescence.json",
+        "sha256": "b0a9eae592f479dffb1e8fdc824d3f50fe327d7d859274f70b49dc9eddbc589b",
+        "bytes": 422
+      },
+      "completion": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-2931/completion.json",
+        "sha256": "b357daaf2423aa7bd14e8dc8a4a6187665d3943d2eca982af5710fac522798de",
+        "bytes": 1138
+      },
+      "gold_patch_sha256": "5b5a77408b00928b0380cd6a40ccb53f0cf77b16f040e1743e313883aad104db",
+      "gold_patch_bytes": 723,
+      "gold_patch_source": "trusted fixed dataset row.patch; grader only",
+      "original_request": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/5caba542ebfca8b4e7be05c44714cc5051de2f17a5bb94768b52d040d01e4241.json",
+        "sha256": "6268a21fbddde46b7e069746364b535ed2d1d68727e9c6213a2ad29d2633d812",
+        "bytes": 6858
+      },
+      "image_id": "sha256:d169b644e994bc20c0d77719b008e34fdd9afab2c211d7f52e27a578e692c75b",
+      "baseline_mapping": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/psf__requests-2931.json",
+        "sha256": "596d5d1c0a612a5a7906803df6526b20e51886e646c01119787247c4ca993a8b",
+        "bytes": 25361
+      },
+      "limits": {
+        "network_mode": "none",
+        "nano_cpus": 4000000000,
+        "memory_bytes": 17179869184,
+        "pids_limit": 16384,
+        "timeout_seconds": 1800
+      },
+      "model_calls": 0,
+      "matched_original_model_slots": [
+        {
+          "slot_id": "v056:psf__requests-2931:REF_B0500K:20261024056008",
+          "condition_id": "REF_B0500K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": false,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [
+            "test_requests.py::TestRequests::test_binary_put"
+          ],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-2931:REF_B0500K:20261024056008",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-c54a72cd6500ac11223d8f1454f4526edde388fd/receipt.json",
+              "sha256": "ca3c95cb84cfd058c68e625afa7eb36a65c5c5b3f554d37452866ffcc62ece41",
+              "bytes": 7779
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-c54a72cd6500ac11223d8f1454f4526edde388fd/identity.json",
+              "sha256": "a4ea2e6a0b8de8997ef78800c612e855fc73606c8fb8f60452fd3c6f288c0577",
+              "bytes": 5595
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/5caba542ebfca8b4e7be05c44714cc5051de2f17a5bb94768b52d040d01e4241.json",
+              "sha256": "6268a21fbddde46b7e069746364b535ed2d1d68727e9c6213a2ad29d2633d812",
+              "bytes": 6858
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/5caba542ebfca8b4e7be05c44714cc5051de2f17a5bb94768b52d040d01e4241/candidates/lock.json",
+              "sha256": "d3bbf10ae1f5b031c2f7076bafae17013a38dd6f6b52f66b240cac3dd5a6d1ea",
+              "bytes": 5553
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/5caba542ebfca8b4e7be05c44714cc5051de2f17a5bb94768b52d040d01e4241/candidates/candidate.patch",
+              "sha256": "55bb81254f3d4a3c1871babe01fb6361feffa2a5dca851992b7cb45f1102ae74",
+              "bytes": 178916
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-c54a72cd6500ac11223d8f1454f4526edde388fd/logs/run_evaluation/v056-ref_b0500k-c54a72cd6500ac11223d8f1454f4526edde388fd/REF_B0500K/psf__requests-2931/test_output.txt",
+              "sha256": "2a3ad1ad765dbad2b212daeed59700d43d1932bb05fdafa49230f658febc5738",
+              "bytes": 135713
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-2931:REF_B2000K:20261024056008",
+          "condition_id": "REF_B2000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-2931:REF_B2000K:20261024056008",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-7b3ae34d176c49d112140b7b57dc6bbb77b727ba/receipt.json",
+              "sha256": "1a7d260337eb8c142fcb8494a30ceb9cba12f84be9a760f98f8a71623283e19b",
+              "bytes": 7779
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-7b3ae34d176c49d112140b7b57dc6bbb77b727ba/identity.json",
+              "sha256": "170646402934bf48efe7d8e81b19bab250e23ae8fb4ebe58bcee531e170140b4",
+              "bytes": 5595
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/dd726c1e24778c0b51aec7e73d655c15168d0270f1ba105e2bb26d779d50a214.json",
+              "sha256": "905d839b6095bf6bfa22644d819e7e01241f3135d6cc543bfb46854ecd08a411",
+              "bytes": 6858
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/dd726c1e24778c0b51aec7e73d655c15168d0270f1ba105e2bb26d779d50a214/candidates/lock.json",
+              "sha256": "d3d731064acf92b69a28da6ae94cd33a906f12557b75e5534644bde0670137fc",
+              "bytes": 5923
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/dd726c1e24778c0b51aec7e73d655c15168d0270f1ba105e2bb26d779d50a214/candidates/candidate.patch",
+              "sha256": "a20266b2fbc8c4199d78fa1bb42dc3abcadbb7398414a2d1ab421fe43dfb9176",
+              "bytes": 293565
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-7b3ae34d176c49d112140b7b57dc6bbb77b727ba/logs/run_evaluation/v056-ref_b2000k-7b3ae34d176c49d112140b7b57dc6bbb77b727ba/REF_B2000K/psf__requests-2931/test_output.txt",
+              "sha256": "9bd97f3d2da0c675b19874b9d65bf39ab9d6b190472bd4f886ec3334ff6c2f78",
+              "bytes": 135285
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-2931:REF_B5000K:20261024056008",
+          "condition_id": "REF_B5000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-2931:REF_B5000K:20261024056008",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-ee05f27458e3769b1315a50563abe533b64d3248/receipt.json",
+              "sha256": "b5d16b4d07335acb1b185d55ab149d9a61da027293e8f1f4f04c940214574c81",
+              "bytes": 7779
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-ee05f27458e3769b1315a50563abe533b64d3248/identity.json",
+              "sha256": "e0dfba4fffc11f186e2ffec704039f557886c8d7cde079ae025495c4f13e6494",
+              "bytes": 5595
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/8c6bc6b8462fbb929ca7340c4b200990d39882599f57b4bd18ad8bd00de516c7.json",
+              "sha256": "5e8f60ff01cd5721c43de04f8bdd6e2e85283a27b45c92d7ddff7d7ae1906666",
+              "bytes": 6858
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/8c6bc6b8462fbb929ca7340c4b200990d39882599f57b4bd18ad8bd00de516c7/candidates/lock.json",
+              "sha256": "49692af165d00dc1a1ead92e8eaf64ad36d963696ad6056428d8fc9793ab7977",
+              "bytes": 5950
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/8c6bc6b8462fbb929ca7340c4b200990d39882599f57b4bd18ad8bd00de516c7/candidates/candidate.patch",
+              "sha256": "8723c31113f20503f980d7d99951f3942b30bee655f52e38c5dc626c0fcbdaa4",
+              "bytes": 294761
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-ee05f27458e3769b1315a50563abe533b64d3248/logs/run_evaluation/v056-ref_b5000k-ee05f27458e3769b1315a50563abe533b64d3248/REF_B5000K/psf__requests-2931/test_output.txt",
+              "sha256": "a1b5822ae83d03549f60970292b99fbde33d7c0b3f741718262ab81b5df6b182",
+              "bytes": 135683
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-2931:REF_B10000K:20261024056008",
+          "condition_id": "REF_B10000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-2931:REF_B10000K:20261024056008",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-76b74dcd4e4eef63854406158837acb8db1b0b0d/receipt.json",
+              "sha256": "5f5f9f072e49bb48af84ecefd3bc65d6261798c0371a14e11819ce502ff4a7b7",
+              "bytes": 7782
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-76b74dcd4e4eef63854406158837acb8db1b0b0d/identity.json",
+              "sha256": "459a7d7412ac18b6bdd70a053b8db6f473c92099a7f1cd3e0059765f7f0a025e",
+              "bytes": 5597
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/b6868bfe4e5c4fd250ec4be5e6408fd9716d3e4916252c4b591c0561bb0a5070.json",
+              "sha256": "93eb1a72936b1de1574434c358571c2109194ac679964e90520b72dda4ec090b",
+              "bytes": 6861
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/b6868bfe4e5c4fd250ec4be5e6408fd9716d3e4916252c4b591c0561bb0a5070/candidates/lock.json",
+              "sha256": "07071f62e27402e82d84e065dd99c77c3d8d598c6b600d93891375e58280b1ec",
+              "bytes": 5876
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/b6868bfe4e5c4fd250ec4be5e6408fd9716d3e4916252c4b591c0561bb0a5070/candidates/candidate.patch",
+              "sha256": "42fcdc4aa736331a0accc178b13252db2a489a519f1ee4b4e14a0383f93971b6",
+              "bytes": 255819
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-76b74dcd4e4eef63854406158837acb8db1b0b0d/logs/run_evaluation/v056-ref_b10000k-76b74dcd4e4eef63854406158837acb8db1b0b0d/REF_B10000K/psf__requests-2931/test_output.txt",
+              "sha256": "53cd7b8861e118e2933876db74a8ffd336e25370735d7fd2a8954d9e8ffe5278",
+              "bytes": 135437
+            }
+          }
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-1921",
+      "control_resolved": false,
+      "control_F2P_success_count": 1,
+      "control_F2P_nonpass_count": 5,
+      "control_P2P_success_count": 69,
+      "control_P2P_nonpass_count": 38,
+      "control_F2P_nonpass_names": [
+        "test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET",
+        "test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES",
+        "test_requests.py::RequestsTestCase::test_basicauth_with_netrc",
+        "test_requests.py::RequestsTestCase::test_cookie_persists_via_api",
+        "test_requests.py::RequestsTestCase::test_uppercase_scheme_redirect"
+      ],
+      "control_P2P_nonpass_names": [
+        "test_requests.py::RequestsTestCase::test_DIGESTAUTH_QUOTES_QOP_VALUE",
+        "test_requests.py::RequestsTestCase::test_DIGEST_AUTH_RETURNS_COOKIE",
+        "test_requests.py::RequestsTestCase::test_DIGEST_STREAM",
+        "test_requests.py::RequestsTestCase::test_HTTP_200_OK_GET_WITH_MIXED_PARAMS",
+        "test_requests.py::RequestsTestCase::test_HTTP_200_OK_GET_WITH_PARAMS",
+        "test_requests.py::RequestsTestCase::test_HTTP_200_OK_HEAD",
+        "test_requests.py::RequestsTestCase::test_HTTP_200_OK_PUT",
+        "test_requests.py::RequestsTestCase::test_HTTP_302_ALLOW_REDIRECT_GET",
+        "test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES_WITH_DATA",
+        "test_requests.py::RequestsTestCase::test_cookie_quote_wrapped",
+        "test_requests.py::RequestsTestCase::test_cookie_removed_on_expire",
+        "test_requests.py::RequestsTestCase::test_custom_content_type",
+        "test_requests.py::RequestsTestCase::test_decompress_gzip",
+        "test_requests.py::RequestsTestCase::test_different_encodings_dont_break_post",
+        "test_requests.py::RequestsTestCase::test_fixes_1329",
+        "test_requests.py::RequestsTestCase::test_generic_cookiejar_works",
+        "test_requests.py::RequestsTestCase::test_header_remove_is_case_insensitive",
+        "test_requests.py::RequestsTestCase::test_mixed_case_scheme_acceptable",
+        "test_requests.py::RequestsTestCase::test_param_cookiejar_works",
+        "test_requests.py::RequestsTestCase::test_params_are_merged_case_sensitive",
+        "test_requests.py::RequestsTestCase::test_prepared_from_session",
+        "test_requests.py::RequestsTestCase::test_prepared_request_hook",
+        "test_requests.py::RequestsTestCase::test_pyopenssl_redirect",
+        "test_requests.py::RequestsTestCase::test_request_and_response_are_pickleable",
+        "test_requests.py::RequestsTestCase::test_request_cookie_overrides_session_cookie",
+        "test_requests.py::RequestsTestCase::test_request_cookies_not_persisted",
+        "test_requests.py::RequestsTestCase::test_request_ok_set",
+        "test_requests.py::RequestsTestCase::test_requests_in_history_are_not_overridden",
+        "test_requests.py::RequestsTestCase::test_session_pickling",
+        "test_requests.py::RequestsTestCase::test_set_cookie_on_301",
+        "test_requests.py::RequestsTestCase::test_status_raising",
+        "test_requests.py::RequestsTestCase::test_time_elapsed_blank",
+        "test_requests.py::RequestsTestCase::test_unicode_get",
+        "test_requests.py::RequestsTestCase::test_unicode_header_name",
+        "test_requests.py::RequestsTestCase::test_unicode_method_name",
+        "test_requests.py::RequestsTestCase::test_unicode_multipart_post",
+        "test_requests.py::RequestsTestCase::test_urlencoded_get_query_multivalued_param",
+        "test_requests.py::RequestsTestCase::test_user_agent_transfers"
+      ],
+      "symptoms_in_test_region": {
+        "dns_resolution_failure": true,
+        "network_unreachable": false,
+        "recursive_httpbin_fixture": false,
+        "missing_trustme": false,
+        "httpbin_org_seen": true,
+        "unroutable_10_255_255_1_seen": false
+      },
+      "representative_official_nonpass_test": "test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET",
+      "nonpass_test_block_excerpt": "_____________ RequestsTestCase.test_DIGESTAUTH_WRONG_HTTP_401_GET ______________\n\nself = <requests.packages.urllib3.connectionpool.HTTPConnectionPool object at 0x7f09c06d8460>\nmethod = 'GET', url = '/digest-auth/auth/user/pass', body = None\nheaders = CaseInsensitiveDict({'User-Agent': 'python-requests/2.3.0 CPython/3.9.20 Linux/5.15.0-186-generic', 'Accept-Encoding': 'gzip, deflate, compress', 'Accept': '*/*'})\nretries = 0, redirect = False, assert_same_host = False\ntimeout = <requests.packages.urllib3.util.Timeout object at 0x7f09c06d84c0>\npool_timeout = None, release_conn = False\nresponse_kw = {'decode_content': False, 'preload_content': False}, conn = None\nerr = gaierror(-3, 'Temporary failure in name resolution')\n\n    def urlopen(self, method, url, body=None, headers=None, retries=3,\n                redirect=True, assert_same_host=True, timeout=_Default,\n                pool_timeout=None, release_conn=None, **response_kw):\n        \"\"\"\n        Get a connection from the pool and perform an HTTP request. This is the\n        lowest level call for making a request, so you'll need to specify all\n        the raw details.\n    \n        .. note::\n    \n           More commonly, it's appropriate to use a convenience method provided\n           by :class:`.RequestMethods`, such as :meth:`request`.\n    \n        .. note::\n    \n           `release_conn` will only behave as expected if\n     ",
+      "network_error_in_that_test": {
+        "character_offset": 7432,
+        "text": "since we want to translate the numeric family\n        # and socket type values to enum constants.\n        addrlist = []\n>       for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\nE       socket.gaierror: [Errno -3] Temporary failure in name resolution\n\n/opt/miniconda3/envs/testbed/lib/python3.9/socket.py:966: gaierror\n\nDuring handling of the above exception, another exception occurred:\n\nself = <requests.adapters.HTTPAdapter object at 0x7f09c06d8760>\nrequest = <PreparedRequest [GET]>, stream = False\ntimeout = <requests.packages.urllib3.util.Timeout object at 0x7f09c06d84c0>\nverify = True, cert = None, proxies = {}\n\n    def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):\n        \"\"\"Sends PreparedRequest object. Returns Response object.\n    \n        :param request: The :class:`PreparedRequest <PreparedRequest>` being sent.\n        :param stream: (optional) Whether to stream the request content.\n       "
+      },
+      "fixture_excerpt": null,
+      "missing_module_excerpt": null,
+      "receipt": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-1921/receipt.json",
+        "sha256": "18a2ab72dd5b7404c4ed4fdeaaf977b11f03c4038216164d040553eb1b917e9f",
+        "bytes": 10594
+      },
+      "identity": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-1921/official-output/identity.json",
+        "sha256": "9c4f330bd7aafd92703160569de5ff9f044e5843ef5689800ca51c8f13d593ac",
+        "bytes": 5601
+      },
+      "test_log": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-1921/official-output/logs/run_evaluation/v056-env-gold-r1-f716e76a460825fd65437345f362b14c76513e1e/GOLD_ENVIRONMENT_CONTROL/psf__requests-1921/test_output.txt",
+        "sha256": "2590f5eca0b5413a580e5a6b483078cf788c0b20196f0d079d3997ab42a40e79",
+        "bytes": 1055060
+      },
+      "quiescence": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-1921/quiescence.json",
+        "sha256": "f92f6bc3bad1b76345514dbed5c36dd0b2bf9edddd9567079276dedfa5e741d7",
+        "bytes": 422
+      },
+      "completion": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-1921/completion.json",
+        "sha256": "148f7cd34d78aed71c1eee4dd0b004941767d73c831523fc94968307b4ee5890",
+        "bytes": 1138
+      },
+      "gold_patch_sha256": "33fc461de67706a7d3c91008799489d6d1e6b521bfc0131dd22c4959d00b9f08",
+      "gold_patch_bytes": 388,
+      "gold_patch_source": "trusted fixed dataset row.patch; grader only",
+      "original_request": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/943b3f43eef9a14e80a6a18d5af626c305f622bd4f918561c8d19d2c127ecae7.json",
+        "sha256": "3a815bdcb519230976c917bfe81f425f94fe1089a17befee970fe3ef6dda3d54",
+        "bytes": 6860
+      },
+      "image_id": "sha256:ef715951df0c8e5504514a14c03362da52774c57faa88f990965b8787512d171",
+      "baseline_mapping": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/psf__requests-1921.json",
+        "sha256": "234e5887a558f8a278b7e762a02b9f093de83b275839fcd0f7b18e33d364201c",
+        "bytes": 22484
+      },
+      "limits": {
+        "network_mode": "none",
+        "nano_cpus": 4000000000,
+        "memory_bytes": 17179869184,
+        "pids_limit": 16384,
+        "timeout_seconds": 1800
+      },
+      "model_calls": 0,
+      "matched_original_model_slots": [
+        {
+          "slot_id": "v056:psf__requests-1921:REF_B10000K:20261024056019",
+          "condition_id": "REF_B10000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": false,
+          "sources": {
+            "slot_id": "v056:psf__requests-1921:REF_B10000K:20261024056019",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-e0e87da2c3bdd1d6614e482900323309182863e8/receipt.json",
+              "sha256": "1b255302e26a750110551f9474524f4aadaa6ac2c420ae4afd921450420c0d77",
+              "bytes": 10376
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-e0e87da2c3bdd1d6614e482900323309182863e8/identity.json",
+              "sha256": "367715b8b087aeb56e304fb1a63fd47a3566c5cdf4c1851fa84d9b68606a98f5",
+              "bytes": 5597
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/943b3f43eef9a14e80a6a18d5af626c305f622bd4f918561c8d19d2c127ecae7.json",
+              "sha256": "3a815bdcb519230976c917bfe81f425f94fe1089a17befee970fe3ef6dda3d54",
+              "bytes": 6860
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/943b3f43eef9a14e80a6a18d5af626c305f622bd4f918561c8d19d2c127ecae7/candidates/lock.json",
+              "sha256": "beda8e8550084f571e1037dcba62c1537f393ba07ea36ec55e3332ca2dd66982",
+              "bytes": 5349
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/943b3f43eef9a14e80a6a18d5af626c305f622bd4f918561c8d19d2c127ecae7/candidates/candidate.patch",
+              "sha256": "477a038821a5695c50dd6f86b307a2e1858a558833e7e77ab72fe3627977b14c",
+              "bytes": 81575
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-e0e87da2c3bdd1d6614e482900323309182863e8/logs/run_evaluation/v056-ref_b10000k-e0e87da2c3bdd1d6614e482900323309182863e8/REF_B10000K/psf__requests-1921/test_output.txt",
+              "sha256": "eda33b2bf780f2db44b92b0c69e22959746add2cc0758f47a201d1c556110291",
+              "bytes": 1056423
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-1921:REF_B0500K:20261024056019",
+          "condition_id": "REF_B0500K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": false,
+          "sources": {
+            "slot_id": "v056:psf__requests-1921:REF_B0500K:20261024056019",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-21a3acc5db71cd9d905e5d72c7d3c8d693254bcd/receipt.json",
+              "sha256": "509be19e95fda6de7e5978202c5c9fcc9b552b8c53f3fbaabe21814e06fc7721",
+              "bytes": 10373
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-21a3acc5db71cd9d905e5d72c7d3c8d693254bcd/identity.json",
+              "sha256": "412366cc7dff472d354bd644e1d369b497af7b5696b3105de1a4e8822e9f683f",
+              "bytes": 5595
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/0357dccf34a12adbe39482363e0def57d22cb4d82bd46fb498aa1c50fa0de28f.json",
+              "sha256": "ec0b0b5f783dab6f1b5c449e64edfd569e90d40236732772698d79a6fbb00f0e",
+              "bytes": 6857
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/0357dccf34a12adbe39482363e0def57d22cb4d82bd46fb498aa1c50fa0de28f/candidates/lock.json",
+              "sha256": "9077707ceb572296d29420710905a11917b3ea29b401a41f8b9bbc44360fa542",
+              "bytes": 5054
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/0357dccf34a12adbe39482363e0def57d22cb4d82bd46fb498aa1c50fa0de28f/candidates/candidate.patch",
+              "sha256": "b92653caaf6a8b8464f7ec06f3e527fa46b2f0e75465fbb93c849b44584d4e35",
+              "bytes": 22439
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-21a3acc5db71cd9d905e5d72c7d3c8d693254bcd/logs/run_evaluation/v056-ref_b0500k-21a3acc5db71cd9d905e5d72c7d3c8d693254bcd/REF_B0500K/psf__requests-1921/test_output.txt",
+              "sha256": "1a1a13ecb45b9a71b869b09f688bfb8ccccd45f44a0269077c8c4874885b31f1",
+              "bytes": 1056081
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-1921:REF_B2000K:20261024056019",
+          "condition_id": "REF_B2000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": false,
+          "sources": {
+            "slot_id": "v056:psf__requests-1921:REF_B2000K:20261024056019",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-88c9ca3fb97b55b322d75b95749516dbbb73d6bf/receipt.json",
+              "sha256": "dbc3448b0a46d3bf786427573d437746683a6314da772be3b4386ca16124f56e",
+              "bytes": 10373
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-88c9ca3fb97b55b322d75b95749516dbbb73d6bf/identity.json",
+              "sha256": "f04108ec88e4c0b8397b1f81078eac8eb0edbebe81f4dba14cbe155f6ebf43cd",
+              "bytes": 5595
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/3f82589456aa3ca1b84c303ef35b9a7d96aac4cb93be5f5cd6094a3bcd6b434b.json",
+              "sha256": "f648edb9c88b21259312e91e4bfba11a18e2f5cab98fc767af107f6e62090c9e",
+              "bytes": 6857
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/3f82589456aa3ca1b84c303ef35b9a7d96aac4cb93be5f5cd6094a3bcd6b434b/candidates/lock.json",
+              "sha256": "ea9405ca96be872c66df0227d42c2592fa94cf42090b95eb1228e4da825da9dc",
+              "bytes": 5346
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/3f82589456aa3ca1b84c303ef35b9a7d96aac4cb93be5f5cd6094a3bcd6b434b/candidates/candidate.patch",
+              "sha256": "6abc4b04d5da3422cee784f72294b7e43e7f687c40cd1f1db036360d4111bcdc",
+              "bytes": 81078
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-88c9ca3fb97b55b322d75b95749516dbbb73d6bf/logs/run_evaluation/v056-ref_b2000k-88c9ca3fb97b55b322d75b95749516dbbb73d6bf/REF_B2000K/psf__requests-1921/test_output.txt",
+              "sha256": "3c193764be458386e587c93f94a5e32b6cab679f1472f32a7b6affb2090a8aa5",
+              "bytes": 1056502
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-1921:REF_B5000K:20261024056019",
+          "condition_id": "REF_B5000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": false,
+          "sources": {
+            "slot_id": "v056:psf__requests-1921:REF_B5000K:20261024056019",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-f66ad056f58a88a4cda2f6611cde0a7ef4afd616/receipt.json",
+              "sha256": "5ff50883731f8ab6c28b65e4ecabf2ed1bce04c81a016099dc77696e880f4ea6",
+              "bytes": 10373
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-f66ad056f58a88a4cda2f6611cde0a7ef4afd616/identity.json",
+              "sha256": "0e4421988a22a12605278a7956881516af41e59863e0def0bd5df7b8691fae1f",
+              "bytes": 5595
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/940b1ceb0fb19a10a6c237d6aca2de9aa03c3670aaa3a67833009c0cee13c7ef.json",
+              "sha256": "646d6651bcb282192f44a400dbc8cb4668011eb7b9b100e2eb2d1ff9f2e58a17",
+              "bytes": 6857
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/940b1ceb0fb19a10a6c237d6aca2de9aa03c3670aaa3a67833009c0cee13c7ef/candidates/lock.json",
+              "sha256": "89c6e750dc0b16f4de9cb45fc2de38851da59400e3ba1bc73bce296e4ed8f0d8",
+              "bytes": 5346
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/940b1ceb0fb19a10a6c237d6aca2de9aa03c3670aaa3a67833009c0cee13c7ef/candidates/candidate.patch",
+              "sha256": "67b02cb02c2ae3750b98e66bc477f93c37dcd44bd357c357cf4f59e8d03859ca",
+              "bytes": 77701
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-f66ad056f58a88a4cda2f6611cde0a7ef4afd616/logs/run_evaluation/v056-ref_b5000k-f66ad056f58a88a4cda2f6611cde0a7ef4afd616/REF_B5000K/psf__requests-1921/test_output.txt",
+              "sha256": "ad1f261ec4341817ba51af4cdd63a69b56891ddadedd174944907f6abd5a244a",
+              "bytes": 1056085
+            }
+          }
+        }
+      ]
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "control_resolved": false,
+      "control_F2P_success_count": 1,
+      "control_F2P_nonpass_count": 0,
+      "control_P2P_success_count": 126,
+      "control_P2P_nonpass_count": 4,
+      "control_F2P_nonpass_names": [],
+      "control_P2P_nonpass_names": [
+        "tests/test_requests.py::TestTimeout::test_connect_timeout[timeout0]",
+        "tests/test_requests.py::TestTimeout::test_connect_timeout[timeout1]",
+        "tests/test_requests.py::TestTimeout::test_total_timeout_connect[timeout0]",
+        "tests/test_requests.py::TestTimeout::test_total_timeout_connect[timeout1]"
+      ],
+      "symptoms_in_test_region": {
+        "dns_resolution_failure": false,
+        "network_unreachable": true,
+        "recursive_httpbin_fixture": true,
+        "missing_trustme": true,
+        "httpbin_org_seen": false,
+        "unroutable_10_255_255_1_seen": true
+      },
+      "representative_official_nonpass_test": "tests/test_requests.py::TestTimeout::test_connect_timeout[timeout0]",
+      "nonpass_test_block_excerpt": "__________________ TestTimeout.test_connect_timeout[timeout0] __________________\n\nself = <urllib3.connection.HTTPConnection object at 0x7f96975f55e0>\n\n    def _new_conn(self):\n        \"\"\"Establish a socket connection and set nodelay settings on it.\n    \n        :return: New socket connection.\n        \"\"\"\n        extra_kw = {}\n        if self.source_address:\n            extra_kw[\"source_address\"] = self.source_address\n    \n        if self.socket_options:\n            extra_kw[\"socket_options\"] = self.socket_options\n    \n        try:\n>           conn = connection.create_connection(\n                (self._dns_host, self.port), self.timeout, **extra_kw\n            )\n\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/connection.py:174: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/util/connection.py:95: in create_connection\n    raise err\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\naddress = ('10.255.255.1', 80), timeout = 0.1, source_address = None\nsocket_options = [(6, 1, 1)]\n\n    def create_connection(\n        address,\n        timeout=socket._GLOBAL_DEFAULT_TIMEOUT,\n        source_address=None,\n        socket_options=None,\n    ):\n        \"\"\"Connect to *address* and return the socket object.\n    \n        Convenience function.  Conn",
+      "network_error_in_that_test": {
+        "character_offset": 3198,
+        "text": "t is not socket._GLOBAL_DEFAULT_TIMEOUT:\n                    sock.settimeout(timeout)\n                if source_address:\n                    sock.bind(source_address)\n>               sock.connect(sa)\nE               OSError: [Errno 101] Network is unreachable\n\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/util/connection.py:85: OSError\n\nDuring handling of the above exception, another exception occurred:\n\nself = <urllib3.connectionpool.HTTPConnectionPool object at 0x7f969745d190>\nmethod = 'GET', url = '/', body = None\nheaders = {'User-Agent': 'python-requests/2.26.0', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive'}\nretries = Retry(total=0, connect=None, read=False, redirect=None, status=None)\nredirect = False, assert_same_host = False\ntimeout = Timeout(connect=0.1, read=None, total=None), pool_timeout = None\nrelease_conn = False, chunked = False, body_pos = None\nresponse_kw = {'decode_content': "
+      },
+      "fixture_excerpt": {
+        "character_offset": 1080,
+        "text": "@pytest.mark.parametrize('method', ('GET', 'HEAD'))\n      def test_no_content_length(self, httpbin, method):\nfile /testbed/tests/conftest.py, line 28\n  @pytest.fixture\n  def httpbin(httpbin):\nE       recursive dependency involving fixture 'httpbin' detected\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\n>       use 'pytest --fixtures [testpath]' for help on them.\n\n/testbed/tests/conftest.py:28\n_________ ERROR at setup of TestRequests.test_no_content_length[HEAD] __________\nfile /testbed/tests/t"
+      },
+      "missing_module_excerpt": {
+        "character_offset": 68718,
+        "text": "mp_path_factory):\n        # delay importing until the fixture in order to make it possible\n        # to deselect the test via command-line when trustme is not available\n>       import trustme\nE       ModuleNotFoundError: No module named 'trustme'\n\ntests/conftest.py:42: ModuleNotFoundError\n___________ ERROR at setup of TestRequests.test_certificate_failure ____________\nfile /testbed/tests/test_requests.py, line 909\n      def test_certificate_failure(self, httpbin_secure):\nfile /testbed/tests/"
+      },
+      "receipt": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-5414/receipt.json",
+        "sha256": "ba19319d51450f1938bab9f32521902a136ed73947811f09eb4a0a6471051f19",
+        "bytes": 15073
+      },
+      "identity": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-5414/official-output/identity.json",
+        "sha256": "70803d541c86dd1946cfbcba1dcd8a47fdc7db058855eae4a01b2031239ce1e6",
+        "bytes": 5602
+      },
+      "test_log": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-5414/official-output/logs/run_evaluation/v056-env-gold-r1-e82b78f9147b0f61658e901b3b051b5495cf8e3d/GOLD_ENVIRONMENT_CONTROL/psf__requests-5414/test_output.txt",
+        "sha256": "ffbb74e99ad4ecd5a24b5c0662c524f7a7ce8c40670fe28304b4f13156d0132b",
+        "bytes": 274063
+      },
+      "quiescence": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-5414/quiescence.json",
+        "sha256": "cc4cf79edd3bf58fe63067d1e2714614829559726da19be9d21a83e1c7444fe0",
+        "bytes": 422
+      },
+      "completion": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/grading-environment-controls-r1/psf__requests-5414/completion.json",
+        "sha256": "043efdcbd85491d0ae987b473d9dddc1fd7bc3dd3bb506daffd832fadfdaae6d",
+        "bytes": 1139
+      },
+      "gold_patch_sha256": "41e9433ac5e2cdb17a3972bec818a1118ea4a3f2b7485cd11fff7e27f6f3f680",
+      "gold_patch_bytes": 511,
+      "gold_patch_source": "trusted fixed dataset row.patch; grader only",
+      "original_request": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/49e23921ea3aa10738452b2d3bad0cce10e4f5259d2de3adfcd4a5f9a16099ae.json",
+        "sha256": "97cd6a8a2efbee36849b1a002eb75bb5ce7b2d19ef9926761300d33e1f8a8dcb",
+        "bytes": 6859
+      },
+      "image_id": "sha256:ff5caf954ad336865c3614fa0157f383a8e80c40ec802625347d119e3e33965e",
+      "baseline_mapping": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/psf__requests-5414.json",
+        "sha256": "a8f0cf8532464b611cd3fd518f19c776cd951ccdbd0d20d7c3c51f52279d4464",
+        "bytes": 32790
+      },
+      "limits": {
+        "network_mode": "none",
+        "nano_cpus": 4000000000,
+        "memory_bytes": 17179869184,
+        "pids_limit": 16384,
+        "timeout_seconds": 1800
+      },
+      "model_calls": 0,
+      "matched_original_model_slots": [
+        {
+          "slot_id": "v056:psf__requests-5414:REF_B5000K:20261024056034",
+          "condition_id": "REF_B5000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-5414:REF_B5000K:20261024056034",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-70556a4fe4f2f8c39396f70434aeaae17a199c69/receipt.json",
+              "sha256": "ac3895da2cbd3feff960fbe8d4f704177dcd970751e19645a187dd3fa8310a6a",
+              "bytes": 14852
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-70556a4fe4f2f8c39396f70434aeaae17a199c69/identity.json",
+              "sha256": "64227102cdd17827a281b8104059f1b6a2eb2c600f410586c0d2d25fae31802e",
+              "bytes": 5596
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/49e23921ea3aa10738452b2d3bad0cce10e4f5259d2de3adfcd4a5f9a16099ae.json",
+              "sha256": "97cd6a8a2efbee36849b1a002eb75bb5ce7b2d19ef9926761300d33e1f8a8dcb",
+              "bytes": 6859
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/49e23921ea3aa10738452b2d3bad0cce10e4f5259d2de3adfcd4a5f9a16099ae/candidates/lock.json",
+              "sha256": "1527cf667f0c1ba535af2311e66dfab126a739213a05b861d050113831a1e7c8",
+              "bytes": 5081
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/49e23921ea3aa10738452b2d3bad0cce10e4f5259d2de3adfcd4a5f9a16099ae/candidates/candidate.patch",
+              "sha256": "cd81b96efb4beb002947bcc5680a9c38657a7d87560c126c3c0e614896ac3703",
+              "bytes": 301782
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b5000k-70556a4fe4f2f8c39396f70434aeaae17a199c69/logs/run_evaluation/v056-ref_b5000k-70556a4fe4f2f8c39396f70434aeaae17a199c69/REF_B5000K/psf__requests-5414/test_output.txt",
+              "sha256": "eb018c1f8f7e43fff9ccfedc3981a2fdd532967e70cfc8ecfcac87ab0345b33b",
+              "bytes": 274769
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-5414:REF_B10000K:20261024056034",
+          "condition_id": "REF_B10000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-5414:REF_B10000K:20261024056034",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-ce0af816865325881d33f3ec3843ff28ca7ec51e/receipt.json",
+              "sha256": "07fe58c565428492ba96a195496b1c511e257b44dc7abaab6cd3adf4777606bb",
+              "bytes": 14855
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-ce0af816865325881d33f3ec3843ff28ca7ec51e/identity.json",
+              "sha256": "4ce1899cebd2ff0594cfc892775840bbce78a2272a0da76d8a3ef0e59cd910e9",
+              "bytes": 5598
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/46ef44051eddbfe60fae11f17b890f0ddb162f8d5e8943ee5338fec55db75ad7.json",
+              "sha256": "a4fd22307113f990bc3de2113322072f3dccdef6de11633901fb9b9e341a60f6",
+              "bytes": 6862
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/46ef44051eddbfe60fae11f17b890f0ddb162f8d5e8943ee5338fec55db75ad7/candidates/lock.json",
+              "sha256": "96de910c4f8588fbe23d5c9da2b9d6df080e4ee6e7f6b07ea73a2f17690558a2",
+              "bytes": 4403
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/46ef44051eddbfe60fae11f17b890f0ddb162f8d5e8943ee5338fec55db75ad7/candidates/candidate.patch",
+              "sha256": "bf27194951538dd268be65136b581d86c5341583ffd3ee6dbef1ae458ce8c0c1",
+              "bytes": 222923
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b10000k-ce0af816865325881d33f3ec3843ff28ca7ec51e/logs/run_evaluation/v056-ref_b10000k-ce0af816865325881d33f3ec3843ff28ca7ec51e/REF_B10000K/psf__requests-5414/test_output.txt",
+              "sha256": "39eab1294102bb6855d34ba957ee6767eceb8f000a5af7f62db85de0d3843783",
+              "bytes": 274001
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-5414:REF_B0500K:20261024056034",
+          "condition_id": "REF_B0500K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": false,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [
+            "tests/test_requests.py::TestRequests::test_invalid_url[InvalidURL-http://.example.com]"
+          ],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-5414:REF_B0500K:20261024056034",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-96499bd5733aaacf21abed86fbeae5f258e81505/receipt.json",
+              "sha256": "2ac103125d5dae3ddf22b962d7ac1865e2270f87ac22401201cfe0a49c5d6926",
+              "bytes": 14852
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-96499bd5733aaacf21abed86fbeae5f258e81505/identity.json",
+              "sha256": "bf17a733db1af990061cc76a6069f0195ba01d28180f0ae007a03d7ec1fd57f3",
+              "bytes": 5596
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/5fc8cc4661924245f0a3a4ddb841c2250f69e0351054a1b84872be5b2a09343b.json",
+              "sha256": "f42be9500b999cd5f511675099562009150b6f6852d87313f28387002bfe3a4b",
+              "bytes": 6858
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/5fc8cc4661924245f0a3a4ddb841c2250f69e0351054a1b84872be5b2a09343b/candidates/lock.json",
+              "sha256": "44c7e0e00f0b67464af9267b6119f4f9b689715a85f029346461501f5962693c",
+              "bytes": 3859
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/5fc8cc4661924245f0a3a4ddb841c2250f69e0351054a1b84872be5b2a09343b/candidates/candidate.patch",
+              "sha256": "c6e53660f48ea75511745c54cbb4774f4aad11b15da08fbd349f2ec35a39c2f0",
+              "bytes": 92534
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b0500k-96499bd5733aaacf21abed86fbeae5f258e81505/logs/run_evaluation/v056-ref_b0500k-96499bd5733aaacf21abed86fbeae5f258e81505/REF_B0500K/psf__requests-5414/test_output.txt",
+              "sha256": "dd44b0a94fa19a236b444d5ed84966e3cada43df0981782ea704957ac3612a14",
+              "bytes": 276263
+            }
+          }
+        },
+        {
+          "slot_id": "v056:psf__requests-5414:REF_B2000K:20261024056034",
+          "condition_id": "REF_B2000K",
+          "official_resolved_unchanged": false,
+          "same_F2P_nonpass_set_as_gold": true,
+          "same_P2P_nonpass_set_as_gold": true,
+          "additional_F2P_nonpass_vs_gold": [],
+          "additional_P2P_nonpass_vs_gold": [],
+          "original_network_symptom": true,
+          "original_recursive_fixture_symptom": true,
+          "sources": {
+            "slot_id": "v056:psf__requests-5414:REF_B2000K:20261024056034",
+            "receipt": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-5673ab9bd8cdab7fcdd57681a64a6dd82ff3917f/receipt.json",
+              "sha256": "2bb2e7761d094a22a778d3b2e70f3938113890035b3bb5683c7e86fe6de6a574",
+              "bytes": 14852
+            },
+            "identity": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-5673ab9bd8cdab7fcdd57681a64a6dd82ff3917f/identity.json",
+              "sha256": "e6041300d20595783526e3f8cd2f7683d97241b448b34b068de9839e4ef2c45e",
+              "bytes": 5596
+            },
+            "request": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/queue-r2/score-requests/2726eef5b6da72ce795ddfb373991bb0a0f8d44b4265271ff9c5c8ae581ae694.json",
+              "sha256": "3c48b12a493bbb7c0cc568d3cbea841562d1e53baf481131b5b99e206ad262b7",
+              "bytes": 6859
+            },
+            "candidate_lock": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/2726eef5b6da72ce795ddfb373991bb0a0f8d44b4265271ff9c5c8ae581ae694/candidates/lock.json",
+              "sha256": "e15aef7d51bfc3db855588015be86f7bf5921395f0afaeadafdba5f4317411cc",
+              "bytes": 4432
+            },
+            "patch": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/episodes/2726eef5b6da72ce795ddfb373991bb0a0f8d44b4265271ff9c5c8ae581ae694/candidates/candidate.patch",
+              "sha256": "d7891fda101c6bb0a31d43892fd202364943129c0e5964c708a49643321ad522",
+              "bytes": 209945
+            },
+            "test_log": {
+              "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v056/official-output/v056-ref_b2000k-5673ab9bd8cdab7fcdd57681a64a6dd82ff3917f/logs/run_evaluation/v056-ref_b2000k-5673ab9bd8cdab7fcdd57681a64a6dd82ff3917f/REF_B2000K/psf__requests-5414/test_output.txt",
+              "sha256": "6ba4a77ce8a424bd39da6e23aeb4b73213449ac488d96618562bcd9d907b3600",
+              "bytes": 274525
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "untested_requests_1766": {
+    "gold_control_performed": false,
+    "original_slot_ids": [
+      "v056:psf__requests-1766:REF_B2000K:20261024056033",
+      "v056:psf__requests-1766:REF_B5000K:20261024056033",
+      "v056:psf__requests-1766:REF_B10000K:20261024056033",
+      "v056:psf__requests-1766:REF_B0500K:20261024056033"
+    ],
+    "all_four_network_log_symptom": true,
+    "interpretation": "log-based environment suspicion only; not covered by the three gold controls"
+  },
+  "supported_conclusion": "The frozen local offline grader cannot resolve the official gold patch on these three tasks. Their original false scores cannot all be attributed to model repair capability.",
+  "limits": [
+    "A failed positive control does not prove every model patch is correct or would pass in a repaired environment.",
+    "Matching F2P/P2P nonpass sets is diagnostic agreement, not a replacement resolved score.",
+    "Two 500k model candidates additionally fail their target F2P test beyond the gold control failures.",
+    "No benchmark score, denominator, candidate, actor feedback, or generation history is changed.",
+    "The fourth requests task has only log evidence, not a gold positive control.",
+    "The controls establish a grading-environment problem; the exact remedy and corrected benchmark scores are not measured here."
+  ],
+  "model_calls": 0,
+  "new_scoring_calls_in_analysis": 0,
+  "separately_completed_gold_scoring_calls": 3,
+  "official_candidate_scores_changed": false
+}

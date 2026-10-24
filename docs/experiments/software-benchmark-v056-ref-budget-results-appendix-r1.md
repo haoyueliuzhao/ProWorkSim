@@ -2,6 +2,8 @@
 
 日期：2026-10-24。阅读结论请先看[简明主报告](software-benchmark-v056-ref-budget-results-r1.md)。本附录使用编码异常补评后的同一份不可变状态快照；没有新增模型或官方评分调用。
 
+**后续有效性补充：** [进一步分析](software-benchmark-v056-low-accuracy-analysis-r1.md)另行执行了3题官方参考修复的评分端对照，均在原环境下未通过。本附录仍记录原始模型评分和原统计快照，未改分数；下述未知逻辑界和bootstrap区间均未涵盖新发现的评分环境失效，不能据此给出环境校正后的正确率范围。
+
 ## 1. 设计、来源和计量单位
 
 从固定 SWE-bench Verified test 500 题中按仓库分层抽取 50 题，抽样 seed 为 `20261024056`；每题四档各运行一次，共 200 回合。分层中 astropy、django、matplotlib、pytest、scikit-learn、sphinx、sympy 各 5 题，requests、xarray、pylint 各 4 题，seaborn 2 题、flask 1 题。未依据既往模型成绩选题；每档从独立初态运行，不继承补丁或反馈。
