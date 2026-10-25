@@ -24,7 +24,7 @@ from proworksim import software_benchmark_queue_v056 as queue
 from proworksim.software_benchmark_candidates_v054 import checked, reference, write_new
 from proworksim.software_benchmark_ref_budget_v056 import BUDGETS
 from proworksim.software_benchmark_scorer_v054 import canonical
-from proworksim.software_benchmark_shared_server_hold_v057 import require_experiment_dispatch_allowed
+from proworksim.software_benchmark_dispatch_v058 import require_v058_dispatch_allowed
 from proworksim.storage import atomic_write, digest, json_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,9 +52,8 @@ def retain(path, body):
 
 
 def scorer_command(request):
-    argv = queue.scorer_argv(request)
-    argv[argv.index("proworksim.software_benchmark_scorer_v056")] = SCORER
-    return argv
+    return [str(ROOT / ".venv/bin/python"), "-B", str(ROOT / "tools/run_offline_scorer_v058.py"),
+            "-m", SCORER, "--request", str(request)]
 
 
 def frozen_sources():
@@ -65,6 +64,9 @@ def frozen_sources():
         "src/proworksim/software_benchmark_grading_qualification_v058.py",
         "src/proworksim/software_benchmark_shared_server_hold_v057.py",
         "config/v057-shared-server-hold.json",
+        "src/proworksim/software_benchmark_dispatch_v058.py",
+        "config/v058-offline-rescore-authorization.json",
+        "tools/run_offline_scorer_v058.py",
         "src/proworksim/software_benchmark_queue_v056.py",
         "tools/analyze_ref_budget_results_v056.py")]
 
@@ -198,14 +200,14 @@ def _prepare(root, qualification_path):
 
 
 def prepare(root, qualification_path):
-    require_experiment_dispatch_allowed("v058_rescore.prepare")
+    require_v058_dispatch_allowed("v058.rescore.prepare")
     return _prepare(root, qualification_path)
 
 
 def run_one(plan, row):
-    require_experiment_dispatch_allowed("sixteen_rescore.run_one")
-    if row["admission_status"] != "qualified":
+    if row.get("admission_status") == "not_qualified":
         return {"slot_id": row["slot_id"], "status": "not_qualified", "reason": row.get("admission_reason")}
+    require_v058_dispatch_allowed("v058.rescore.run_one", instance_id=row.get("instance_id"))
     folder = Path(row["directory"])
     if (folder / "completion.json").exists():
         return load(reference(folder / "completion.json"))
@@ -247,7 +249,7 @@ def run_one(plan, row):
 
 
 def run(root):
-    require_experiment_dispatch_allowed("sixteen_rescore.run")
+    require_v058_dispatch_allowed("v058.rescore.run")
     root = Path(root)
     plan = validate_plan(load(reference(root / "plan.json")))
     if (root / "run-summary.json").exists():
@@ -406,7 +408,7 @@ def measurement_state(state):
 
 
 def reconcile(root):
-    require_experiment_dispatch_allowed("v058_rescore.reconcile")
+    require_v058_dispatch_allowed("v058.rescore.reconcile")
     root = Path(root)
     plan = validate_plan(load(reference(root / "plan.json")))
     if (root / "reconciliation.json").exists():

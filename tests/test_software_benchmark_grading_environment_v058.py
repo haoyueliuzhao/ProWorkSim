@@ -59,10 +59,10 @@ def fixture(tmp_path):
 def test_hold_blocks_create_and_start_before_any_delegate_access(monkeypatch, tmp_path):
     provider, observation, _, calls, tracking = fixture(tmp_path)
 
-    def held(_):
+    def held(*args, **kwargs):
         raise SharedServerHold("held")
 
-    monkeypatch.setattr(environment, "require_experiment_dispatch_allowed", held)
+    monkeypatch.setattr(environment, "require_v058_dispatch_allowed", held)
     with pytest.raises(SharedServerHold):
         provider.create(image="image")
     wrapped = environment.EnvironmentContainer(object(), observation, LIMITS)
@@ -73,12 +73,12 @@ def test_hold_blocks_create_and_start_before_any_delegate_access(monkeypatch, tm
 
 
 def test_create_refuses_host_access_and_shared_namespaces(monkeypatch, tmp_path):
-    monkeypatch.setattr(environment, "require_experiment_dispatch_allowed", lambda _: None)
+    monkeypatch.setattr(environment, "require_v058_dispatch_allowed", lambda *a, **k: None)
     provider, _, _, calls, tracking = fixture(tmp_path)
     for override in (
         {"network_mode": "host"}, {"network_mode": "container:unrelated"},
         {"pid_mode": "host"}, {"ipc_mode": "container:unrelated"},
-        {"privileged": True}, {"cap_add": ["SYS_ADMIN"]},
+        {"privileged": True}, {"cap_add": ["SYS_ADMIN", "SYS_PTRACE"]},
         {"volumes": {"/var/run/docker.sock": {"bind": "/socket"}}},
         {"devices": ["/dev/kvm"]}, {"security_opt": ["apparmor=unconfined"]},
         {"ports": {80: 8080}}, {"sysctls": {"net.ipv4.ip_forward": "1"}},
@@ -89,7 +89,7 @@ def test_create_refuses_host_access_and_shared_namespaces(monkeypatch, tmp_path)
 
 
 def test_known_legacy_ca_blocker_cannot_create_a_grader(monkeypatch, tmp_path):
-    monkeypatch.setattr(environment, "require_experiment_dispatch_allowed", lambda _: None)
+    monkeypatch.setattr(environment, "require_v058_dispatch_allowed", lambda *a, **k: None)
     provider, observation, _, calls, _ = fixture(tmp_path)
     for task in ("psf__requests-1766", "psf__requests-1921"):
         observation["mapping"]["instance_id"] = task
@@ -99,7 +99,7 @@ def test_known_legacy_ca_blocker_cannot_create_a_grader(monkeypatch, tmp_path):
 
 
 def test_create_enforces_limits_and_clears_proxy_and_ca_overrides(monkeypatch, tmp_path):
-    monkeypatch.setattr(environment, "require_experiment_dispatch_allowed", lambda _: None)
+    monkeypatch.setattr(environment, "require_v058_dispatch_allowed", lambda *a, **k: None)
     provider, _, _, calls, tracking = fixture(tmp_path)
     wrapped = provider.create(image="image", environment=["HTTP_PROXY=http://invalid", "OPENSSL_CONF=/host/config"])
     kwargs = calls[0][1]
@@ -132,7 +132,7 @@ def test_actual_container_config_and_namespace_proofs_are_required(tmp_path):
 
 
 def test_start_records_isolation_before_container_local_preparation(monkeypatch, tmp_path):
-    monkeypatch.setattr(environment, "require_experiment_dispatch_allowed", lambda _: None)
+    monkeypatch.setattr(environment, "require_v058_dispatch_allowed", lambda *a, **k: None)
     monkeypatch.setattr(environment, "validate_environment", lambda _: {"profiles": environment.PROFILES})
     monkeypatch.setattr(environment, "archive_assets", lambda _: b"synthetic-assets")
     provider, observation, _, calls, _ = fixture(tmp_path)
@@ -160,3 +160,40 @@ def test_start_records_isolation_before_container_local_preparation(monkeypatch,
     assert result["namespace_evidence"]["all_distinct"] is True
     assert result["environment_revision"] == observation["environment_revision"]
     assert any(isinstance(row, tuple) and row[0] == "put_archive" for row in calls)
+
+
+def test_official_browser_capability_is_removed_before_docker_create(tmp_path, monkeypatch):
+    monkeypatch.setattr(environment, 'require_v058_dispatch_allowed', lambda *a, **k: None)
+    provider, observation, _, calls, _ = fixture(tmp_path)
+    provider.create(image='image', cap_add=['SYS_ADMIN'])
+    assert calls[0][1]['cap_add'] == ['NET_ADMIN']
+    assert calls[0][1]['cap_drop'] == ['ALL']
+    assert observation['upstream_capabilities_removed'] == ['SYS_ADMIN']
+
+
+@pytest.mark.parametrize('destination,name', [('/tmp', 'patch.diff'), ('/', 'eval.sh')])
+def test_host_owned_official_archive_keeps_bytes_and_mode_without_extra_capabilities(tmp_path, destination, name):
+    import io
+    import tarfile
+    from types import SimpleNamespace
+
+    data = b'unchanged official payload\n'
+    incoming = io.BytesIO()
+    with tarfile.open(fileobj=incoming, mode='w') as archive:
+        member = tarfile.TarInfo(name)
+        member.uid, member.gid, member.mode, member.size = 1021, 1022, 0o600, len(data)
+        member.pax_headers = {'uid': '1021', 'gid': '1022'}
+        archive.addfile(member, io.BytesIO(data))
+    sent = []
+    delegate = SimpleNamespace(put_archive=lambda path, body: sent.append((path, body)) or True)
+    evidence = tmp_path / 'evidence.json'
+    evidence.write_text('{}')
+    container = environment.EnvironmentContainer(delegate, {'path': str(evidence)}, LIMITS)
+    assert container.put_archive(destination, incoming.getvalue()) is True
+    with tarfile.open(fileobj=io.BytesIO(sent[0][1]), mode='r:*') as archive:
+        member = archive.getmembers()[0]
+        assert (member.uid, member.gid, member.mode, member.name) == (0, 0, 0o600, name)
+        assert archive.extractfile(member).read() == data
+    assert json.loads(evidence.read_text())['official_file_transfers'][0]['content_changed'] is False
+    with pytest.raises(ValueError, match='Unexpected official'):
+        container.put_archive('/unapproved', incoming.getvalue())

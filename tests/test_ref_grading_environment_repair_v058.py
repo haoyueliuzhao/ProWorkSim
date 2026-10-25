@@ -92,7 +92,7 @@ def test_scorer_preserves_original_candidate_and_requires_same_qualified_environ
         "quiescence_output": "new-quiet", "environment_revision": {"env": "qualified"},
         "environment_qualification": {"qual": "all-eight"}}
     seen = []
-    monkeypatch.setattr(scorer.predecessor, "validate_request", lambda original: seen.append(original))
+    monkeypatch.setattr(scorer, "validate_original_request", lambda original: seen.append(original))
     monkeypatch.setattr(scorer, "installation_manifest", lambda: manifest)
     monkeypatch.setattr(scorer.qualification, "validate_qualification", lambda *_: {
         "environment_revision": {"env": "qualified"}})
@@ -145,6 +145,8 @@ def test_task_admission_does_not_depend_on_other_tasks(monkeypatch):
 def test_v058_hold_precedes_all_resource_calls(tmp_path, monkeypatch):
     import subprocess
     from proworksim import software_benchmark_shared_server_hold_v057 as hold
+    from proworksim import software_benchmark_dispatch_v058 as dispatch
+    monkeypatch.setattr(dispatch, "AUTHORIZATION_FILE", tmp_path / "missing-authorization.json")
     from proworksim import software_benchmark_grading_environment_v058 as environment
     spec = importlib.util.spec_from_file_location("requests_admission_v058", ROOT / "tools/check_ref_grading_environment_v058.py")
     admission = importlib.util.module_from_spec(spec)
@@ -234,7 +236,7 @@ def test_admission_lane_error_and_disabled_task_do_not_stop_sibling(tmp_path, mo
     monkeypatch.setattr(Path, "read_text", lambda path, *a, **k:
                         "MemAvailable: 1000000000 kB\n" if str(path) == "/proc/meminfo"
                         else original_read_text(path, *a, **k))
-    monkeypatch.setattr(admission, "require_experiment_dispatch_allowed", lambda _: None)
+    monkeypatch.setattr(admission, "require_v058_dispatch_allowed", lambda *a, **k: None)
     monkeypatch.setattr(admission, "prepare", lambda _: plan)
     monkeypatch.setattr(admission, "run_one", run_one)
     monkeypatch.setattr(admission.queue, "lock", lambda _: nullcontext())
@@ -244,3 +246,22 @@ def test_admission_lane_error_and_disabled_task_do_not_stop_sibling(tmp_path, mo
     result = admission.execute(tmp_path)
     assert 5 in calls and 3 in calls and 7 in calls and collected == [True]
     assert any(r.get("lane") == 0 and r["status"] == "technical_unknown" for r in result["results"])
+
+
+def test_runtime_relocation_accepts_only_same_python_bytes_and_identical_harness():
+    original = {"parent": {"python_executable": {"path": "/usr/bin/python3.12", "sha256": "a" * 64, "bytes": 123},
+                           "official_python_sources": {"grader.py": "fixed"},
+                           "effective_dependency_versions": {"swebench": "5.0.2"}}}
+    relocated = copy.deepcopy(original)
+    relocated["parent"]["python_executable"]["path"] = scorer.RELOCATED_PYTHON
+    assert scorer.validate_runtime_relocation(original, relocated) is True
+    assert scorer.validate_runtime_relocation(original, original) is False
+    for field in ("sha256", "bytes", "path"):
+        wrong = copy.deepcopy(relocated)
+        wrong["parent"]["python_executable"][field] = "different"
+        with pytest.raises(ValueError, match="interpreter differs"):
+            scorer.validate_runtime_relocation(original, wrong)
+    wrong = copy.deepcopy(relocated)
+    wrong["parent"]["effective_dependency_versions"]["swebench"] = "different"
+    with pytest.raises(ValueError, match="harness, dependencies or source"):
+        scorer.validate_runtime_relocation(original, wrong)

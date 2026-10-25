@@ -18,7 +18,7 @@ import time
 from proworksim import software_benchmark_queue_v056 as queue
 from proworksim import software_benchmark_grading_environment_v058 as environment
 from proworksim.software_benchmark_candidates_v054 import checked, reference, write_new
-from proworksim.software_benchmark_shared_server_hold_v057 import require_experiment_dispatch_allowed
+from proworksim.software_benchmark_dispatch_v058 import require_v058_dispatch_allowed
 from proworksim.storage import digest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,7 +50,7 @@ def validate_plan(plan):
 
 
 def prepare(root):
-    require_experiment_dispatch_allowed("v058_grading_admission.prepare")
+    require_v058_dispatch_allowed("v058.admission.prepare")
     root = Path(root).resolve()
     if not root.is_relative_to(RUNS) or root == RUNS:
         raise ValueError("Use a fresh independent v058 control directory")
@@ -78,7 +78,9 @@ def prepare(root):
     plan = {"version": VERSION, "created_utc": queue.now(), "source": reference(__file__),
         "state_source": reference(STATE), "tasks": list(TASKS), "rows": rows,
         "hold_sources": [reference(ROOT / "config/v057-shared-server-hold.json"),
-                         reference(ROOT / "src/proworksim/software_benchmark_shared_server_hold_v057.py")],
+                         reference(ROOT / "src/proworksim/software_benchmark_shared_server_hold_v057.py"),
+                         reference(ROOT / "src/proworksim/software_benchmark_dispatch_v058.py"),
+                         reference(ROOT / "config/v058-offline-rescore-authorization.json")],
         "environment_revision": environment.freeze_environment(root / "environment-manifest.json"),
         "preparation_only": True, "actor_feedback": False, "model_calls": 0,
         "official_candidate_scores_changed": False, "concurrency": 2,
@@ -90,7 +92,7 @@ def prepare(root):
 
 
 def worker(plan_ref, index):
-    require_experiment_dispatch_allowed("grading_admission.worker")
+    require_v058_dispatch_allowed("v058.admission.worker", instance_id=lambda: load(plan_ref)["rows"][index]["instance_id"])
     # This function runs only inside the installed, frozen official scorer venv.
     from proworksim import software_benchmark_scorer_v054 as base
     from proworksim import software_benchmark_scorer_v056 as scorer
@@ -101,7 +103,8 @@ def worker(plan_ref, index):
     if not environment.PROFILES[row["instance_id"]]["admission_enabled"]:
         raise ValueError("This task has unresolved fixed-test TLS requirements")
     original = load(row["original_request"])
-    original_manifest = scorer.validate_request(original)
+    from proworksim.software_benchmark_scorer_v058 import validate_original_request
+    original_manifest = validate_original_request(original)
     instance = base.read_local_dataset(original["dataset"])[row["instance_id"]]
     mapping = validate_mapping(load(original["baseline_mapping"]),
                                instance=instance, image=original["image"])
@@ -184,12 +187,14 @@ def worker(plan_ref, index):
 
 
 def run_one(root, plan, index):
-    require_experiment_dispatch_allowed("grading_admission.run_one")
-    row = plan["rows"][index]
-    profile = environment.PROFILES[row["instance_id"]]
-    if not profile["admission_enabled"]:
+    rows = plan.get("rows", [])
+    row = rows[index] if isinstance(index, int) and 0 <= index < len(rows) else {}
+    profile = environment.PROFILES.get(row.get("instance_id"), {})
+    # Reporting a known blocker starts no resources and needs no task permission.
+    if profile.get("admission_enabled") is False:
         return {"instance_id": row["instance_id"], "patch_kind": row["patch_kind"],
                 "status": "blocked_environment", "blockers": profile["blockers"]}
+    require_v058_dispatch_allowed("v058.admission.run_one", instance_id=lambda: row.get("instance_id"))
     folder = Path(row["directory"])
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     if (folder / "completion.json").exists():
@@ -197,7 +202,8 @@ def run_one(root, plan, index):
     if (folder / "started.json").exists():
         return {"instance_id": row["instance_id"], "status": "deferred", "reason": "No automatic replay"}
     validate_plan(plan)
-    argv = queue.scorer_argv("unused")[:-4] + [str(Path(__file__).resolve()), "--worker",
+    argv = [str(ROOT / ".venv/bin/python"), "-B", str(ROOT / "tools/run_offline_scorer_v058.py"),
+        str(Path(__file__).resolve()), "--worker",
         str(root / "plan.json"), "--worker-index", str(index)]
     started = {"version": VERSION, "instance_id": row["instance_id"], "started_utc": queue.now(),
                "command": argv, "model_calls": 0, "preparation_only": True}
@@ -226,7 +232,7 @@ def run_one(root, plan, index):
 
 
 def execute(root):
-    require_experiment_dispatch_allowed("grading_admission.execute")
+    require_v058_dispatch_allowed("v058.admission.execute")
     root = Path(root).resolve()
     plan = prepare(root)
     if shutil.disk_usage(ROOT).free < 256 * queue.GIB:

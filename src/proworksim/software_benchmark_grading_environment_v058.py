@@ -7,6 +7,8 @@ New fixture code is not evidence that any official task has qualified.
 from __future__ import annotations
 
 import io
+import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -14,11 +16,11 @@ import tarfile
 
 from . import software_benchmark_scorer_v054 as base
 from .software_benchmark_candidates_v054 import checked, reference, write_new
-from .software_benchmark_shared_server_hold_v057 import require_experiment_dispatch_allowed
+from .software_benchmark_dispatch_v058 import require_v058_dispatch_allowed
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "runs/software-benchmark-v057/grading-environment-r1"
-VERSION = "v058-offline-requests-grading-fixtures-r1"
+VERSION = "v058-offline-requests-grading-fixtures-r3-archive-ownership"
 PYTHON = "/opt/miniconda3/envs/testbed/bin/python"
 FIXTURES = "/opt/proworksim-test-fixtures"
 PROFILES = {
@@ -110,6 +112,8 @@ def environment_manifest():
     return {
         "version": VERSION, "adapter": reference(__file__), "profiles": PROFILES,
         "hold_module": reference(ROOT / "src/proworksim/software_benchmark_shared_server_hold_v057.py"),
+        "dispatch_guard": reference(ROOT / "src/proworksim/software_benchmark_dispatch_v058.py"),
+        "dispatch_authorization": reference(ROOT / "config/v058-offline-rescore-authorization.json"),
         "common_requirements": COMMON, "package_inventory": reference(ASSETS / "packages-manifest.json"),
         "wheels": wheels,
         "renewed_legacy_certificates": {name: reference(ASSETS / "certs/0.0.7" / name)
@@ -122,6 +126,8 @@ def environment_manifest():
         "network_mode": "none", "host_network_helper": None,
         "capabilities_by_task": {task: capabilities(profile) for task, profile in PROFILES.items()},
         "drop_capabilities": ["ALL"], "no_new_privileges": True,
+        "upstream_SYS_ADMIN_default": "removed before Docker API create; never granted",
+        "official_file_transfer": "patch.diff/eval.sh bytes and modes preserved; tar ownership normalized to container root",
         "network_scope": "fresh grader network namespace only; no host route/firewall changes",
         "httpbin_service_scope": "container_loopback",
         "tcp_timeout_fixture": "10.255.255.254/24 dummy link; 10.255.255.1 has no responding neighbour",
@@ -228,8 +234,39 @@ class EnvironmentContainer(base.PreparationObservedContainer):
         super().__init__(delegate, preparation)
         self.limits = limits
 
+    def put_archive(self, path, data, **kwargs):
+        """Preserve official file bytes without granting DAC_OVERRIDE to read host-owned tar entries."""
+        expected = {"/tmp": "patch.diff", "/": "eval.sh"}.get(str(path))
+        if expected is None or kwargs or not isinstance(data, bytes):
+            raise ValueError("Unexpected official grading file transfer")
+        output = io.BytesIO()
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:*") as source:
+            members = source.getmembers()
+            if len(members) != 1 or not members[0].isfile() or members[0].name != expected:
+                raise ValueError("Only one exact official regular file may be transferred")
+            member = copy.copy(members[0])
+            body = source.extractfile(members[0]).read()
+            member.uid = member.gid = 0
+            member.uname = member.gname = "root"
+            member.pax_headers = {k: v for k, v in member.pax_headers.items()
+                                  if k not in {"uid", "gid", "uname", "gname"}}
+            with tarfile.open(fileobj=output, mode="w") as target:
+                target.addfile(member, io.BytesIO(body))
+        result = self.delegate.put_archive(path, output.getvalue())
+        if result is not True:
+            raise RuntimeError("Official file transfer was not confirmed")
+        evidence_path = Path(self.preparation["path"])
+        evidence = json.loads(evidence_path.read_bytes())
+        evidence.setdefault("official_file_transfers", []).append({
+            "destination": str(path), "name": expected, "bytes": len(body),
+            "sha256": hashlib.sha256(body).hexdigest(), "mode": member.mode,
+            "source_uid": members[0].uid, "source_gid": members[0].gid,
+            "container_uid": 0, "container_gid": 0, "content_changed": False})
+        evidence_path.write_bytes(base.canonical(evidence))
+        return result
+
     def start(self, *args, **kwargs):
-        require_experiment_dispatch_allowed("v058.grading_environment.container_start")
+        require_v058_dispatch_allowed("v058.container.start", instance_id=lambda: self.preparation["mapping"]["instance_id"])
         request = self.preparation
         task = request["mapping"]["instance_id"]
         manifest = validate_environment(request["environment_revision"])
@@ -281,6 +318,10 @@ class EnvironmentContainer(base.PreparationObservedContainer):
                         effective_network_mode="none", task_files_changed=False, local_httpbin=True,
                         standalone_httpbin=profile["standalone_httpbin"], httpbin_service_scope="container_loopback",
                         httpbin_health=health, source_only_test_admission=False,
+                        upstream_capabilities_removed=request.get("upstream_capabilities_removed", []),
+                        actual_capabilities=self.delegate.attrs["HostConfig"].get("CapAdd"),
+                        actual_dropped_capabilities=self.delegate.attrs["HostConfig"].get("CapDrop"),
+                        actual_security_options=self.delegate.attrs["HostConfig"].get("SecurityOpt"),
                         candidate_CA_compatibility_verified=False)
         evidence_path.write_bytes(base.canonical(evidence))
         return result
@@ -292,13 +333,20 @@ class EnvironmentContainers(base.LocalContainers):
         self.observation, self.tracking = observation, tracking
 
     def create(self, **kwargs):
-        require_experiment_dispatch_allowed("v058.grading_environment.container_create")
+        require_v058_dispatch_allowed("v058.container.create", instance_id=lambda: self.observation["mapping"]["instance_id"])
         task = self.observation["mapping"]["instance_id"]
         if task not in PROFILES:
             raise ValueError("Only the four frozen Requests tasks are admitted")
         profile = PROFILES[task]
         if profile["admission_enabled"] is not True or profile["blockers"]:
             raise ValueError("Task environment has an unresolved frozen-profile blocker")
+        # The fixed official harness requests SYS_ADMIN for browser tasks.
+        # These Requests tasks do not receive it: remove the known default,
+        # then validate and overwrite the actual capability set below.
+        requested = kwargs.get("cap_add")
+        removed = ["SYS_ADMIN"] if requested == ["SYS_ADMIN"] else []
+        if removed:
+            kwargs["cap_add"] = []
         validate_create_options(kwargs, self.image_id, profile)
         kwargs.update(network_mode="none", mem_limit=self.limits["memory_bytes"],
                       memswap_limit=self.limits["memory_bytes"], nano_cpus=self.limits["nano_cpus"],
@@ -310,6 +358,7 @@ class EnvironmentContainers(base.LocalContainers):
             kwargs["extra_hosts"] = {"httpbin.org": "127.0.0.1"}
         kwargs["environment"] = env
         self.observation["effective_network_mode"] = "none"
+        self.observation["upstream_capabilities_removed"] = removed
         self.tracking["create_result_unknown"] = True
         container = self.delegate.create(**kwargs)
         self.tracking["owned_container_ids"].append(container.id)

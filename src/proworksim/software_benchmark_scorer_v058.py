@@ -6,6 +6,7 @@ tests, score semantics, and the original scoring records remain immutable.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -17,11 +18,12 @@ from . import software_benchmark_grading_qualification_v058 as qualification
 from . import software_benchmark_scorer_r6_v055 as resources
 from .software_benchmark_baseline_v054 import validate_mapping
 from .software_benchmark_candidates_v054 import checked, reference, write_new
-from .software_benchmark_shared_server_hold_v057 import require_experiment_dispatch_allowed
+from .software_benchmark_dispatch_v058 import require_v058_dispatch_allowed
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = "v058-official-ref-offline-requests-scorer-r1"
 LIMITS = resources.LIMITS
+RELOCATED_PYTHON = "/data0/zhuxinrui/proworksim-runtime/sysroot/usr/bin/python3.12"
 
 
 def installation_manifest():
@@ -29,15 +31,55 @@ def installation_manifest():
             "adapter": reference(__file__), "environment_adapter": reference(environment.__file__),
             "environment_qualification_adapter": reference(qualification.__file__),
             "shared_server_hold": reference(ROOT / "config/v057-shared-server-hold.json"),
+            "dispatch_guard": reference(ROOT / "src/proworksim/software_benchmark_dispatch_v058.py"),
+            "dispatch_authorization": reference(ROOT / "config/v058-offline-rescore-authorization.json"),
+            "unprivileged_launcher": reference(ROOT / "tools/run_offline_scorer_v058.py"),
             "original_limits": LIMITS, "visible_cpu_count": 4,
             "grader_network_changed": False, "actor_network_changed": False,
             "effective_network_policy": "network none; only container-local fixtures; no host network helper",
             "official_harness_changed": False, "candidate_content_changed": False}
 
 
+def validate_runtime_relocation(original, current):
+    """Permit only the same interpreter bytes at its physical, non-chroot path."""
+    if original == current:
+        return False
+    before = original.get("parent", {}).get("python_executable", {})
+    after = current.get("parent", {}).get("python_executable", {})
+    if (before.get("path") != "/usr/bin/python3.12" or after.get("path") != RELOCATED_PYTHON
+            or set(before) != {"path", "bytes", "sha256"} or set(after) != set(before)
+            or any(before[key] != after[key] for key in ("bytes", "sha256"))):
+        raise ValueError("Scorer interpreter differs beyond its approved physical path relocation")
+    normalized = copy.deepcopy(current)
+    normalized["parent"]["python_executable"] = before
+    if normalized != original:
+        raise ValueError("Official harness, dependencies or source changed during runtime relocation")
+    return True
+
+
+def validate_original_request(request):
+    """Retain v056 candidate checks while recording the non-privileged Python launch."""
+    if (request.get("arm") != "REF" or request.get("condition_id") not in predecessor.BUDGETS
+            or request.get("model") != "Qwen/Qwen3.5-9B" or request.get("thinking") is not True
+            or request.get("endpoint") != "code" or request.get("attempt") != 1
+            or request.get("preparation_only") is not False or request.get("actor_feedback") is not False
+            or request.get("limits") != LIMITS):
+        raise ValueError("Only the original fixed REF budget candidate may be regraded")
+    manifest = json.loads(checked(request["scorer_manifest"]).read_bytes())
+    validate_runtime_relocation(manifest, predecessor.installation_manifest())
+    predecessor.mapped.check_candidate(request)
+    lock = json.loads(checked(request["native_candidate_lock"]).read_bytes())
+    if (lock["slot"]["slot_id"] != request["slot_id"]
+            or lock["slot"]["condition_id"] != request["condition_id"]):
+        raise ValueError("Locked candidate belongs to another budget slot")
+    if not set(resources.cpus(request["scoring_cpuset_cpus"])) <= os.sched_getaffinity(0):
+        raise ValueError("Scoring CPUs exceed current affinity")
+    return manifest
+
+
 def validate_request(request):
     original = json.loads(checked(request["scoring_recovery_of"]).read_bytes())
-    predecessor.validate_request(original)
+    validate_original_request(original)
     additions = {"scoring_recovery_of", "environment_revision", "environment_qualification"}
     permitted_changes = {"scorer_manifest", "trusted_output_root", "receipt_output",
                          "quiescence_output", "scoring_cpuset_cpus"}
@@ -70,7 +112,7 @@ def cleanup_scoring(request, tracking):
 
 
 def score_request(request):
-    require_experiment_dispatch_allowed("scorer.score_request")
+    require_v058_dispatch_allowed("v058.scorer.score_request", instance_id=request.get("instance_id"))
     proof_path = Path(request["quiescence_output"]).resolve()
     if not proof_path.is_relative_to(ROOT / "runs/software-benchmark-v058") or proof_path.exists():
         raise ValueError("Each fresh score requires its own v058 quiescence receipt")
