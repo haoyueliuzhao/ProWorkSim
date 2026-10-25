@@ -1,7 +1,8 @@
 {
   "version": "v061-scoped-unknown-recovery-r1",
-  "status": "pending",
-  "explicit_rootful_authorization": null,
+  "status": "approved",
+  "explicit_rootful_authorization": "2026-10-25 用户对已封存提案285df7545a8e26b9354679683a136cae65f09a7898a4bedd451cf24a477ea614明确回复：授权上述限定范围。范围为13项原初态/seed/预算新生成（89M token上限）+1项原候选恢复；现有Docker接口最多60容器16专用卷、2对生成+2评分并行、network=none/drop ALL/无hostbind；最多2个12CPU/96GiB普通用户模型服务及1个4CPU/16GiB调度服务，仅操作本轮自建对象，不修改共享主机既有挂载/网络/驱动/linger/服务。",
+  "explicit_model_memory_authorization": "2026-10-25 用户明确回复：允许降至0.6并验证。仅下调GPU显存预约，保持BF16/131072上下文/32768输出/单序列/采样/原seed及预算，实际缓存必须支持至少一个完整上下文，否则不派发。",
   "automatic_release": false,
   "constraints": {
     "fresh_generation_slots": 13,
@@ -15,7 +16,8 @@
     "maximum_named_volumes": 16,
     "zero_model_diagnostic_pairs": 3,
     "maximum_model_residents": 2,
-    "minimum_free_gpu_mib": 66560,
+    "minimum_free_gpu_mib": 50176,
+    "gpu_memory_utilization": 0.6,
     "model_resident_memory_bytes": 103079215104,
     "model_resident_cpu_quota_percent": 1200,
     "model_resident_tasks_max": 2048,
@@ -27,6 +29,8 @@
     ],
     "coordinator_memory_bytes": 17179869184,
     "coordinator_cpu_quota_percent": 400,
+    "host_cpu_boundary": "fixed per-process affinity; optional quota when delegated; no shared controller changes",
+    "minimum_captured_cpu_pool": 48,
     "coordinator_tasks_max": 512,
     "coordinator_swap_bytes": 0,
     "coordinator_restart": "no",
@@ -77,30 +81,35 @@
     "original_thirteen_results_overwritten": false
   },
   "plan": {
-    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v061/unknown-recovery-r1-20261025/plan.json",
-    "sha256": "d37f4fe54cd5395ceb3070861b15f71ea01a28e22b314c2ee6258c634cf1aa3c",
-    "bytes": 39678
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v061/unknown-recovery-r1-20261025/plan-model-memory-r3.json",
+    "sha256": "8d092b4e9b76d8e384cf52c10f5d936137af46dd11d82470019c3b79342b071e",
+    "bytes": 40412
   },
   "proposal": {
-    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v061/recovery-authorization-r1/proposal.json",
-    "sha256": "285df7545a8e26b9354679683a136cae65f09a7898a4bedd451cf24a477ea614",
-    "bytes": 13186
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v061/model-compiler-r4/authorization/proposal.json",
+    "sha256": "2c5a813f6b7986ac204b3b52b642a4720275d46cb5f26b6096d74f0b240f98cf",
+    "bytes": 15715
   },
   "sources": [
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_dispatch_v061.py",
-      "sha256": "845739da87db4140e27dfebf8129676fa46b6cbf3778884cfc9e28b85a4b02b9",
-      "bytes": 15862
+      "sha256": "4d79afa4007641062234019d1384d6ed2da517930eea9da5c0564ee8e3a38fc9",
+      "bytes": 20864
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_continuation_v061.py",
+      "sha256": "6ab11a8edb7e00b14fc81c4638a74971fbdc65bd9945b5bdc30dd674d598e54a",
+      "bytes": 11365
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_scorer_v061.py",
-      "sha256": "654dc9d446bd9e179bbaeae16210bb01206df0eb5e61531929dcbc25a6a75437",
-      "bytes": 25005
+      "sha256": "d270772983c6135204b06b66bb86283d675f2fed52a8da2aced41088a58e8a76",
+      "bytes": 26034
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_docker_actor_v061.py",
-      "sha256": "134614b5e394698c818d8bcfe71800231bc3307b6672512ab79196c8defcc9e5",
-      "bytes": 27175
+      "sha256": "f4623f244e941e259cf636a16d4f088c55974b8abe03855284ba065849f6c0eb",
+      "bytes": 27336
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_native_worker_docker_v061.py",
@@ -109,33 +118,38 @@
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_unknown_recovery_v061.py",
-      "sha256": "f8ae9a1df48f8dc5d3e0f894748bbd4594eff8c26c2ac2b4eb103b17eaf05c75",
-      "bytes": 23318
+      "sha256": "c67da4d47afe5aacef5c2eec1b062d930ae9de1b5480c31d6749faad6423f852",
+      "bytes": 25329
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/launch_unknown_recovery_v061.py",
-      "sha256": "ae8724dd03c5357224eb4b60a58bbcb5ed97bd22de293136db15275360550292",
-      "bytes": 3847
+      "sha256": "d5e88e87aa1d5465468845de0ae3031bd6cf326d1efdf9dad1d2a21a9a00ede1",
+      "bytes": 4270
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/prepare_unknown_recovery_authorization_v061.py",
-      "sha256": "a46207d94724997bee1681addf06372287fb265bc59bcd4b04d005f104b4703e",
-      "bytes": 3621
+      "sha256": "5ae621fcb0dbabde8553dc56b55b4be9eb708ef126a13e756131fd843edb666f",
+      "bytes": 4555
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_ref_host_v061.py",
-      "sha256": "856c7034995dc85026255d9625dd85564abba7dcfeffdaa5e2b2c87d68fdda33",
-      "bytes": 5853
+      "sha256": "2551e005d2e186bd102a403a0950bc7e358f2e53070627d567952682f0d9e831",
+      "bytes": 7581
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_ref_resident_v061.py",
-      "sha256": "53091ed9bef5de37f101a5b729c3725dc48d42a3889ce4f7ab3ad1aeda96a8ae",
-      "bytes": 17294
+      "sha256": "ffa909b543fdbb82fd02293b4573f196b12e667d98256d194ad9d2f1738ca1fc",
+      "bytes": 19981
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_model_capacity_v061.py",
+      "sha256": "debf499a31977613b908243acbb6b01cfb3f4619806527e51de07b33d080b519",
+      "bytes": 12421
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_recovery_episode_v061.py",
-      "sha256": "8c2a804dbf1174ccd3b537c2546d8245a5d61957a5b976a3d3c5669155a37b1e",
-      "bytes": 31760
+      "sha256": "7cb007f140cfc446c8751b1f8dbdf18206e02b686e4f2f4331e40a2056ffa78c",
+      "bytes": 31901
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_model_python_v061.py",
@@ -209,8 +223,8 @@
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_recovery_grading_v061.py",
-      "sha256": "f493923ae2e9c8b66f1a4815b46d32de6ae612ceecf57f75fd1f3cc0632854a8",
-      "bytes": 11612
+      "sha256": "ecf8ca07f1e95e34adabcbf4350f9025740e2eff6b99c38d86301c709d5748f6",
+      "bytes": 11661
     },
     {
       "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_offline_scorer_v058.py",
@@ -262,5 +276,31 @@
       "sha256": "0d92c4b5dea309e96dae2f67a396b6f6b00e3a83bf624df529d8cde5fd20d32f",
       "bytes": 11726
     }
-  ]
+  ],
+  "approved_utc": "2026-10-25T04:54:18.053045+00:00",
+  "implementation_revision": "r4-private-python-headers-memory-06",
+  "implementation_revised_utc": "2026-10-25T06:06:05.271962+00:00",
+  "authorization_basis": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v061/model-compiler-r4/previous-approved-authorization.json",
+    "sha256": "46f2860969029f87536a15f29c8126faa9abe67ec409b072e4850aa5254a5538",
+    "bytes": 13242
+  },
+  "explicit_memory_revision_authorization": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v061/model-memory-r3/user-memory-authorization.json",
+    "sha256": "702464689d91276e700f0eb94203ca59eb5fecb7df28a84b47ad62de20edf535",
+    "bytes": 583
+  },
+  "deployment_repair": {
+    "same_two_model_unit_names": true,
+    "new_service_identity_names": 0,
+    "same_resource_ceilings": true,
+    "previous_model_calls": 0,
+    "previous_neutral_calls": 0,
+    "previous_formal_generation": 0,
+    "failed_deployment_records_preserved": true,
+    "local_header_files_only": true,
+    "shared_host_changes": false,
+    "formal_episode_replay": false,
+    "automatic_restart": false
+  }
 }

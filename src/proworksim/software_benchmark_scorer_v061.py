@@ -105,7 +105,8 @@ def validate_request(request):
         raise ValueError("Recovery scorer changed after freezing")
     folder = Path(request["directory"]).resolve()
     expected = BATCH_ROOT / "grading" / request["resource_key"]
-    if folder != expected or not set(cpus(request["cpuset_cpus"])) <= os.sched_getaffinity(0):
+    admitted_cpu_sets = {policy.cpu_set("grader", lane) for lane in (0, 1)}
+    if folder != expected or request["cpuset_cpus"] not in admitted_cpu_sets:
         raise ValueError("Scoring output or four-CPU affinity differs from plan")
     if resource["role"] == "score":
         original = config["scorer_request_base"]
@@ -526,9 +527,22 @@ def _score(request, resource, config, tracking):
     return receipt
 
 
-def validate_qualification(ref, config, plan_ref):
+def validate_qualification(ref, config, plan_ref, *, allow_wrapper=True):
     value = load(ref)
     task = config["instance_id"]
+    if "source_qualification" in value:
+        if (not allow_wrapper or value.get("version") != VERSION or value.get("instance_id") != task
+                or value.get("plan") != plan_ref or value.get("passed") is not True
+                or value.get("controls_replayed") is not False):
+            raise ValueError("Unrecognized historical qualification wrapper")
+        equivalence = policy.validate_plan_equivalence(value["source_plan"], plan_ref)
+        if load(value["plan_equivalence"]) != equivalence:
+            raise ValueError("Qualification is not bound to the exact model-only plan equivalence")
+        original = validate_qualification(value["source_qualification"], config,
+                                          value["source_plan"], allow_wrapper=False)
+        if value.get("controls") != original["controls"]:
+            raise ValueError("The qualification wrapper substituted original controls")
+        return value
     if (
         value.get("version") != VERSION
         or value.get("instance_id") != task

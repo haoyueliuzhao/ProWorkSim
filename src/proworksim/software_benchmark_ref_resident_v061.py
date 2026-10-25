@@ -20,18 +20,30 @@ import threading
 import time
 
 from .software_benchmark_candidates_v054 import checked, reference, write_new
-from .software_benchmark_dispatch_v061 import BATCH_ROOT, require_v061_allowed
+from .software_benchmark_dispatch_v061 import BATCH_ROOT, cpu_set, require_v061_allowed
 from .software_benchmark_gpu_lease_v054 import GpuLease
 from .software_benchmark_ref_host_v061 import ROOT, launch_spec, prepare_runtime
-from .software_benchmark_ref_service_v056 import (MANIFEST_SHA, MINIMUM_FREE_MIB, MODEL, VLLM_METADATA,
-    MODEL_REVISION, models_response, server_arguments)
+from .software_benchmark_ref_service_v056 import (MANIFEST_SHA, MODEL, VLLM_METADATA,
+    MODEL_REVISION, models_response, server_arguments as original_server_arguments)
 from .software_benchmark_supervision_v054 import process_identity
 
-VERSION = 'v061-owned-user-ref-resident-r1'
-RUNS = BATCH_ROOT / 'residents'
+VERSION = 'v061-owned-user-ref-resident-r4-private-compiler'
+RUNS = BATCH_ROOT / 'residents-compiler-r4'
 PORTS = (18161, 18162)
 GPU_UUID = re.compile(r'GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\Z')
 GIB = 1024**3
+MINIMUM_FREE_MIB = 50176
+GPU_MEMORY_UTILIZATION = '0.6'
+
+
+def server_arguments(port):
+    """Only the explicitly approved cache reservation changes from v056."""
+    result = original_server_arguments(port)
+    position = result.index('--gpu-memory-utilization') + 1
+    if result[position] != '0.8':
+        raise ValueError('The original GPU memory reservation differs from the reviewed baseline')
+    result[position] = GPU_MEMORY_UTILIZATION
+    return result
 
 
 def user_manager_environment():
@@ -93,7 +105,11 @@ def make_spec(index, card):
         'vllm_metadata': reference(VLLM_METADATA),
         'server_arguments': server_arguments(PORTS[index]), 'runtime': prepare_runtime(),
         'minimum_free_mib': MINIMUM_FREE_MIB, 'automatic_restart': False,
+        'gpu_memory_utilization': float(GPU_MEMORY_UTILIZATION),
+        'deployment_revision': 'model-compiler-r4-memory-06',
+        'requires_real_full_context_capacity_admission': True,
         'cpu_quota_percent': 1200, 'memory_max_bytes': 96 * 1024**3,
+        'cpu_affinity': [int(n) for n in cpu_set('model', index).split(',')],
         'memory_swap_max_bytes': 0, 'maximum_tasks': 2048,
         'adapter': reference(__file__), 'host_configuration_changed': False}
     folder.mkdir(parents=True, mode=0o700)
@@ -111,10 +127,15 @@ def validate_spec(spec):
             or spec.get('model_revision') != MODEL_REVISION or spec.get('model_manifest', {}).get('sha256') != MANIFEST_SHA
             or not GPU_UUID.fullmatch(spec.get('gpu_uuid', '')) or spec.get('gpu_index') not in range(8)
             or spec.get('automatic_restart') is not False or checked(spec['adapter']) != Path(__file__).resolve()
+            or spec.get('minimum_free_mib') != MINIMUM_FREE_MIB
+            or spec.get('gpu_memory_utilization') != float(GPU_MEMORY_UTILIZATION)
+            or spec.get('requires_real_full_context_capacity_admission') is not True
             or re.fullmatch(r'[0-9a-f]{32}', spec.get('ownership_token', '')) is None
             or spec.get('runtime') != prepare_runtime()):
         raise ValueError('Resident differs from the fixed model/runtime/resource scope')
     checked(spec['model_manifest'])
+    if spec.get('cpu_affinity') != [int(n) for n in cpu_set('model', index).split(',')]:
+        raise ValueError('Model CPU affinity differs from the fixed host CPU pool')
     if checked(spec['vllm_metadata']) != VLLM_METADATA or 'Version: 0.32.0\n' not in VLLM_METADATA.read_text():
         raise ValueError('Pinned vLLM package metadata differs')
     return spec
@@ -126,6 +147,7 @@ def unit_command(spec):
         '--description=ProWorkSim v061 ' + spec['ownership_token'],
         '--setenv=PYTHONHOME=', '--setenv=PYTHONPATH=', '--setenv=LD_LIBRARY_PATH=', '--setenv=LD_PRELOAD=',
         '--property=Restart=no', '--property=KillMode=control-group', '--property=CPUQuota=1200%',
+        '--property=CPUAffinity=' + ' '.join(map(str, spec['cpu_affinity'])),
         '--property=MemoryMax=96G', '--property=MemorySwapMax=0', '--property=TasksMax=2048',
         '--property=OOMPolicy=stop', '--property=TimeoutStopSec=90',
         '--property=WorkingDirectory=' + str(ROOT),
@@ -181,6 +203,21 @@ def ready_residents():
     return result
 
 
+def validate_cpu_memory_limits(actual, affinity, expected_affinity):
+    if (actual.get('memory.max') != str(96 * 1024**3) or actual.get('memory.swap.max') != '0'
+            or actual.get('pids.max') != '2048' or sorted(affinity) != sorted(expected_affinity)
+            or len(set(affinity)) != 12):
+        raise ValueError('Owned resident CPU affinity/RAM/PID/swap bounds differ')
+    cpu_max = actual.get('cpu.max')
+    if cpu_max is not None:
+        parts = cpu_max.split()
+        if (len(parts) != 2 or not all(part.isdigit() for part in parts)
+                or int(parts[1]) <= 0 or not 0 < int(parts[0]) <= 12 * int(parts[1])):
+            raise ValueError('Available resident CPU cgroup ceiling is invalid')
+    return {**actual, 'cpu_affinity': sorted(affinity), 'cpu_limit_enforced_by': 'inherited_process_affinity',
+            'cpu_cgroup_controller_available': cpu_max is not None}
+
+
 def actual_unit_limits(spec):
     group = Path('/proc/self/cgroup').read_text().strip()
     prefix, _, cgroup_path = group.partition('::')
@@ -188,12 +225,9 @@ def actual_unit_limits(spec):
         raise ValueError('Model must execute inside its exact bounded owned user unit')
     own_cgroup = Path('/sys/fs/cgroup') / cgroup_path.lstrip('/')
     actual = {key: (own_cgroup / key).read_text().strip()
-              for key in ('memory.max', 'memory.swap.max', 'pids.max', 'cpu.max')}
-    cpu_limit, cpu_period = map(int, actual['cpu.max'].split())
-    if (actual['memory.max'] != str(96 * 1024**3) or actual['memory.swap.max'] != '0'
-            or actual['pids.max'] != '2048' or cpu_limit != 12 * cpu_period):
-        raise ValueError('Owned resident cgroup limits differ from the proposal')
-    return actual
+              for key in ('memory.max', 'memory.swap.max', 'pids.max')}
+    actual['cpu.max'] = (own_cgroup / 'cpu.max').read_text().strip() if (own_cgroup / 'cpu.max').exists() else None
+    return validate_cpu_memory_limits(actual, os.sched_getaffinity(0), spec['cpu_affinity'])
 
 
 def run_service(spec_path):
@@ -225,7 +259,7 @@ def run_service(spec_path):
             stream.write(key + '\n')
         cache = folder / 'cache'
         cache.mkdir(mode=0o700)
-        short = ROOT / 'runs/g61' / f'model-{spec["index"]}'
+        short = ROOT / 'runs/g61c4' / f'model-{spec["index"]}'
         short.mkdir(parents=True, exist_ok=False)
         args = [str(ROOT / 'tools/start_ref_capacity_server_v054.py'), '--api-key-file', spec['api_key_file'], '--', *spec['server_arguments']]
         command, environment = launch_spec(args, gpu_uuid=spec['gpu_uuid'], cache=cache)
@@ -248,11 +282,19 @@ def run_service(spec_path):
             requested.wait(.5)
         if models is None:
             raise RuntimeError('REF engine readiness interrupted or timed out')
+        from .software_benchmark_model_capacity_v061 import qualify_capacity, run_neutral_probe
+        capacity = qualify_capacity(spec, folder / 'capacity-admission')
+        probe = run_neutral_probe(spec, capacity, folder / 'neutral-admission')
+        probe_value = json.loads(checked(probe).read_bytes())
+        if probe_value.get('passed') is not True:
+            raise RuntimeError('Neutral model admission did not pass; no formal request may enter')
         identity = {'model_revision': MODEL_REVISION, 'vllm_version': '0.32.0', 'raw_release': True,
             'adapter_sha256': None, 'model_manifest_sha256': MANIFEST_SHA, 'context_limit': 131072,
             'max_output_tokens': 32768, 'service_admission_complete': True, 'endpoint': spec['endpoint'],
             'gpu_index': spec['gpu_index'], 'gpu_uuid': spec['gpu_uuid'], 'port': spec['port'],
-            'deployment_version': VERSION, 'models_response': models, 'resident_spec': reference(spec_path)}
+            'deployment_version': VERSION, 'models_response': models, 'resident_spec': reference(spec_path),
+            'gpu_memory_utilization': float(GPU_MEMORY_UTILIZATION), 'capacity_admission': capacity,
+            'neutral_admission': probe, 'context_and_sampling_limits_changed': False}
         ready = {k: spec[k] for k in ('root', 'unit', 'endpoint', 'api_key_file', 'gpu_index', 'gpu_uuid')}
         ready.update(identity=write_new(folder / 'identity.json', identity), identity_value=identity,
                      model_identity_value=identity, host_process=process_identity(os.getpid()),

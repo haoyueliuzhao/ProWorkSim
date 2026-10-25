@@ -21,6 +21,9 @@ def simulated_batch(
     tmp_path, monkeypatch, *, local_failure=False, unsafe_failure=False, resident_count=2
 ):
     monkeypatch.setattr(coordinator, "BATCH_ROOT", tmp_path)
+    run_root = tmp_path / "continuation"
+    run_root.mkdir()
+    monkeypatch.setattr(coordinator, "RUN_ROOT", run_root)
     monkeypatch.setattr(coordinator, "coordinator_limits", lambda: {"fixture": "bounded"})
     monkeypatch.setattr(
         coordinator.policy,
@@ -38,8 +41,8 @@ def simulated_batch(
     tasks = ("scikit-learn__scikit-learn-14894", "other-task")
     configs = {task: write(task + "-config.json", {"instance_id": task}) for task in tasks}
     rows = [
-        {"slot_id": key, "instance_id": tasks[1], "measurement_kind": "fresh_generation_recovery"}
-        for key in ("fast", "slow")
+        {"slot_id": key, "slot_index": index, "instance_id": tasks[1], "measurement_kind": "fresh_generation_recovery"}
+        for index, key in enumerate(("fast", "slow"))
     ]
     dispatch = write(
         "dispatch-plan.json", {"rows": rows, "environments": {task: {} for task in tasks}}
@@ -71,6 +74,17 @@ def simulated_batch(
         "diagnostic.json", {"passed": True, "quiescence": {"quiescent": True, "cleanup_errors": []}}
     )
     write("diagnostic-qualification.json", {"result": diagnostic, "sources": []})
+    write("execution-started.json", {"historical": True})
+    write("run-summary.json", {"historical": True})
+    dispatch = write("dispatch-plan.json", {"rows": rows + [{"slot_id": "snapshot", "slot_index": 163,
+        "instance_id": tasks[0], "measurement_kind": "original_terminal_snapshot_recovery"}],
+        "environments": {task: {} for task in tasks}})
+    reuse = write("reuse.json", {"diagnostic_equivalence": {},
+        "qualifications": {task: {"status": "qualified"} for task in tasks},
+        "snapshot_score": {"reused_without_replay": True}})
+    plan = write("coordinator-plan.json", {"plan": dispatch, "controls": [],
+        "snapshot_result": snapshot, "reuse_evidence": reuse, "source_plan": {"historical": True}})
+    monkeypatch.setattr(coordinator.continuation, "validate_diagnostic_equivalence", lambda *args: {"result": diagnostic})
     order = []
     slow_running, fast_scored = threading.Event(), threading.Event()
 
@@ -161,6 +175,9 @@ def test_scoring_interleaves_with_generation_without_replaying_old_candidates(
     assert order.index("score-fast") < order.index("generation-slow")
     assert result["original_unknowns_overwritten"] is False
     assert order[-1] == "resident-cleanup"
+    assert "score-snapshot" not in order and not any(item.startswith("control-") for item in order)
+    assert json.loads((tmp_path / "execution-started.json").read_text()) == {"historical": True}
+    assert json.loads((tmp_path / "run-summary.json").read_text()) == {"historical": True}
     with pytest.raises(ValueError, match="not automatically replayed"):
         coordinator.run()
 
@@ -232,3 +249,42 @@ def test_diagnostic_result_directory_exists_before_runtime_and_failure_is_retain
     with pytest.raises(ValueError, match="already|successful"):
         coordinator.diagnose(1)
     assert called == [1]
+
+
+@pytest.mark.parametrize("cpu_max", [None, "400000 100000", "500000 100000"])
+def test_coordinator_uses_fixed_affinity_when_cpu_quota_controller_is_not_delegated(monkeypatch, cpu_max):
+    original_read = Path.read_text
+    original_exists = Path.exists
+    def read(path, *args, **kwargs):
+        if str(path) == "/proc/self/cgroup":
+            return "0::/user.slice/user@1021.service/app.slice/proworksim-v061-recovery.service\n"
+        values = {"memory.max": str(16 * 1024**3), "memory.swap.max": "0", "pids.max": "512", "cpu.max": cpu_max}
+        if path.name in values:
+            return values[path.name]
+        return original_read(path, *args, **kwargs)
+    monkeypatch.setattr(Path, "read_text", read)
+    monkeypatch.setattr(Path, "exists", lambda path: cpu_max is not None if path.name == "cpu.max" else original_exists(path))
+    monkeypatch.setattr(coordinator.os, "getuid", lambda: 1021)
+    monkeypatch.setattr(coordinator.os, "geteuid", lambda: 1021)
+    monkeypatch.setattr(coordinator.os, "sched_getaffinity", lambda pid: {100, 101, 102, 103})
+    monkeypatch.setattr(coordinator.policy, "cpu_set", lambda role, index: "100,101,102,103")
+    if cpu_max == "500000 100000":
+        with pytest.raises(ValueError, match="hard limits"):
+            coordinator.coordinator_limits()
+    else:
+        proof = coordinator.coordinator_limits()
+        assert proof["actual_cpu_affinity"] == [100, 101, 102, 103]
+        assert proof["cpu_quota_enforced"] is (cpu_max is not None)
+        assert proof["actual_limits"]["cpu.max"] == cpu_max
+
+
+def test_two_closed_model_identities_end_admission_instead_of_waiting_forever(tmp_path, monkeypatch):
+    monkeypatch.setattr(coordinator, "BATCH_ROOT", tmp_path)
+    assert coordinator.model_admission_exhausted([]) is False
+    for index in (0, 1):
+        folder = tmp_path / "residents-compiler-r4" / ("model-" + str(index))
+        folder.mkdir(parents=True)
+        (folder / "spec.json").write_text("{}")
+        (folder / "closed.json").write_text("{}")
+    assert coordinator.model_admission_exhausted([]) is True
+    assert coordinator.model_admission_exhausted([{"ready": True}]) is False

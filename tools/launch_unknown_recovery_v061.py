@@ -12,7 +12,8 @@ from proworksim.software_benchmark_candidates_v054 import checked, reference, wr
 from proworksim.software_benchmark_ref_resident_v061 import user_manager_environment
 
 ROOT, BATCH_ROOT = policy.ROOT, policy.BATCH_ROOT
-SPEC = BATCH_ROOT / 'coordinator-unit.json'
+RUN_ROOT = policy.COORDINATOR_RUN_ROOT
+SPEC = RUN_ROOT / 'coordinator-unit.json'
 UNIT = 'proworksim-v061-recovery.service'
 VERSION = 'v061-owned-recovery-coordinator-unit-r1'
 
@@ -29,9 +30,11 @@ def prepare():
     body = {'version': VERSION, 'unit': UNIT, 'plan': reference(policy.PLAN_FILE),
         'source': reference(__file__), 'ownership_token': secrets.token_hex(16),
         'user_id': os.getuid(), 'cpu_quota_percent': 400, 'memory_max_bytes': 16 * 1024**3,
+        'cpu_affinity': [int(n) for n in policy.cpu_set('coordinator').split(',')],
         'memory_swap_max_bytes': 0, 'tasks_max': 512, 'restart': 'no',
         'timeout_stop_seconds': 420, 'kill_mode': 'mixed', 'existing_user_manager_changed': False,
         'shared_host_configuration_changed': False}
+    SPEC.parent.mkdir(parents=True, exist_ok=True)
     write_new(SPEC, body)
     return body
 
@@ -39,16 +42,19 @@ def prepare():
 def command(spec):
     if spec.get('unit') != UNIT or spec.get('user_id') != os.getuid():
         raise ValueError('Unexpected coordinator ownership')
+    if spec.get('cpu_affinity') != [int(n) for n in policy.cpu_set('coordinator').split(',')]:
+        raise ValueError('Coordinator affinity differs from the fixed host CPU pool')
     checked(spec['source'])
     return ['systemd-run', '--user', '--collect', '--no-block', '--unit=' + UNIT,
         '--description=ProWorkSim v061 coordinator ' + spec['ownership_token'],
         '--setenv=PYTHONHOME=', '--setenv=PYTHONPATH=', '--setenv=LD_LIBRARY_PATH=', '--setenv=LD_PRELOAD=',
         '--property=Restart=no', '--property=KillMode=mixed', '--property=CPUQuota=400%',
+        '--property=CPUAffinity=' + ' '.join(map(str, spec['cpu_affinity'])),
         '--property=MemoryMax=16G', '--property=MemorySwapMax=0', '--property=TasksMax=512',
         '--property=OOMPolicy=stop', '--property=TimeoutStopSec=420',
         '--property=WorkingDirectory=' + str(ROOT),
-        '--property=StandardOutput=append:' + str(BATCH_ROOT / 'coordinator.stdout.log'),
-        '--property=StandardError=append:' + str(BATCH_ROOT / 'coordinator.stderr.log'),
+        '--property=StandardOutput=append:' + str(RUN_ROOT / 'coordinator.stdout.log'),
+        '--property=StandardError=append:' + str(RUN_ROOT / 'coordinator.stderr.log'),
         str(ROOT / '.venv/bin/python'), '-B', str(ROOT / 'tools/run_offline_scorer_v058.py'),
         str(ROOT / 'tools/run_unknown_recovery_v061.py'), '--execute']
 
@@ -57,11 +63,11 @@ def launch():
     policy.require_v061_allowed('v061.run')
     spec = prepare()
     argv = command(spec)
-    write_new(BATCH_ROOT / 'coordinator-launch-intent.json', {'specification': reference(SPEC), 'command': argv})
+    write_new(RUN_ROOT / 'coordinator-launch-intent.json', {'specification': reference(SPEC), 'command': argv})
     result = subprocess.run(argv, env=user_manager_environment(), capture_output=True, text=True, timeout=30)
     record = {'version': VERSION, 'returncode': result.returncode, 'stdout': result.stdout,
               'stderr': result.stderr, 'unit': UNIT, 'specification': reference(SPEC)}
-    write_new(BATCH_ROOT / 'coordinator-launch-result.json', record)
+    write_new(RUN_ROOT / 'coordinator-launch-result.json', record)
     if result.returncode != 0:
         raise RuntimeError('Owned coordinator launch failed: ' + result.stderr[-1200:])
     return record

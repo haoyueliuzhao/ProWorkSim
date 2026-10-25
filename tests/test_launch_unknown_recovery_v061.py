@@ -12,11 +12,13 @@ spec.loader.exec_module(launcher)
 
 def test_exact_coordinator_unit_and_fixed_cpu_memory_limits(monkeypatch):
     monkeypatch.setattr(launcher, 'checked', lambda _: None)
+    monkeypatch.setattr(launcher.policy, 'cpu_set', lambda _: '0,1,2,3')
     argv = launcher.command({'unit': launcher.UNIT, 'user_id': launcher.os.getuid(),
-                             'source': {}, 'ownership_token': 'owned-test-token'})
+                             'source': {}, 'ownership_token': 'owned-test-token', 'cpu_affinity': [0, 1, 2, 3]})
     assert argv[:4] == ['systemd-run', '--user', '--collect', '--no-block']
     assert '--unit=proworksim-v061-recovery.service' in argv
     assert '--property=CPUQuota=400%' in argv and '--property=MemoryMax=16G' in argv
+    assert '--property=CPUAffinity=0 1 2 3' in argv
     assert '--property=MemorySwapMax=0' in argv and '--property=Restart=no' in argv
     assert '--property=KillMode=mixed' in argv and '--property=TimeoutStopSec=420' in argv
     assert '--execute' == argv[-1]

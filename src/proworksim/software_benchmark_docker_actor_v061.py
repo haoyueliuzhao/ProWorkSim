@@ -352,19 +352,22 @@ class OwnedActorPair:
             raise ValueError("Actor creation populates the new task volume before controller attachment")
         ref, claim = self._claim(role)
         volume = self.claim_bodies["volume"]["docker_name"]
-        if cpuset is None:
+        if self.diagnostic:
             available = sorted(os.sched_getaffinity(0))
-            if self.diagnostic:
-                if len(available) < 4:
-                    raise ValueError("The deployment control requires four visible CPUs")
-                cpuset = ",".join(map(str, available[:4]))
-            else:
-                actor_claim = claim if role == "actor" else self.claim_bodies["actor"]
-                lane = int(Path(actor_claim["lease"]).stem.rsplit("-", 1)[1])
-                if len(available) < 12 or lane not in (0, 1):
-                    raise ValueError("Two private actor/controller pairs require twelve visible CPUs")
-                selected = available[lane * 6:lane * 6 + 6]
-                cpuset = ",".join(map(str, selected[:4] if role == "actor" else selected[4:]))
+            if len(available) < 4:
+                raise ValueError("The deployment control requires four visible CPUs")
+            expected_cpuset = ",".join(map(str, available[:4]))
+        else:
+            actor_claim = claim if role == "actor" else self.claim_bodies["actor"]
+            lane = int(Path(actor_claim["lease"]).stem.rsplit("-", 1)[1])
+            if lane not in (0, 1):
+                raise ValueError("Only the two fixed actor/controller lanes are allowed")
+            # The coordinator deliberately sees only its own four CPUs. Docker
+            # containers use disjoint slices of the separately pinned host pool.
+            expected_cpuset = policy.cpu_set(role, lane)
+        if cpuset is not None and cpuset != expected_cpuset:
+            raise ValueError("Caller CPU affinity differs from the reviewed runtime lane")
+        cpuset = expected_cpuset
         options = container_options(role, ref, claim, volume, launch_argv, environment=environment, cpuset=cpuset)
         self.unknown_create.add(role)
         try:

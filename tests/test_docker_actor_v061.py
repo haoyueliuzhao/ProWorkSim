@@ -242,3 +242,30 @@ def test_any_unknown_creation_prevents_pair_capacity_release(monkeypatch):
     monkeypatch.setattr(actor.policy, "release_resource", lambda *a, **k: pytest.fail("Pair creation remains uncertain"))
     proof = pair.cleanup()
     assert proof["quiescent"] is False and proof["removed_roles"] == ["controller"]
+
+
+@pytest.mark.parametrize("role,lane,expected", [
+    ("actor", 0, "4,5,6,7"), ("controller", 0, "8,9"),
+    ("actor", 1, "10,11,12,13"), ("controller", 1, "14,15")])
+def test_formal_container_uses_pinned_pool_outside_coordinator_affinity(monkeypatch, role, lane, expected):
+    calls = []
+    created = types.SimpleNamespace(id="owned")
+    client = types.SimpleNamespace(containers=types.SimpleNamespace(create=lambda **kw: calls.append(kw) or created))
+    pair = actor.OwnedActorPair(client, slot_index=2, original_slot_id="slot", instance_id="task")
+    pair.objects["volume"] = object()
+    pair.claim_bodies["volume"] = {"docker_name": "pws-v061-volume"}
+    actor_ref, actor_body = claim("actor")
+    actor_body["lease"] = f"/claims/active-actor-{lane}.json"
+    if role == "controller":
+        pair.objects["actor"] = object()
+        pair.claim_bodies["actor"] = actor_body
+    ref, body = claim(role)
+    body["lease"] = f"/claims/active-{role}-{lane}.json"
+    monkeypatch.setattr(pair, "_authorize", lambda *a: None)
+    monkeypatch.setattr(pair, "_claim", lambda name: (ref, body))
+    monkeypatch.setattr(actor, "validate_container", lambda *a: None)
+    monkeypatch.setattr(actor.os, "sched_getaffinity", lambda *a: {0, 1, 2, 3})
+    monkeypatch.setattr(actor.policy, "cpu_set", lambda r, i: expected, raising=False)
+    pair.create_container(role, [actor.RUNTIME + "/bin/python"])
+    assert calls[0]["cpuset_cpus"] == expected
+    assert calls[0]["nano_cpus"] == actor.ROLES[role][0] * 10**9

@@ -9,6 +9,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import copy
 import os
 from pathlib import Path
 
@@ -19,7 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
 VERSION = "v061-scoped-unknown-recovery-r1"
 BATCH_ROOT = ROOT / "runs/software-benchmark-v061/unknown-recovery-r1-20261025"
 AUTHORIZATION_FILE = ROOT / "config/v061-recovery-authorization.json"
-PLAN_FILE = BATCH_ROOT / "plan.json"
+PREVIOUS_PLAN_FILE = BATCH_ROOT / "plan.json"
+PLAN_FILE = BATCH_ROOT / "plan-model-memory-r3.json"
+COORDINATOR_RUN_ROOT = BATCH_ROOT / "continuation/model-compiler-r4"
+CPU_POOL_FILE = BATCH_ROOT / "host-cpu-pool.json"
 SOURCE_STATE = (
     ROOT
     / "runs/software-benchmark-v060/original-ca-rescore-r1-20261025/requests-rescore/measurement-state.json"
@@ -45,6 +49,7 @@ OPERATIONS = frozenset(
 )
 SOURCE_PATHS = (
     "src/proworksim/software_benchmark_dispatch_v061.py",
+    "src/proworksim/software_benchmark_continuation_v061.py",
     "src/proworksim/software_benchmark_scorer_v061.py",
     "src/proworksim/software_benchmark_docker_actor_v061.py",
     "tools/run_native_worker_docker_v061.py",
@@ -53,6 +58,7 @@ SOURCE_PATHS = (
     "tools/prepare_unknown_recovery_authorization_v061.py",
     "src/proworksim/software_benchmark_ref_host_v061.py",
     "src/proworksim/software_benchmark_ref_resident_v061.py",
+    "src/proworksim/software_benchmark_model_capacity_v061.py",
     "src/proworksim/software_benchmark_recovery_episode_v061.py",
     "tools/run_model_python_v061.py",
     "tools/serve_ref_recovery_v061.py",
@@ -92,7 +98,8 @@ CONSTRAINTS = {
     "maximum_named_volumes": 16,
     "zero_model_diagnostic_pairs": 3,
     "maximum_model_residents": 2,
-    "minimum_free_gpu_mib": 66560,
+    "minimum_free_gpu_mib": 50176,
+    "gpu_memory_utilization": 0.6,
     "model_resident_memory_bytes": 96 * 1024**3,
     "model_resident_cpu_quota_percent": 1200,
     "model_resident_tasks_max": 2048,
@@ -104,6 +111,8 @@ CONSTRAINTS = {
     ],
     "coordinator_memory_bytes": 16 * 1024**3,
     "coordinator_cpu_quota_percent": 400,
+    "host_cpu_boundary": "fixed per-process affinity; optional quota when delegated; no shared controller changes",
+    "minimum_captured_cpu_pool": 48,
     "coordinator_tasks_max": 512,
     "coordinator_swap_bytes": 0,
     "coordinator_restart": "no",
@@ -162,6 +171,82 @@ def load(ref):
 
 def sources():
     return [reference(ROOT / path) for path in SOURCE_PATHS]
+
+
+def capture_host_cpu_pool():
+    """Freeze the ordinary preparer's allowed CPUs without changing any affinity."""
+    if CPU_POOL_FILE.exists():
+        value = json.loads(CPU_POOL_FILE.read_bytes())
+    else:
+        cpus = sorted(os.sched_getaffinity(0))
+        value = {"version": "v061-fixed-host-cpu-pool-r1", "cpus": cpus,
+                 "read_only_capture": True, "host_configuration_changed": False}
+        _validate_cpu_pool(value)
+        CPU_POOL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        write_new(CPU_POOL_FILE, value)
+    _validate_cpu_pool(value)
+    return reference(CPU_POOL_FILE)
+
+
+def _validate_cpu_pool(value):
+    cpus = value.get("cpus")
+    if (value.get("version") != "v061-fixed-host-cpu-pool-r1" or not isinstance(cpus, list)
+            or len(cpus) < 48 or len(cpus) > 4096 or any(type(cpu) is not int or cpu < 0 for cpu in cpus)
+            or cpus != sorted(set(cpus)) or value.get("read_only_capture") is not True
+            or value.get("host_configuration_changed") is not False):
+        raise ValueError("A fixed inventory of at least 48 allowed CPUs is required")
+    return cpus
+
+
+def host_cpu_pool():
+    plan = json.loads(PLAN_FILE.read_bytes())
+    ref = plan.get("host_cpu_pool")
+    if not isinstance(ref, dict) or Path(ref.get("path", "")).resolve() != CPU_POOL_FILE.resolve():
+        raise ValueError("The reviewed plan does not bind its fixed host CPU pool")
+    return _validate_cpu_pool(load(ref))
+
+
+def cpu_set(role, index=0):
+    partitions = {("coordinator", 0): (0, 4), ("actor", 0): (4, 8), ("controller", 0): (8, 10),
+        ("actor", 1): (10, 14), ("controller", 1): (14, 16),
+        ("grader", 0): (16, 20), ("grader", 1): (20, 24),
+        ("model", 0): (24, 36), ("model", 1): (36, 48)}
+    if type(index) is not int or (role, index) not in partitions:
+        raise ValueError("Unknown fixed recovery CPU partition")
+    start, end = partitions[role, index]
+    return ",".join(map(str, host_cpu_pool()[start:end]))
+
+
+def assert_model_memory_plan_equivalent(source, active):
+    """Only the explicitly approved model allocation/admission fields may change."""
+    if source.get("version") != VERSION or source.get("root") != str(BATCH_ROOT):
+        raise ValueError("Unexpected original recovery plan")
+    before = source.get("constraints", {})
+    if before.get("minimum_free_gpu_mib") != 66560 or before.get("gpu_memory_utilization", 0.8) != 0.8:
+        raise ValueError("Original model-memory profile is not the approved 0.8 baseline")
+    expected = copy.deepcopy(source)
+    expected["constraints"].update(minimum_free_gpu_mib=50176, gpu_memory_utilization=0.6)
+    candidate = copy.deepcopy(active)
+    candidate.pop("source_plan", None)
+    if candidate.pop("continuation_revision", None) != "model-memory-r3" or candidate != expected:
+        raise ValueError("Continuation changed more than the approved model-memory allocation")
+    if active["constraints"] != CONSTRAINTS:
+        raise ValueError("Effective continuation constraints differ from the sealed grant")
+    return True
+
+
+def validate_plan_equivalence(source_ref, active_ref):
+    if (Path(source_ref["path"]).resolve() != PREVIOUS_PLAN_FILE.resolve()
+            or Path(active_ref["path"]).resolve() != PLAN_FILE.resolve()):
+        raise ValueError("Plan equivalence is restricted to the retained original and this continuation")
+    source, active = load(source_ref), load(active_ref)
+    if active.get("source_plan") != source_ref:
+        raise ValueError("Continuation does not bind the exact retained source plan")
+    assert_model_memory_plan_equivalent(source, active)
+    return {"version": "v061-model-memory-plan-equivalence-r3", "source_plan": source_ref,
+        "active_plan": active_ref, "changed_constraints": {"minimum_free_gpu_mib": [66560, 50176],
+            "gpu_memory_utilization": [0.8, 0.6]}, "tasks_resources_configs_seeds_cpu_pool_unchanged": True,
+        "scoring_limits_changed": False, "new_generation_slots": 13, "model_calls": 0}
 
 
 def create_plan():
@@ -232,6 +317,7 @@ def create_plan():
         "version": VERSION,
         "root": str(BATCH_ROOT),
         "source_state": reference(SOURCE_STATE),
+        "host_cpu_pool": capture_host_cpu_pool(),
         "rows": rows,
         "environments": environments,
         "resources": resources,
@@ -240,6 +326,9 @@ def create_plan():
         "old_completed_results_replayed": False,
         "training": False,
     }
+    source_ref = reference(PREVIOUS_PLAN_FILE)
+    body.update(source_plan=source_ref, continuation_revision="model-memory-r3")
+    assert_model_memory_plan_equivalent(load(source_ref), body)
     BATCH_ROOT.mkdir(parents=True, exist_ok=True)
     if PLAN_FILE.exists():
         if json.loads(PLAN_FILE.read_bytes()) != body:
@@ -261,6 +350,8 @@ def require_v061_allowed(operation, *, original_slot_id=None, instance_id=None):
         or auth.get("status") != "approved"
         or not isinstance(auth.get("explicit_rootful_authorization"), str)
         or not auth["explicit_rootful_authorization"].strip()
+        or not isinstance(auth.get("explicit_model_memory_authorization"), str)
+        or not auth["explicit_model_memory_authorization"].strip()
         or auth.get("automatic_release") is not False
         or auth.get("constraints") != CONSTRAINTS
     ):
@@ -284,6 +375,8 @@ def require_v061_allowed(operation, *, original_slot_id=None, instance_id=None):
         or plan.get("constraints") != CONSTRAINTS
     ):
         raise SharedServerHold("Unrecognized fixed recovery plan")
+    host_cpu_pool()
+    validate_plan_equivalence(plan["source_plan"], auth["plan"])
     proposal = load(auth["proposal"])
     if (
         proposal.get("version") != VERSION

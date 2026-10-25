@@ -7,11 +7,21 @@ import pytest
 from proworksim import software_benchmark_ref_resident_v061 as resident
 
 
-def test_gpu_capacity_uses_original_free_memory_threshold(monkeypatch):
-    answer = ('2, GPU-31944e43-1557-aa29-82fb-5f541b2045a2, NVIDIA A800-SXM4-80GB, 81920, 66015\n'
-              '3, GPU-7e01944c-768c-2f33-d58e-85d9b62ee185, NVIDIA A800-SXM4-80GB, 81920, 71838\n')
+def test_gpu_capacity_uses_approved_lower_cache_threshold(monkeypatch):
+    answer = ('2, GPU-31944e43-1557-aa29-82fb-5f541b2045a2, NVIDIA A800-SXM4-80GB, 81920, 50000\n'
+              '3, GPU-7e01944c-768c-2f33-d58e-85d9b62ee185, NVIDIA A800-SXM4-80GB, 81920, 60440\n')
     monkeypatch.setattr(resident.subprocess, 'run', lambda *a, **k: SimpleNamespace(stdout=answer))
     assert [c['gpu_index'] for c in resident.gpu_capacity()] == [3]
+
+
+def test_memory_revision_changes_only_cache_reservation():
+    old = resident.original_server_arguments(18161)
+    new = resident.server_arguments(18161)
+    changes = [(i, a, b) for i, (a, b) in enumerate(zip(old, new, strict=True)) if a != b]
+    assert changes == [(old.index('--gpu-memory-utilization') + 1, '0.8', '0.6')]
+    assert new[new.index('--max-model-len') + 1] == '131072'
+    assert new[new.index('--max-num-seqs') + 1] == '1'
+    assert new[new.index('--dtype') + 1] == 'bfloat16'
 
 
 def test_shared_ram_and_disk_reserve_are_both_required(monkeypatch):
@@ -60,6 +70,17 @@ def test_ready_record_cannot_reuse_a_different_process(tmp_path, monkeypatch):
     monkeypatch.setattr(resident, 'process_identity', lambda _: {'pid': 22, 'start_ticks': 101})
     monkeypatch.setattr(resident, 'models_response', lambda *_: pytest.fail('Wrong process must not be queried'))
     assert resident.ready_residents() == []
+
+
+def test_cpu_affinity_enforces_limit_without_user_cpu_controller():
+    values = {'memory.max': str(96 * resident.GIB), 'memory.swap.max': '0', 'pids.max': '2048', 'cpu.max': None}
+    result = resident.validate_cpu_memory_limits(values, range(24, 36), range(24, 36))
+    assert result['cpu_cgroup_controller_available'] is False
+    assert result['cpu_limit_enforced_by'] == 'inherited_process_affinity'
+    with pytest.raises(ValueError, match='bounds differ'):
+        resident.validate_cpu_memory_limits(values, range(24, 37), range(24, 36))
+    with pytest.raises(ValueError, match='bounds differ'):
+        resident.validate_cpu_memory_limits({**values, 'memory.max': 'max'}, range(24, 36), range(24, 36))
 
 
 @pytest.mark.parametrize('index', [-1, 2, True, '0'])

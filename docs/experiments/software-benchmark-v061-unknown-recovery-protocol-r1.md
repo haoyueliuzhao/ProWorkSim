@@ -4,6 +4,8 @@
 
 准备状态：原 slot163 的离线候选恢复已完成；97项集成CPU检查、目录修订后的9项针对检查及静态检查通过，固定Python3.12下的完整题单／控制请求准备链实际通过。尚未启动Docker、模型或用户服务，等待本轮限定权限确认。准备阶段曾发现嵌套Python环境继承和输出目录初始化问题，已修复并保存原失败与准备修订；没有消耗正式回合或容器名额。见[最终准备证据](../../artifacts/software-benchmark-v061/recovery-authorization-r1/validation.json)。
 
+后续执行更新：用户已明确授权本轮范围；CPU亲和修订后的诊断2通过并清理，14项gold／empty环境控制全部合格，原slot163候选官方评分为resolved=true。用户另明确允许0.6显存预约，经私有编译头文件修复，GPU3／GPU2均通过131072完整上下文缓存与中性请求准入，正在接续13项原未进入库存。原准备和失败记录保留，详见[CPU边界修订](software-benchmark-v061-cpu-affinity-r2.md)及[0.6部署修订与实测](software-benchmark-v061-model-memory-r3.md)。
+
 ## 两种不同的恢复
 
 | 范围 | 处理方法 | 新增模型预算 | 结果口径 |

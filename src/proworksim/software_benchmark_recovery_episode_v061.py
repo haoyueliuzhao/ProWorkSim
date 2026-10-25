@@ -261,8 +261,11 @@ def _run(original_row, resident, *, diagnostic=False, diagnostic_index=1, stop_e
     try:
         bundle = runtime.prepare_bundle()
         mapping, public = public_environment(config)
-        if len(os.sched_getaffinity(0)) < (4 if diagnostic else 12):
-            raise RuntimeError("Native actor/controller lanes exceed the available CPU affinity")
+        if diagnostic:
+            if len(os.sched_getaffinity(0)) < 4:
+                raise RuntimeError("The deployment control requires four visible CPUs")
+        elif len(policy.host_cpu_pool()) < 48:
+            raise RuntimeError("The fixed host CPU pool does not cover the reviewed runtime slices")
         import docker
         socket = Path(config["scorer_request_base"]["docker_socket"]).resolve()
         if not socket.is_socket():

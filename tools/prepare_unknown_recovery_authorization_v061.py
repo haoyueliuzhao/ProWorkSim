@@ -11,7 +11,7 @@ from proworksim.software_benchmark_candidates_v054 import reference, write_new
 def prepare():
     plan = policy.create_plan()
     sources = policy.sources()
-    root = policy.ROOT / "artifacts/software-benchmark-v061/recovery-authorization-r1"
+    root = policy.ROOT / "artifacts/software-benchmark-v061/model-compiler-r4/authorization"
     root.mkdir(parents=True, exist_ok=True)
     snapshot = reference(
         policy.ROOT
@@ -20,7 +20,7 @@ def prepare():
     proposal = {
         "version": policy.VERSION,
         "status": "prepared_pending_specific_permission",
-        "user_goal": "全部修复后进行重新评分",
+        "user_goal": "修复本项目私有Python编译头文件，同两个已停止用户服务显式再次部署；不新增unit身份，不重跑任何已进入模型回合",
         "plan": reference(policy.PLAN_FILE),
         "original_terminal_recovery": snapshot,
         "constraints": policy.CONSTRAINTS,
@@ -42,7 +42,17 @@ def prepare():
         },
         "specific_permission_needed": "Existing root-equivalent Docker API: fixed private actors/controllers/graders and newly owned local volumes; two project-owned ordinary-user model units and one bounded coordinator unit. No host bind mounts, privileged containers, shared-service changes, host namespace/mount operations or public network.",
         "diagnostic_revisions": "At most three separately numbered zero-model preparation pairs; failures retained; no automatic diagnostic replay; all formal generation uses the final validated source revision.",
-        "resource_start_count_at_preparation": 0,
+        "new_continuation_resource_start_count": 0,
+        "previous_execution_preserved": {"containers": 19, "named_volumes": 2,
+            "completed_controls": 14, "completed_snapshot_scores": 1, "formal_generation": 0},
+        "source_plan": reference(policy.PREVIOUS_PLAN_FILE),
+        "plan_equivalence": policy.validate_plan_equivalence(reference(policy.PREVIOUS_PLAN_FILE), reference(policy.PLAN_FILE)),
+        "completed_controls_replayed": 0,
+        "completed_snapshot_scores_replayed": 0,
+        "deployment_recovery": {"previous_model_deployments": 2, "both_closed_before_readiness": True,
+            "previous_neutral_calls": 0, "previous_formal_generation": 0,
+            "new_unique_user_units": 0, "gpu_memory_utilization": 0.6,
+            "weights_context_sampling_and_budget_unchanged": True},
     }
     proposal_path = root / "proposal.json"
     if proposal_path.exists():
@@ -57,21 +67,23 @@ def prepare():
         "version": policy.VERSION,
         "status": "pending",
         "explicit_rootful_authorization": None,
+        "explicit_model_memory_authorization": None,
         "automatic_release": False,
         "constraints": policy.CONSTRAINTS,
         "plan": reference(policy.PLAN_FILE),
         "proposal": proposal_ref,
         "sources": sources,
     }
-    if policy.AUTHORIZATION_FILE.exists():
-        if json.loads(policy.AUTHORIZATION_FILE.read_bytes()) != authorization:
+    pending_path = root / "pending-authorization.json"
+    if pending_path.exists():
+        if json.loads(pending_path.read_bytes()) != authorization:
             raise ValueError(
-                "Existing authorization differs; never reopen or replace an approved grant"
+                "Existing pending continuation authorization differs"
             )
     else:
-        write_new(policy.AUTHORIZATION_FILE, authorization)
+        write_new(pending_path, authorization)
     return {
-        "authorization": reference(policy.AUTHORIZATION_FILE),
+        "authorization": reference(pending_path),
         "proposal": proposal_ref,
         "status": "pending",
         "container_upper_bound": policy.CONSTRAINTS["maximum_containers"],

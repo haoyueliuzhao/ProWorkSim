@@ -19,10 +19,12 @@ import threading
 import traceback
 
 from proworksim import software_benchmark_dispatch_v061 as policy
+from proworksim import software_benchmark_continuation_v061 as continuation
 from proworksim.software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT, BATCH_ROOT = policy.ROOT, policy.BATCH_ROOT
-VERSION = "v061-asynchronous-unknown-recovery-coordinator-r1"
+RUN_ROOT = policy.COORDINATOR_RUN_ROOT
+VERSION = "v061-asynchronous-private-compiler-continuation-r4"
 SNAPSHOT_RESULT = (
     ROOT
     / "runs/software-benchmark-v061/original-terminal-recovery-r1-20261025/recovery-result.json"
@@ -40,24 +42,29 @@ def coordinator_limits():
     if relative.name != "proworksim-v061-recovery.service" or ".." in relative.parts:
         raise ValueError("Run formal recovery only in the newly owned bounded coordinator unit")
     folder = Path("/sys/fs/cgroup") / str(relative).lstrip("/")
-    values = {
-        name: (folder / name).read_text().strip()
-        for name in ("memory.max", "memory.swap.max", "pids.max", "cpu.max")
-    }
-    cpu = values["cpu.max"].split()
+    values = {name: (folder / name).read_text().strip()
+              for name in ("memory.max", "memory.swap.max", "pids.max")}
+    cpu_file = folder / "cpu.max"
+    values["cpu.max"] = cpu_file.read_text().strip() if cpu_file.exists() else None
+    cpu = values["cpu.max"].split() if values["cpu.max"] is not None else None
+    expected_affinity = [int(value) for value in policy.cpu_set("coordinator", 0).split(",")]
+    actual_affinity = sorted(os.sched_getaffinity(0))
     if (
         values["memory.max"] != str(16 * 1024**3)
         or values["memory.swap.max"] != "0"
         or values["pids.max"] != "512"
-        or len(cpu) != 2
-        or not all(value.isdigit() for value in cpu)
-        or int(cpu[1]) <= 0
-        or int(cpu[0]) != 4 * int(cpu[1])
+        or actual_affinity != expected_affinity
+        or (cpu is not None and (len(cpu) != 2 or not all(value.isdigit() for value in cpu)
+            or int(cpu[1]) <= 0 or int(cpu[0]) <= 0 or int(cpu[0]) > 4 * int(cpu[1])))
     ):
         raise ValueError("Actual coordinator CPU/RAM/PID/swap hard limits differ from the grant")
     return {
         "cgroup": paths[0],
         "actual_limits": values,
+        "actual_cpu_affinity": actual_affinity,
+        "cpu_hard_boundary": "fixed process affinity",
+        "cpu_quota_controller_available": cpu is not None,
+        "cpu_quota_enforced": cpu is not None,
         "uid": os.getuid(),
         "host_configuration_changed": False,
     }
@@ -79,7 +86,8 @@ def grading_module():
 def prepare():
     plan = policy.create_plan()
     grading = grading_module()
-    controls = grading.prepare_controls()
+    grading.prepare_manifest()
+    reuse_ref = continuation.prepare_reuse(reference(policy.PLAN_FILE))
     from proworksim.software_benchmark_snapshot_recovery_v061 import validate_recovery
 
     snapshot_ref = reference(SNAPSHOT_RESULT)
@@ -89,7 +97,12 @@ def prepare():
     value = {
         "version": VERSION,
         "plan": reference(policy.PLAN_FILE),
-        "controls": controls,
+        "controls": [],
+        "reuse_evidence": reuse_ref,
+        "source_plan": plan["source_plan"],
+        "source_coordinator_plan": reference(BATCH_ROOT / "coordinator-plan.json"),
+        "model_memory_revision": "gpu_memory_utilization_0.6",
+        "deployment_revision": "private_compiler_headers_r4",
         "snapshot_result": snapshot_ref,
         "new_generation_rows": [
             r["slot_index"]
@@ -103,7 +116,8 @@ def prepare():
         "sources": policy.sources(),
         "prepared_without_runtime_operations": True,
     }
-    target = BATCH_ROOT / "coordinator-plan.json"
+    RUN_ROOT.mkdir(parents=True, exist_ok=True)
+    target = RUN_ROOT / "coordinator-plan.json"
     if target.exists():
         if json.loads(target.read_bytes()) != value:
             raise ValueError("Prepared coordinator plan changed")
@@ -112,7 +126,7 @@ def prepare():
 
 
 def _event(kind, **values):
-    with (BATCH_ROOT / "events.jsonl").open("a") as stream:
+    with (RUN_ROOT / "events.jsonl").open("a") as stream:
         stream.write(
             json.dumps({"unix": time.time(), "kind": kind, **values}, ensure_ascii=False) + "\n"
         )
@@ -141,6 +155,13 @@ def _handle_termination(event):
 def _restore_termination(previous):
     for sig, handler in previous.items():
         signal.signal(sig, handler)
+
+
+def model_admission_exhausted(ready):
+    if ready:
+        return False
+    folders = [BATCH_ROOT / "residents-compiler-r4" / ("model-" + str(index)) for index in (0, 1)]
+    return all((folder / "spec.json").exists() and (folder / "closed.json").exists() for folder in folders)
 
 
 def diagnostic_host_limits():
@@ -206,17 +227,16 @@ def run():
     plan_ref = prepare()
     plan = load(plan_ref)
     dispatch_plan = load(plan["plan"])
-    if (BATCH_ROOT / "execution-started.json").exists():
+    if (RUN_ROOT / "execution-started.json").exists():
         raise ValueError("An entered recovery batch is not automatically replayed")
-    diagnostic_qualification = load(reference(BATCH_ROOT / "diagnostic-qualification.json"))
-    if diagnostic_qualification.get("sources") != policy.sources():
-        raise ValueError("Runtime changed after its zero-model diagnostic")
+    reuse = load(plan["reuse_evidence"])
+    diagnostic_qualification = continuation.validate_diagnostic_equivalence(reuse["diagnostic_equivalence"], plan["plan"])
     diagnostic = diagnostic_qualification["result"]
     diagnostic_proof = load(diagnostic)
     if diagnostic_proof.get("passed") is not True or not _result_is_quiet(diagnostic_proof):
         raise ValueError("A passed, fully cleaned diagnostic is required before formal execution")
     write_new(
-        BATCH_ROOT / "execution-started.json",
+        RUN_ROOT / "execution-started.json",
         {
             "version": VERSION,
             "unix": time.time(),
@@ -235,7 +255,10 @@ def run():
     grading = grading_module()
     failure = None
     residents = []
-    generations, scores, qualifications = {}, {}, {}
+    snapshot_slot = next(row["slot_id"] for row in dispatch_plan["rows"] if row["slot_index"] == 163)
+    generations = {}
+    scores = {snapshot_slot: reuse["snapshot_score"]}
+    qualifications = dict(reuse["qualifications"])
     pending_controls = list(plan["controls"])
     pending_generation = [
         row
@@ -247,7 +270,7 @@ def run():
     control_completions = {task: {} for task in tasks}
     grade_futures, generation_futures = {}, {}
     free_grade_lanes = [0, 1]
-    snapshot_enqueued = False
+    snapshot_enqueued = True
     last_capacity_check = 0.0
     stop_new = False
     cancel_waiters = threading.Event()
@@ -341,6 +364,10 @@ def run():
                     )
                 ):
                     residents = ready_residents()
+                    if model_admission_exhausted(residents):
+                        stop_new = True
+                        cancel_waiters.set()
+                        failure = {"kind": "model_admission_unavailable", "reason": "Both bounded resident identities are closed; no automatic restart"}
                 while not stop_new and residents and len(generation_futures) < 2:
                     row = next(
                         (
@@ -508,10 +535,15 @@ def run():
         "quiescence_does_not_imply_all_owned_objects_removed": True,
         "failure": failure,
         "original_unknowns_overwritten": False,
+        "source_plan": plan["source_plan"],
+        "reused_control_scores": 14,
+        "reused_original_snapshot_scores": 1,
+        "model_memory_revision": "gpu_memory_utilization_0.6",
+        "deployment_revision": "private_compiler_headers_r4",
         "automatic_replay": False,
         "finished_unix": time.time(),
     }
-    write_new(BATCH_ROOT / "run-summary.json", result)
+    write_new(RUN_ROOT / "run-summary.json", result)
     return result
 
 

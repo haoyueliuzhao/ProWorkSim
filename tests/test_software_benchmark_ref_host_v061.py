@@ -24,3 +24,10 @@ def test_wrapper_has_no_shell_mount_or_namespace_operations():
     source = host.wrapper_source()
     assert '--argv0' in source and 'execv(args[0], args)' in source
     assert all(x not in source for x in ('system(', 'mount(', 'unshare(', 'chroot(', 'setuid('))
+
+
+def test_compiler_headers_are_private_and_cover_multiarch_pyconfig():
+    env = host.runtime_environment(inherited={'CPATH': '/wrong', 'C_INCLUDE_PATH': '/usr/include/python3.10'})
+    expected = str(host.RUNTIME / 'include/python3.12') + ':' + str(host.RUNTIME / 'include')
+    assert env['CPATH'] == env['C_INCLUDE_PATH'] == env['CPLUS_INCLUDE_PATH'] == expected
+    assert 'LD_LIBRARY_PATH' not in env and env['CUDA_VISIBLE_DEVICES'] == ''

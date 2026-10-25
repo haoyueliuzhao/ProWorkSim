@@ -9,15 +9,19 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 
 from .software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT = Path(__file__).resolve().parents[2]
 SYSROOT = Path('/data0/zhuxinrui/proworksim-runtime/sysroot')
-RUNTIME = ROOT / 'runs/software-benchmark-v061/model-runtime-r2'
+RUNTIME = ROOT / 'runs/software-benchmark-v061/model-runtime-r3'
 SITE = ROOT / 'runs/software-benchmark-v054/ref-venv/lib/python3.12/site-packages'
-VERSION = 'v061-ordinary-ref-python-loader-r2'
+HEADERS_SOURCE = ROOT / 'runs/software-benchmark-v054/ref-toolchain/usr/include'
+HEADER_PACKAGE = ROOT / 'runs/software-benchmark-v054/ref-toolchain-apt/var/cache/apt/archives/libpython3.12-dev_3.12.3-1_amd64.deb'
+HEADER_PACKAGE_SHA256 = 'f5924a06298ae0689128498276d3a555e02615a4ecfa8f4417d679a097586f35'
+VERSION = 'v061-ordinary-ref-python-loader-r3-private-python-headers'
 
 
 def wrapper_source(directory=RUNTIME):
@@ -59,6 +63,8 @@ def runtime_environment(*, gpu_uuid=None, cache=None, inherited=None):
         http_proxy='', https_proxy='', all_proxy='', NO_PROXY='*', no_proxy='*',
         CUDA_HOME='/usr/local/cuda-13.0', TRITON_LIBCUDA_PATH='/usr/lib/x86_64-linux-gnu',
         PYTORCH_CUDA_ALLOC_CONF='backend:native', CUDA_VISIBLE_DEVICES=gpu_uuid or '')
+    includes = os.pathsep.join((str(RUNTIME / 'include/python3.12'), str(RUNTIME / 'include')))
+    env.update(CPATH=includes, C_INCLUDE_PATH=includes, CPLUS_INCLUDE_PATH=includes)
     if cache is not None:
         cache = Path(cache).resolve()
         if not cache.is_relative_to(ROOT / 'runs/software-benchmark-v061'):
@@ -76,12 +82,22 @@ def prepare_runtime():
     manifest = RUNTIME / 'manifest.json'
     if manifest.exists():
         value = json.loads(manifest.read_bytes())
-        for field in ('binary', 'source', 'python', 'loader', 'adapter', 'ninja'):
+        for field in ('binary', 'source', 'python', 'loader', 'adapter', 'ninja',
+                      'python_header', 'pyconfig_header', 'patchlevel_header'):
             checked(value[field])
         if value['version'] != VERSION or checked(value['adapter']) != Path(__file__).resolve():
             raise ValueError('Prepared Python launcher does not bind this source')
         return value
     RUNTIME.mkdir(parents=True, exist_ok=True)
+    package = reference(HEADER_PACKAGE)
+    if package['sha256'] != HEADER_PACKAGE_SHA256:
+        raise ValueError('Cached Python development package differs from its authenticated index')
+    for relative in ('python3.12', 'x86_64-linux-gnu/python3.12'):
+        source_headers, target_headers = HEADERS_SOURCE / relative, RUNTIME / 'include' / relative
+        if not target_headers.exists():
+            shutil.copytree(source_headers, target_headers)
+    if '#define PY_VERSION              "3.12.3"' not in (RUNTIME / 'include/python3.12/patchlevel.h').read_text():
+        raise ValueError('Private compiler headers must match Python 3.12.3')
     source, binary = RUNTIME / 'python-loader.c', RUNTIME / 'python'
     source.write_text(wrapper_source())
     subprocess.run(['/usr/bin/gcc', '-O2', '-Wall', '-Wextra', '-Werror', '-o', str(binary), str(source)],
@@ -98,6 +114,12 @@ def prepare_runtime():
         'adapter': reference(__file__), 'python': reference(SYSROOT / 'usr/bin/python3.12'),
         'loader': reference(SYSROOT / 'usr/lib64/ld-linux-x86-64.so.2'),
         'pinned_package_directory': str(SITE), 'ninja': reference(ninja_source), 'host_root_operations': False,
+        'python_header': reference(RUNTIME / 'include/python3.12/Python.h'),
+        'pyconfig_header': reference(RUNTIME / 'include/x86_64-linux-gnu/python3.12/pyconfig.h'),
+        'patchlevel_header': reference(RUNTIME / 'include/python3.12/patchlevel.h'),
+        'header_source': str(HEADERS_SOURCE), 'header_package': package,
+        'compiler_include_paths': runtime_environment()['CPATH'].split(os.pathsep),
+        'shared_sysroot_or_system_headers_changed': False,
         'global_loader_environment_changed': False, 'model_loads': 0}
     write_new(manifest, value)
     return value

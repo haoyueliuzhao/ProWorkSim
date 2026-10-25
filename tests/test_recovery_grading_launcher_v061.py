@@ -18,6 +18,7 @@ def test_both_bootstrap_paths_remove_inherited_private_python_settings(tmp_path,
         monkeypatch.setenv(key, "private-python312-setting")
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
     monkeypatch.setattr(grading, "BATCH_ROOT", tmp_path)
+    monkeypatch.setattr(grading, "RUN_ROOT", tmp_path)
     monkeypatch.setattr(grading.policy, "require_v061_allowed", lambda *args, **kwargs: {})
     monkeypatch.setattr(grading, "capacity_available", lambda: True)
     seen = []

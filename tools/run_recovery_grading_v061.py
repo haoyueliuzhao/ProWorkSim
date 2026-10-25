@@ -17,6 +17,7 @@ from proworksim import software_benchmark_scorer_v061 as scorer
 from proworksim.software_benchmark_candidates_v054 import checked, reference, write_new
 
 ROOT, BATCH_ROOT = policy.ROOT, policy.BATCH_ROOT
+RUN_ROOT = policy.COORDINATOR_RUN_ROOT
 VERSION = "v061-bounded-recovery-grading-coordinator-r1"
 
 
@@ -52,9 +53,10 @@ def bootstrap_environment():
 
 
 def prepare_manifest():
-    target = BATCH_ROOT / "scorer-manifest.json"
+    target = RUN_ROOT / "scorer-manifest.json"
     if target.exists():
         return reference(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
     command = fixed_python(
         [
             "-c",
@@ -67,13 +69,14 @@ def prepare_manifest():
 
 
 def selected_cpus(lane):
-    available = sorted(os.sched_getaffinity(0))
-    if len(available) < 8 or lane not in (0, 1):
-        raise ValueError("Two bounded grading lanes require eight permitted CPUs")
-    return ",".join(map(str, available[lane * 4 : (lane + 1) * 4]))
+    return policy.cpu_set("grader", lane)
 
 
 def prepare_controls():
+    raise ValueError("The model-memory continuation reuses fourteen completed controls; do not prepare or replay them")
+
+
+def _historical_prepare_controls_disabled():
     plan = policy.create_plan()
     manifest = prepare_manifest()
     requests = []
@@ -265,7 +268,7 @@ def prepare_score(result_ref, *, lane=0):
     if row is None or result.get("measurement_kind") != row["measurement_kind"]:
         raise ValueError("Result does not belong to the original fourteen-slot recovery panel")
     task = row["instance_id"]
-    qualification = reference(BATCH_ROOT / "qualifications" / (task + ".json"))
+    qualification = reference(RUN_ROOT / "qualifications" / (task + ".json"))
     scorer.validate_qualification(
         qualification, load(row["original_config"]), reference(policy.PLAN_FILE)
     )
