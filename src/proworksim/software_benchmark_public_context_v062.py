@@ -13,7 +13,7 @@ import shlex
 
 from .software_benchmark_candidates_v054 import checked, reference
 
-VERSION = "v062-public-context-and-native-feedback-r1"
+VERSION = "v062-public-context-and-native-feedback-r2"
 SELECTION = "repository-wide public default; no answer-derived files or task-result selection"
 PROBE_MARKER = "PWS_V062_PUBLIC_PYTHON="
 MULTI_COMMAND_PREFIX = (
@@ -158,7 +158,11 @@ def validate_terminal_initialization(response, *, public_environment):
     python, _ = _environment(public_environment)
     observation = response.get("observation", {})
     metadata = observation.get("metadata", {})
-    proof_lines = [line.strip() for line in _observation_text(observation).splitlines()
+    # Interactive Bash brackets its prompt with terminal paste-mode toggles.
+    # Ignore only those two known nonprinting sequences for this probe check;
+    # keep the original observation and model-visible content byte-for-byte.
+    probe_text = _observation_text(observation).replace("\x1b[?2004l", "").replace("\x1b[?2004h", "")
+    proof_lines = [line.strip() for line in probe_text.splitlines()
                    if line.strip().startswith(PROBE_MARKER)]
     if (response.get("type") != "observation" or response.get("tool") != "terminal"
             or observation.get("is_error") is not False or observation.get("timeout") is not False

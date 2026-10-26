@@ -27,9 +27,9 @@ SYSROOT = Path("/data0/zhuxinrui/proworksim-runtime/sysroot")
 SITE = ROOT / "runs/v016-sdk/resident-venv/lib/python3.12/site-packages"
 OVERLAY = ROOT / "runs/software-benchmark-v054/native-sdk-overlay"
 UPSTREAM = ROOT / "runs/v016-sdk/upstream/openhands-tools"
-OUTPUT = ROOT / "runs/software-benchmark-v062/sdk-bundle-r1"
+OUTPUT = ROOT / "runs/software-benchmark-v062/sdk-bundle-r2"
 CONTAINER_ROOT = "/opt/pws-runtime"
-VERSION = "v062-local-native-sdk-container-bundle-r1"
+VERSION = "v062-local-native-sdk-container-bundle-r2"
 SEEDS = ("openhands-sdk==1.49.6", "binaryornot", "cachetools", "libtmux", "tree-sitter",
          "tree-sitter-bash", "charset-normalizer", "requests", "setuptools", "openpyxl==3.1.5")
 TOOLS = ("run_native_worker_docker_v062.py", "run_ref_controller_v062.py",

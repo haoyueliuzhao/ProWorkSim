@@ -24,7 +24,7 @@ def prepare():
     constraints = policy.CONSTRAINTS
     assert len(plan["rows"]) == 174
     assert sum(row["generation_token_upper_bound"] for row in plan["rows"]) == 1240000000
-    root = policy.ROOT / "artifacts/software-benchmark-v062/runtime-authorization-r1"
+    root = policy.ROOT / "artifacts/software-benchmark-v062/runtime-authorization-r2"
     proposal = {
         "version": policy.VERSION,
         "status": "prepared_pending_specific_rootful_permission",
@@ -90,7 +90,12 @@ def prepare():
             "artifacts/software-benchmark-v062/native-control-validation-r1/validation.json",
             "artifacts/software-benchmark-v062/runtime-coordinator-validation-r2/validation.json",
         )],
-        "actual_model_calls_at_preparation": 0, "actual_container_operations_at_preparation": 0,
+        "implementation_revision": "terminal-probe-r2",
+        "prior_approved_authorization": reference(policy.ROOT / "artifacts/software-benchmark-v062/runtime-authorization-r1/approved-authorization.json"),
+        "prior_zero_model_diagnostics": [reference(policy.BATCH_ROOT / f"diagnostic-{i}" / "result.json") for i in (1, 2)],
+        "prior_container_creations": 4, "prior_volume_creations": 2,
+        "actual_model_calls_at_preparation": 0,
+        "additional_runtime_operations_in_this_preparation": 0,
         "incident_hold_unchanged": True, "previous_completed_grants_reopened": False,
     }
     proposal_ref = retain(root / "proposal.json", proposal)
@@ -99,8 +104,9 @@ def prepare():
         "constraints": constraints, "plan": reference(policy.PLAN_FILE),
         "proposal": proposal_ref, "sources": sources}
     retain(root / "pending-authorization.json", pending)
-    retain(policy.AUTHORIZATION_FILE, pending)
-    return {"proposal": proposal_ref, "authorization": reference(policy.AUTHORIZATION_FILE),
+    if not policy.AUTHORIZATION_FILE.exists():
+        retain(policy.AUTHORIZATION_FILE, pending)
+    return {"proposal": proposal_ref, "authorization": reference(root / "pending-authorization.json"),
             "coordinator_plan": coordinator_plan, "status": "pending"}
 
 

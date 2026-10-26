@@ -24,7 +24,7 @@ def capabilities(task):
 
 def prepare():
     """Freeze local provider inputs. Reuse the tested numeric TLS endpoint; no DNS."""
-    folder = policy.BATCH_ROOT / "grading-environments"
+    folder = policy.GRADING_ROOT / "environments"
     values = {"offline": retain(folder / "offline.json", offline.environment_manifest()),
               "tls": retain(folder / "tls.json", tls.environment_manifest())}
     historical = policy.ROOT / "runs/software-benchmark-v060/original-ca-rescore-r1-20261025/environment-admission/task-qualifications"
@@ -44,7 +44,7 @@ def prepare():
 
 
 def request_fields(task):
-    bindings = json.loads(checked(reference(policy.BATCH_ROOT / "grading-environments/bindings.json")).read_bytes())
+    bindings = json.loads(checked(reference(policy.GRADING_ROOT / "environments/bindings.json")).read_bytes())
     if task in TLS_TASKS:
         return {"environment_revision": bindings["tls"], "network_resolution": bindings["network_resolutions"][task]}
     if task in OFFLINE_TASKS:

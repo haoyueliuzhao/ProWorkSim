@@ -113,7 +113,7 @@ def prepare_controls():
             continue
         for lane, kind in enumerate(("gold", "empty")):
             key = "control-" + task + "-" + kind
-            folder = BATCH_ROOT / "grading" / key
+            folder = policy.GRADING_ROOT / key
             value = {"version": scorer.VERSION, "resource_key": key,
                 "instance_id": task, "slot_id": None, "plan": reference(policy.PLAN_FILE),
                 "configuration": plan["environments"][task]["configuration"],
@@ -121,7 +121,7 @@ def prepare_controls():
                 "cpuset_cpus": selected_cpus(lane), "directory": str(folder), "candidate_lock": None,
                 **environment.request_fields(task)}
             requests.append(retain(folder / "request.json", value))
-    retain(BATCH_ROOT / "control-plan.json", {"version": VERSION,
+    retain(RUN_ROOT / "control-plan.json", {"version": VERSION,
         "plan": reference(policy.PLAN_FILE), "requests": requests,
         "historical_reuses": reused, "controls_are_new_scoring_identity": True})
     return requests
@@ -227,7 +227,7 @@ def qualify(task):
     plan = load(plan_ref)
     controls = []
     for kind in ("gold", "empty"):
-        folder = BATCH_ROOT / "grading" / ("control-" + task + "-" + kind)
+        folder = policy.GRADING_ROOT / ("control-" + task + "-" + kind)
         controls.append(
             {
                 "patch_kind": kind,
@@ -266,7 +266,7 @@ def run_controls():
             outcomes.extend(f.result() for f in [executor.submit(run_request, ref) for ref in pair])
             if not all(trustworthy_cleanup(ref) for ref in pair):
                 retain(
-                    BATCH_ROOT / "grading-quarantined.json",
+                    RUN_ROOT / "grading-quarantined.json",
                     {"reason": "Unproven owned-container cleanup", "requests": pair},
                 )
                 break
@@ -292,7 +292,7 @@ def prepare_score(result_ref, *, lane=0):
     qualification = reference(RUN_ROOT / "qualifications" / (task + ".json"))
     scorer.validate_qualification(qualification, load(row["configuration"]), reference(policy.PLAN_FILE))
     key = "score-" + str(row["slot_index"])
-    folder = BATCH_ROOT / "grading" / key
+    folder = policy.GRADING_ROOT / key
     value = {"version": scorer.VERSION, "resource_key": key, "instance_id": task,
         "plan": reference(policy.PLAN_FILE), "configuration": row["configuration"],
         "candidate_lock": result["candidate_lock"], "generation_result": result_ref,

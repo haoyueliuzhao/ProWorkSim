@@ -1,6 +1,6 @@
 # v062：修复执行问题后探测单Agent能力
 
-日期：2026-10-26。用户要求“修复相关问题，进一步探测模型能力上限”。代码修复与离线准备已完成，尚无新模型、Docker容器、评分或主机服务启动。运行授权当前为pending，旧v061等completed授权及共享服务器hold不变。
+日期：2026-10-26。用户要求“修复相关问题，进一步探测模型能力上限”，并已明确回复授权本轮限定范围。修订r2的BASE／FIX部署诊断通过，GPU2／GPU4模型服务已通过完整上下文与中性计量准入，174回合队列已启动。旧v061等completed授权及共享服务器hold保持不变；本轮只使用独立v062授权。
 
 ## 修复内容
 
@@ -58,6 +58,8 @@ FIX协议保留同一个原始Qwen3.5-9B、同一个原生OpenHands Agent及五�
 
 50题需在新评分provider下完成gold／empty资格。11项旧资格的具体未接纳原因保留，包含真实PID资源边界改变和未取得新creator／router／cleanup组合的严格等价证明；不根据模型成绩决定资格，也不把来源未准入题从分母删除。
 
-最终可审查范围已封存在 [proposal.json](../../artifacts/software-benchmark-v062/runtime-authorization-r1/proposal.json)，配置为 [v062-capability-authorization.json](../../config/v062-capability-authorization.json)。174份输入验证见 [payload-validation.json](../../artifacts/software-benchmark-v062/runtime-authorization-r1/payload-validation.json)。
+用户批准的原范围见 [r1 proposal.json](../../artifacts/software-benchmark-v062/runtime-authorization-r1/proposal.json)。部署中发现终端控制序列导致解释器探针误判，窄修后使用同一授权内的备用诊断3／4；题单、预算、条件、资源数均未改变。当前源码与独立输出目录绑定见 [r2 proposal.json](../../artifacts/software-benchmark-v062/runtime-authorization-r2/proposal.json)，配置为 [v062-capability-authorization.json](../../config/v062-capability-authorization.json)。174份输入验证见 [payload-validation.json](../../artifacts/software-benchmark-v062/runtime-authorization-r1/payload-validation.json)。
 
-用户此前对v061的具体Docker授权仅覆盖已完成的14项恢复。本轮新630容器／178卷及评分出网范围须按用户提供的AGENTS指令“未经授权严禁使用root权限的相关操作”取得新的明确限定授权。准备工作不解除旧hold，也不以复制旧授权的方式启动本轮。
+用户已对本轮630容器／178卷及评分出网范围给出新的明确授权。实际启动证据见 [runtime-start-r2/summary.json](../../artifacts/software-benchmark-v062/runtime-start-r2/summary.json)。两张卡的KV容量均为853,008 token，报告上下文131,072；每个服务的中性请求消耗17输入＋128输出，共290 token。模型仍为单序列，6.51倍是缓存容量余量，不是开放六个并发序列。
+
+首批两项任务在较早ready的GPU2服务进入，GPU4随后ready并等待下一个未进入槽；不迁移已经开始的回合。生成与环境控制／评分独立推进，当前状态以`coordinator-r2/progress.json`为准。启动证据不表示174回合已经完成，也不证明修订提高了正确率或吞吐量。结束后的资源释放由协调器执行并另留证明。

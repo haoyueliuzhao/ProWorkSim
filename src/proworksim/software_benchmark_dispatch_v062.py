@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 VERSION = "v062-scoped-capability-probe-r1"
 BATCH_ROOT = ROOT / "runs/software-benchmark-v062/capability-probe-r1-20261026"
 PLAN_FILE = BATCH_ROOT / "plan.json"
-COORDINATOR_RUN_ROOT = BATCH_ROOT / "coordinator"
+COORDINATOR_RUN_ROOT = BATCH_ROOT / "coordinator-r2"
+GRADING_ROOT = BATCH_ROOT / "grading-r2"
 AUTHORIZATION_FILE = ROOT / "config/v062-capability-authorization.json"
 CPU_POOL_FILE = BATCH_ROOT / "host-cpu-pool.json"
 PANEL_FILE = ROOT / "artifacts/software-benchmark-v062/preparation-r1/panel.json"
@@ -33,7 +34,7 @@ OPERATIONS = frozenset("v062." + name for name in (
     "run", "model.start", "actor.create", "actor.start", "controller.create", "controller.start",
     "volume.create", "score", "control", "grader.create", "grader.start", "transport", "resolve", "model.bridge"))
 SOURCE_PATHS = (
-    'runs/software-benchmark-v062/sdk-bundle-r1/manifest.json',
+    'runs/software-benchmark-v062/sdk-bundle-r2/manifest.json',
     'config/v057-shared-server-hold.json',
     'config/v058-offline-rescore-authorization.json',
     'config/v059-tls-diagnostic-authorization.json',

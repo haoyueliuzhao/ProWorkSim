@@ -1,6 +1,7 @@
 """CPU source-projection controls; no actor, model or official tests execute."""
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -147,3 +148,36 @@ def test_python_drift_adds_advice_without_environment_change_or_command_retry():
     assert result["events"][0]["kind"] == "native_python_path_difference"
     assert result["events"][0]["automatic_retry"] is False
     assert PYTHON in result["response"]["llm_content"][-1]["text"]
+
+
+def bracketed_paste_fixture():
+    return json.loads((Path(__file__).parent / "fixtures/v062-terminal-initialization-bracketed-paste.json").read_bytes())
+
+
+def test_real_bracketed_paste_receipt_passes_without_changing_raw_or_visible_output():
+    fixture = bracketed_paste_fixture()
+    response = fixture["response"]
+    original = copy.deepcopy(response)
+    assert response["observation"]["content"][0]["text"].startswith("\x1b[?2004l" + context.PROBE_MARKER)
+    receipt = context.validate_terminal_initialization(response, public_environment=fixture["public_environment"])
+    assert receipt["native_shell_python_matches"] is True and receipt["executed_python_matches"] is True
+    assert response == original
+
+
+@pytest.mark.parametrize("changed", ["different_executable", "duplicate_probe", "metadata", "command", "unknown_control"])
+def test_bracketed_paste_normalization_does_not_weaken_identity_or_unique_probe(changed):
+    fixture = bracketed_paste_fixture()
+    response = fixture["response"]
+    observation = response["observation"]
+    if changed == "different_executable":
+        observation["content"][0]["text"] = "\x1b[?2004l" + context.PROBE_MARKER + "/opt/miniconda3/bin/python\n\x1b[?2004h"
+    elif changed == "duplicate_probe":
+        observation["content"][0]["text"] *= 2
+    elif changed == "metadata":
+        observation["metadata"]["py_interpreter_path"] = "/opt/miniconda3/bin/python"
+    elif changed == "command":
+        observation["command"] += " && true"
+    elif changed == "unknown_control":
+        observation["content"][0]["text"] = "\x1b[2J" + observation["content"][0]["text"]
+    with pytest.raises(ValueError, match="Actual native terminal"):
+        context.validate_terminal_initialization(response, public_environment=fixture["public_environment"])

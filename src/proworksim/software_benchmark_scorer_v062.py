@@ -110,7 +110,7 @@ def validate_request(request):
     if load(request["scorer_manifest"]) != installation_manifest():
         raise ValueError("Capability scorer changed after freezing")
     folder = Path(request["directory"]).resolve()
-    expected = BATCH_ROOT / "grading" / request["resource_key"]
+    expected = policy.GRADING_ROOT / request["resource_key"]
     admitted_cpu_sets = {policy.cpu_set("grader", lane) for lane in (0, 1)}
     if folder != expected or request["cpuset_cpus"] not in admitted_cpu_sets:
         raise ValueError("Scoring output or four-CPU affinity differs from plan")
@@ -585,7 +585,7 @@ def validate_qualification(ref, config, plan_ref):
         identity = load(receipt["identity"])
         observed = load(item["initial_container"])
         expected_key = "control-" + task + "-" + kind
-        folder = BATCH_ROOT / "grading" / expected_key
+        folder = policy.GRADING_ROOT / expected_key
         for key in ("receipt", "quiescence", "completion"):
             if Path(item[key]["path"]).resolve() != folder / (key + ".json"):
                 raise ValueError("Control evidence borrowed from another endpoint")
