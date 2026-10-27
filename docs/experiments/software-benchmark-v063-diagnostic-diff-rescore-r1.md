@@ -30,4 +30,14 @@
 
 补评入口另有十项 CPU 检查通过（`tests/test_software_benchmark_rescore_v063.py`，0.12 秒），对应 Ruff 检查通过。覆盖未授权拒绝、其他任务拒绝、三次创建身份不可重用、单并发、清理失败保留占用、父队列仍在运行时拒绝、替换原候选拒绝，以及宿主挂载、网络、GPU、特权等扩展拒绝。独立静态审阅通过。仅执行了本地 `--prepare`，Docker 操作和新模型调用均为零。
 
-具体范围见 [补评提案](../../artifacts/software-benchmark-v063/rescore-authorization-r1/proposal.json)，验证记录见 [scope validation](../../artifacts/software-benchmark-v063/rescore-scope-validation-r1/validation.json)。独立入口为 `tools/run_diagnostic_rescore_v063.py`；只有取得该新增范围的明确授权、原队列完整闭合及两项控制通过后，才允许对原候选补评。现有 `config/v063-diagnostic-rescore-authorization.json` 为 `pending`。
+具体范围见 [补评提案](../../artifacts/software-benchmark-v063/rescore-authorization-r1/proposal.json)，验证记录见 [scope validation](../../artifacts/software-benchmark-v063/rescore-scope-validation-r1/validation.json)。独立入口为 `tools/run_diagnostic_rescore_v063.py`；只有取得该新增范围的明确授权、原队列完整闭合及两项控制通过后，才允许对原候选补评。
+
+用户于 2026-10-27 明确回复“授权上述限定补评”，授权已单独保存为 [approved-authorization.json](../../artifacts/software-benchmark-v063/rescore-authorization-r1/approved-authorization.json)，现有配置状态为 `approved`。原 `pending` 提案仍保留。授权不改变等待原 v062 队列闭合的条件，也不代表已经执行补评。
+
+## 完成后自动衔接
+
+新增独立普通用户入口 `tools/wait_diagnostic_rescore_v063.py`，原已批准的提案、policy、scorer 和 runner 字节保持。等待进程每 30 秒读取原队列进度，最多等待 24 小时，限 4 GiB 地址空间和原评分通道的四个 CPU。它绑定明确授权、源码、解释器和固定执行命令；只有原队列闭合并通过已有完整准入门，才用同一进程执行补评。撤权、源码变化、取消、原队列停止或已有补评入场记录都会阻止派发，不重启服务或重复评分身份。
+
+等待入口的七项 CPU 状态检查和 Ruff 通过，独立静态审阅通过；未重复先前的十四项检查。启动计划与证据见 [waiter launch plan](../../artifacts/software-benchmark-v063/waiter-launch-r1/launch-plan.json)、[waiter validation](../../artifacts/software-benchmark-v063/waiter-launch-r1/validation.json)。
+
+北京时间 2026-10-27 22:53 已启动等待进程，确认实际 UID/EUID=1021、地址空间上限 4,294,967,296 字节、CPU affinity=16–19，标准错误为空。原实验仍在运行，补评容器创建数为零。此时只是完成自动衔接设置，正式结果仍须等待补评的 `receipt.json`；等待器的 `result.json` 不是评分完成证明。
