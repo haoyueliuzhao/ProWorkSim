@@ -90,4 +90,10 @@ API由可信普通用户宿主进程直连官方HTTPS，不通过代理或反向
 - [无损存储](../../artifacts/software-benchmark-v064/archive-storage-validation-r1/validation.json)与[宿主传输／用量恢复](../../artifacts/software-benchmark-v064/host-episode-transport-validation-r1/validation.json)：流式zstd、未读取尾部的完整校验、必要材料选择展开、引用迁移和缺失usage拒绝，历史源码完整保留在压缩档案。
 - [异步协调器](../../artifacts/software-benchmark-v064/coordinator-validation-r1/validation.json)与[双端点评分／暂存预约](../../artifacts/software-benchmark-v064/grading-dispatch-validation-r3/validation.json)：生成评分交错、局部异常继续、公共完整性故障停止派发，以及真实不同提交树、独立评分身份和每活动pair额外4 GiB临时磁盘预约。
 
-各验证记录保存各自源码版本和失败／修订边界，不把不同阶段的测试数字简单相加冒充一次全套终验。真实部署和中性API准入由上述独立运行回执补充；新正式结果尚未产生。
+各验证记录保存各自源码版本和失败／修订边界，不把不同阶段的测试数字简单相加冒充一次全套终验。真实部署和中性API准入由上述独立运行回执补充；该次准入时尚未产生新正式结果。
+
+### 正式启动快照
+
+2026-10-28凌晨已启动专属协调服务。后续[启动快照](../../artifacts/software-benchmark-v064/startup-status-r1/summary.json)记录：16个回合已入场，4个完成生成，3个完成官方评分；12个生成和4个评分／环境控制并行，公共故障为空。5个Qwen驻留已就绪，Qwen的REF和PROJECT均已产生真实模型调用，DeepSeek六组也均已进入实际调用。以上只是启动状态，不是完整组成绩或稳定速度估计；每组实际token均值随独立账本更新，正式500题均值尚不成立。
+
+首个环境未资格来源为`sphinx-doc__sphinx-8269`：gold的目标缺陷测试通过，但3个原有测试依赖外部网站，受当前离线评分条件限制。该题12组未开始，单列环境未知，其余题继续；不按模型失败记0，不取消原500题分母，也未修改官方测试或放开正在运行的容器网络。
