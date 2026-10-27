@@ -1,0 +1,81 @@
+{
+  "version": "v064-managed-upload-cpu-validation-r1",
+  "protocol": {
+    "version": "v064-managed-internal-chunked-upload-r1",
+    "chunk_bytes": 1048576,
+    "maximum_payload_bytes": 2147483648,
+    "maximum_pending_uploads": 1,
+    "per_frame_bytes": 33554432,
+    "model_tools_added": false
+  },
+  "necessary_new_cases": 3,
+  "passed": 3,
+  "validation_history": [
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_managed_upload_v064.py",
+      "passed": 2,
+      "failed": 1,
+      "seconds": 1.45,
+      "failure": "New streamed encoder initially sorted metadata keys, changing strict JSON-based tree identity; no actor operation was accepted."
+    },
+    {
+      "repair": "Preserve original insertion order during streamed JSON serialization; do not change source metadata or hashes."
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_managed_upload_v064.py -k large_replace",
+      "passed": 1,
+      "deselected": 2,
+      "seconds": 1.56
+    }
+  ],
+  "ruff_passed": true,
+  "sources": [
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_managed_actor_v064.py",
+      "sha256": "1716f3fdf45cdfabdf2b532b5e3d4608808926b4bb87e0cdb58ffa6c641c5dc3",
+      "bytes": 24382
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_project_controller_v064.py",
+      "sha256": "b75831a98289c3183b95537d1900ada141e178ebf172ef1d67067234c810de30",
+      "bytes": 22192
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_managed_worker_docker_v064.py",
+      "sha256": "97522428f55b7f473805a77596e75ae6815d44ed3f3b4ba169f5baa3883df702",
+      "bytes": 9785
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tests/test_managed_upload_v064.py",
+      "sha256": "3aa5d7969629a66679b7cab928c81d82cb5c3981d60b096d7c6aec4b8647fb4a",
+      "bytes": 8612
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tests/test_software_benchmark_managed_actor_v064.py",
+      "sha256": "6142e50ef6df04a42adb5494f338616f4cc444ee84de1785e8abdf01c2cb34d3",
+      "bytes": 4378
+    }
+  ],
+  "checks": [
+    "actual compact JSONL exchange to receiver on a payload above 33 MiB",
+    "one logical managed operation after begin and all chunks commit",
+    "single frame under 2 MiB in the large fixture, global frame ceiling remains32 MiB",
+    "complete reconstructed candidate tree/hash unchanged for replace plus rename",
+    "original metadata insertion order preserved",
+    "reordered/replayed/chunk-hash/total-hash/incomplete uploads fail closed",
+    "single pending upload and 2 GiB declared total bound enforced",
+    "deadline expiry and incorrect acknowledgement prevent operation dispatch",
+    "temporary complete payload files are closed and removed; source versions remain unchanged",
+    "chunk audit retains exact SHA/order/length/wire identity without duplicate base64 source bodies"
+  ],
+  "model_tools_added": false,
+  "actual_model_calls": 0,
+  "docker_operations": 0,
+  "gpu_operations": 0,
+  "model_api_calls": 0,
+  "subprocesses_started_by_new_tests": 0,
+  "previously_blocked_actions_retried": false,
+  "sdk_bundle_rebuilt": false,
+  "failure_classification": "interface_unknown",
+  "old_sdk_r1_evidence_modified": false
+}
