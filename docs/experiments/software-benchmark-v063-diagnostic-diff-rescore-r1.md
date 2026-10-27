@@ -41,3 +41,9 @@
 等待入口的七项 CPU 状态检查和 Ruff 通过，独立静态审阅通过；未重复先前的十四项检查。启动计划与证据见 [waiter launch plan](../../artifacts/software-benchmark-v063/waiter-launch-r1/launch-plan.json)、[waiter validation](../../artifacts/software-benchmark-v063/waiter-launch-r1/validation.json)。
 
 北京时间 2026-10-27 22:53 已启动等待进程，确认实际 UID/EUID=1021、地址空间上限 4,294,967,296 字节、CPU affinity=16–19，标准错误为空。原实验仍在运行，补评容器创建数为零。此时只是完成自动衔接设置，正式结果仍须等待补评的 `receipt.json`；等待器的 `result.json` 不是评分完成证明。
+
+## 补评终态
+
+原 v062 于 2026-10-28 完成全部174回合并停止其驻留服务后，等待进程通过全部准入检查，自动执行了两项环境控制和原候选补评。三项均结束并取得可信清理凭据，原 `score-29` 获得官方 `resolved=true`。原候选未改变，新增模型调用为0，旧技术异常记录保留。
+
+因此，v062 FIX10M 的50题主测为32题通过、18题未通过，正确率64%；重复诊断仍另报，不混入此分母。v063限定授权已标记为completed，没有自动追加任务。正式回执及清理索引见 [最终补评摘要](../../artifacts/software-benchmark-v063/final-rescore-r1/summary.json)。
