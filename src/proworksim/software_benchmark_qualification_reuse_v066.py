@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import inspect
 import json
 from pathlib import Path
 
@@ -26,7 +27,8 @@ def normalized_ast(source, *, scorer=False):
     if scorer:
         tree.body = [node for node in tree.body if not (
             isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "validate_qualification")]
-    return ast.dump(tree, include_attributes=False)
+    options = {"show_empty": True} if "show_empty" in inspect.signature(ast.dump).parameters else {}
+    return ast.dump(tree, include_attributes=False, **options)
 
 
 def compare_sources(old_source, new_source, *, scorer=False):

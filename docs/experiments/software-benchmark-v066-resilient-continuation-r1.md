@@ -41,13 +41,22 @@
 
 r1的REF零模型检查通过。原触发OOM的scikit-learn PROJECT已在16 GiB下完成SDK初始化，容器没有OOM，但完整回环超过原180秒诊断时限，仍保留为失败，未据此启动正式任务。其原始结果、清理证明和源码字节已独立封存。r2采用新目录与新包，只将独立诊断时限延至600秒；正式生命周期24000秒、软／硬期限21600／23400秒，以及工具、模型参数全部保持。四个入口经机械AST对照；新版包CPU导入验证没有联网、模型或GPU操作。
 
+r2的两项真实部署诊断随后均通过且完整清理。启动时发现Python 3.14与3.12的`ast.dump`默认空字段格式不同，使同字节源码的派生摘要不同；当时仍未进入正式模型。r3显式统一AST序列化，并将启动路径改为读取已封存计划，不在运行时重复准备。两项部署资格经原结果、正式限额、任务绑定和相关执行代码字节一致性检查复用，未再创建诊断容器。
+
+r3已推进Qwen与环境评分。DeepSeek初始化另出现旧账本规范字段兼容错误：规范调用记录有`prompt_tokens`和`completion_tokens`，没有`total_tokens`。该故障被限制在API provider，未停止Qwen。随后以独立v067 API协调器修复为两项相加，原准备成本仍为747＋52＝799 token，不重新调用API验证。独立协调器不管理Qwen生命周期，只使用原未消费API身份及同一资源分配锁，新增4 CPU／16 GiB协调开销也纳入原152 CPU／832 GiB总预约；原1500元账本继续共用。
+
+当前主队列的API暂停标记属于保留的故障记录；实际API进度以v067为准。汇总只取v066主队列的Qwen六组、v067的DeepSeek六组，避免将交接状态与真实结果重复计数。[合并进度脚本](../../tools/report_continuation_progress_v067.py)按原6000个逻辑身份读取两个状态源。
+
 正式运行状态以独立回执为准，本说明不把准备完成说成任务完成，也不承诺任意故障都能自动恢复。普通单题异常在队列中隔离，影响共享完整性的故障仍需修订后续跑。
 
 - [原故障与零生成核验](../../artifacts/software-benchmark-v066/recovery-preparation-r1/predecessor-evidence.json)
 - [宿主记账与零请求控制](../../src/proworksim/software_benchmark_host_usage_v066.py)
 - [续跑调度](../../tools/run_full_benchmark_v066.py)
-- [运行范围与授权依据](../../artifacts/software-benchmark-v066/runtime-authorization-r2/proposal.json)
+- [运行范围与授权依据](../../artifacts/software-benchmark-v066/runtime-authorization-r3/proposal.json)
 - [r1诊断及源码封存](../../artifacts/software-benchmark-v066/deployment-diagnostic-r1/summary.json)
 - [仅诊断期限变化的机械对照](../../artifacts/software-benchmark-v066/sdk-diagnostic-r2/ast-equivalence.json)
+- [两项通过的部署验证及启动前失败](../../artifacts/software-benchmark-v066/deployment-diagnostic-r2/summary.json)
+- [跨Python一致性验证](../../artifacts/software-benchmark-v066/cross-python-ast-r1/validation.json)
+- [独立API恢复说明](software-benchmark-v067-api-preparation-repair-r1.md)
 - [API账本延续说明](software-benchmark-v066-api-continuation-r1.md)
 - [评分资格复用说明](software-benchmark-v066-grading-reuse-r1.md)

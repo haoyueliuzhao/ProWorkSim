@@ -23,9 +23,9 @@ from .software_benchmark_rescore_policy_v060 import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-VERSION = "v066-scoped-v064-continuation-r2"
+VERSION = "v066-scoped-v064-continuation-r3"
 PREDECESSOR_ROOT = ROOT / "runs/software-benchmark-v064/full-verified-r1"
-BATCH_ROOT = ROOT / "runs/software-benchmark-v066/v064-continuation-r2"
+BATCH_ROOT = ROOT / "runs/software-benchmark-v066/v064-continuation-r3"
 RESUME_FILE = BATCH_ROOT / "continuation-inventory.json"
 PLAN_FILE = BATCH_ROOT / "plan.json"
 CONFIG_INDEX_FILE = PREDECESSOR_ROOT / "config-index.json"
@@ -34,8 +34,8 @@ COORDINATOR_RUN_ROOT = BATCH_ROOT / "coordinator"
 GRADING_ROOT = BATCH_ROOT / "grading"
 CPU_POOL_FILE = BATCH_ROOT / "host-cpu-pool.json"
 MATRIX_FILE = ROOT / "artifacts/software-benchmark-v064/preparation-r1/plan.json"
-AUTHORIZATION_FILE = ROOT / "config/v066-continuation-authorization-r2.json"
-PROPOSAL_FILE = ROOT / "artifacts/software-benchmark-v066/runtime-authorization-r2/proposal.json"
+AUTHORIZATION_FILE = ROOT / "config/v066-continuation-authorization-r3.json"
+PROPOSAL_FILE = ROOT / "artifacts/software-benchmark-v066/runtime-authorization-r3/proposal.json"
 GIB = 1024**3
 IMAGE = re.compile(r"sha256:[0-9a-f]{64}\Z")
 TLS_TASKS = frozenset(("psf__requests-1766", "psf__requests-1921"))
@@ -57,8 +57,8 @@ CONSTRAINTS = {
     "maximum_score_containers": 9000,
     "maximum_containers": 22008,
     "maximum_named_volumes": 6004,
-    "zero_model_diagnostic_pairs": 2,
-    "initial_zero_model_diagnostic_pairs": 2,
+    "zero_model_diagnostic_pairs": 0,
+    "initial_zero_model_diagnostic_pairs": 0,
     "conditional_zero_model_repair_pairs": 0,
     "maximum_model_residents": 6,
     "minimum_free_gpu_mib": 50176,
@@ -330,7 +330,7 @@ def create_plan():
         for kind in ("gold", "empty"):
             resources[f"control-{task}-{kind}"] = {"role": "control", "instance_id": task,
                 "patch_kind": kind, "image_id": env["image_id"], "endpoint": "environment_control"}
-    for number, arm in ((1, "REF"), (2, "PROJECT")):
+    for number, arm in ():
         row = next(row for row in rows if row["arm"] == arm and row["model_key"] == "QWEN"
                    and (arm == 'REF' or row['slot_index'] == 27))
         for role in ("actor", "controller", "volume"):
@@ -340,7 +340,7 @@ def create_plan():
                 "repair_of": number - 2 if number > 2 else None}
     for index in range(6):
         resources[f"model-{index}"] = {"role": "model", "model_index": index, "model_key": "QWEN"}
-    expected = {"actor": 6002, "controller": 6002, "volume": 6002, "score": 6000,
+    expected = {"actor": 6000, "controller": 6000, "volume": 6000, "score": 6000,
                 "delivery_score": 3000, "control": 1000, "model": 6}
     if (dict(Counter(item["role"] for item in resources.values())) != expected or len(environments) != 500
             or sum(row["generation_token_upper_bound"] for row in rows) != 45_000_000_000):

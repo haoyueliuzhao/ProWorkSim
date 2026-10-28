@@ -335,6 +335,11 @@ def diagnose(index=1):
 
 
 def diagnostic_qualifications():
+    from proworksim.software_benchmark_deployment_reuse_v066 import qualifications
+    return qualifications()
+
+
+def _original_diagnostic_qualifications():
     results = {}
     for arm in ('REF', 'PROJECT'):
         matches = [load(reference(path)) for path in (BATCH_ROOT / 'diagnostic-qualifications' / arm).glob('*.json')
@@ -1005,12 +1010,29 @@ class UsageRecorder:
         self.last_write = time.monotonic()
 
 
+def sealed_plan_reference():
+    """Read the sealed plan; runtime must never regenerate preparation artifacts."""
+    auth = policy.require_v066_allowed("v066.run")
+    proposal = load(auth["proposal"])
+    ref = proposal["coordinator_plan"]
+    if ref != reference(RUN_ROOT / "coordinator-plan.json"):
+        raise ValueError("Runtime coordinator plan differs from the sealed proposal")
+    plan = load(ref)
+    if (plan.get("plan") != reference(policy.PLAN_FILE)
+            or plan.get("continuation_inventory") != reference(RESUME_FILE)
+            or plan.get("sources") != policy.sources()):
+        raise ValueError("Prepared plan source/configuration identity changed")
+    for control in plan["controls"]:
+        checked(control)
+    return ref
+
+
 def run():
     authorization = policy.require_v066_allowed("v066.run")
     host_limits = coordinator_limits()
     if (RUN_ROOT / "execution-started.json").exists():
         raise ValueError("An entered full experiment is not automatically replayed")
-    plan_ref = prepare()
+    plan_ref = sealed_plan_reference()
     plan = load(plan_ref)
     diagnostics = diagnostic_qualifications()
     dispatch = load(plan["plan"])

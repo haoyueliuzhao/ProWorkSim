@@ -16,7 +16,7 @@ from proworksim.software_benchmark_candidates_v054 import reference, write_new
 from proworksim.storage import atomic_write, json_bytes
 
 ROOT, BATCH = policy.ROOT, policy.BATCH_ROOT
-OUT = ROOT / 'artifacts/software-benchmark-v066/runtime-authorization-r2'
+OUT = ROOT / 'artifacts/software-benchmark-v066/runtime-authorization-r3'
 
 
 def tool_module(name):
@@ -36,7 +36,8 @@ def dependency_sources():
         policy.PREDECESSOR_ROOT / 'coordinator/run-summary.json',
         policy.PREDECESSOR_ROOT / 'api-qualification/result.json',
         ROOT / 'artifacts/software-benchmark-v066/recovery-preparation-r1/predecessor-evidence.json',
-        ROOT / 'artifacts/software-benchmark-v066/deployment-diagnostic-r1/summary.json'}
+        ROOT / 'artifacts/software-benchmark-v066/deployment-diagnostic-r1/summary.json',
+        ROOT / 'artifacts/software-benchmark-v066/deployment-diagnostic-r2/summary.json'}
     paths.update((ROOT / 'src/proworksim').glob('*v066*.py'))
     paths.update((ROOT / 'tools').glob('*v066*.py'))
     for path in paths:
@@ -55,6 +56,8 @@ def prepare(*, record_user_authorization=False):
         'files': dependency_sources(), 'actor_bundle': reference(sdk.OUTPUT / 'manifest.json'),
         'formal_model_visible_protocol_changed': False, 'diagnostic_deadline_seconds': 600, 'shared_host_configuration_changed': False})
     coordinator = tool_module('run_full_benchmark_v066').prepare()
+    from proworksim.software_benchmark_deployment_reuse_v066 import prepare as prepare_deployment_reuse
+    deployment_reuse = prepare_deployment_reuse()
     unit = tool_module('launch_full_benchmark_v066').prepare()
     inventory = policy.load(reference(policy.RESUME_FILE))
     counts = plan['resource_role_counts']
@@ -62,7 +65,7 @@ def prepare(*, record_user_authorization=False):
         'continuation_inventory': reference(policy.RESUME_FILE),
         'sources': policy.sources(), 'constraints': policy.CONSTRAINTS,
         'operations': sorted(policy.OPERATIONS), 'coordinator_plan': coordinator,
-        'coordinator_unit': unit, 'diagnostic_extended_SDK_archive': bundle['archive'],
+        'coordinator_unit': unit, 'deployment_qualification_reuse': deployment_reuse, 'diagnostic_extended_SDK_archive': bundle['archive'],
         'predecessor_summary': inventory['predecessor_summary'],
         'actual_allowed_resource_counts': counts,
         'actual_new_container_upper_bound': sum(counts.get(name, 0) for name in
