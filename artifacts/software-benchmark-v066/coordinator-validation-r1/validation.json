@@ -1,0 +1,56 @@
+{
+  "version": "v066-continuation-coordinator-cpu-validation-r1",
+  "tests": [
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_full_coordinator_v066.py",
+      "passed": 14,
+      "failed": 0,
+      "elapsed_seconds": 0.8
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_full_coordinator_v066.py::test_prior_usage_receipts_import_by_reference_without_rewriting tests/test_full_coordinator_v066.py::test_missing_usage_uses_episode_envelope_and_never_zero tests/test_full_coordinator_v066.py::test_generation_ceiling_leaves_grading_capacity_with_six_models",
+      "passed": 3,
+      "failed": 0,
+      "elapsed_seconds": 0.17,
+      "reason": "Only affected usage-preservation/envelope/current-resource-key checks after the final narrow changes"
+    }
+  ],
+  "unique_test_functions": 15,
+  "ruff_passed": true,
+  "sources": [
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_full_benchmark_v066.py",
+      "sha256": "9cc75cf659363ac1e6ea4918fd075a27ee1def276e4173a56488d574509d971a",
+      "bytes": 62523
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tests/test_full_coordinator_v066.py",
+      "sha256": "e7a01a38509f6334cfe5b36f2e4fec35510500e8ade1c46a22883e2db478f921",
+      "bytes": 16712
+    }
+  ],
+  "continuation_inventory": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r1/continuation-inventory.json",
+    "sha256": "273113e4968abe08d00f15cf52c50b268528cd8b3fbf745958891afc07e2e6e2",
+    "bytes": 2242415
+  },
+  "boundaries": {
+    "fake_model_calls_only": true,
+    "Docker_calls": 0,
+    "API_calls": 0,
+    "GPU_operations": 0,
+    "service_operations": 0,
+    "old_source_or_result_changes": 0
+  },
+  "covered": [
+    "Independent generation/grading and hard concurrency bounds",
+    "No replay of old completed or model-entered unknown slots",
+    "Only explicitly audited zero-generation attempt requeue with old evidence retained",
+    "Missing Qwen accounting bounded by its full original episode cap without stopping unrelated tasks",
+    "API shared ledger/auth/provider errors stop API only",
+    "Unproven cleanup remains global stop",
+    "Persistent resume cursor with immutable endpoint refs",
+    "Old usage imported without modification; accounting read failure retains earlier known receipts",
+    "Original full-panel denominator and administrative truncation separation"
+  ]
+}
