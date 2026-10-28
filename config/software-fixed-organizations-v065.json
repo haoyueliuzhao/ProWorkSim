@@ -1,10 +1,20 @@
 {
-  "version": "v065-fixed-coding-organizations-r1",
+  "version": "v065-fixed-coding-organizations-r2",
   "status": "implementation_complete_review_pending_no_evaluation",
-  "catalog_sha256": "02edbaf7f50a9abd2c5f33dbd3a7ac25403ee482bebeddc1897a567b02fdaf04",
+  "catalog_sha256": "bc8a3d9ac2e9a41b1503dae57f094f53743f58669684ecec244fe1defd38bd08",
   "common_harness": {
     "base_framework": "OpenHands SDK through ProWorkSim HarnessPort and WorldCore",
-    "members_per_team": 4,
+    "members_per_team": "fixed per organization, from two to four",
+    "member_counts": {
+      "CHIEF": 4,
+      "SOP": 3,
+      "DIALOGUE": 2,
+      "REVIEW": 2,
+      "PEER": 4,
+      "COUNCIL": 3
+    },
+    "comparison_scope": "representative combinations of team size, roles, direct routes and schedule",
+    "team_size_ablation_automatically_authorized": false,
     "dynamic_membership": false,
     "context_limit": 131072,
     "maximum_input_tokens": 98304,
@@ -38,7 +48,7 @@
   },
   "organizations": [
     {
-      "version": "v065-fixed-coding-organizations-r1",
+      "version": "v065-fixed-coding-organizations-r2",
       "id": "CHIEF",
       "name": "集中负责人",
       "fixed_members": [
@@ -47,6 +57,7 @@
         "member_003",
         "member_004"
       ],
+      "member_count": 4,
       "roles": {
         "member_001": {
           "title": "负责人兼集成者",
@@ -157,31 +168,27 @@
       "automatic_evaluation_enabled": false
     },
     {
-      "version": "v065-fixed-coding-organizations-r1",
+      "version": "v065-fixed-coding-organizations-r2",
       "id": "SOP",
       "name": "职能流水线",
       "fixed_members": [
         "member_001",
         "member_002",
-        "member_003",
-        "member_004"
+        "member_003"
       ],
+      "member_count": 3,
       "roles": {
         "member_001": {
-          "title": "需求与集成",
-          "instruction": "State issue requirements and acceptance questions using public evidence; later integrate the returned fixed artifact and close delivery."
+          "title": "需求设计与集成",
+          "instruction": "Clarify public issue requirements and repository design, then hand an implementation plan to member_002. Later integrate the validated fixed patch and close the same-version delivery."
         },
         "member_002": {
-          "title": "定位与方案",
-          "instruction": "Translate requirements into a concrete repository diagnosis and implementation plan, with assumptions and affected interfaces."
+          "title": "实现",
+          "instruction": "Implement the agreed repair in your private workspace, publish an immutable patch and describe changes and assumptions for member_003 to validate."
         },
         "member_003": {
-          "title": "实现",
-          "instruction": "Implement the agreed plan, publishing a fixed patch and concise change summary for the validation stage."
-        },
-        "member_004": {
-          "title": "测试与交接",
-          "instruction": "Validate the received fixed artifact with public tests, report its source version and remaining concerns, and hand the result to integration."
+          "title": "验证",
+          "instruction": "Inspect the published candidate, explicitly integrate when needed, run permitted public tests and send precise evidence or revision requests."
         }
       },
       "communication_edges": [
@@ -191,7 +198,7 @@
         ],
         [
           "member_001",
-          "member_004"
+          "member_003"
         ],
         [
           "member_002",
@@ -200,50 +207,35 @@
         [
           "member_002",
           "member_003"
+        ],
+        [
+          "member_003",
+          "member_001"
         ],
         [
           "member_003",
           "member_002"
-        ],
-        [
-          "member_003",
-          "member_004"
-        ],
-        [
-          "member_004",
-          "member_001"
-        ],
-        [
-          "member_004",
-          "member_003"
         ]
       ],
       "phases": [
         {
-          "name": "需求",
+          "name": "需求与设计",
           "active_members": [
             "member_001"
           ],
-          "opportunities": 3
-        },
-        {
-          "name": "定位与方案",
-          "active_members": [
-            "member_002"
-          ],
-          "opportunities": 3
+          "opportunities": 4
         },
         {
           "name": "实现",
           "active_members": [
-            "member_003"
+            "member_002"
           ],
           "opportunities": 8
         },
         {
           "name": "验证",
           "active_members": [
-            "member_004"
+            "member_003"
           ],
           "opportunities": 6
         },
@@ -252,7 +244,7 @@
           "active_members": [
             "member_001"
           ],
-          "opportunities": 4
+          "opportunities": 6
         }
       ],
       "delivery_member": "member_001",
@@ -261,8 +253,8 @@
         "MetaGPT SOP"
       ],
       "notes": [
-        "Single-role windows with instructed requirements/plan/patch/test handoffs.",
-        "The harness validates real artifact identities; a written stage summary is not test evidence."
+        "Three fixed members; requirements/design/integration share one role.",
+        "Single-role windows use explicit artifacts; a stage label is not evidence of success."
       ],
       "schedule_semantics": "repeat fixed windows; round-robin within each window; skip non-runnable members without a world action; consume actual attempts only",
       "role_descriptions_are_instructions_not_new_tool_powers": true,
@@ -270,31 +262,22 @@
       "automatic_evaluation_enabled": false
     },
     {
-      "version": "v065-fixed-coding-organizations-r1",
+      "version": "v065-fixed-coding-organizations-r2",
       "id": "DIALOGUE",
       "name": "阶段对话链",
       "fixed_members": [
         "member_001",
-        "member_002",
-        "member_003",
-        "member_004"
+        "member_002"
       ],
+      "member_count": 2,
       "roles": {
         "member_001": {
-          "title": "需求与交付",
-          "instruction": "Clarify the issue with the designer and later integrate the explicitly returned patch. Keep final delivery tied to your tested version."
+          "title": "需求设计与集成",
+          "instruction": "Discuss issue requirements and design with member_002, clarify ambiguous observations, then integrate the explicit returned patch and close delivery."
         },
         "member_002": {
-          "title": "设计与衔接",
-          "instruction": "Discuss requirements with member_001 and implementation with member_003. Explicitly receive, merge and republish patches that travel through you."
-        },
-        "member_003": {
-          "title": "编码",
-          "instruction": "Discuss design with member_002, implement a repair, and work with member_004 on tests. Return the fixed implementation through member_002."
-        },
-        "member_004": {
-          "title": "测试",
-          "instruction": "Discuss the received implementation with member_003, run allowed public checks and return precise revision feedback along the same link."
+          "title": "实现与自测",
+          "instruction": "Discuss the proposed design with member_001, implement the repair and run permitted self-checks. Publish the actual fixed patch and report evidence."
         }
       },
       "communication_edges": [
@@ -305,27 +288,11 @@
         [
           "member_002",
           "member_001"
-        ],
-        [
-          "member_002",
-          "member_003"
-        ],
-        [
-          "member_003",
-          "member_002"
-        ],
-        [
-          "member_003",
-          "member_004"
-        ],
-        [
-          "member_004",
-          "member_003"
         ]
       ],
       "phases": [
         {
-          "name": "需求与设计对话",
+          "name": "需求设计对话",
           "active_members": [
             "member_001",
             "member_002"
@@ -333,26 +300,18 @@
           "opportunities": 8
         },
         {
-          "name": "设计与编码对话",
-          "active_members": [
-            "member_002",
-            "member_003"
-          ],
-          "opportunities": 8
-        },
-        {
-          "name": "编码与测试对话",
-          "active_members": [
-            "member_003",
-            "member_004"
-          ],
-          "opportunities": 8
-        },
-        {
-          "name": "设计与交付对话",
+          "name": "实现自测对话",
           "active_members": [
             "member_002",
             "member_001"
+          ],
+          "opportunities": 8
+        },
+        {
+          "name": "交付确认对话",
+          "active_members": [
+            "member_001",
+            "member_002"
           ],
           "opportunities": 8
         }
@@ -362,8 +321,8 @@
         "ChatDev phase and role dialogue chain"
       ],
       "notes": [
-        "Only adjacent pairs communicate directly; each pair alternates ordinary opportunities.",
-        "Fixed versions remain team-public; intermediary handoffs are not required to read them. Reading, explicit merging and directed communication are real work, not free relays."
+        "Two fixed roles alternate in staged dialogue; this is an adaptation, not full ChatDev reproduction.",
+        "Published versions stay team-public; all reads, merges and communication cost real opportunities."
       ],
       "schedule_semantics": "repeat fixed windows; round-robin within each window; skip non-runnable members without a world action; consume actual attempts only",
       "role_descriptions_are_instructions_not_new_tool_powers": true,
@@ -371,31 +330,22 @@
       "automatic_evaluation_enabled": false
     },
     {
-      "version": "v065-fixed-coding-organizations-r1",
+      "version": "v065-fixed-coding-organizations-r2",
       "id": "REVIEW",
       "name": "开发复核返修",
       "fixed_members": [
         "member_001",
-        "member_002",
-        "member_003",
-        "member_004"
+        "member_002"
       ],
+      "member_count": 2,
       "roles": {
         "member_001": {
-          "title": "开发者甲兼集成",
-          "instruction": "Coordinate implementation scope with the other developer, publish a fixed candidate for review, revise it and close integration."
+          "title": "开发兼交付",
+          "instruction": "Develop a repair, publish its fixed candidate for member_002 to review, address concrete feedback and perform the explicit same-version delivery."
         },
         "member_002": {
-          "title": "开发者乙",
-          "instruction": "Implement a complementary part or investigate an alternative with the same issue information, request review and explicitly deliver patches to member_001."
-        },
-        "member_003": {
-          "title": "复核者甲",
-          "instruction": "Review developer patches for correctness and issue coverage, using actual source and public evidence. Return actionable feedback to either developer."
-        },
-        "member_004": {
-          "title": "复核者乙",
-          "instruction": "Independently review developer patches and edge cases, using allowed public tests when useful; communicate concerns directly to the responsible developer."
+          "title": "独立复核",
+          "instruction": "Independently inspect the developer candidate and issue coverage. Use actual public tests and source evidence, then return actionable revision feedback."
         }
       },
       "communication_edges": [
@@ -404,72 +354,36 @@
           "member_002"
         ],
         [
-          "member_001",
-          "member_003"
-        ],
-        [
-          "member_001",
-          "member_004"
-        ],
-        [
           "member_002",
           "member_001"
-        ],
-        [
-          "member_002",
-          "member_003"
-        ],
-        [
-          "member_002",
-          "member_004"
-        ],
-        [
-          "member_003",
-          "member_001"
-        ],
-        [
-          "member_003",
-          "member_002"
-        ],
-        [
-          "member_004",
-          "member_001"
-        ],
-        [
-          "member_004",
-          "member_002"
         ]
       ],
       "phases": [
         {
           "name": "开发",
           "active_members": [
-            "member_001",
-            "member_002"
+            "member_001"
           ],
           "opportunities": 8
         },
         {
           "name": "独立复核",
           "active_members": [
-            "member_003",
-            "member_004"
+            "member_002"
           ],
           "opportunities": 4
         },
         {
           "name": "返修与集成",
           "active_members": [
-            "member_001",
-            "member_002"
+            "member_001"
           ],
           "opportunities": 8
         },
         {
           "name": "复核反馈",
           "active_members": [
-            "member_003",
-            "member_004"
+            "member_002"
           ],
           "opportunities": 4
         }
@@ -479,8 +393,8 @@
         "modern code review development-review-revision loop"
       ],
       "notes": [
-        "Reviewers give evidence and feedback, not an external hidden-score oracle.",
-        "Common managed tool powers remain available; reviewer roles are instructions, not read-only ACLs."
+        "Two fixed members separate implementation from independent review.",
+        "Review remains an instructed responsibility, not a new read-only ACL or hidden-score oracle."
       ],
       "schedule_semantics": "repeat fixed windows; round-robin within each window; skip non-runnable members without a world action; consume actual attempts only",
       "role_descriptions_are_instructions_not_new_tool_powers": true,
@@ -488,7 +402,7 @@
       "automatic_evaluation_enabled": false
     },
     {
-      "version": "v065-fixed-coding-organizations-r1",
+      "version": "v065-fixed-coding-organizations-r2",
       "id": "PEER",
       "name": "扁平同伴协作",
       "fixed_members": [
@@ -497,6 +411,7 @@
         "member_003",
         "member_004"
       ],
+      "member_count": 4,
       "roles": {
         "member_001": {
           "title": "同伴甲兼交付出口",
@@ -591,31 +506,27 @@
       "automatic_evaluation_enabled": false
     },
     {
-      "version": "v065-fixed-coding-organizations-r1",
+      "version": "v065-fixed-coding-organizations-r2",
       "id": "COUNCIL",
       "name": "专家会诊",
       "fixed_members": [
         "member_001",
         "member_002",
-        "member_003",
-        "member_004"
+        "member_003"
       ],
+      "member_count": 3,
       "roles": {
         "member_001": {
-          "title": "需求专家兼集成",
-          "instruction": "Analyze issue semantics and success conditions, contribute to the joint discussion, and integrate the chosen implementation with explicit evidence."
+          "title": "需求与集成专家",
+          "instruction": "Analyze issue semantics and repository constraints in the joint discussion. Later integrate the chosen published implementation with explicit evidence."
         },
         "member_002": {
-          "title": "仓库与设计专家",
-          "instruction": "Analyze repository structure and compatibility constraints; share reasoning and critique the implementation plan with the fixed expert group."
+          "title": "实现专家",
+          "instruction": "Contribute implementation hypotheses in the joint discussion, then build the discussed repair and publish an immutable candidate for verification."
         },
         "member_003": {
-          "title": "实现专家",
-          "instruction": "Participate in diagnosis, then implement the discussed approach in your workspace and publish an explicit fixed candidate for review and integration."
-        },
-        "member_004": {
           "title": "验证专家",
-          "instruction": "Contribute failure hypotheses and edge cases, then examine the received candidate and report actual public validation evidence to the group."
+          "instruction": "Contribute failure hypotheses and edge cases in the joint discussion, then inspect the candidate and report actual public validation evidence."
         }
       },
       "communication_edges": [
@@ -628,10 +539,6 @@
           "member_003"
         ],
         [
-          "member_001",
-          "member_004"
-        ],
-        [
           "member_002",
           "member_001"
         ],
@@ -640,32 +547,12 @@
           "member_003"
         ],
         [
-          "member_002",
-          "member_004"
-        ],
-        [
           "member_003",
           "member_001"
         ],
         [
           "member_003",
           "member_002"
-        ],
-        [
-          "member_003",
-          "member_004"
-        ],
-        [
-          "member_004",
-          "member_001"
-        ],
-        [
-          "member_004",
-          "member_002"
-        ],
-        [
-          "member_004",
-          "member_003"
         ]
       ],
       "phases": [
@@ -674,22 +561,21 @@
           "active_members": [
             "member_001",
             "member_002",
-            "member_003",
-            "member_004"
+            "member_003"
           ],
-          "opportunities": 8
+          "opportunities": 6
         },
         {
           "name": "集中实现",
           "active_members": [
-            "member_003"
+            "member_002"
           ],
           "opportunities": 8
         },
         {
           "name": "验证反馈",
           "active_members": [
-            "member_004"
+            "member_003"
           ],
           "opportunities": 4
         },
@@ -706,8 +592,8 @@
         "AgentVerse expert collaboration and feedback"
       ],
       "notes": [
-        "No expert recruitment, member replacement or hidden-score voting.",
-        "Direct graph equals PEER; role specialization and staged activation are the treatment."
+        "Three fixed experts; no recruitment, replacement or hidden-score voting.",
+        "Unlike four-member PEER, this baseline changes team size as well as roles and staged activation."
       ],
       "schedule_semantics": "repeat fixed windows; round-robin within each window; skip non-runnable members without a world action; consume actual attempts only",
       "role_descriptions_are_instructions_not_new_tool_powers": true,

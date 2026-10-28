@@ -47,7 +47,7 @@ def prepare(tmp_path, organization="PEER", *, max_decisions=512):
     ports = {member: HarnessPort(world.SoftwareCollaborationPort(
         prepared.world.session(member, world.PROJECT), member), member, project_id=world.PROJECT,
         public_sink=lambda *_: None, world_sink=lambda *_: None, harness_sink=lambda *_: None)
-        for member in MEMBERS}
+        for member in prepared.case["active_roles"]}
     counter = itertools.count()
 
     def call(member, tool, **arguments):
@@ -73,14 +73,23 @@ def bundle(prepared, member):
 @pytest.mark.parametrize("organization", GROUPS)
 def test_fixed_members_and_equal_basic_coding_capabilities(tmp_path, organization):
     prepared, ports, call, tests, _ = prepare(tmp_path, organization)
+    members = tuple(prepared.case["active_roles"])
     state = prepared.world.store.load()
     facts = prepared.world._software()
-    assert tuple(facts["registry"]) == MEMBERS
-    assert set(state["actors"]) == {*MEMBERS, "operator"}
-    assert prepared.case["active_roles"] == list(MEMBERS)
+    assert tuple(facts["registry"]) == members
+    assert set(state["actors"]) == {*members, "operator"}
+    assert prepared.case["active_roles"] == list(members)
     assert prepared.case["team_limits"]["max_total_tokens"] == 5_000_000
-    assert {a["owner"] for a in state["artifacts"].values()} == {*MEMBERS, "operator"}
+    assert {a["owner"] for a in state["artifacts"].values()} == {*members, "operator"}
     for member, port in ports.items():
+        observed = port.observe()["fixed_organization"]
+        assert set(observed["role_directory"]) == set(members)
+        assert observed["members"] == list(members)
+        for definition in port.tools():
+            for name in ("recipient", "to_member"):
+                prop = definition["parameters"].get("properties", {}).get(name)
+                if prop is not None:
+                    assert prop["enum"] == list(members)
         names = {tool["name"] for tool in port.tools()}
         assert {"write_file", "create_file", "delete_file", "rename_file", "search_repository",
                 "run_tests", "fix_patch", "integrate_patch", "send_message", "offer_transfer"} <= names
@@ -88,7 +97,7 @@ def test_fixed_members_and_equal_basic_coding_capabilities(tmp_path, organizatio
         assert not call(member, "spawn_member", briefing="No fifth real participant")["ok"]
         assert not call(member, "retire_member", reason="Do not mutate fixed roster")["ok"]
         assert bundle(prepared, member)["files"]["sample.py"] == "value = 0\n"
-    assert list(prepared.world._software()["registry"]) == list(MEMBERS)
+    assert list(prepared.world._software()["registry"]) == list(members)
     assert all(row["status"] == "live" for row in prepared.world._software()["registry"].values())
     assert tests == []
 
@@ -170,8 +179,33 @@ def test_each_public_test_binds_the_actual_member_and_version(tmp_path):
     assert len(reports) == 2
 
 
-def test_unique_delivery_member_and_last_legal_version_without_best_of_four(tmp_path):
-    prepared, _, call, tests, _ = prepare(tmp_path)
+@pytest.mark.parametrize("organization", ["DIALOGUE", "SOP"])
+def test_smaller_rosters_preserve_private_history_public_fixed_versions_and_no_ghosts(tmp_path, organization):
+    prepared, ports, call, _, _ = prepare(tmp_path, organization)
+    members = tuple(prepared.case["active_roles"])
+    accepted(call, members[0], "work_note", key="private", text="SMALL_TEAM_PRIVATE_NOTE")
+    accepted(call, members[1], "write_file", path="sample.py", text="public_fixed = 1\n")
+    assert bundle(prepared, members[0])["files"]["sample.py"] == "value = 0\n"
+    published = accepted(call, members[1], "fix_patch", task_ids=[], message="actual published version")
+    accepted(call, members[1], "write_file", path="sample.py", text="PRIVATE_LATER_VALUE = 99\n")
+    for member in members:
+        assert set(ports[member].observe()["fixed_organization"]["role_directory"]) == set(members)
+        if member != members[0]:
+            assert "SMALL_TEAM_PRIVATE_NOTE" not in str(ports[member].observe())
+        assert "public_fixed = 1" in accepted(call, member, "read_file", path="sample.py",
+                                               patch_id=published["patch_id"])["text"]
+    accepted(call, members[0], "integrate_patch", patch_id=published["patch_id"])
+    assert bundle(prepared, members[0])["files"]["sample.py"] == "public_fixed = 1\n"
+    ghost = f"member_{len(members)+1:03d}"
+    assert not call(members[0], "send_message", recipient=ghost, task_id="root_goal", body="No extra member")["ok"]
+    with pytest.raises(ValueError):
+        world.SoftwareCollaborationPort(prepared.world.session(ghost, world.PROJECT), ghost)
+    assert tuple(prepared.world._software()["registry"]) == members
+
+
+@pytest.mark.parametrize("organization", ["DIALOGUE", "COUNCIL", "PEER"])
+def test_unique_delivery_member_and_last_legal_version_without_best_of_members(tmp_path, organization):
+    prepared, _, call, tests, _ = prepare(tmp_path, organization)
     accepted(call, MEMBERS[0], "write_file", path="sample.py", text="value = 1\n")
     accepted(call, MEMBERS[0], "run_tests")
     accepted(call, MEMBERS[0], "fix_patch", task_ids=[], message="tested delivery version")
@@ -195,12 +229,15 @@ def test_unique_delivery_member_and_last_legal_version_without_best_of_four(tmp_
     assert not call(MEMBERS[0], "write_file", path="sample.py", text="after closing")["ok"]
 
 
-def test_real_shared_budget_is_one_team_pool_including_failed_and_private_actions():
+@pytest.mark.parametrize("member_count", [2, 3, 4])
+def test_real_shared_budget_is_one_team_pool_including_failed_and_private_actions(member_count):
+    members = MEMBERS[:member_count]
     # These counters are explicitly synthetic. The real budget object, rather
     # than four per-member copies, must deny the fifth aggregate request.
-    budget = managed.ManagedTeamBudget(members=MEMBERS, team_id="fixed-org-cpu-budget",
+    budget = managed.ManagedTeamBudget(members=members, team_id="fixed-org-cpu-budget",
         max_decisions=8, max_attempts=8, max_total_tokens=80, require_exact_resident=False)
-    for index, member in enumerate(MEMBERS):
+    for index in range(4):
+        member = members[index % len(members)]
         call_id = f"decision-{index}"
         budget.consume_decision(member, call_id)
         budget.reserve(member, call_id, {"token_reservation": 20})
@@ -217,8 +254,10 @@ def test_real_shared_budget_is_one_team_pool_including_failed_and_private_action
         budget.register_member("member_005")
 
 
-def test_runtime_assembly_uses_four_private_sessions_and_one_bound_budget(tmp_path):
-    prepared, _, _, tests, deadline = prepare(tmp_path)
+@pytest.mark.parametrize("organization", ["DIALOGUE", "COUNCIL", "PEER"])
+def test_runtime_assembly_uses_configured_private_sessions_and_one_bound_budget(tmp_path, organization):
+    prepared, _, _, tests, deadline = prepare(tmp_path, organization)
+    members = tuple(prepared.case["active_roles"])
     instances = []
 
     class InertWorker:
@@ -236,11 +275,11 @@ def test_runtime_assembly_uses_four_private_sessions_and_one_bound_budget(tmp_pa
     before = copy.deepcopy(prepared.world.store.load())
     runtime, _, _ = runtime_module.build_runtime(owner, prepared, tmp_path / "runtime", deadline=deadline,
         public_initial_message=prepared.case["root_goal"], worker_factory=InertWorker, offline_fixture=True)
-    assert [worker.member for worker in instances] == list(MEMBERS)
+    assert [worker.member for worker in instances] == list(members)
     assert len({id(worker.kwargs["team_budget"]) for worker in instances}) == 1
     assert runtime.team_budget.snapshot()["limits"]["max_total_tokens"] == 5_000_000
-    assert len({str(worker.kwargs["directory"]) for worker in instances}) == 4
-    assert len({id(runtime.ports[member]) for member in MEMBERS}) == 4
+    assert len({str(worker.kwargs["directory"]) for worker in instances}) == len(members)
+    assert len({id(runtime.ports[member]) for member in members}) == len(members)
     assert all(worker.kwargs["context_selection"] == "full_history" for worker in instances)
     assert all(worker.config["max_context_tokens"] == 131072 for worker in instances)
     assert all(worker.config["max_output_tokens"] == 32768 for worker in instances)
@@ -282,25 +321,29 @@ def test_closed_candidates_remain_closed_after_reconstructing_the_world(tmp_path
 
 def test_fixed_schedule_waits_without_synthetic_work_and_reopens_same_identity():
     from proworksim.software_fixed_organization_v065 import get_organization
-    schedule = runtime_module.FixedPhaseSchedule(get_organization("DIALOGUE"))
+    spec = get_organization("DIALOGUE")
+    members = tuple(spec["fixed_members"])
+    schedule = runtime_module.FixedPhaseSchedule(spec)
     emitted = []
     for _ in range(10):
-        selected = schedule.choose(MEMBERS)
+        selected = schedule.choose(members)
         emitted.append(selected["member"])
         schedule.consume(selected)
     assert emitted[:8] == [MEMBERS[0], MEMBERS[1]] * 4
-    assert emitted[8:] == [MEMBERS[1], MEMBERS[2]]
+    assert emitted[8:] == [members[1], members[0]]
     before = schedule.snapshot()
     assert schedule.choose([]) is None
     assert schedule.snapshot()["executed_opportunities"] == before["executed_opportunities"]
     assert schedule.snapshot()["world_actions_created_by_scheduler"] == 0
-    selected = schedule.choose([MEMBERS[3]])
-    assert selected["member"] == MEMBERS[3]
+    selected = schedule.choose([members[1]])
+    assert selected["member"] == members[1]
     schedule.consume(selected)
     with pytest.raises(ValueError):
         schedule.consume(selected)
     with pytest.raises(ValueError):
         schedule.choose(["member_005"])
+    with pytest.raises(ValueError):
+        schedule.choose(["member_003"])
 
 
 def inert_runtime(prepared, folder, deadline):

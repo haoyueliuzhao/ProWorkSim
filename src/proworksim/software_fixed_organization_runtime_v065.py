@@ -17,13 +17,13 @@ from .harness_port import HarnessPort
 from .online_collection import _config
 from .repository_sources_v054 import RepositorySources, tree_manifest
 from .software_benchmark_candidates_v054 import write_new
-from .software_fixed_organization_v065 import MEMBERS, validate_organization, require_evaluation_disabled
+from .software_fixed_organization_v065 import validate_organization, require_evaluation_disabled
 from .software_organization_runtime_v038 import _CollectionOwner
 from .software_organization_runtime_v047 import NativeDispatchGate
 from .software_runtime_v033 import TECHNICAL_FAILURES, TERMINAL, _terminal_detail
 from .storage import digest, json_bytes
 
-VERSION = "v065-fixed-organization-managed-runtime-r1"
+VERSION = "v065-fixed-organization-managed-runtime-r2"
 ProjectOwner = aligned.ProjectOwner
 ManagedTeamBudget = aligned.ManagedTeamBudget
 close_runtime = base.close_runtime
@@ -34,13 +34,14 @@ class FixedPhaseSchedule:
     def __init__(self, spec):
         validate_organization(spec)
         self.spec = copy.deepcopy(spec)
+        self.members = tuple(spec["fixed_members"])
         self.slots = [(index, phase["name"], phase["active_members"][n % len(phase["active_members"])])
             for index, phase in enumerate(spec["phases"]) for n in range(phase["opportunities"])]
         self.position, self.executed, self.skipped = 0, 0, 0
 
     def choose(self, runnable):
         runnable = set(runnable)
-        if not runnable <= set(MEMBERS):
+        if not runnable <= set(self.members):
             raise ValueError("The scheduler cannot admit another identity")
         for _ in self.slots:
             index, name, member = self.slots[self.position % len(self.slots)]
@@ -72,15 +73,16 @@ class OrganizationRuntime(base.OrganizationRuntime):
         super().__init__(*args, **kwargs)
         self.offline_fixture = True
         self.fixed_spec = copy.deepcopy(self.prepared.case["fixed_organization"])
+        self.members = tuple(self.fixed_spec["fixed_members"])
         self.schedule = FixedPhaseSchedule(self.fixed_spec)
         self._selected = None
 
     def sync_members(self):
         registry = base._registry(self.prepared.world)
-        if (self.initial_members != list(MEMBERS) or list(registry) != list(MEMBERS)
-                or self.labels != list(MEMBERS) or any(row["status"] != "live" for row in registry.values())
+        if (self.initial_members != list(self.members) or list(registry) != list(self.members)
+                or self.labels != list(self.members) or any(row["status"] != "live" for row in registry.values())
                 or self.prepared.case["fixed_organization"] != self.fixed_spec):
-            raise ValueError("The fixed four-member registry and organization cannot change")
+            raise ValueError("The declared fixed-member registry and organization cannot change")
 
     def select_next(self):
         self.sync_members()
@@ -119,7 +121,7 @@ class OrganizationRuntime(base.OrganizationRuntime):
 
 
 def worker_config(owner, case, member, *, public_initial_message):
-    if member not in MEMBERS or not isinstance(public_initial_message, str) or not public_initial_message.strip():
+    if member not in case["active_roles"] or not isinstance(public_initial_message, str) or not public_initial_message.strip():
         raise ValueError("Bind one fixed role and the same public issue/environment guidance")
     value = _config(owner, member, world.member_instruction(case, member) + "\n\n" + public_initial_message,
                     case["role_decision_limits"])
@@ -168,7 +170,7 @@ class PublicTestCallback:
         if self.world is None or self.clock() >= self.hard_at:
             raise ValueError("The public callback requires its live bounded world")
         actor = getattr(self.world, "_active_public_test_actor", None)
-        if actor not in MEMBERS:
+        if actor not in self.world._software()["case"]["active_roles"]:
             raise ValueError("A real managed run_tests operation must bind the requesting member")
         artifact, version, bundle = self.world._bundle(actor)
         tree = tree_manifest(files, entry_metadata)["tree_sha256"]
@@ -215,6 +217,7 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
             or getattr(owner.adapter, "external_resources_enabled", None) is not False):
         require_evaluation_disabled()
     world.validate_case(prepared.case, provider=prepared.source_provider)
+    members = tuple(prepared.case["active_roles"])
     if ((deadline.soft_seconds, deadline.hard_seconds) != (aligned.SOFT_SECONDS, aligned.HARD_SECONDS)
             or not isinstance(prepared.source_provider.runner, PublicTestCallback)
             or prepared.source_provider.runner.world is not prepared.world
@@ -225,7 +228,7 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
     before = prepared.world.store.load()
     recorder = base._StreamRecorder(folder / "experience.jsonl")
     deadline.sink = lambda kind, value: recorder.record(kind, value)
-    budget = ManagedTeamBudget(members=list(MEMBERS), team_id=owner.window_id, require_exact_resident=False,
+    budget = ManagedTeamBudget(members=list(members), team_id=owner.window_id, require_exact_resident=False,
         **{key: prepared.case["team_limits"][key] for key in ("max_decisions", "max_attempts", "max_total_tokens")})
     prepared.world.model_budget_snapshot = budget.snapshot
     gate = NativeDispatchGate(owner.transport, deadline)
@@ -236,8 +239,8 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
     factory = worker_factory or aligned.worker_type()
 
     def create_member(member, record):
-        if member not in MEMBERS or record["origin"] != "initial_fixed_organization":
-            raise ValueError("Only the four original sessions may be assembled")
+        if member not in members or record["origin"] != "initial_fixed_organization":
+            raise ValueError("Only this organization’s original sessions may be assembled")
         interface = world.SoftwareCollaborationPort(prepared.world.session(member, world.PROJECT), member)
         interfaces[member] = interface
         rows = base._StreamList(folder / "public-capture" / (member + ".jsonl"))
@@ -256,7 +259,7 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
         return port, worker
 
     ports, workers = {}, {}
-    for member in MEMBERS:
+    for member in members:
         ports[member], workers[member] = create_member(member, base._registry(prepared.world)[member])
     runtime = OrganizationRuntime(ports, workers, prepared=prepared, team_budget=budget,
         recorder=recorder, member_factory=create_member, deadline=deadline, offline_fixture=True)
@@ -273,14 +276,14 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
     for rows in captured.values():
         rows.clear()
         rows.enabled = True
-    for member in MEMBERS:
+    for member in members:
         recorder.record("organization_session_born", runtime.birth_records[member], worker_id=member)
-    runtime.note_population("initial_fixed_four")
+    runtime.note_population("initial_fixed_roster")
     write_new(folder / "alignment.json", {"version": VERSION, "actual_managed_SDK_harness": True,
         "context_limit": aligned.CONTEXT_LIMIT, "maximum_input_tokens": aligned.MAX_INPUT_TOKENS,
         "maximum_output_tokens": aligned.MAX_OUTPUT_TOKENS, "sdk_context_selection": aligned.SDK_CONTEXT_SELECTION,
-        "actual_team_limits": prepared.case["team_limits"], "shared_pool_not_four_personal_budgets": True,
-        "fixed_members": list(MEMBERS), "organization": copy.deepcopy(runtime.fixed_spec),
+        "actual_team_limits": prepared.case["team_limits"], "shared_pool_not_per_member_budget_copies": True,
+        "fixed_members": list(members), "organization": copy.deepcopy(runtime.fixed_spec),
         "model_calls_during_assembly": 0, "hidden_evaluation_accessible": False,
         "unmanaged_bash_added": False, "formal_execution_authorized": False,
         "execution_kind": "explicit_scripted_cpu_fixture", "real_model_calls_authorized": 0,
@@ -348,11 +351,11 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
             break
     runtime.note_population("fixed_episode_closed")
     boundary = {"version": VERSION, "status": "execution_integrity_blocked" if integrity_failure else "bounded_work_closed",
-        "kind": "fixed_four_member_repository_terminal", "organization_id": runtime.fixed_spec["id"],
+        "kind": "fixed_roster_repository_terminal", "organization_id": runtime.fixed_spec["id"],
         "closure_reason": reason, "outcomes": outcomes, "execution_integrity_failure": integrity_failure,
         "opportunities": runtime.opportunities, "actions": runtime.actions,
         "team_budget": base.budget_snapshot(runtime, prepared), "schedule": runtime.schedule.snapshot(),
-        "initial_members": list(MEMBERS), "born_members": list(runtime.labels),
+        "initial_members": list(runtime.members), "born_members": list(runtime.labels),
         "role_stops": copy.deepcopy(runtime.stopped), "waiting_members": copy.deepcopy(runtime.waiting),
         "current_work_ended": copy.deepcopy(runtime.work_ended), "work_boundaries": copy.deepcopy(runtime.work_boundaries),
         "terminal_details": copy.deepcopy(runtime.terminal_details), "continuation": False,
@@ -366,7 +369,7 @@ def run_fragment(prepared, runtime, *, on_opportunity=None):
 
 
 def lock_fixed_candidates(prepared, folder, *, sdk_closed):
-    """Lock only member_001's final tree and last legal version, never best of four."""
+    """Lock only member_001's final tree and last legal version, never best of the members."""
     from . import software_benchmark_candidates_v054 as candidates
     if sdk_closed is not True:
         raise ValueError("Close every fixed-team SDK conversation before candidate locking")
@@ -376,9 +379,11 @@ def lock_fixed_candidates(prepared, folder, *, sdk_closed):
     with actual_world.store.lock():
         actual_world.state = actual_world.store.load()
         facts = actual_world._software()
-        actor = facts["case"]["fixed_organization"]["delivery_member"]
-        if actor != "member_001" or facts["case"]["active_roles"] != list(MEMBERS):
-            raise ValueError("Candidate closing must retain the genuine four-member organization")
+        spec = validate_organization(facts["case"]["fixed_organization"])
+        members = tuple(spec["fixed_members"])
+        actor = spec["delivery_member"]
+        if actor != "member_001" or facts["case"]["active_roles"] != list(members):
+            raise ValueError("Candidate closing must retain the genuine configured-member organization")
         if any(row["actor_id"] != actor for row in facts["deliveries"]):
             raise ValueError("Another member acquired a forbidden team delivery")
         artifact, version, bundle = actual_world._bundle(actor)
@@ -399,7 +404,7 @@ def lock_fixed_candidates(prepared, folder, *, sdk_closed):
         delivery = candidates._select_last_submission_locked(prepared)
         claim_ref = write_new(Path(actual_world.store.control) / "v065-candidate-close.json", {
             "version": VERSION, "task_id": prepared.case["case_id"], "episode_lock_path": str(root / "lock.json"),
-            "fixed_members": list(MEMBERS), "designated_delivery_member": actor,
+            "fixed_members": list(members), "designated_delivery_member": actor,
             "terminal_source_reference": terminal["binding"]["source_reference"],
             "delivery_source_reference": delivery["binding"]["source_reference"] if delivery else None})
         actual_world.fixed_candidates_closed = True

@@ -17,7 +17,7 @@ from proworksim.storage import atomic_write, json_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITIES = ROOT / 'artifacts/software-benchmark-v054/manifests/identities.json'
-DEFAULT_OUTPUT = ROOT / 'artifacts/software-fixed-organization-v065/preparation-r1'
+DEFAULT_OUTPUT = ROOT / 'artifacts/software-fixed-organization-v065/preparation-r2'
 CONFIG = ROOT / 'config/software-fixed-organizations-v065.json'
 
 
@@ -37,17 +37,18 @@ def build_plan(identity_file=IDENTITIES):
                           'inherits_v064_authorization': False},
         'catalog_sha256': catalog_sha256(),
         'common_harness': COMMON,
+        'superseded_four_member_review': reference(ROOT / 'artifacts/software-fixed-organization-v065/superseded-four-member-r1/manifest.json'),
         'public_task_pool': {'dataset': 'SWE-bench/SWE-bench_Verified', 'split': 'test',
             'identity_file': reference(identity_file), 'task_count': 500,
             'repositories': public['repository_counts'],
             'dataset_revision': public['source']['revision'],
             'selection': 'All existing public identities; no historical scores or answer material read'},
         'conditions': [{'organization_id': spec['id'], 'organization_name': spec['name'],
-            'members': spec['fixed_members'], 'model': None, 'team_token_budget': None,
+            'members': spec['fixed_members'], 'member_count': len(spec['fixed_members']), 'model': None, 'team_token_budget': None,
             'task_seed_manifest': None, 'replicates': None, 'execution_slots': [],
             'intended_task_pool_size': 500, 'specification': spec} for spec in organizations],
         'awaiting_single_model_study': {
-            'study': 'software-benchmark-v064/full-verified-r1',
+            'study': 'v064 full Verified token-budget study with its separately versioned continuations',
             'model_candidates': ['original Qwen3.5-9B', 'DeepSeek Flash thinking'],
             'selected_models': None, 'selected_team_token_budget': None,
             'additional_API_cash_budget': None,
@@ -74,8 +75,10 @@ def build_plan(identity_file=IDENTITIES):
                 'responsibility transfers', 'rejections', 'waiting', 'wall time', 'conflicts'],
             'mean_rule': 'Full-panel actual mean only with complete actual usage for the complete '
                 'executed panel; interim subset mean carries its denominator and coverage.',
-            'comparison': 'paired tasks, repository-aware uncertainty; roles, routes and scheduling '
-                'are a combined organization treatment, not isolated graph causality',
+            'comparison': 'paired tasks and repository-aware uncertainty for representative combinations '
+                'of team size, roles, routes and scheduling; not isolated topology or team-size causality',
+            'separate_team_size_effect_requires_additional_ablation': True,
+            'additional_size_ablation_automatically_authorized': False,
             'public_publication_channel_preserved': True,
         },
         'implementation_sources': [reference(path) for path in sorted([

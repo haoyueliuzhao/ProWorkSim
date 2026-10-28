@@ -1,4 +1,4 @@
-"""Fixed four-member organizations over the existing managed repository world.
+"""Fixed two-to-four-member organizations over the existing managed repository world.
 
 Only this new world changes membership and direct collaboration routing. Public
 task-board facts and explicitly published fixed versions retain their original
@@ -13,14 +13,14 @@ from . import software_benchmark_world_v056 as previous
 from . import software_benchmark_world_v054 as repository_world
 from . import software_organization_v038 as organization_world
 from . import software_organization_v042 as paged
-from .software_fixed_organization_v065 import MEMBERS, get_organization, validate_organization
+from .software_fixed_organization_v065 import get_organization, validate_organization
 from .harness_policy_v040 import FORBIDDEN_TOOLS
 from .scenarios import SCENARIO_VERSION, build_scenario, initial_business_state
 from .storage import atomic_write, digest, json_bytes
 from .templates.online_work import PreparedOnlineCase
 from .tool_outcomes import ToolRejection
 
-VERSION = "v065-fixed-four-member-managed-world-r1"
+VERSION = "v065-fixed-variable-member-managed-world-r2"
 PURPOSE = "fixed_organization_implementation_only"
 PROJECT = previous.PROJECT
 MAX_DECISIONS, MAX_TEST_RUNS = 512, 512
@@ -37,21 +37,22 @@ def case_spec(case_id, *, provider, organization_id, max_total_tokens,
               max_decisions=MAX_DECISIONS, max_test_runs=MAX_TEST_RUNS):
     spec = get_organization(organization_id)
     validate_organization(spec)
+    members = tuple(spec["fixed_members"])
     for value, name in ((max_total_tokens, "team tokens"), (max_decisions, "team decisions"),
                         (max_test_runs, "team public tests")):
         _positive(value, name)
     case = previous.case_spec(case_id, provider=provider)
     case.update(version=VERSION, interface_revision=VERSION, purpose=PURPOSE,
         usage=PURPOSE, category=PURPOSE, split=PURPOSE, condition=organization_id,
-        organization_level="fixed_four_members", task_type="public_repository_fixed_organization",
-        active_roles=list(MEMBERS), role_decision_limits={m: max_decisions for m in MEMBERS},
+        organization_level=f"fixed_{len(members)}_members", task_type="public_repository_fixed_organization",
+        active_roles=list(members), role_decision_limits={m: max_decisions for m in members},
         team_limits={"max_decisions": max_decisions, "max_attempts": max_decisions,
                      "max_total_tokens": max_total_tokens, "max_test_runs": max_test_runs},
         first_member=spec["phases"][0]["active_members"][0],
         scheduling_protocol="v065-fixed-cyclic-organization-phases",
         fixed_organization=spec,
-        member_limits={"initial_members": 4, "max_live_members": 4,
-            "max_cumulative_births": 4, "births_enabled": False, "waiting_counts_as_live": True,
+        member_limits={"initial_members": len(members), "max_live_members": len(members),
+            "max_cumulative_births": len(members), "births_enabled": False, "waiting_counts_as_live": True,
             "fixed_means_fixed_birth_set": True, "voluntary_retirement_allowed": False,
             "retired_ids_reused": False, "stable_identities": True,
             "staff_done_scope": "end_current_work_until_real_visible_event"},
@@ -77,18 +78,19 @@ def validate_case(case, *, provider):
 
 
 def member_instruction(case, member):
-    if member not in MEMBERS:
-        raise ValueError("Use one of the four fixed identities")
     spec, limits = case["fixed_organization"], case["team_limits"]
+    members = tuple(spec["fixed_members"])
+    if member not in members:
+        raise ValueError("Use one of this organization’s fixed identities")
     recipients = [target for source, target in spec["communication_edges"] if source == member]
     return (
         f"Resolve the unchanged original repository issue. You are {member}, "
         f"role {spec['roles'][member]['title']}, in organization {spec['name']}. "
         + spec["roles"][member]["instruction"] + " "
-        "All four members use the same model and managed tools, with separate private versions, "
+        f"All {len(members)} configured members use the same model and managed tools, with separate private versions, "
         "SDK conversations and notes. No shell, hidden grading, recruitment or replacement exists. "
         f"Your legal direct recipients are {', '.join(recipients)}. "
-        "fix_patch explicitly publishes that immutable version to all four legal members. "
+        "fix_patch explicitly publishes that immutable version to all configured legal members. "
         "Later private edits do not propagate. handoff_patch is a directed notice along a legal edge. "
         "Members must explicitly integrate_patch to use a published version; messages do not merge code. "
         "Task-board metadata is shared. Optional task ownership changes require offer_transfer and "
@@ -111,13 +113,14 @@ def member_instruction(case, member):
 
 
 def tool_definitions(case):
+    members = tuple(case["active_roles"])
     tools = [copy.deepcopy(item) for item in previous.tool_definitions(case)
              if item["name"] not in DYNAMIC_TOOLS]
     for item in tools:
         for name in ("recipient", "to_member"):
             prop = item["parameters"].get("properties", {}).get(name)
             if isinstance(prop, dict):
-                prop["enum"] = list(MEMBERS)
+                prop["enum"] = list(members)
         if item["name"] == "run_tests":
             item["description"] = (
                 "Run the frozen public repository test entrypoint on your exact current private tree. "
@@ -131,11 +134,14 @@ def tool_definitions(case):
 
 
 class TestBudget:
-    def __init__(self, output, limit):
+    def __init__(self, output, limit, members):
+        self.members = tuple(members)
+        if not 2 <= len(self.members) <= 4 or len(set(self.members)) != len(self.members):
+            raise ValueError("Bind this organization’s actual fixed test consumers")
         self.output, self.limit, self.records = Path(output), _positive(limit, "test limit"), []
 
     def consume(self, actor):
-        if actor not in MEMBERS:
+        if actor not in self.members:
             raise ValueError("Only fixed team members may consume public tests")
         if len(self.records) >= self.limit:
             raise ToolRejection("The shared public-test allowance is exhausted",
@@ -146,7 +152,7 @@ class TestBudget:
     def snapshot(self):
         return {"limit": self.limit, "used": len(self.records),
                 "remaining": self.limit - len(self.records), "records": copy.deepcopy(self.records),
-                "maximum_executions_per_run_tests": 1, "scope": "One shared four-member public-test pool"}
+                "maximum_executions_per_run_tests": 1, "members": list(self.members), "scope": "One shared fixed-team public-test pool"}
 
 
 class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
@@ -197,9 +203,10 @@ class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
         return super()._available_recipient(actor, recipient)
 
     def _share_fixed(self, actor, reference):
+        members = self._software()["case"]["active_roles"]
         # Preserve the original multi-member publication contract; the S1
         # subclass's single-recipient constant must not accidentally survive.
-        self.state["shares"].append({"project_id": PROJECT, **reference, "actor_ids": list(MEMBERS),
+        self.state["shares"].append({"project_id": PROJECT, **reference, "actor_ids": list(members),
                                      "shared_by": actor, "at": self.state["clock"]})
 
     def _action_run_tests(self, actor, project_id):
@@ -214,7 +221,7 @@ class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
 
 class SoftwareCollaborationPort(previous.SoftwareCollaborationPort):
     def __init__(self, session, role, **kwargs):
-        # The original registry-bound port supports four real members. Bypass
+        # The original registry-bound port supports the actual fixed roster. Bypass
         # only the later S1 constructor, not the trusted session identity check.
         organization_world.SoftwareCollaborationPort.__init__(self, session, role, **kwargs)
         self.profile = VERSION + ":" + role
@@ -223,19 +230,20 @@ class SoftwareCollaborationPort(previous.SoftwareCollaborationPort):
         value = super().observe()
         world, facts = self._session._world, self._session._world._software()
         case, spec = facts["case"], facts["case"]["fixed_organization"]
+        members = tuple(spec["fixed_members"])
         value.update(profile=VERSION, interface_revision=VERSION, purpose=PURPOSE,
             fixed_organization={"id": spec["id"], "name": spec["name"],
-                "role": copy.deepcopy(spec["roles"][self.role]), "members": list(MEMBERS),
+                "role": copy.deepcopy(spec["roles"][self.role]), "members": list(members),
                 "role_directory": {member: {"member_id": member, **copy.deepcopy(spec["roles"][member])}
-                                   for member in MEMBERS},
+                                   for member in members},
                 "direct_recipients": [b for a, b in spec["communication_edges"] if a == self.role],
                 "delivery_member": spec["delivery_member"], "shared_task_board": True,
                 "fixed_publication_visible_to_all_members": True,
                 "schedule": copy.deepcopy(getattr(world, "schedule_observation", {}))},
             transfer_offers={key: copy.deepcopy(row) for key, row in facts["transfer_offers"].items()
                              if self.role in {row["from_member"], row["recipient"]}},
-            execution_condition={"condition": spec["id"], "initial_members": list(MEMBERS),
-                "active_executors": world.live_members(), "private_working_copies": 4,
+            execution_condition={"condition": spec["id"], "initial_members": list(members),
+                "active_executors": world.live_members(), "private_working_copies": len(members),
                 "same_actor_shared_across_sessions": True, "hidden_partners": False},
             member_limits=copy.deepcopy(case["member_limits"]))
         value["scheduling"].update(protocol=case["scheduling_protocol"], first_member=case["first_member"],
@@ -251,25 +259,26 @@ def build_software_collaboration_case(case, root, *, provider, organization_id=N
     case = (case_spec(case, provider=provider, organization_id=organization_id,
         max_total_tokens=max_total_tokens, max_decisions=max_decisions, max_test_runs=max_test_runs)
         if isinstance(case, str) else validate_case(copy.deepcopy(case), provider=provider))
+    members = tuple(case["active_roles"])
     if provider.runner is None:
         raise ValueError("Bind an explicitly confined, public-only callback")
     material = provider.build_case(case["case_id"])
     bundle = {"files": material["files"], "entry_metadata": material["entry_metadata"], "included_patch_ids": []}
     provider.validate_files(case["case_id"], bundle["files"], entry_metadata=bundle["entry_metadata"])
     objects = [{"alias": "baseline", "filename": "baseline.json", "kind": "json", "owner": "operator",
-                "readers": [*MEMBERS, "operator"], "writers": ["operator"], "data": bundle}]
+                "readers": [*members, "operator"], "writers": ["operator"], "data": bundle}]
     objects.extend({"alias": member, "filename": member + ".json", "kind": "json", "owner": member,
-        "readers": [member, "operator"], "writers": [member], "data": copy.deepcopy(bundle)} for member in MEMBERS)
-    package = {"project_id": PROJECT, "goal": case["root_goal"], "participants": [*MEMBERS, "operator"],
+        "readers": [member, "operator"], "writers": [member], "data": copy.deepcopy(bundle)} for member in members)
+    package = {"project_id": PROJECT, "goal": case["root_goal"], "participants": [*members, "operator"],
         "objects": objects, "works": [], "grants": [],
         "provenance": {"kind": "reconstructed", "note": "Same public faulty repository; no hidden answers"}}
     scenario = {"version": SCENARIO_VERSION, "scenario_id": case["case_id"] + "-" + case["condition"] + "-v065",
-        "world": {"world_id": "software-fixed-organization-v065", "actors": {a: {} for a in (*MEMBERS, "operator")},
+        "world": {"world_id": "software-fixed-organization-v065", "actors": {a: {} for a in (*members, "operator")},
             "applications": ["files"], "publication_policy": "explicit",
             "bootstrap_grants": [{"actor_id": "operator", "power": "install_project", "scope": "world"}]},
         "installer": "operator", "projects": [{"package": package}],
         "roles": [{"role_id": member, "actor": member, "project": PROJECT, "policy": "model",
-                   "config": {"task": member_instruction(case, member)}} for member in MEMBERS],
+                   "config": {"task": member_instruction(case, member)}} for member in members],
         "setup": [], "events": [], "start": {"kind": "initial"},
         "boundary": {"max_opportunities": case["team_limits"]["max_decisions"] + 1}}
     root = Path(root)
@@ -279,23 +288,23 @@ def build_software_collaboration_case(case, root, *, provider, organization_id=N
         raise ValueError(deployment.diagnostics)
     deployment.world = SoftwareCollaborationWorld(root / "world")
     world = deployment.world
-    world.source_provider, world.test_budget = provider, TestBudget(root / "team-test-budget.json", case["team_limits"]["max_test_runs"])
+    world.source_provider, world.test_budget = provider, TestBudget(root / "team-test-budget.json", case["team_limits"]["max_test_runs"], members)
     with world.store.lock():
         world.state = world.store.load()
-        artifact, version, _ = world._bundle(MEMBERS[0], baseline=True)
+        artifact, version, _ = world._bundle(members[0], baseline=True)
         source = repository_world._reference(artifact, version)
-        world.state["shares"].append({"project_id": PROJECT, **source, "actor_ids": list(MEMBERS),
+        world.state["shares"].append({"project_id": PROJECT, **source, "actor_ids": list(members),
                                      "shared_by": "operator", "at": world.state["clock"]})
         world.state["software_events"] = []
         world.state["projects"][PROJECT]["software"] = {"case": case, "tasks": {}, "patches": {},
             "deliveries": [], "test_reports": {}, "initial_public_feedback": None,
             "transfer_offers": {}, "initial_diagnostics": {},
-            "initial_diagnostic_assignments": {member: [] for member in MEMBERS},
+            "initial_diagnostic_assignments": {member: [] for member in members},
             "registry": {member: {"member_id": member, "birth_index": i + 1, "status": "live",
                 "born_by": None, "origin": "initial_fixed_organization", "briefing": "",
                 "model_generated_briefing": False, "initial_source_reference": source,
                 "initial_patch_id": None, "replaces": None, "birth_sequence": 0,
-                "private_history_copied": False} for i, member in enumerate(MEMBERS)}}
+                "private_history_copied": False} for i, member in enumerate(members)}}
         world.store.save(world.state)
     prefix = {"version": VERSION, "prepared_business_state_sha256": digest(json_bytes(initial_business_state(world))),
         "source_contract_sha256": digest(json_bytes(case["source_contract"])),

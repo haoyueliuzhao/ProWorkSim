@@ -5,26 +5,28 @@ import pytest
 
 from proworksim import software_fixed_organization_v065 as catalog
 
-MEMBERS = tuple(f"member_{index:03d}" for index in range(1, 5))
+COUNTS = {"CHIEF": 4, "SOP": 3, "DIALOGUE": 2, "REVIEW": 2, "PEER": 4, "COUNCIL": 3}
 GROUPS = ("CHIEF", "SOP", "DIALOGUE", "REVIEW", "PEER", "COUNCIL")
 
 
-def test_catalog_has_six_distinct_fixed_four_member_treatments():
+def test_catalog_has_six_representative_fixed_two_to_four_member_treatments():
     organizations = catalog.catalog()
     assert {row["id"] for row in organizations} == set(GROUPS)
     treatments = set()
     for row in organizations:
-        assert set(row["fixed_members"]) == set(MEMBERS)
-        assert set(row["roles"]) == set(MEMBERS)
-        assert row["delivery_member"] == MEMBERS[0]
-        assert all(a in MEMBERS and b in MEMBERS and a != b for a, b in row["communication_edges"])
-        assert all(set(phase["active_members"]) <= set(MEMBERS) and phase["opportunities"] > 0
+        members = tuple(f"member_{index:03d}" for index in range(1, COUNTS[row["id"]] + 1))
+        assert row["member_count"] == len(members)
+        assert set(row["fixed_members"]) == set(members)
+        assert set(row["roles"]) == set(members)
+        assert row["delivery_member"] == "member_001"
+        assert all(a in members and b in members and a != b for a, b in row["communication_edges"])
+        assert all(set(phase["active_members"]) <= set(members) and phase["opportunities"] > 0
                    for phase in row["phases"])
         treatments.add(json.dumps({"edges": row["communication_edges"], "phases": row["phases"]}, sort_keys=True))
         assert catalog.validate_organization(row) == row
     assert len(treatments) == 6
     changed = catalog.get_organization("CHIEF")
-    changed["roles"][MEMBERS[0]]["title"] = "replacement role"
+    changed["roles"]["member_001"]["title"] = "replacement role"
     assert catalog.get_organization("CHIEF") != changed
     with pytest.raises(ValueError):
         catalog.validate_organization(changed)

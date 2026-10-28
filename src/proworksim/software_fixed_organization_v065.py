@@ -9,14 +9,18 @@ import copy
 import hashlib
 import json
 
-VERSION = 'v065-fixed-coding-organizations-r1'
-MEMBERS = tuple(f'member_{number:03d}' for number in range(1, 5))
-DELIVERY_MEMBER = MEMBERS[0]
+VERSION = 'v065-fixed-coding-organizations-r2'
+MEMBER_POOL = tuple(f'member_{number:03d}' for number in range(1, 5))
+DELIVERY_MEMBER = MEMBER_POOL[0]
 ORGANIZATION_IDS = ('CHIEF', 'SOP', 'DIALOGUE', 'REVIEW', 'PEER', 'COUNCIL')
+MEMBER_COUNTS = {'CHIEF': 4, 'SOP': 3, 'DIALOGUE': 2, 'REVIEW': 2, 'PEER': 4, 'COUNCIL': 3}
 
 COMMON = {
     'base_framework': 'OpenHands SDK through ProWorkSim HarnessPort and WorldCore',
-    'members_per_team': 4,
+    'members_per_team': 'fixed per organization, from two to four',
+    'member_counts': MEMBER_COUNTS,
+    'comparison_scope': 'representative combinations of team size, roles, direct routes and schedule',
+    'team_size_ablation_automatically_authorized': False,
     'dynamic_membership': False,
     'context_limit': 131072,
     'maximum_input_tokens': 98304,
@@ -48,7 +52,7 @@ COMMON = {
 
 COMMON_INSTRUCTION = (
     'Work on the original coding issue using the managed project tools. '
-    'The four members share one total token, model-attempt, decision and public-test budget. '
+    'All configured members share one total token, model-attempt, decision and public-test budget. '
     'A message, rejected call, history read or coordination step uses an ordinary opportunity. '
     'Each member owns a private versioned workspace and private observed history. '
     'Publishing a fixed patch exposes that exact version to the team under the existing harness; '
@@ -70,19 +74,20 @@ def _role(title, instruction):
 
 def _edges(pairs):
     return sorted([a, b] for left, right in pairs
-                  for a, b in ((MEMBERS[left-1], MEMBERS[right-1]),
-                               (MEMBERS[right-1], MEMBERS[left-1])))
+                  for a, b in ((MEMBER_POOL[left-1], MEMBER_POOL[right-1]),
+                               (MEMBER_POOL[right-1], MEMBER_POOL[left-1])))
 
 
 def _phase(name, active, opportunities):
-    return {'name': name, 'active_members': [MEMBERS[index-1] for index in active],
+    return {'name': name, 'active_members': [MEMBER_POOL[index-1] for index in active],
             'opportunities': opportunities}
 
 
 def _organization(key, name, roles, edges, phases, inspiration, notes):
+    members = MEMBER_POOL[:MEMBER_COUNTS[key]]
     return {'version': VERSION, 'id': key, 'name': name,
-            'fixed_members': list(MEMBERS),
-            'roles': dict(zip(MEMBERS, roles, strict=True)),
+            'fixed_members': list(members), 'member_count': len(members),
+            'roles': dict(zip(members, roles, strict=True)),
             'communication_edges': _edges(edges), 'phases': phases,
             'delivery_member': DELIVERY_MEMBER,
             'inspiration': inspiration, 'notes': notes,
@@ -112,51 +117,41 @@ _CATALOG = [
         ['Four fixed agents, not MAGIS dynamic per-task developer creation.',
          'Direct coordination between spokes must pass through the lead.']),
     _organization('SOP', '职能流水线', [
-        _role('需求与集成', 'State issue requirements and acceptance questions using public '
-              'evidence; later integrate the returned fixed artifact and close delivery.'),
-        _role('定位与方案', 'Translate requirements into a concrete repository diagnosis and '
-              'implementation plan, with assumptions and affected interfaces.'),
-        _role('实现', 'Implement the agreed plan, publishing a fixed patch and concise change '
-              'summary for the validation stage.'),
-        _role('测试与交接', 'Validate the received fixed artifact with public tests, report '
-              'its source version and remaining concerns, and hand the result to integration.')],
-        [(1, 2), (2, 3), (3, 4), (4, 1)],
-        [_phase('需求', [1], 3), _phase('定位与方案', [2], 3),
-         _phase('实现', [3], 8), _phase('验证', [4], 6), _phase('集成交付', [1], 4)],
+        _role('需求设计与集成', 'Clarify public issue requirements and repository design, then '
+              'hand an implementation plan to member_002. Later integrate the validated fixed patch '
+              'and close the same-version delivery.'),
+        _role('实现', 'Implement the agreed repair in your private workspace, publish an '
+              'immutable patch and describe changes and assumptions for member_003 to validate.'),
+        _role('验证', 'Inspect the published candidate, explicitly integrate when needed, '
+              'run permitted public tests and send precise evidence or revision requests.')],
+        [(1, 2), (2, 3), (3, 1)],
+        [_phase('需求与设计', [1], 4), _phase('实现', [2], 8),
+         _phase('验证', [3], 6), _phase('集成交付', [1], 6)],
         ['functional specialization', 'MetaGPT SOP'],
-        ['Single-role windows with instructed requirements/plan/patch/test handoffs.',
-         'The harness validates real artifact identities; a written stage summary is not test evidence.']),
+        ['Three fixed members; requirements/design/integration share one role.',
+         'Single-role windows use explicit artifacts; a stage label is not evidence of success.']),
     _organization('DIALOGUE', '阶段对话链', [
-        _role('需求与交付', 'Clarify the issue with the designer and later integrate the '
-              'explicitly returned patch. Keep final delivery tied to your tested version.'),
-        _role('设计与衔接', 'Discuss requirements with member_001 and implementation with '
-              'member_003. Explicitly receive, merge and republish patches that travel through you.'),
-        _role('编码', 'Discuss design with member_002, implement a repair, and work with '
-              'member_004 on tests. Return the fixed implementation through member_002.'),
-        _role('测试', 'Discuss the received implementation with member_003, run allowed public '
-              'checks and return precise revision feedback along the same link.')],
-        [(1, 2), (2, 3), (3, 4)],
-        [_phase('需求与设计对话', [1, 2], 8), _phase('设计与编码对话', [2, 3], 8),
-         _phase('编码与测试对话', [3, 4], 8), _phase('设计与交付对话', [2, 1], 8)],
+        _role('需求设计与集成', 'Discuss issue requirements and design with member_002, clarify '
+              'ambiguous observations, then integrate the explicit returned patch and close delivery.'),
+        _role('实现与自测', 'Discuss the proposed design with member_001, implement the repair '
+              'and run permitted self-checks. Publish the actual fixed patch and report evidence.')],
+        [(1, 2)],
+        [_phase('需求设计对话', [1, 2], 8), _phase('实现自测对话', [2, 1], 8),
+         _phase('交付确认对话', [1, 2], 8)],
         ['ChatDev phase and role dialogue chain'],
-        ['Only adjacent pairs communicate directly; each pair alternates ordinary opportunities.',
-         'Fixed versions remain team-public; intermediary handoffs are not required to read them. '
-         'Reading, explicit merging and directed communication are real work, not free relays.']),
+        ['Two fixed roles alternate in staged dialogue; this is an adaptation, not full ChatDev reproduction.',
+         'Published versions stay team-public; all reads, merges and communication cost real opportunities.']),
     _organization('REVIEW', '开发复核返修', [
-        _role('开发者甲兼集成', 'Coordinate implementation scope with the other developer, '
-              'publish a fixed candidate for review, revise it and close integration.'),
-        _role('开发者乙', 'Implement a complementary part or investigate an alternative with '
-              'the same issue information, request review and explicitly deliver patches to member_001.'),
-        _role('复核者甲', 'Review developer patches for correctness and issue coverage, using '
-              'actual source and public evidence. Return actionable feedback to either developer.'),
-        _role('复核者乙', 'Independently review developer patches and edge cases, using allowed '
-              'public tests when useful; communicate concerns directly to the responsible developer.')],
-        [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4)],
-        [_phase('开发', [1, 2], 8), _phase('独立复核', [3, 4], 4),
-         _phase('返修与集成', [1, 2], 8), _phase('复核反馈', [3, 4], 4)],
+        _role('开发兼交付', 'Develop a repair, publish its fixed candidate for member_002 to '
+              'review, address concrete feedback and perform the explicit same-version delivery.'),
+        _role('独立复核', 'Independently inspect the developer candidate and issue coverage. '
+              'Use actual public tests and source evidence, then return actionable revision feedback.')],
+        [(1, 2)],
+        [_phase('开发', [1], 8), _phase('独立复核', [2], 4),
+         _phase('返修与集成', [1], 8), _phase('复核反馈', [2], 4)],
         ['modern code review development-review-revision loop'],
-        ['Reviewers give evidence and feedback, not an external hidden-score oracle.',
-         'Common managed tool powers remain available; reviewer roles are instructions, not read-only ACLs.']),
+        ['Two fixed members separate implementation from independent review.',
+         'Review remains an instructed responsibility, not a new read-only ACL or hidden-score oracle.']),
     _organization('PEER', '扁平同伴协作', [
         _role('同伴甲兼交付出口', 'Self-organize with your peers using the task board and explicit '
               'messages. You have no managerial or extra visibility powers; integrate the agreed final code.'),
@@ -169,20 +164,19 @@ _CATALOG = [
         ['Fixed membership and turn order; only work allocation is self-organized.',
          'member_001 is the common export address, not an elected or privileged manager.']),
     _organization('COUNCIL', '专家会诊', [
-        _role('需求专家兼集成', 'Analyze issue semantics and success conditions, contribute to '
-              'the joint discussion, and integrate the chosen implementation with explicit evidence.'),
-        _role('仓库与设计专家', 'Analyze repository structure and compatibility constraints; '
-              'share reasoning and critique the implementation plan with the fixed expert group.'),
-        _role('实现专家', 'Participate in diagnosis, then implement the discussed approach in '
-              'your workspace and publish an explicit fixed candidate for review and integration.'),
-        _role('验证专家', 'Contribute failure hypotheses and edge cases, then examine the '
-              'received candidate and report actual public validation evidence to the group.')],
-        [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)],
-        [_phase('专家会诊', [1, 2, 3, 4], 8), _phase('集中实现', [3], 8),
-         _phase('验证反馈', [4], 4), _phase('集成闭合', [1], 4)],
+        _role('需求与集成专家', 'Analyze issue semantics and repository constraints in the joint '
+              'discussion. Later integrate the chosen published implementation with explicit evidence.'),
+        _role('实现专家', 'Contribute implementation hypotheses in the joint discussion, then '
+              'build the discussed repair and publish an immutable candidate for verification.'),
+        _role('验证专家', 'Contribute failure hypotheses and edge cases in the joint discussion, '
+              'then inspect the candidate and report actual public validation evidence.')],
+        [(1, 2), (1, 3), (2, 3)],
+        [_phase('专家会诊', [1, 2, 3], 6), _phase('集中实现', [2], 8),
+         _phase('验证反馈', [3], 4), _phase('集成闭合', [1], 4)],
         ['AgentVerse expert collaboration and feedback'],
-        ['No expert recruitment, member replacement or hidden-score voting.',
-         'Direct graph equals PEER; role specialization and staged activation are the treatment.']),
+        ['Three fixed experts; no recruitment, replacement or hidden-score voting.',
+         'Unlike four-member PEER, this baseline changes team size as well as roles and staged activation.']),
+
 ]
 
 
@@ -199,13 +193,15 @@ def catalog():
 def validate_organization(spec):
     if not isinstance(spec, dict) or spec != get_organization(spec.get('id')):
         raise ValueError('Organization roles, identities, topology or schedule changed')
-    members = set(MEMBERS)
+    ordered_members = MEMBER_POOL[:MEMBER_COUNTS[spec['id']]]
+    members = set(ordered_members)
     edges = {tuple(edge) for edge in spec['communication_edges']}
-    if (set(spec['roles']) != members or spec['fixed_members'] != list(MEMBERS)
+    if (set(spec['roles']) != members or spec['fixed_members'] != list(ordered_members)
+            or spec['member_count'] != len(ordered_members)
             or spec['delivery_member'] != DELIVERY_MEMBER
             or len(edges) != len(spec['communication_edges'])
             or any(a == b or a not in members or b not in members or (b, a) not in edges for a, b in edges)):
-        raise ValueError('Fixed organizations need four identities and explicit bidirectional routes')
+        raise ValueError('Fixed organizations need their declared two-to-four identities and explicit bidirectional routes')
     covered = set()
     for phase in spec['phases']:
         active, count = phase['active_members'], phase['opportunities']
@@ -226,8 +222,8 @@ def catalog_sha256():
 
 def role_instruction(organization_id, member_id):
     spec = get_organization(organization_id)
-    if member_id not in MEMBERS:
-        raise ValueError('Only the four original members have an organizational role')
+    if member_id not in spec['fixed_members']:
+        raise ValueError('Only this organization’s configured members have an organizational role')
     partners = [target for source, target in spec['communication_edges'] if source == member_id]
     return (COMMON_INSTRUCTION + '\nYour fixed role: ' + spec['roles'][member_id]['instruction'] +
             '\nYour direct collaboration partners: ' + ', '.join(partners) +
