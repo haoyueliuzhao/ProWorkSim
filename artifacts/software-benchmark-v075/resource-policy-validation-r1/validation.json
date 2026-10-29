@@ -1,0 +1,67 @@
+{
+  "version": "v075-private-resource-policy-cpu-control-r1",
+  "observed_at": "2026-10-28T23:46:13.546976+08:00",
+  "scope": "CPU-only injected guards and temporary claims; no runtime resources",
+  "controls_passed": 8,
+  "invocations": [
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_resources_v075.py",
+      "passed": 7,
+      "seconds": 0.15,
+      "source_stage": "before additional expanded-lane control"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/test_resources_v075.py::test_expanded_qwen_lane_uses_existing_cpu_slice",
+      "passed": 1,
+      "seconds": 0.13,
+      "source_stage": "final"
+    }
+  ],
+  "ruff_passed": true,
+  "new_model_calls": 0,
+  "new_API_calls": 0,
+  "Docker_operations": 0,
+  "service_operations": 0,
+  "old_module_globals_changed": false,
+  "new_policy": {
+    "CPU": 152,
+    "memory_GiB": 896,
+    "pair_CPU": 6,
+    "pair_memory_GiB": 32,
+    "shared_actor_lanes": 18,
+    "physical_memory_floor_GiB": 128,
+    "physical_disk_floor_GiB": 128
+  },
+  "controls": [
+    "four models, four Qwen, ten API, two graders fit exact 148CPU/896GiB",
+    "eleventh API and insufficient real memory rejected",
+    "supplemental authorization rejection prevents admission",
+    "new claims record supplemental policy and model creation forbidden",
+    "Qwen/API/grading share revised allocator without old-global changes",
+    "actor/controller individual limits unchanged",
+    "two-grader admission margin uses revised shared budget",
+    "Qwen expanded lanes map to original CPU slices; lane18 rejected"
+  ],
+  "sources": [
+    {
+      "path": "src/proworksim/software_benchmark_resources_v075.py",
+      "sha256": "faec1faa896281d90a015de786d00fd55e8b65f99b8925c4fd9b021219212c55",
+      "bytes": 3910
+    },
+    {
+      "path": "src/proworksim/software_benchmark_episodes_v075.py",
+      "sha256": "8402103fa73b5007b368aa3d271f5430241fdaa054fc350673546b7af3e5b0d4",
+      "bytes": 2659
+    },
+    {
+      "path": "src/proworksim/software_benchmark_grading_v075.py",
+      "sha256": "86fcbe485823f0c2b38598a2106cdfbd0f377711818be1d17ab81d7c5e827d75",
+      "bytes": 1358
+    },
+    {
+      "path": "tests/test_resources_v075.py",
+      "sha256": "7ae1604539183cc7e0126c767561cbaf276d8998e6d14a8daac116cd418b5acc",
+      "bytes": 5235
+    }
+  ]
+}
