@@ -1,0 +1,234 @@
+{
+  "version": "v084-slot308-readonly-cursor-null-diagnosis-r1",
+  "observed_at": "2026-10-29T14:57:48.541236+08:00",
+  "slot_index": 308,
+  "slot_id": "v064:astropy__astropy-13579:QWEN_PROJECT_B10000K:1423390778743956876",
+  "conclusion": "Pre-existing PROJECT SDK/gateway argument-preservation incompatibility on schema-valid optional null cursor. Not a budget cutoff or observed controller OOM. No evidence links it to the new resource-binding change.",
+  "original_status_preserved": "technical_unknown",
+  "final_raw_tool_call": {
+    "name": "list_files",
+    "arguments": "{\"cursor\": null}"
+  },
+  "advertised_tool_schema": {
+    "name": "list_files",
+    "description": "List at most40 actual current entries. Continue with next_cursor; editing invalidates cursors.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "patch_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  "causal_chain": [
+    {
+      "stage": "raw_model_response",
+      "value": {
+        "cursor": null
+      }
+    },
+    {
+      "stage": "SDK parse_tool_call_arguments -> _normalize_arguments",
+      "value": {},
+      "evidence": "Installed pinned SDK agent/utils.py:287-311 removes every top-level None value before action creation."
+    },
+    {
+      "stage": "Pydantic action.model_dump(exclude_unset=True)",
+      "value": {},
+      "classification": "Deterministic consequence of parsing empty arguments; original gateway compares against raw cursor:null."
+    },
+    {
+      "stage": "managed_gateway",
+      "outcome": "RuntimeError: SDK transformed arguments; managed gateway was not invoked",
+      "action_performed": false
+    },
+    {
+      "stage": "controller",
+      "exit_code": 1,
+      "closure_reason": "execution_integrity_failure"
+    },
+    {
+      "stage": "episode",
+      "failure_scope": "local",
+      "batch_stop_required": false
+    }
+  ],
+  "budget": {
+    "attempts": 7,
+    "decisions": 7,
+    "known_actual_tokens": 252181,
+    "complete_actual_tokens": 252181,
+    "uncertain_reserved_tokens": 0,
+    "token_limit": 10000000,
+    "all_model_attempt_limit": 512
+  },
+  "last_request_prompt_tokens": 60032,
+  "last_completion_tokens": 61,
+  "controller_deadline": {
+    "stop_requested": false,
+    "request_deadline": null
+  },
+  "lifecycle_deadline_reached": false,
+  "container_exit_evidence": [
+    {
+      "role": "controller",
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 0,
+        "ExitCode": 1,
+        "Error": "",
+        "StartedAt": "2026-10-29T06:41:53.102885152Z",
+        "FinishedAt": "2026-10-29T06:43:33.079726819Z"
+      }
+    },
+    {
+      "role": "actor",
+      "state": {
+        "Status": "exited",
+        "Running": false,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 0,
+        "ExitCode": 137,
+        "Error": "",
+        "StartedAt": "2026-10-29T06:41:35.268596286Z",
+        "FinishedAt": "2026-10-29T06:43:53.933124745Z"
+      }
+    }
+  ],
+  "actor_137_interpretation": "Actor exited after the controller failure during owned-writer shutdown; OOMKilled=false. Exit137 alone is not proof of OOM.",
+  "first_format_feedback_distinct_from_final_error": {
+    "worker_id": "member_001",
+    "status": "model_format_feedback",
+    "reason": "Exactly one native tool call; no-tool text is not implicit done",
+    "action_performed": false,
+    "decision_consumed": true
+  },
+  "managed_actions": 5,
+  "managed_opportunities": 7,
+  "cleanup": {
+    "version": "v066-owned-private-docker-actor-pair-r1",
+    "quiescent": true,
+    "removed_roles": [
+      "controller",
+      "actor",
+      "volume"
+    ],
+    "cleanup_errors": [],
+    "proven_uncreated_claim_roles": [],
+    "retained_objects": [],
+    "all_owned_objects_removed": true,
+    "create_result_unknown": false,
+    "create_result_unknown_roles": [],
+    "claims": {
+      "actor": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/resource-claims/actor-308.json",
+        "sha256": "f73fc3a4862b2e01978f6c2640989dedc6830dab92405337e238795d62e9906d",
+        "bytes": 6699
+      },
+      "volume": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/resource-claims/volume-308.json",
+        "sha256": "f3bedcbeea4b378c6871834c244d98145b0fcd603060a7dfe8684b10bab04cec",
+        "bytes": 1549
+      },
+      "controller": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/resource-claims/controller-308.json",
+        "sha256": "89722a80b960e188c547f209117acb37c8482551b6e8e656de28dea22456118a",
+        "bytes": 1557
+      }
+    },
+    "unrelated_objects_touched": false
+  },
+  "new_binding_scope": "v084 modifies resource startup status reader/evaluation binding; the final exception is in the already-frozen PROJECT harness SDK executor. This causal separation is source/evidence analysis, not an executed counterfactual.",
+  "narrow_future_fix_principles": [
+    "Keep raw original arguments and exact action/tool/call identity. Do not globally remove the transformation guard.",
+    "Only an explicitly audited field may compare omission equal to null when it is optional, nullable in the advertised schema, and the actual managed implementation gives omission and explicit null the same semantics (list_files.cursor defaults to None and both select the first page).",
+    "Normalize only this comparison representation; execute the original schema-validated raw arguments exactly once through the managed gateway, retaining raw, SDK projection, and accepted normalization in audit evidence.",
+    "Required nullable fields, optional fields where null differs from omission, non-null changes, coercions, aliases, additions, deletions and tool identity changes must still fail the integrity check.",
+    "Use finite CPU controls for permitted cursor:null/omitted and rejected semantic changes before proposing a separately versioned deployment; do not rewrite or rerun slot308."
+  ],
+  "actual_changes": {
+    "running_sources": 0,
+    "services": 0,
+    "model_calls": 0,
+    "Docker_operations": 0,
+    "GPU_operations": 0,
+    "original_records": 0,
+    "new_evidence_files_only": true
+  },
+  "source_evidence": {
+    "episode": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/result.json",
+      "sha256": "64558fdc12f40490efe1bdd29cd487e1a7f9f963d89b9db92d64976e7935286a",
+      "bytes": 66243
+    },
+    "controller": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/controller-output/controller-result.json",
+      "sha256": "075d00c2453f480a34ba48e49977426aeea45c74db97f5a9cff106519efb2115",
+      "bytes": 75326
+    },
+    "last_response": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/controller-output/model-ledger/response-0007.json",
+      "sha256": "0c7bfed4fb0b24e43e323132eca7c5e72ddb4a29e194f25f6cfbd20fa1041ebb",
+      "bytes": 1380
+    },
+    "last_request": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/controller-output/model-ledger/request-0007.json",
+      "sha256": "0bd78a4767b0ad330348a488c6e934c225803c3045685837b78fbe727cc45d15",
+      "bytes": 904301
+    },
+    "ledger": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/host-ledger-final.json",
+      "sha256": "317c1d5becc8c60cf83879a671d2de2ef1b8cc2d89e5d9001344a718eb87f39e",
+      "bytes": 8224
+    },
+    "writer_states": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/writer-quiescence.json",
+      "sha256": "1a90dace72a84446c281e4febb3802f66738723977ffafd3bc4fc52ab9a65006",
+      "bytes": 1711
+    },
+    "guard": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v066/v064-continuation-r3/episodes/308/controller-output/guard.json",
+      "sha256": "7ceb1ad4f4681b870334e538cb13d97f3689f0c4f3991a13b93894f6840e2dd3",
+      "bytes": 58
+    },
+    "gateway": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/harness_sdk.py",
+      "sha256": "ae88f6eb8e9c51e33d500aff05ef86d8aae7d7a7a30ee5d27f700325d4bc01f0",
+      "bytes": 44546
+    },
+    "SDK_normalization": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/v016-sdk/resident-venv/lib/python3.12/site-packages/openhands/sdk/agent/utils.py",
+      "sha256": "44bee4fc97ea270d87019d15a2fba7b04902a4d69da618bca7fed5de01e07cc3",
+      "bytes": 24642
+    },
+    "managed_list_files": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_world_v054.py",
+      "sha256": "52c8cef42c234e93f96bcb463ae3d0ae52bfc217d0bcf3c153e96adc37b0bfe5",
+      "bytes": 39022
+    },
+    "new_resource_binding": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_resources_v084.py",
+      "sha256": "dc6d33c75fbc6b10a1cab9c838a670f1b3db4b73300d18a2b198fa959df8939a",
+      "bytes": 4784
+    }
+  }
+}

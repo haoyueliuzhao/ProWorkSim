@@ -1,0 +1,122 @@
+{
+  "version": "v082-bounded-read-only-stall-evidence-r1",
+  "scope": "exact_proworksim_v079_API_unit_only",
+  "observations": [
+    {
+      "unix": 1793253550.1017797,
+      "Asia_Shanghai": "2026-10-29T13:59:10.101780+08:00",
+      "memory_current_bytes": 44068257792,
+      "memory_max_bytes": 68719476736,
+      "anon_bytes": 15630200832,
+      "file_bytes": 27555475456,
+      "inactive_file_bytes": 9975193600,
+      "file_dirty_bytes": 896663552,
+      "file_writeback_bytes": 0,
+      "conservative_reclaimable_inactive_file_bytes": 9078530048,
+      "diagnostic_working_set_bytes": 34989727744,
+      "diagnostic_effective_headroom_bytes": 33729748992,
+      "diagnostic_formula_not_runtime_change": true
+    },
+    {
+      "unix": 1793253802.9415505,
+      "Asia_Shanghai": "2026-10-29T14:03:22.941550+08:00",
+      "memory_current_bytes": 44103491584,
+      "memory_max_bytes": 68719476736,
+      "anon_bytes": 15630200832,
+      "file_bytes": 27589218304,
+      "inactive_file_bytes": 10008752128,
+      "file_dirty_bytes": 40960,
+      "file_writeback_bytes": 0,
+      "conservative_reclaimable_inactive_file_bytes": 10008711168,
+      "diagnostic_working_set_bytes": 34094780416,
+      "diagnostic_effective_headroom_bytes": 34624696320,
+      "diagnostic_formula_not_runtime_change": true
+    }
+  ],
+  "current_direct_constraint": "Owner memory.current hysteresis pauses new admission while most usage beyond the anonymous working set is file cache.",
+  "main_process_samples": [
+    {
+      "pid": 779121,
+      "start_ticks": 829264387,
+      "wchan": "futex_wait_queue_me",
+      "direct_children": []
+    },
+    {
+      "pid": 779121,
+      "start_ticks": 829264387,
+      "wchan": "futex_wait_queue_me",
+      "main_thread_children": []
+    }
+  ],
+  "main_was_not_captured_in_delivery_validation": true,
+  "long_gap_examples": [
+    {
+      "resource_key": "score-3636",
+      "host_completion_to_main_event_seconds": 217.00625348091125,
+      "archive_raw_bytes": 883409920,
+      "archive_compressed_bytes": 38347501
+    },
+    {
+      "resource_key": "score-3714",
+      "host_completion_to_main_event_seconds": 280.70348286628723,
+      "archive_raw_bytes": 804160512,
+      "archive_compressed_bytes": 29677392
+    }
+  ],
+  "latest_three_PROJECT_comparison": [
+    {
+      "resource_key": "score-3958",
+      "host_completion_to_main_event_seconds": 11.075157880783081,
+      "archive_raw_bytes": 769636352
+    },
+    {
+      "resource_key": "score-3880",
+      "host_completion_to_main_event_seconds": 13.048350811004639,
+      "archive_raw_bytes": 873211392
+    },
+    {
+      "resource_key": "score-3980",
+      "host_completion_to_main_event_seconds": 4.6179585456848145,
+      "archive_raw_bytes": 190184448
+    }
+  ],
+  "runtime_causal_boundary": "Delays include queue waiting, delivery validation and bookkeeping; no user-space call stack or per-call timer was captured. Complete archive validation is synchronous by source inspection, but the entire delay cannot be assigned uniquely to zstd decompression.",
+  "source_observation": {
+    "main_delivery_after_code": "tools/run_full_benchmark_v066.py",
+    "delivery_disposition": "tools/run_capability_grading_v066.py",
+    "validate_project_delivery_and_full_archive_binding": "src/proworksim/software_benchmark_scorer_v066.py"
+  },
+  "recommendation_as_inference": "Consider conservative current-minus-clean-inactive-file working-set admission while preserving true current/max telemetry and the original hard memory.max; do not treat all file cache as immediately reclaimable.",
+  "no_proc_environment_reads": true,
+  "no_ptrace_or_signal": true,
+  "no_model_or_Docker_operations": true,
+  "source_or_service_changes": false,
+  "archive_payloads_read": false,
+  "supporting_files": [
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v082/stall-evidence-r1/process-sample-1.json",
+      "sha256": "635a59eefb4a41ffb5c672f547e77271f61abf94ce1503bf155959152a9d72d5",
+      "bytes": 1791
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v082/stall-evidence-r1/process-sample-2.json",
+      "sha256": "9bba85d1cdfd1b47f41c4c3ba136d57ded6ac143ba5ab7a999e5f96d12ddfe5a",
+      "bytes": 4242
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v082/stall-evidence-r1/project-grade-timeline.json",
+      "sha256": "f275347ba262b2d4e271bb2bb098344d93ae48ada81e815c5b01e1c7f4fd95bc",
+      "bytes": 7322
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v082/stall-evidence-r1/recent-event-gaps.json",
+      "sha256": "514d046f15f14f288879e7ca35b4e64470ccc82b791edc19a95b51f6729b9cfc",
+      "bytes": 2395
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v082/stall-evidence-r1/stall-project-details.json",
+      "sha256": "1753d7aed17305bfed0ff42d27581a4ccd7b919395a78ddc89310bc4d7575d50",
+      "bytes": 4545
+    }
+  ]
+}
