@@ -117,7 +117,15 @@ def launch(selected='all'):
     ordinary_user()
     if selected not in (*ROLES, 'all'):
         raise ValueError('Choose primary, api or all')
-    if not (scope.HANDOFF_ROOT / 'ready-restored.json').is_file():
+    bootstrap = not (scope.BATCH_ROOT / 'plan-seal.json').is_file()
+    if bootstrap:
+        if selected != 'primary':
+            raise ValueError('Before handoff, launch only the bounded primary bootstrap')
+        from proworksim import software_benchmark_api_parent_v076 as parent
+        parent.require_qualified()
+        if not (scope.HANDOFF_ROOT / 'gate.json').is_file():
+            raise ValueError('The old task admission gate must precede automatic bootstrap')
+    elif not (scope.HANDOFF_ROOT / 'ready-restored.json').is_file():
         raise ValueError('Original resident discovery must be restored after the quiet handoff')
     roles = ROLES if selected == 'all' else (selected,)
     specs = {}
@@ -129,19 +137,22 @@ def launch(selected='all'):
         specs[role] = spec
     results = {}
     for role in roles:
-        scope.require_allowed('v076.api.run' if role == 'api' else 'v076.run')
+        scope.require_allowed('v076.handoff' if bootstrap else 'v076.api.run' if role == 'api' else 'v076.run')
         if role == 'api' and not primary_ready():
             return {'version': VERSION, 'launched': results, 'api_status': 'waiting_for_primary_cursor'}
         observed = inactive(role)
-        reservation = scope.reserve_api_coordinator() if role == 'api' else None
+        reservation = (scope.reserve_primary_bootstrap() if bootstrap else
+                       scope.reserve_api_coordinator() if role == 'api' else None)
         argv = command(specs[role])
         write_new(folder(role) / 'launch-intent.json', {'version': VERSION, 'role': role,
             'authorization': reference(scope.AUTH_FILE), 'specification': reference(folder(role) / 'coordinator-unit.json'),
-            'inactive_unit': observed, 'coordinator_reservation': reservation, 'command': argv})
+            'inactive_unit': observed, 'coordinator_reservation': reservation, 'command': argv,
+            'natural_handoff_bootstrap': bootstrap})
         response = subprocess.run(argv, env=user_manager_environment(), capture_output=True, text=True, timeout=30)
         result = {'version': VERSION, 'role': role, 'unit': unit(role),
             'returncode': response.returncode, 'stdout': response.stdout, 'stderr': response.stderr,
-            'coordinator_reservation': reservation, 'resident_units_stopped_or_reloaded': False}
+            'coordinator_reservation': reservation, 'resident_units_stopped_or_reloaded': False,
+            'natural_handoff_bootstrap': bootstrap}
         write_new(folder(role) / 'launch-result.json', result)
         results[role] = result
         if response.returncode:

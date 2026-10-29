@@ -24,6 +24,8 @@ PRIMARY_UNIT = 'proworksim-v076-primary.service'
 API_UNIT = 'proworksim-v076-api.service'
 CLAIM_FILE = API_ROOT / 'coordinator-capacity.json'
 LEASE_FILE = original.BATCH_ROOT / 'resource-claims/active-v076-coordinator.json'
+BOOTSTRAP_CLAIM = PRIMARY_ROOT / 'bootstrap-capacity.json'
+BOOTSTRAP_LEASE = original.BATCH_ROOT / 'resource-claims/active-v076-primary-bootstrap.json'
 VERSION = 'v076-owned-adaptive-concurrency-r1'
 GIB = 1024**3
 
@@ -121,6 +123,67 @@ def verify_host_limits(role):
             or sorted(os.sched_getaffinity(0)) != affinity):
         raise PermissionError('Adaptive coordinator limits or affinity changed')
     return {'cgroup': paths[0], 'limits': values, 'affinity': affinity, 'uid': os.getuid()}
+
+
+def reserve_primary_bootstrap():
+    """Account for the new primary while the old primary still owns the baseline."""
+    require_allowed('v076.handoff')
+    BOOTSTRAP_CLAIM.parent.mkdir(parents=True, exist_ok=True)
+    with (BOOTSTRAP_LEASE.parent / 'allocation.lock').open('a+b') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if BOOTSTRAP_CLAIM.exists():
+            if (BOOTSTRAP_LEASE.exists() and BOOTSTRAP_LEASE.read_bytes() == BOOTSTRAP_CLAIM.read_bytes()
+                    and not (PRIMARY_ROOT / 'bootstrap-capacity-released.json').exists()):
+                return reference(BOOTSTRAP_CLAIM)
+            raise ValueError('A consumed bootstrap capacity identity cannot be restarted')
+        if BOOTSTRAP_LEASE.exists():
+            raise ValueError('Foreign bootstrap capacity reservation')
+        active = [load(reference(path)) for path in BOOTSTRAP_LEASE.parent.glob('active-*.json')]
+        admission = original._budget(active, 4, 16*GIB)
+        value = {'version': VERSION, 'key': 'v076-primary-bootstrap',
+            'spec': {'role': 'auxiliary_coordinator', 'unit': PRIMARY_UNIT},
+            'reserved_cpu': 4, 'reserved_memory_bytes': 16*GIB, 'reserved_spool_bytes': 0,
+            'lease': str(BOOTSTRAP_LEASE), 'authorization': reference(AUTH_FILE),
+            'admission': admission, 'temporary_until_old_primary_exits': True,
+            'existing_primary_baseline_still_counted': True}
+        raw = original._write_claim(BOOTSTRAP_CLAIM, value)
+        with BOOTSTRAP_LEASE.open('xb') as stream:
+            stream.write(raw)
+            stream.flush()
+            os.fsync(stream.fileno())
+        return reference(BOOTSTRAP_CLAIM)
+
+
+def release_primary_bootstrap(ref, *, previous_primary_stopped=False, aborted_before_generation=False):
+    value = load(ref)
+    if (Path(ref['path']).resolve() != BOOTSTRAP_CLAIM or value.get('lease') != str(BOOTSTRAP_LEASE)
+            or value.get('spec', {}).get('unit') != PRIMARY_UNIT):
+        raise PermissionError('Only this exact temporary primary reservation may be released')
+    if previous_primary_stopped:
+        from . import software_benchmark_handoff_v075 as handoff
+        if not (HANDOFF_ROOT / 'coordinators-stopped.json').exists():
+            raise ValueError('The old-primary handoff has not been recorded')
+        staged = handoff.stage_value()
+        entry = staged['coordinators']['primary']
+        if handoff.validate_unit('primary', load(entry['specification']), handoff.show('primary')) is not None:
+            raise ValueError('The old primary still consumes its original baseline')
+    elif (not aborted_before_generation or (PRIMARY_ROOT / 'execution-started.json').exists()):
+        raise ValueError('Bootstrap capacity is needed until handoff or a pre-generation abort')
+    with (BOOTSTRAP_LEASE.parent / 'allocation.lock').open('a+b') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        marker = PRIMARY_ROOT / 'bootstrap-capacity-released.json'
+        if marker.exists():
+            if BOOTSTRAP_LEASE.exists() or load(reference(marker)).get('claim') != ref:
+                raise ValueError('Bootstrap release ownership changed')
+            return reference(marker)
+        if not BOOTSTRAP_LEASE.exists() or BOOTSTRAP_LEASE.read_bytes() != checked(ref).read_bytes():
+            raise ValueError('Exact bootstrap capacity lease is no longer present')
+        result = write_new(marker, {'claim': ref, 'previous_primary_stopped': previous_primary_stopped,
+            'aborted_before_generation': aborted_before_generation,
+            'new_primary_uses_original_implicit_baseline': previous_primary_stopped,
+            'other_claims_unchanged': True})
+        BOOTSTRAP_LEASE.unlink()
+        return result
 
 
 def reserve_api_coordinator():

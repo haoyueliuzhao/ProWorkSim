@@ -205,6 +205,14 @@ def run(role):
     # Register cleanup before every potentially failing bootstrap step.  Starting
     # the watchdog or reserving the auxiliary coordinator is not a successful run.
     with ExitStack() as cleanup:
+        if role == 'primary':
+            bootstrap = module('v076_automatic_handoff', 'adaptive_bootstrap_v076.py')
+            if not (scope.BATCH_ROOT / 'plan-seal.json').exists():
+                bootstrap.wait_and_prepare()
+            if (scope.PRIMARY_ROOT / 'bootstrap-completed.json').exists():
+                starter = bootstrap.AutoAPILauncher()
+                cleanup.callback(starter.close)
+                starter.start()
         return _run(role, cleanup)
 
 
