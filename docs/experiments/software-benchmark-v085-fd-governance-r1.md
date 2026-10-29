@@ -45,3 +45,11 @@ limit = guard.admission(original_ceiling, active=lambda: len(admission.active))
 ```
 
 所有测试只操作测试进程和临时 SQLite 文件，不请求 DeepSeek，不操作 Docker、GPU 或共享服务。真实运行仍应记录 FD 数、软限制、余量、实际 actor 数、在途 API 请求及完成速率；当前没有用 CPU 模拟宣称生产吞吐已恢复。
+
+## 上线后只读观察
+
+15:24:53 到 15:28:18，同一服务进程的实际任务数由 24 升至 31，FD 由 505 升至 656；socket 为 427→561，SQLite 为 6→3。每个活动任务约对应 21 个 FD，两点比值基本相同。该增长与并发增加相符，不能据此认定存在无限 socket 泄漏。约 48×21 已接近原 1024 容量，但这只是两点观察形成的量级解释，不是精确容量模型或故障时 FD 分类。
+
+实际部署 Docker SDK 按 URL 保存连接池，各题有独立 client；其池保留连接直到关闭，与当前 socket 占多数相容。已有 episode 清理会关闭 client。本次保留这一行为，通过足够的本进程上限、持续余量检查与已确认的 SQLite 关闭修订处理。短窗口仍不能证明长期无泄漏或所有任务清空后的残留为零。
+
+证据：[两点 FD 观察](../../artifacts/software-benchmark-v085/fd-live-r1/summary.json)。

@@ -1,0 +1,49 @@
+{
+  "version": "v085-FD-two-point-observation-r1",
+  "start": {
+    "path": "artifacts/software-benchmark-v085/fd-live-r1/start-verified.json",
+    "sha256": "10d9c8053115d09643c9856a0ccb3801464f691f8dfadbc57e796fceebfa6816"
+  },
+  "end": {
+    "path": "artifacts/software-benchmark-v085/fd-live-r1/after-three-minutes.json",
+    "sha256": "2bbd6fdbfc013c9375d03e8bd5ae96e4b8c1c156d3e3dbc614020e654394ec3a"
+  },
+  "elapsed_seconds": 205.15446543693542,
+  "same_process_start_ticks": true,
+  "delta": {
+    "fd_total": 151,
+    "actor_claims": 7,
+    "inflight_API_requests": 9,
+    "API_request_attempts": 376,
+    "finished_generation": 1,
+    "categories": {
+      "socket": 134,
+      "sqlite": -3,
+      "other": 19,
+      "pipe": 1
+    }
+  },
+  "fd_per_active_API_actor_claim": [
+    21.041666666666668,
+    21.161290322580644
+  ],
+  "socket_per_active_API_actor_claim": [
+    17.791666666666668,
+    18.096774193548388
+  ],
+  "lowest_observed_FD_free": 15728,
+  "excluded_observation": {
+    "path": "artifacts/software-benchmark-v085/fd-live-r1/start.json",
+    "reason": "Sandbox user-systemd-bus unavailable; no host PID FD observation, not evidence of stopped service"
+  },
+  "conclusions": {
+    "observed": "FD increased with API actor reservations 24->31, while FD/actor stayed approximately 21; sockets dominate, SQLite decreased 6->3.",
+    "inference": "Growth is compatible with increased concurrency and per-episode Docker URL pools, rather than requiring an unbounded leak explanation.",
+    "not_proven": "Two ramp-up points do not prove long-run absence of leaks or quantify residual FD after draining tasks; SQLite is not established as the sole cause of previous EMFILE.",
+    "capacity_illustration": "Roughly 21 FD per actor at 48 actors already approaches the former 1024 limit, before variation and other work; this is an illustration, not a measured 48-actor maximum."
+  },
+  "read_only": true,
+  "frozen_sources_changed": false,
+  "service_or_model_operations": 0,
+  "sensitive_fd_targets_retained": false
+}
