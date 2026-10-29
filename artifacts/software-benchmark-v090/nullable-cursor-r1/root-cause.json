@@ -1,0 +1,97 @@
+{
+  "version": "v090-project345-nullable-cursor-root-cause-r1",
+  "source_response": {
+    "path": "runs/software-benchmark-v066/v064-continuation-r3/episodes/345/controller-output/model-ledger/response-0031.json",
+    "sha256": "9cd4eea7c6f93ffbde4dd3e77dd475b98cea0e9532dc0b7bfaa08c76bb98d48f",
+    "bytes": 1506
+  },
+  "source_request": {
+    "path": "runs/software-benchmark-v066/v064-continuation-r3/episodes/345/controller-output/model-ledger/request-0031.json",
+    "sha256": "f364dc1a5257473fc0671465a99615ef49116847c9c17a21ad482821d0cf5479",
+    "bytes": 1466079
+  },
+  "actual_model_tool_calls": [
+    {
+      "id": "chatcmpl-tool-940fdb65d516dd0b",
+      "type": "function",
+      "function": {
+        "name": "list_files",
+        "arguments": "{\"cursor\": null}"
+      }
+    }
+  ],
+  "actual_public_tool_definition": {
+    "name": "list_files",
+    "description": "List at most40 actual current entries. Continue with next_cursor; editing invalidates cursors.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "patch_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  "frozen_sources": [
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/agent/utils.py",
+      "sha256": "44bee4fc97ea270d87019d15a2fba7b04902a4d69da618bca7fed5de01e07cc3",
+      "bytes": 24642,
+      "relevant_lines": [
+        287,
+        311
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/agent/agent.py",
+      "sha256": "2fac0e0e106dbfe8b77850ecb3cd2f366a030686e2cb6ae7296683f39f5d11a0",
+      "bytes": 61124,
+      "relevant_lines": [
+        1255,
+        1263
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/project/src/proworksim/harness_sdk.py",
+      "sha256": "ae88f6eb8e9c51e33d500aff05ef86d8aae7d7a7a30ee5d27f700325d4bc01f0",
+      "bytes": 44546,
+      "relevant_lines": [
+        66,
+        87
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/agent/base.py",
+      "sha256": "667b23ed8cf284b4d8585b9bc919f70b81b58d7b1210331374675c75fd02e4a4",
+      "bytes": 43159,
+      "relevant_lines": [
+        1001,
+        1009
+      ]
+    }
+  ],
+  "observed_error": "SDK transformed arguments; managed gateway was not invoked",
+  "source_derived_transformation": {
+    "original": {
+      "cursor": null
+    },
+    "SDK_parse_tool_call_arguments_returns": {},
+    "derivation": "Frozen parse_tool_call_arguments calls _normalize_arguments, which removes every key whose value is None. No replay or provider call performed.",
+    "projected_dictionary_was_not_separately_logged_by_original_gateway": true
+  },
+  "classification": "Schema-valid model request rejected by SDK/harness integration mismatch",
+  "new_fix_scope": "Only PROJECT fresh worker optional cursor:null loss for list_files/read_file/search_file/diff_workspace; exact original action reconstructed before unchanged gateway comparator",
+  "SDK_normalized_events_not_rewritten": true,
+  "explicit_restoration_event": "sdk_explicit_null_cursor_restored",
+  "production_deployed": false
+}

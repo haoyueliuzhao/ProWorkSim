@@ -1,0 +1,119 @@
+{
+  "version": "v089-ref-static-empty-response-path-r1",
+  "created_at": "2026-10-29T12:52:21.915703+00:00",
+  "sources": [
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/agent/agent.py",
+      "sha256": "2fac0e0e106dbfe8b77850ecb3cd2f366a030686e2cb6ae7296683f39f5d11a0",
+      "bytes": 61124,
+      "lines": [
+        812,
+        834
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/agent/response_dispatch.py",
+      "sha256": "6545ac97df0731be6462d78e4611cae1f769b754f379efc6b6ffe7586cf45212",
+      "bytes": 13906,
+      "lines": [
+        54,
+        78,
+        263,
+        284,
+        343,
+        368
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/llm/llm.py",
+      "sha256": "99af125b6203dfb48ee4b2de0791ff64bca1bc787bdab9958f05186d9393a9f7",
+      "bytes": 140620,
+      "lines": [
+        2965,
+        2984
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/llm/message.py",
+      "sha256": "df8b5a0081d87b3111b6373f306e538db8729295691a55f29ff2d0bf5e045d37",
+      "bytes": 25424,
+      "lines": [
+        325,
+        327
+      ]
+    },
+    {
+      "path": "runs/software-benchmark-v066/sdk-bundle-r1/stage/opt/pws-runtime/site/openhands/sdk/llm/utils/model_features.py",
+      "sha256": "8486e7a4cdf1161f2ce41c6f8962212af935ed1930c44735e4c31ec993974df8",
+      "bytes": 15071,
+      "lines": [
+        13,
+        25,
+        219,
+        231,
+        398,
+        400
+      ]
+    },
+    {
+      "path": "src/proworksim/software_benchmark_exact_transport_v057.py",
+      "sha256": "f7e91fd52eecbd097ca440bddb1d97e8f0e4806085097e6056ccb3e4bb66dcf6",
+      "bytes": 8453,
+      "lines": [
+        85,
+        117,
+        161,
+        168
+      ],
+      "matches_frozen_v066_manifest": true
+    },
+    {
+      "path": "src/proworksim/software_benchmark_exact_transport_v054.py",
+      "sha256": "53c74280a25026e596d9ae5a858a6fed17df9fa5245d4d50989a950bfa8e872c",
+      "bytes": 19947,
+      "lines": [
+        136,
+        146
+      ],
+      "matches_frozen_v066_manifest": true
+    }
+  ],
+  "facts": [
+    "The frozen native SDK classifies TOOL_CALLS, CONTENT, REASONING_ONLY, EMPTY from message fields. The dispatch branch does not distinguish finish_reason=length.",
+    "Every REASONING_ONLY or EMPTY response is persisted as an agent message, followed by the same user-role corrective nudge. This ordinary SDK step is not the bounded v062 stuck_correction opportunity.",
+    "The v057 response projection preserves reasoning in the internal SDK message/event. Exported Qwen chat input uses the native SDK format_messages_for_llm serializer.",
+    "Qwen SDK model label openai/Qwen3.5-9B does not match SEND_REASONING_CONTENT_MODELS; serializer therefore omits the reasoning_content field on subsequent chat requests.",
+    "This means persisted reasoning provenance is not equivalent to replayed input. In a reasoning-only length-limited response, the next model call cannot continue from that text merely because it is in stored events."
+  ],
+  "sample_confirmation": {
+    "raw_request_202": {
+      "path": "runs/software-benchmark-v089/qwen-readonly-input-r1/ref-ledger/request-0202.json",
+      "sha256": "0df456b0cc1f456d63a04edcc72f237717d28c5c1ee2ce163319f42e555e1c56",
+      "bytes": 458426,
+      "lines": []
+    },
+    "observed_last_assistant_content": "empty",
+    "observed_last_assistant_tool_calls": "absent",
+    "observed_next_user_message": "Your last response did not include a function call or a message. Please use a tool to proceed with the task.",
+    "related_201_usage_and_202_recovery": "Sibling qwen_bottleneck_audit derives structure from the request/usage original, including 201 length=32768 reasoning-only and 202 tool_calls; cite its final artifact.",
+    "trajectory_structure": {
+      "path": "artifacts/software-benchmark-v089/qwen-performance-r1/slot325-trajectory-structure.json",
+      "sha256": "15e24d2ad419d5282f826a719ee57b708d95a91f0093e93e71a2a128b168ad2b",
+      "bytes": 83272
+    }
+  },
+  "interpretation": {
+    "supported": "A concrete, repeatable path can spend a full 32768-token response without an action and then add generic corrective feedback while omitting the truncated reasoning text from subsequent chat input. This is native reasoning-model adaptation behavior, not PROJECT member/submit contamination.",
+    "not_established": [
+      "It is not proved to be a permanent loop; the paired observed next response returned tool_calls.",
+      "No causal aggregate share of task latency or score loss is established by this static audit.",
+      "Replaying all prior reasoning or enlarging output is not assumed to be a valid fix; model-template semantics and resource conditions would need a separately identified validation."
+    ]
+  },
+  "operations": {
+    "runtime_source_edits": 0,
+    "model_calls": 0,
+    "docker_operations": 0,
+    "service_operations": 0
+  }
+}
