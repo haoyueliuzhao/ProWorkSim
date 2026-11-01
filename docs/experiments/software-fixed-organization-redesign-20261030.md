@@ -1,6 +1,8 @@
 # 六类组织重新设计与实现边界
 
-2026年10月30日。用户要求降低原六组的重合度，重新选取设计并更新文档。本次只修改设计文档，没有改运行配置、工具权限或调度代码，也没有启动评测。六组完整的来源、说明与组织图集中在[汇总报告第四部分](software-benchmark-results-and-organizations-summary-20261030.md#四-六类协作方式的重新设计)。
+> **后续实现状态（2026年11月1日）**：用户当前选定CHIEF、PIPELINE、REVIEW、SPRINT、MATRIX五组，PEER已移出本轮；五组的v104实现与CPU验证见[实现说明](software-fixed-organization-v104-implementation.md)。下文保留10月30日六组设计的历史边界，不作为当前运行配置。
+
+2026年10月30日。用户要求降低原六组的重合度，重新选取设计并更新文档。本次只修改设计文档，没有改运行配置、工具权限或调度代码，也没有启动评测。六组完整的来源、说明与组织图集中在[汇总报告第四部分](software-benchmark-results-and-organizations-summary-20261030.md#四-对照协作方式的设计)。
 
 ## 重新选择的依据
 

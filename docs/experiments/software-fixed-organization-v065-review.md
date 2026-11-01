@@ -1,6 +1,6 @@
 # 两至四成员 coding 组织对照审阅稿
 
-> **历史实现说明（2026年10月30日）**：本稿的六组选择已由[新的六组组织设计](software-benchmark-results-and-organizations-summary-20261030.md#四-六类协作方式的重新设计)取代。下文保留v065已实现配置及其验证事实；新方案尚未实现，不能沿用下文22项CPU检查作为新版验证。
+> **历史实现说明（2026年10月30日）**：本稿的六组选择已由[当前组织设计](software-benchmark-results-and-organizations-summary-20261030.md#四-对照协作方式的设计)取代。下文保留v065已实现配置及其验证事实；当前选定五组另有v104实现与验证，不能沿用下文22项CPU检查作为新版验证；见[实现说明](software-fixed-organization-v104-implementation.md)。
 
 六组改为覆盖 **2人、3人和4人** 的固定组织，保留适合单个仓库issue修复的典型分工。**本轮只实现与离线验证，不调用模型、不启动评测；团队总预算B等待单模型token上限实验后确定。** 全部继续使用OpenHands与ProWorkSim受管harness；角色和流程借鉴所列研究，属于项目适配方案，不是论文复现。
 
