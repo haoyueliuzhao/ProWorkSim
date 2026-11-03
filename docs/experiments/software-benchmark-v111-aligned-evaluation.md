@@ -1,6 +1,8 @@
 # v111：新版 REF／PROJECT 50题配对评测
 
-启动更新：用户已明确授权原对象范围，随后要求提高并发。v112部署修订将目标提高至16对生成、2个评分，合计上限112 CPU／576 GiB；每题限额、100回合、454容器／102卷总上限与累计350元均不变。原v111准备保留；19项既有CPU控制复用，并发修订另通过容量与实际入口绑定检查。新普通用户协调服务已启动，正在依次执行运行准入；这不等于100回合已完成或已达到16题同时生成。
+启动更新：用户已明确授权原对象范围，随后要求提高并发。目标已提高至16对生成、2个评分，合计上限112 CPU／576 GiB；每题限额、100回合、454容器／102卷总上限与累计350元均不变。v112首次启动发现PROJECT零模型检查的软截止时间超过真实硬截止时间，失败记录保留、4个诊断容器和2卷全部清理，模型调用为0。v113只把有效软截止收紧到硬截止以内，经原失败重现、真实自检策略及实际运行函数绑定控制后恢复；没有重跑已消耗的诊断，也不新增对象上限。原完整正式时限仍为6小时／6.5小时。
+
+2026-11-03 20:30左右的运行观察：两次中性API检查已通过（共1,212输入＋输出token），REF和PROJECT均有正式API结算，队列已扩到16个活动回合（各8个）。48题环境资格通过；1766／1921的gold和empty均出现非预期HTTP 502，环境控制保持技术未定，两题对应的4个模型回合未开始，不计模型失败、不替换题目；其余96回合继续调度。16是本次已观测活动生成回合数，不代表每一瞬间都有16个API请求在途。
 
 用户要求“启用新评测”，并明确选择“沿用旧账本，累计上限仍为350元”。本批使用已实现的 [v110 对齐策略](software-benchmark-v110-alignment.md)，为同一事前分层50题各运行一次新的 REF 和 PROJECT，共100回合。旧任务结果及未定记录不覆盖，也不导入本批作为成绩。
 
@@ -39,4 +41,4 @@
 
 准备资产已做只读核对：307个引用匹配，50份actor镜像配置文件存在，v110离线运行包可用。此项不代替启动时对实际Docker镜像和隔离边界的验证。源码与计划封存后不在运行中热改；失败候选不自动重采，结束只清理本批自建资源，保留记录、补丁和评分。
 
-原范围见 [v111方案](../../artifacts/software-benchmark-v111/runtime-authorization-r1/proposal.json)，实际并发以 [v112修订](../../artifacts/software-benchmark-v112/concurrency-amendment-r1/proposal.json) 为准。当前服务为 `proworksim-v111-aligned.service`，读取 `runs/software-benchmark-v111/aligned-interface-r1/api-coordinator-v112`；旧 `api-coordinator` 仅有未运行的准备文件。汇总入口为 `tools/summarize_aligned_interface_v112.py`。实际启动、准入与进度以该目录回执为准。
+原范围见 [v111方案](../../artifacts/software-benchmark-v111/runtime-authorization-r1/proposal.json)，并发见 [v112修订](../../artifacts/software-benchmark-v112/concurrency-amendment-r1/proposal.json)，启动修复及准备证据复用见 [v113恢复方案](../../artifacts/software-benchmark-v113/deadline-recovery-r1/proposal.json)。当前服务仍为 `proworksim-v111-aligned.service`，读取 `runs/software-benchmark-v111/aligned-interface-r1/api-coordinator-v113`；旧 `api-coordinator` 未运行，`api-coordinator-v112` 已停止，均不能作为当前进度。汇总入口为 `tools/summarize_aligned_interface_v113.py`。实际启动、准入与进度以最新目录回执为准。
