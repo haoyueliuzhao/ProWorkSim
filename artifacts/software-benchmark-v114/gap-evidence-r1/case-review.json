@@ -1,0 +1,114 @@
+{
+  "version": "v114-discordant-trajectory-review-r1",
+  "status": "interim_nine_discordant_cases_in_44_common_scored_tasks",
+  "scope": "Human-readable review of frozen candidate patches, public issue text, and actual public execution traces. No reference patch or hidden test content was read; no rerun or model feedback.",
+  "machine_evidence": "discordant-evidence.json",
+  "causal_boundary": "Tags may overlap. Observed action failure, budget termination, or code difference does not identify its isolated causal effect on final score. A successful REF patch is a comparison, not a gold reference.",
+  "cases": [
+    {
+      "instance_id": "pylint-dev__pylint-4970",
+      "slots": {"REF": 7200, "PROJECT": 7201},
+      "tags": ["incomplete_behavioral_coverage", "model_claim_exceeds_test_evidence"],
+      "observations": [
+        "PROJECT used 3,988,538 tokens, completed one review, and legally submitted the same final tree; missing delivery is not the code failure.",
+        "PROJECT guarded _compute_sims only inside the _iter_sims loop and guarded SimilarChecker.close. Its two new CLI tests explicitly expect a TOTAL lines=... summary at zero.",
+        "The successful REF candidate also returned before Similar.run, _compute_sims and _iter_sims at zero. PROJECT's final self-review asserted all programmatic and command-line paths were covered.",
+        "The selected existing/new similar tests passed, while a broad public suite had one failure. Public test success did not establish official code success."
+      ],
+      "interpretation": "The candidate and self-review did not cover the same zero-disable behavior across execution paths. This is an incomplete-repair/validation explanation supported by the final patch, but the precise failing official assertion was not read and must not be invented."
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7490",
+      "slots": {"REF": 7212, "PROJECT": 7213},
+      "tags": ["budget_termination", "unsuccessful_repair_loop", "tool_rejections"],
+      "observations": [
+        "PROJECT stopped at 4,998,953 tokens with model_budget_exhausted, before a finish review or legal submission.",
+        "It made 11 replace_file calls and eight actual selected public-test executions; all eight returned nonzero.",
+        "The final two test outputs still reported test_errors_in_xfail_skip_expressions failing with INTERNALERROR from evaluate_xfail_marks/evaluate_condition in pytest_runtest_makereport.",
+        "The trace also contains an absent-path read, Unknown published patch from list_files, and a nonunique replace_file rejection."
+      ],
+      "interpretation": "The model kept iterating on a concrete remaining regression until the token budget stopped it. Larger input overhead reduced available action rounds, but this trace cannot show that extra budget alone would have repaired the regression."
+    },
+    {
+      "instance_id": "psf__requests-2931",
+      "slots": {"REF": 7216, "PROJECT": 7217},
+      "tags": ["public_environment_failure", "test_entry_and_reproduction_difficulties", "incomplete_behavioral_coverage", "review_budget_admission"],
+      "observations": [
+        "PROJECT used 4,982,598 tokens and submitted its final tree; final review was declined for no_room_for_complete_output_reservation.",
+        "Eight run_tests actions included two rejected selections for a path absent from the source tree. Six executed tests all returned nonzero; full tests reported 81 errors including the unavailable/recursive httpbin fixture problem described in the model's closing statement.",
+        "Four attempts to execute a newly written reproduction through pytest ended with collection/assertion/type errors or exit code 5 (no tests collected). No successful public execution of that reproduction is recorded.",
+        "The PROJECT final code only stopped _encode_params from converting payload bytes. The successful REF candidate additionally normalized encoded URL parameters in prepare_url."
+      ],
+      "interpretation": "This case combines environment feedback failure, difficulty constructing an executable reproduction through the allowed test entry, a near-budget denied review, and incomplete handling of another caller of the changed helper. None is alone established as the entire cause. The interface limitation is lack of arbitrary script execution, not lack of file creation: create_file was actually used."
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-23476",
+      "slots": {"REF": 7223, "PROJECT": 7222},
+      "tags": ["incomplete_behavioral_coverage", "model_claim_exceeds_test_evidence", "navigation_cost"],
+      "observations": [
+        "PROJECT used 4,587,547 tokens, performed one review and legally submitted the same final tree.",
+        "Its 64 acted steps included 15 repository searches, 13 file searches, 27 reads, four replacements and one public test execution.",
+        "The 182 existing pickle tests passed. The final patch preserved _original_dpi but did not restore serialized _dpi to the original value; the successful REF patch explicitly changed state['_dpi'] and handled device-pixel-ratio DPI separately.",
+        "The public issue specifically concerns repeated DPI multiplication after unpickling. No new regression test for that repeated-DPI behavior appears in PROJECT's final patch."
+      ],
+      "interpretation": "The existing test file was executable but insufficient to validate the issue-specific path. The final source shows a plausible missing serialization step; definitive attribution to a particular hidden check is not claimed."
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-20826",
+      "slots": {"REF": 7228, "PROJECT": 7229},
+      "tags": ["budget_termination", "navigation_without_implementation", "repeated_observation_overhead"],
+      "observations": [
+        "PROJECT exhausted its budget at 4,960,836 tokens with 75 opportunities/74 model decisions, before any finish review.",
+        "All 71 acted steps were read_task (1), search_repository (5), search_file (28), or read_file (37). There was no edit or public-test execution.",
+        "Three additional opportunities received no-tool formatting feedback. The final candidate contains no implemented fix."
+      ],
+      "interpretation": "This is the strongest direct navigation/observation burden example among the discordant cases: the available budget was spent before implementation. The model's own search choices and the interface's information cost are entangled; this does not estimate the isolated effect of either."
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10081",
+      "slots": {"REF": 7243, "PROJECT": 7242},
+      "tags": ["budget_termination", "unsuccessful_repair_loop", "tool_rejections"],
+      "observations": [
+        "PROJECT stopped at 4,975,452 tokens with model_budget_exhausted, without a finish review or legal submission.",
+        "It made 13 replacements and six public-test executions, all nonzero. The last output still failed test_setup_inheritance_skipping (expected skipped, actual setup assertion error). Earlier output also showed captured-stdin/PDB errors.",
+        "Rejected operations included Unknown published patch from list_files, a read cursor belonging to a different operation/version, and an absent-path read."
+      ],
+      "interpretation": "The interface was able to edit and execute focused tests, but the model did not close a persistent behavior regression before the budget limit. Cursor/version mistakes add observed overhead without proving the score would otherwise pass."
+    },
+    {
+      "instance_id": "django__django-15103",
+      "slots": {"REF": 7247, "PROJECT": 7246},
+      "tags": ["semantic_edge_case_regression", "model_claim_exceeds_test_evidence"],
+      "observations": [
+        "PROJECT completed with only 929,756 tokens, one review, and a same-tree legal submission. Budget exhaustion and delivery loss cannot explain this case.",
+        "The final patch tests if element_id, whereas the successful REF candidate tests if element_id is not None.",
+        "The two conditions differ for explicitly supplied empty/falsey IDs. PROJECT's final self-review nevertheless claims id-supplied output is byte-identical to before.",
+        "After an initially unsuccessful selected test, the existing TestUtilsHtml class passed."
+      ],
+      "interpretation": "There is a directly visible falsey-vs-None behavioral regression and an overbroad self-review claim. This supports a model reasoning/testing explanation, without requiring any change to interface permissions or budget."
+    },
+    {
+      "instance_id": "pydata__xarray-6461",
+      "slots": {"REF": 7255, "PROJECT": 7254},
+      "tags": ["PROJECT_only_success", "semantic_policy_choice", "focused_validation"],
+      "observations": [
+        "This is the one PROJECT-only success. PROJECT used 2,244,962 tokens, REF 871,608; both completed review without a token cutoff.",
+        "PROJECT disabled attribute retention when x has no attrs. REF instead selected another available attrs element, and documented inheriting y's attributes for scalar/array x.",
+        "PROJECT added an explicit scalar-x regression test and executed five selected public tests successfully, including where-focused and full computation tests. Its final submitted tree matched the code endpoint."
+      ],
+      "interpretation": "The groups made different semantic choices. This counterexample prevents describing every PROJECT constraint as uniformly harmful: the managed run spent more effort and produced the passing behavior here. No general benefit of the interface is established from one task."
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7432",
+      "slots": {"REF": 7271, "PROJECT": 7270},
+      "tags": ["functionally_unchanged_final_patch", "model_claim_exceeds_test_evidence", "missing_issue_regression_test"],
+      "observations": [
+        "PROJECT finished with 1,162,042 tokens, a review, and legal same-tree submission; the final code patch only replaces an inline comment with explanatory comments before the same pass statement.",
+        "The recorded initial attempt had broken public tests; the final file again passed 77 existing skipping tests, but contains no functional change that could correct the reported --runxfail location branch.",
+        "The self-review says the runxfail branch no longer prevents skip-location fix-up and admits that there is no dedicated regression test for that behavior. The frozen patch contradicts the claimed changed control flow.",
+        "The successful REF candidate actually restructures the branch and separately applies skip-location fix-up."
+      ],
+      "interpretation": "This is direct evidence of a false completion claim following reversion to effectively unchanged code. It is a model verification failure; delivery and budget did not truncate the run."
+    }
+  ]
+}
