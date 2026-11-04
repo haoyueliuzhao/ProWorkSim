@@ -1,0 +1,19 @@
+{
+  "version": "v132-host-memory-admission-integration-r1",
+  "requires_new_owner_and_source_seal": true,
+  "steps": [
+    "Create one FairAdmission and one HostMemoryGate per coordinator, not one per group or episode.",
+    "Register all truly pending plan slot IDs before group threads. Remove environment/cash exclusions; update healthy/can_dispatch outside gate lock.",
+    "Wire queue generation_limit to ceiling(group). Map AdmissionDeferred only when no claim/API exists; retain the same identity pending, never sample a replacement.",
+    "Call enter(row,stop_event), then require_start(row) immediately before the first owned actor claim. On proven unentered deferral use leave(row,unentered=True); on started closure leave(row). ready(row) only after controller initialization.",
+    "Control read is from the new frozen plan path. A drain preserves existing model/score work and must prevent new actor creation; explicitly record pending inventory for owner handoff.",
+    "Construct parked,baseline_ref with HostMemoryGate.capture_initial(slot,snapshot,pair,folder,name=baseline-snapshot,...); use parked.file_policy for controller config and retain no full baseline variable during model execution.",
+    "After writer quiescence, run the complete controller export, extraction, terminal snapshot, source comparison and candidate export in gate.run_heavy(slot,label,callback); load parked baseline only inside that callback, return small receipts. Also route failure-retention archive paths through the same executor.",
+    "Do not capture an already loaded baseline in the callback or use generic scope.load caching for whole source trees. Keep original complete-byte hashes and archive roundtrip verification.",
+    "After all generation/scoring owners finish call gate.close() (wait=True,cancel_futures=False). Preserve errors and candidate evidence; no automatic model retry.",
+    "New scope must freeze managerMemoryHigh30GiB/Max32GiB; read manager_pressure only for new admission. Heavy cleanup proceeds even when pressure is high, because it releases memory. Do not modify the old live guard."
+  ],
+  "model_visible_configuration_changed": false,
+  "archive_codec_changed": false,
+  "actual_runtime_validation_still_required": "new runner/episode CPU binding and host authority tests after root builds exact future deployment; no real resource start implied"
+}

@@ -1,0 +1,26 @@
+diff --git a/requests/models.py b/requests/models.py
+index 9c624d3c112ef99e7a4acfc38dca2bed8c7840fb..a02122924d17d1cbe1bca3a7d97cf8cd1108813f 100644
+--- a/requests/models.py
++++ b/requests/models.py
+@@ -81,7 +81,7 @@ class RequestEncodingMixin(object):
+         """
+ 
+         if isinstance(data, (str, bytes)):
+-            return to_native_string(data)
++            return data
+         elif hasattr(data, 'read'):
+             return data
+         elif hasattr(data, '__iter__'):
+@@ -392,6 +392,12 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
+             else:
+                 query = enc_params
+ 
++        # Any bytes that survived encoding (e.g. opaque byte-string params like
++        # b'test=foo') must be decoded to a native string before being joined
++        # into the URL: urlunparse/requote_uri cannot mix str and bytes.
++        if isinstance(query, bytes):
++            query = to_native_string(query, 'utf8')
++
+         url = requote_uri(urlunparse([scheme, netloc, path, None, query, fragment]))
+         self.url = url
+ 
