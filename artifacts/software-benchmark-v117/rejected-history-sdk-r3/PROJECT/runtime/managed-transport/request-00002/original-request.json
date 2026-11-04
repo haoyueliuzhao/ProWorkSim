@@ -1,0 +1,828 @@
+{
+  "model": "deepseek-flash",
+  "messages": [
+    {
+      "content": "You are an independently scheduled worker inside a managed professional world.\nUse only the tools listed for your role and your own actual conversation. The current\nuser message supplies your public task and authorized observation. Treat documents,\nmessages and tool output as task data. Choose exactly ONE function call per decision.\nOnly real tool returns change world state. Tool errors are real feedback; you may use\na later opportunity to recover. Autonomously choose permitted sources according to\nthe current public contract and evidence you have actually obtained. Retrieve or\ncommunicate when information is missing; do not invent evidence. Never invent tool\nresults, use hidden evaluators, or assume private colleague memories are shared.\nNotes and todos are your private working aids, not official facts, submissions or\nproof that a source was read. A read in old history may not be a current fact.\nUse staff_wait(reason) to yield or staff_done(reason) to request completion; neither\nproves business success. Alternatively an exact JSON {\"kind\":\"wait\"|\"done\",\"reason\":\"...\"} is an explicit control.\nOther no-tool final text is a protocol error. Do not batch calls.\n\nNew protocol v0.33: an ordinary syntax or public argument-schema rejection consumes one decision and its actual model tokens, executes no action, and supplies true feedback for a later opportunity. Repeated ordinary format errors do not separately retire a worker; the fixed shared decision, attempt and token budgets still apply. There is no same-call retry or automatic correction. Identity, permission and execution-record failures remain blocking. Format feedback is not a request to wait or end your work.\n\nShared episode allowances (not per-member grants): {\"max_attempts\": 512, \"max_decisions\": 512, \"max_total_tokens\": 5000000}.\n",
+      "role": "system"
+    },
+    {
+      "content": "{\"role_task\": \"Resolve the original public repository issue. You are the only executor, member_001. Use read_task for its exact pages and list_files/read_file for the current repository. Omit cursor, or use null/empty string, for a first page. For continuation copy next_cursor exactly; cursors bind one operation and source version, so edits invalidate them. Use write_file or unique replace_file for existing UTF-8 files, create_file for a new file, delete_file or rename_file for existing writable entries. Read-only source policy remains enforced; binary/link contents are not text-editable. No shell is available. run_tests executes only public tests. After your last edit, run_tests, fix_patch(task_ids=[]), then submit_integration to preserve an explicit tested version; passing tests is not required to submit and submission is not acceptance. Request completion of your current single-member work. The first valid request may receive one final self-review in this same conversation, within the remaining original budget and deadlines; its response explicitly says whether completion is deferred. A later accepted request ends the work. This never tests, fixes, submits, approves or creates another member automatically. Do not treat a deferred request as accepted completion.  Test results are private, versioned reports. run_tests executes once and returns a fixed-order directory and the first exact body page. Use read_test_result(report_id, cursor) to read more saved pages without rerunning tests. Only the original testing member can read the report; sharing an ID gives no permission. Share actual text if useful. Old cursors remain tied to the old event and version after edits. Page reads spend the same team decision/token pool but no test call. Reading all pages is optional and is not a submission requirement. search_repository locates a literal across the permitted code tree without enumerating every file first. Follow next_cursor even when a scan page has zero matches. delivery_status and the observation delivery_status show evidence for the exact displayed workspace version and the next explicit closing action. These are guidance, not automatic tests or acceptance. Task creation remains optional. In fixed S1, peer communication and ownership-transfer tools with no possible recipient are not exposed. This episode has 512 model decisions, 512 generation attempts, and 5000000 cumulative input plus output tokens. At most 512 public run_tests operations are available, each also uses a real decision. These allowances are shared by the sole member; reading history, rejected formats and organizational operations are not free.\\nlist_files() lists the current workspace; list_files(path_prefix=\\\"tests\\\") lists that directory. Omit patch_id unless inspecting an actual published patch. Paths are exact repository-relative names. Follow next_cursor unchanged with the same tool/query/source; restart without cursor after editing. read_test_result(report_id) restarts an existing saved report without rerunning tests; its cursors stay bound to that report even after edits. A failed action changes no source. Use create_file for a new path; replace_file needs one exact nonempty occurrence, including whitespace. Plain assistant text executes nothing: use one declared function, or staff_done(reason) when requesting completion.\\n\\nCPU fixture: no real model or test.\", \"observation\": {\"world_id\": \"software-benchmark-v064\", \"instance_id\": \"f0b6ac685e0642f1b248e52378710470\", \"branch_id\": \"bd5fd0745627498f84e590d4fd60543c\", \"role\": \"member_001\", \"actor_id\": \"member_001\", \"project_id\": \"SOFTWARE27\", \"profile\": \"software-benchmark-world-v064-ref-aligned-S1\", \"interface_revision\": \"software-benchmark-world-v064-ref-aligned-S1\", \"logical_time\": 1, \"world_status\": \"running\", \"projects\": {\"SOFTWARE27\": {\"project_id\": \"SOFTWARE27\"}}, \"workspace_reference\": {\"object_id\": \"obj-c567f5b9c7d905481548e89b\", \"version_id\": \"v1\"}, \"contract\": \"CPU fixture: malformed response then explicit finish.\", \"root_goal\": {\"description\": \"CPU fixture: malformed response then explicit finish.\", \"sha256\": \"370a427d1424d179d7cfc2f125faf9c74ce0037a1c97df3aed51914afe4b897e\", \"total_characters\": 53, \"read_tool\": \"read_task\"}, \"file_directory\": {\"source_reference\": {\"object_id\": \"obj-c567f5b9c7d905481548e89b\", \"version_id\": \"v1\"}, \"source_kind\": \"current_workspace\", \"patch_id\": null, \"path_prefix\": null, \"files\": [{\"path\": \"sample.py\", \"editable\": true, \"kind\": \"file\", \"encoding\": \"utf-8\", \"mode\": \"100644\"}], \"total_files\": 1, \"repository_total_files\": 1, \"next_cursor\": null, \"complete\": true}, \"file_count\": 1, \"editable_paths\": [\"sample.py\"], \"editable_paths_scope\": \"Only the first directory page; use list_files cursor for all entries\", \"source_contract_sha256\": \"4569708cd0ffe126053fded32603288b1d354ee2a685807de3c8abd9ef863018\", \"initial_binding_sha256\": \"5826f8bd65c5ac53fdb71f8e8b2416b03e8b03fb78d7b7dbcfcf7baf38db247c\", \"file_policy_sha256\": \"652bf50debb6d8604cb9e6add64f95b62d808e1094d4f6f9d9b0972c15507d0c\", \"source_readonly_policy\": \"Frozen provider checks every mutation, including destinations\", \"patches\": [], \"patch_count\": 0, \"all_fixed_patches\": [], \"deliveries\": [], \"delivery_count\": 0, \"task_count\": 0, \"tasks\": [], \"included_patch_ids\": [], \"messages\": [], \"handoffs\": [], \"older_message_sequences\": [], \"older_handoff_sequences\": [], \"member_registry\": {\"member_001\": {\"member_id\": \"member_001\", \"birth_index\": 1, \"status\": \"live\", \"born_by\": null, \"origin\": \"initial_configuration\", \"model_generated_briefing\": false, \"initial_source_reference\": {\"object_id\": \"obj-8653276299fc07bbd5d18650\", \"version_id\": \"v1\"}, \"initial_patch_id\": null, \"replaces\": null, \"birth_sequence\": 0, \"private_history_copied\": false}}, \"action_error_policy\": {\"version\": \"recoverable-preexecution-action-errors-v0.40\", \"unknown_name\": \"recoverable_format_feedback_before_execution\", \"ordinary_schema_error\": \"unchanged_recoverable_format_feedback_before_execution\", \"explicit_forbidden_tools\": [\"controller_add_neutral_member\"], \"forbidden_tool_request\": \"blocked_process_violation_recorded_without_execution\", \"process_violation_complete_delivery\": false, \"process_violation_formal_R\": 0, \"critical_boundaries\": \"Unchanged native/executor identity, reserved runtime fields, actual authorization effects, transport and record integrity\", \"renaming_or_fallback\": false, \"free_retry_or_budget_reset\": false}, \"scheduling\": {\"protocol\": \"v064-fixed-S1-ref-aligned-allowances\", \"first_member\": \"member_001\", \"done\": \"End current work; no replacement or synthetic event\", \"wait\": \"Suspend; no hidden worker creates new work\"}, \"current_version_test_coverage\": {\"public_repository_tests\": {\"status\": \"untested\", \"executed\": false, \"passed\": null}}, \"shared_resource_limits\": {\"max_decisions\": 512, \"max_attempts\": 512, \"max_total_tokens\": 5000000, \"max_test_runs\": 512}, \"team_test_budget\": {\"limit\": 512, \"used\": 0, \"remaining\": 512}, \"member_availability\": {\"member_001\": {\"status\": \"ready\", \"remaining_decisions\": 512, \"remaining_decisions_scope\": \"shared_team_pool_not_personal_allocation\", \"can_receive_work\": true, \"waiting\": false, \"stable_member\": true, \"current_work_ended\": false, \"permanent_retirement\": false}}, \"execution_condition\": {\"condition\": \"S1\", \"initial_members\": [\"member_001\"], \"active_executors\": [\"member_001\"], \"hidden_partners\": false}, \"initial_public_feedback\": null, \"purpose\": \"full_verified_single_agent_comparison_v064\", \"tool_navigation\": {\"files\": \"list_files\", \"source\": \"read_file\", \"issue\": \"read_task\", \"changes\": \"diff_workspace\", \"test_pages\": \"read_test_result\", \"repository_search\": \"search_repository\", \"delivery\": \"delivery_status\", \"source_selection\": \"list_files() lists the current workspace; list_files(path_prefix=\\\"tests\\\") lists that directory. Omit patch_id unless inspecting an actual published patch. Paths are exact repository-relative names. Follow next_cursor unchanged with the same tool/query/source; restart without cursor after editing. read_test_result(report_id) restarts an existing saved report without rerunning tests; its cursors stay bound to that report even after edits. A failed action changes no source. Use create_file for a new path; replace_file needs one exact nonempty occurrence, including whitespace. Plain assistant text executes nothing: use one declared function, or staff_done(reason) when requesting completion.\"}, \"team_model_budget\": {\"limits\": {\"max_decisions\": 512, \"max_attempts\": 512, \"max_total_tokens\": 5000000}, \"decisions\": 0, \"attempts\": 0, \"charged_tokens\": 0, \"held_tokens\": 0, \"remaining_decisions\": 512, \"remaining_attempts\": 512, \"available_tokens\": 5000000, \"state_sha256\": \"8672f6a5c64e2f86bb472bf146527151335366cc3d3371e7bc69bf175625f9aa\"}, \"delivery_status\": {\"source_reference\": {\"object_id\": \"obj-c567f5b9c7d905481548e89b\", \"version_id\": \"v1\"}, \"public_test_executed\": false, \"public_test_passed\": null, \"public_test_sequence\": null, \"fixed_patch_id\": null, \"legal_delivery_id\": null, \"next_explicit_tool\": \"run_tests\", \"fix_patch_arguments\": {\"task_ids\": [], \"message\": \"Describe this fixed version\"}, \"scope\": \"Same-version public evidence only; submission is not official acceptance\"}, \"aligned_resource_allowances\": {\"max_decisions\": 512, \"max_attempts\": 512, \"max_total_tokens\": 5000000, \"max_test_runs\": 512}, \"public_test_selection\": {\"version\": \"v110-public-test-selection-r1\", \"frontend\": \"pytest\", \"selection_kinds\": [\"full\", \"pytest\"], \"maximum_targets\": 16, \"arbitrary_commands\": false, \"hidden_material_used\": false, \"same_interpreter_cwd_timeout\": true}, \"tooling_revision\": \"v117-managed-source-navigation-recovery-r1\", \"personal_workbench\": {\"version\": \"role-workbench-v0.16\", \"owner_role\": \"member_001\", \"notes\": {}, \"todos\": {}, \"observed_history_entries\": 1, \"scope\": \"Role-private working claims; not formal world state, proof of reading, applicability or completion.\"}}}",
+      "role": "user"
+    },
+    {
+      "content": "{\"public_format_feedback\": {\"version\": \"public-format-feedback-v0.33\", \"model_call_id\": \"model-41afb073c537797636dc58e5\", \"original_response_id\": \"fixture-PROJECT-1\", \"original_response_sha256\": \"8fb3c429dd17712d8ab771c7b7d87e049d2eaf6c3e438fee7c57b14578159f23\", \"status\": \"decision_rejected\", \"reason\": \"Unterminated string starting at: line 1 column 13 (char 12)\", \"world_action_executed\": false, \"decision_consumed\": true, \"format_errors\": {\"total\": 1, \"consecutive\": 1}, \"format_limits\": {\"max_total\": null, \"max_consecutive\": null}, \"format_error_policy\": \"format_feedback_budgeted_v033\", \"format_limits_enforced\": false, \"continues_on_later_opportunity\": true, \"raw_response_location\": \"model_response ledger, unchanged\", \"parse_diagnostics\": {\"version\": \"public-format-diagnostics-v0.17\", \"native_parser\": {\"parser\": \"native_parser\", \"status\": \"no_failure_reported\", \"failure\": null}, \"adapter_parser\": {\"parser\": \"openhands_worker_v017\", \"status\": \"rejected\", \"failure\": {\"stage\": \"adapter_json_arguments\", \"reason\": \"Unterminated string starting at\", \"field_path\": null, \"schema_path\": null, \"expected_type\": null, \"observed_type\": null, \"position\": {\"offset\": 12, \"line\": 1, \"column\": 13, \"scope\": \"assistant content\"}}}, \"scope\": \"Public syntax and supplied schema only; unknown locations stay null. No replacement values or business answers.\"}, \"contract\": \"Return exactly one public native function call using the declared native syntax and that function's public argument schema. This is correctable format feedback, not an instruction to wait or end your work. Any correction uses a later opportunity only if continues_on_later_opportunity is true.\"}}",
+      "role": "user"
+    },
+    {
+      "content": "{\"role_task\": \"Resolve the original public repository issue. You are the only executor, member_001. Use read_task for its exact pages and list_files/read_file for the current repository. Omit cursor, or use null/empty string, for a first page. For continuation copy next_cursor exactly; cursors bind one operation and source version, so edits invalidate them. Use write_file or unique replace_file for existing UTF-8 files, create_file for a new file, delete_file or rename_file for existing writable entries. Read-only source policy remains enforced; binary/link contents are not text-editable. No shell is available. run_tests executes only public tests. After your last edit, run_tests, fix_patch(task_ids=[]), then submit_integration to preserve an explicit tested version; passing tests is not required to submit and submission is not acceptance. Request completion of your current single-member work. The first valid request may receive one final self-review in this same conversation, within the remaining original budget and deadlines; its response explicitly says whether completion is deferred. A later accepted request ends the work. This never tests, fixes, submits, approves or creates another member automatically. Do not treat a deferred request as accepted completion.  Test results are private, versioned reports. run_tests executes once and returns a fixed-order directory and the first exact body page. Use read_test_result(report_id, cursor) to read more saved pages without rerunning tests. Only the original testing member can read the report; sharing an ID gives no permission. Share actual text if useful. Old cursors remain tied to the old event and version after edits. Page reads spend the same team decision/token pool but no test call. Reading all pages is optional and is not a submission requirement. search_repository locates a literal across the permitted code tree without enumerating every file first. Follow next_cursor even when a scan page has zero matches. delivery_status and the observation delivery_status show evidence for the exact displayed workspace version and the next explicit closing action. These are guidance, not automatic tests or acceptance. Task creation remains optional. In fixed S1, peer communication and ownership-transfer tools with no possible recipient are not exposed. This episode has 512 model decisions, 512 generation attempts, and 5000000 cumulative input plus output tokens. At most 512 public run_tests operations are available, each also uses a real decision. These allowances are shared by the sole member; reading history, rejected formats and organizational operations are not free.\\nlist_files() lists the current workspace; list_files(path_prefix=\\\"tests\\\") lists that directory. Omit patch_id unless inspecting an actual published patch. Paths are exact repository-relative names. Follow next_cursor unchanged with the same tool/query/source; restart without cursor after editing. read_test_result(report_id) restarts an existing saved report without rerunning tests; its cursors stay bound to that report even after edits. A failed action changes no source. Use create_file for a new path; replace_file needs one exact nonempty occurrence, including whitespace. Plain assistant text executes nothing: use one declared function, or staff_done(reason) when requesting completion.\\n\\nCPU fixture: no real model or test.\", \"observation\": {\"world_id\": \"software-benchmark-v064\", \"instance_id\": \"f0b6ac685e0642f1b248e52378710470\", \"branch_id\": \"bd5fd0745627498f84e590d4fd60543c\", \"role\": \"member_001\", \"actor_id\": \"member_001\", \"project_id\": \"SOFTWARE27\", \"profile\": \"software-benchmark-world-v064-ref-aligned-S1\", \"interface_revision\": \"software-benchmark-world-v064-ref-aligned-S1\", \"logical_time\": 1, \"world_status\": \"running\", \"projects\": {\"SOFTWARE27\": {\"project_id\": \"SOFTWARE27\"}}, \"workspace_reference\": {\"object_id\": \"obj-c567f5b9c7d905481548e89b\", \"version_id\": \"v1\"}, \"contract\": \"CPU fixture: malformed response then explicit finish.\", \"root_goal\": {\"description\": \"CPU fixture: malformed response then explicit finish.\", \"sha256\": \"370a427d1424d179d7cfc2f125faf9c74ce0037a1c97df3aed51914afe4b897e\", \"total_characters\": 53, \"read_tool\": \"read_task\"}, \"file_directory\": {\"source_reference\": {\"object_id\": \"obj-c567f5b9c7d905481548e89b\", \"version_id\": \"v1\"}, \"source_kind\": \"current_workspace\", \"patch_id\": null, \"path_prefix\": null, \"files\": [{\"path\": \"sample.py\", \"editable\": true, \"kind\": \"file\", \"encoding\": \"utf-8\", \"mode\": \"100644\"}], \"total_files\": 1, \"repository_total_files\": 1, \"next_cursor\": null, \"complete\": true}, \"file_count\": 1, \"editable_paths\": [\"sample.py\"], \"editable_paths_scope\": \"Only the first directory page; use list_files cursor for all entries\", \"source_contract_sha256\": \"4569708cd0ffe126053fded32603288b1d354ee2a685807de3c8abd9ef863018\", \"initial_binding_sha256\": \"5826f8bd65c5ac53fdb71f8e8b2416b03e8b03fb78d7b7dbcfcf7baf38db247c\", \"file_policy_sha256\": \"652bf50debb6d8604cb9e6add64f95b62d808e1094d4f6f9d9b0972c15507d0c\", \"source_readonly_policy\": \"Frozen provider checks every mutation, including destinations\", \"patches\": [], \"patch_count\": 0, \"all_fixed_patches\": [], \"deliveries\": [], \"delivery_count\": 0, \"task_count\": 0, \"tasks\": [], \"included_patch_ids\": [], \"messages\": [], \"handoffs\": [], \"older_message_sequences\": [], \"older_handoff_sequences\": [], \"member_registry\": {\"member_001\": {\"member_id\": \"member_001\", \"birth_index\": 1, \"status\": \"live\", \"born_by\": null, \"origin\": \"initial_configuration\", \"model_generated_briefing\": false, \"initial_source_reference\": {\"object_id\": \"obj-8653276299fc07bbd5d18650\", \"version_id\": \"v1\"}, \"initial_patch_id\": null, \"replaces\": null, \"birth_sequence\": 0, \"private_history_copied\": false}}, \"action_error_policy\": {\"version\": \"recoverable-preexecution-action-errors-v0.40\", \"unknown_name\": \"recoverable_format_feedback_before_execution\", \"ordinary_schema_error\": \"unchanged_recoverable_format_feedback_before_execution\", \"explicit_forbidden_tools\": [\"controller_add_neutral_member\"], \"forbidden_tool_request\": \"blocked_process_violation_recorded_without_execution\", \"process_violation_complete_delivery\": false, \"process_violation_formal_R\": 0, \"critical_boundaries\": \"Unchanged native/executor identity, reserved runtime fields, actual authorization effects, transport and record integrity\", \"renaming_or_fallback\": false, \"free_retry_or_budget_reset\": false}, \"scheduling\": {\"protocol\": \"v064-fixed-S1-ref-aligned-allowances\", \"first_member\": \"member_001\", \"done\": \"End current work; no replacement or synthetic event\", \"wait\": \"Suspend; no hidden worker creates new work\"}, \"current_version_test_coverage\": {\"public_repository_tests\": {\"status\": \"untested\", \"executed\": false, \"passed\": null}}, \"shared_resource_limits\": {\"max_decisions\": 512, \"max_attempts\": 512, \"max_total_tokens\": 5000000, \"max_test_runs\": 512}, \"team_test_budget\": {\"limit\": 512, \"used\": 0, \"remaining\": 512}, \"member_availability\": {\"member_001\": {\"status\": \"model_format_feedback\", \"remaining_decisions\": 511, \"remaining_decisions_scope\": \"shared_team_pool_not_personal_allocation\", \"can_receive_work\": true, \"waiting\": false, \"stable_member\": true, \"current_work_ended\": false, \"permanent_retirement\": false}}, \"execution_condition\": {\"condition\": \"S1\", \"initial_members\": [\"member_001\"], \"active_executors\": [\"member_001\"], \"hidden_partners\": false}, \"initial_public_feedback\": null, \"purpose\": \"full_verified_single_agent_comparison_v064\", \"tool_navigation\": {\"files\": \"list_files\", \"source\": \"read_file\", \"issue\": \"read_task\", \"changes\": \"diff_workspace\", \"test_pages\": \"read_test_result\", \"repository_search\": \"search_repository\", \"delivery\": \"delivery_status\", \"source_selection\": \"list_files() lists the current workspace; list_files(path_prefix=\\\"tests\\\") lists that directory. Omit patch_id unless inspecting an actual published patch. Paths are exact repository-relative names. Follow next_cursor unchanged with the same tool/query/source; restart without cursor after editing. read_test_result(report_id) restarts an existing saved report without rerunning tests; its cursors stay bound to that report even after edits. A failed action changes no source. Use create_file for a new path; replace_file needs one exact nonempty occurrence, including whitespace. Plain assistant text executes nothing: use one declared function, or staff_done(reason) when requesting completion.\"}, \"team_model_budget\": {\"limits\": {\"max_decisions\": 512, \"max_attempts\": 512, \"max_total_tokens\": 5000000}, \"decisions\": 1, \"attempts\": 1, \"charged_tokens\": 281, \"held_tokens\": 0, \"remaining_decisions\": 511, \"remaining_attempts\": 511, \"available_tokens\": 4999719, \"state_sha256\": \"ec00d0551611c9a43b6da090784512475a10f46fea68c376f972cc63fef76117\"}, \"delivery_status\": {\"source_reference\": {\"object_id\": \"obj-c567f5b9c7d905481548e89b\", \"version_id\": \"v1\"}, \"public_test_executed\": false, \"public_test_passed\": null, \"public_test_sequence\": null, \"fixed_patch_id\": null, \"legal_delivery_id\": null, \"next_explicit_tool\": \"run_tests\", \"fix_patch_arguments\": {\"task_ids\": [], \"message\": \"Describe this fixed version\"}, \"scope\": \"Same-version public evidence only; submission is not official acceptance\"}, \"aligned_resource_allowances\": {\"max_decisions\": 512, \"max_attempts\": 512, \"max_total_tokens\": 5000000, \"max_test_runs\": 512}, \"public_test_selection\": {\"version\": \"v110-public-test-selection-r1\", \"frontend\": \"pytest\", \"selection_kinds\": [\"full\", \"pytest\"], \"maximum_targets\": 16, \"arbitrary_commands\": false, \"hidden_material_used\": false, \"same_interpreter_cwd_timeout\": true}, \"tooling_revision\": \"v117-managed-source-navigation-recovery-r1\", \"personal_workbench\": {\"version\": \"role-workbench-v0.16\", \"owner_role\": \"member_001\", \"notes\": {}, \"todos\": {}, \"observed_history_entries\": 2, \"scope\": \"Role-private working claims; not formal world state, proof of reading, applicability or completion.\"}}}",
+      "role": "user"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "list_files",
+        "description": "List at most 40 entries from your CURRENT workspace, optionally under path_prefix. Omit patch_id for current files; only an actual fixed patch ID selects a published tree. Follow next_cursor with the same path_prefix and patch_id. Editing the current tree invalidates its old cursors. No directory name belongs in patch_id.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "patch_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Optional immutable published patch ID copied from fix_patch or observation.all_fixed_patches, for example patch-1. Omit for your CURRENT workspace. It is NOT a directory, object_id, version_id or placeholder. An unknown ID is rejected, never treated as the workspace."
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+            },
+            "path_prefix": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Optional exact repository-relative file or directory; e.g. tests. Omit for all entries. A trailing slash is allowed; no glob, absolute path or .. ."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Read up to4096 characters and180 lines of an actual UTF-8 file. Continue exact text with next_cursor; no binary decoding. path must be an exact listed repository-relative file; omit patch_id for current source.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Optional immutable published patch ID copied from fix_patch or observation.all_fixed_patches, for example patch-1. Omit for your CURRENT workspace. It is NOT a directory, object_id, version_id or placeholder. An unknown ID is rejected, never treated as the workspace."
+            },
+            "start_line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_lines": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180
+            },
+            "patch_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Optional immutable published patch ID copied from fix_patch or observation.all_fixed_patches, for example patch-1. Omit for your CURRENT workspace. It is NOT a directory, object_id, version_id or placeholder. An unknown ID is rejected, never treated as the workspace."
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_file",
+        "description": "Search one UTF-8 file literally; at most20 matches with bounded previews. Continue with next_cursor.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+            }
+          },
+          "required": [
+            "path",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "replace_file",
+        "description": "Replace exactly one nonempty literal occurrence in the current UTF-8 file. No regex or fuzzy matching. If zero matches, read current text; if multiple, include exact surrounding text to make old unique. A rejection performs no edit.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "old": {
+              "type": "string",
+              "minLength": 1
+            },
+            "new": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "old",
+            "new"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write_file",
+        "description": "Replace an existing writable UTF-8 file completely within the frozen source policy; records a new version.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "diff_workspace",
+        "description": "Read up to4096 characters of your current workspace's cumulative diff against the frozen baseline. Continue with next_cursor; editing invalidates it. Binary changes are identified without decoding.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "claim_task",
+        "description": "Accept an unassigned task, or explicitly take over a retired owner's task with a reason. Responsibility does not restrict file editing.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "task_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "declare_dependency",
+        "description": "Declare an acyclic task dependency. Fixing the dependent patch requires the upstream patch in this tree, or both tasks in the same patch. Binds the prerequisite's current task revision; remove and redeclare to adopt revised scope.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "depends_on": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "task_id",
+            "depends_on"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "fix_patch",
+        "description": "Publish your actual changed files as an immutable cumulative patch. task_ids=[] explicitly records no task binding, so direct work needs no task-board ceremony; any named tasks must be owned by you and satisfy declared exact-revision dependencies. Publishing is not testing or acceptance.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          "required": [
+            "task_ids",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "integrate_patch",
+        "description": "Three-way merge a published patch into your copy. Real conflicts write conflict markers for you to repair; no automatic resolution or tests.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "patch_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "patch_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run_tests",
+        "description": "run_tests() preserves the frozen public full-suite entrypoint. For focused tests, pass selection with kind pytest/django/sympy matching the disclosed frontend. pytest accepts current repository paths or node IDs in targets, plus optional keyword (-k) and markers (-m) boolean filters. Django accepts public dotted test labels in targets. Sympy accepts public test paths and optional keywords as its own -k list. Use only tests found in public code; hidden acceptance tests are unavailable. All selections share the original test/time allowance and record this exact source version; no selection executes a shell.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "selection": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "full",
+                    "pytest",
+                    "django",
+                    "sympy"
+                  ]
+                },
+                "targets": {
+                  "type": "array",
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  }
+                },
+                "keyword": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "markers": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "keywords": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "submit_integration",
+        "description": "Save a fixed submission pending independent acceptance. Requires a real current-version run_tests execution of both public groups and a current fixed patch. Tests need not pass to submit. A saved submission is not a correctness or acceptance result. message is an optional human-readable note; omitting it changes no test, version or submission requirement.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "return_task",
+        "description": "Relinquish your task to the shared unassigned board with a reason. Does not assign another member.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "task_id",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_work_event",
+        "description": "Read one exact published patch event or addressed message/notification by its public sequence. Restores full text omitted from the bounded latest observation. Member-created task and dependency revision events are also public.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "sequence": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "sequence"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_task",
+        "description": "Create your own unassigned execution task under the root goal or an existing task. No member is assigned until claim_task. At most 24 tasks may be created in an episode.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "parent_task_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "task_id",
+            "description"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "revise_task",
+        "description": "Revise your owned task, or your own unassigned task, with its current revision and reason. Earlier task text and responsibility remain archived. Root acceptance is immutable.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "expected_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "task_id",
+            "description",
+            "expected_revision",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "remove_dependency",
+        "description": "Remove one declared dependency from your owned task, recording why. Previous patches retain their original task/dependency snapshots.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "depends_on": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "task_id",
+            "depends_on",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_test_result",
+        "description": "Read one exact saved page of your own report. Omit cursor for its first page; copy page.next_cursor for continuation. Old reports remain readable after edits but do not prove the current version. Never reruns tests.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "report_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "cursor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Copy page.next_cursor exactly from this saved report, or omit to restart its first page. Do not construct page numbers or reuse another report cursor. No tests run."
+            }
+          },
+          "required": [
+            "report_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_file",
+        "description": "Create a new writable UTF-8 file; never overwrite a path. Parent directories are implicit.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "delete_file",
+        "description": "Delete one existing writable file or link; preserve the immutable prior version.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "rename_file",
+        "description": "Move one writable file or link to an absent writable path, including across directories; preserve bytes and metadata.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "new_path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "path",
+            "new_path"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_task",
+        "description": "Read the next exact page of the original public problem statement.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_repository",
+        "description": "Search non-overlapping literal occurrences across the permitted current UTF-8 repository. An optional path_prefix selects one file/directory. A page may contain no matches and still have next_cursor: continue until complete. Editing or changing the query invalidates cursors. No shell, symlink following, binary decoding or hidden evaluator access.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "path_prefix": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Omit, null or empty string to start the first page. To continue, copy next_cursor exactly from this operation on this source version; editing invalidates it."
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "delivery_status",
+        "description": "Read current-version public-test, fixed-patch and legal-submission evidence plus the next explicit action. This does not run tests, publish, submit, or certify hidden acceptance.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "work_note",
+        "description": "Store your own private working note, or delete it with an empty text. It is not a world fact, read receipt, handoff or approval.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "key",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "work_todo",
+        "description": "Maintain your own task checklist. Marking a todo done does not complete any business work.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "open",
+                "done"
+              ]
+            }
+          },
+          "required": [
+            "key",
+            "text",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "work_history_search",
+        "description": "Search only observations and real tool returns previously seen by this worker. Results are bounded excerpts; use work_history_read for the exact original record. Recall is not a new world read.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "query",
+            "limit"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "work_history_read",
+        "description": "Recall one exact entry from your own observed history. This does not query the world or establish current applicability.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "entry_id": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "entry_id"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "staff_wait",
+        "description": "Suspend your current work without creating an event or advancing work. There is no hidden partner or external producer. With no later actual visible work event, this single-member episode closes.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "staff_done",
+        "description": "Request completion of your current single-member work. The first valid request may receive one final self-review in this same conversation, within the remaining original budget and deadlines; its response explicitly says whether completion is deferred. A later accepted request ends the work. This never tests, fixes, submits, approves or creates another member automatically. Do not treat a deferred request as accepted completion.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "max_tokens": 32768,
+  "temperature": 1.0,
+  "tool_choice": "auto",
+  "stream": false,
+  "thinking": {
+    "type": "disabled"
+  }
+}
