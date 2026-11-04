@@ -1,0 +1,229 @@
+{
+  "version": "v123-independent-cash-recovery-configuration-proposal-r1",
+  "slot_index": 8604,
+  "task_index": 18,
+  "slot_id": "v117:django__django-13807:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012304",
+  "instance_id": "django__django-13807",
+  "repo": "django/django",
+  "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "PROJECT",
+  "seed": 20261104012304,
+  "provider_seed_sent": false,
+  "replicate": 2,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "PROJECT",
+  "source_slot_id": "v054-PROJECT-django__django-13807",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/conditions/PROJECT.json",
+    "sha256": "db8d7a34f6ee4381d72dcc6edf5d1ba2eb144093c4ab6e07a9255a277d5a43b1",
+    "bytes": 2742
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "django__django-13807",
+    "repo": "django/django",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "tests/runtests.py",
+      "--noinput",
+      "--parallel",
+      "1"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.6.13 |Anaconda, Inc.| (default, Jun  4 2021, 14:25:59) \n[GCC 7.5.0]",
+    "source_identity": {
+      "dataset_base": "89fc144dedc737a79929231438f035b1d4a993c9",
+      "official_setup_head": "52b46b62f4365488ae3f128cbe7d1d81a000a1fe",
+      "official_setup_tree": "1b83c8577f2183f91f5154f60358da94c7682800",
+      "actor_head": "52b46b62f4365488ae3f128cbe7d1d81a000a1fe",
+      "actor_tree": "1b83c8577f2183f91f5154f60358da94c7682800",
+      "actor_image_id": "sha256:c729ef314476c40cc243d1b1c2c4a07d150ad7c5c1b5143ae1d15b4cf7651c62"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/django__django-13807.json",
+      "sha256": "200332b7f6065cce5d835eee7631425381b64deba2a7564f87faa5a3be38721d",
+      "bytes": 5589
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "django/django",
+      "python_major_minor": "3.6",
+      "representative": "django__django-10554"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/django__django-10554.json",
+      "sha256": "1dc2fac92ec2af52984bd9b115fb57dd6f9d2a1aa05d5f1f49dfbc8e8dba9e18",
+      "bytes": 9146
+    },
+    "observed_frontend_actor_image_id": "sha256:c02c5bd37749290ad827d5abde747d9b7a5c80d3b6603952b8fa1d1cef139af2",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "django__django-13807",
+    "repo": "django/django",
+    "base_commit": "89fc144dedc737a79929231438f035b1d4a993c9",
+    "problem_statement": "loaddata crashes on SQLite when table names are SQL keywords.\nDescription\n\t\nSteps to reproduce:\nCreate a Model called Order. (order is a SQL reserved word)\nCreate fixtures for the model\nUse manage.py loaddata to load the fixture.\nNotice that it fails with the following error. This is because the table name order is not quoted properly\n(0.000) PRAGMA foreign_key_check(order); args=None\nTraceback (most recent call last):\n File \"python3.7/site-packages/django/db/backends/utils.py\", line 82, in _execute\n\treturn self.cursor.execute(sql)\n File \"python3.7/site-packages/django/db/backends/sqlite3/base.py\", line 411, in execute\n\treturn Database.Cursor.execute(self, query)\nsqlite3.OperationalError: near \"order\": syntax error\nRoot Cause\nFile: python3.7/site-packages/django/db/backends/sqlite3/base.py line 327\nFunction: check_constraints\nDetails: due to missing back ticks around %s in the SQL statement PRAGMA foreign_key_check(%s)\nHere in check_constraints line 327 in context\n\t\t\t\tif table_names is None:\n\t\t\t\t\tviolations = cursor.execute('PRAGMA foreign_key_check').fetchall()\n\t\t\t\telse:\n\t\t\t\t\tviolations = chain.from_iterable(\n\t\t\t\t\t\tcursor.execute('PRAGMA foreign_key_check(%s)' % table_name).fetchall()\n\t\t\t\t\t\tfor table_name in table_names\n\t\t\t\t\t)\nAnd here line 333\n\t\t\t\tfor table_name, rowid, referenced_table_name, foreign_key_index in violations:\n\t\t\t\t\tforeign_key = cursor.execute(\n\t\t\t\t\t\t'PRAGMA foreign_key_list(%s)' % table_name\n\t\t\t\t\t).fetchall()[foreign_key_index]\nIssue confirmed in\n3.1.0\n3.1.2\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "django__django-13807",
+      "repo": "django/django",
+      "base_commit": "89fc144dedc737a79929231438f035b1d4a993c9",
+      "image_id": "sha256:8dd6ade9c734c99748320547a9dcc0147e6fa2fe337c0ee159a36cdbe6dff983",
+      "manifest_digest": "sha256:3ff0e9e834ecdfd11c159f8f52b641a8602260380243b1b8f7cedffddd29b589"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/django__django-13807.json",
+      "sha256": "200332b7f6065cce5d835eee7631425381b64deba2a7564f87faa5a3be38721d",
+      "bytes": 5589
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "logical_index": 5,
+  "repeat_index": 2,
+  "budget_tokens": 5000000,
+  "panel_kind": "independent_cash_failure_recovery_9",
+  "analysis_endpoint": "independent_recovery_v123",
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 19,
+      "slot_index": 8518,
+      "task_index": 18,
+      "slot_id": "v117:django__django-13807:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012118",
+      "source_slot_id": "v054-PROJECT-django__django-13807",
+      "instance_id": "django__django-13807",
+      "repo": "django/django",
+      "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "PROJECT",
+      "thinking": false,
+      "seed": 20261104012118,
+      "provider_seed_sent": false,
+      "replicate": 1,
+      "repeat_index": 1,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "PROJECT",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "independent_system_failure_recovery_27",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v121/project-independent-recovery-r1/configs/8518.json",
+        "sha256": "8feedccce65a0057675c9bd03002487e85e4537b5c0b41681adf782f8f8a5598",
+        "bytes": 9423
+      },
+      "analysis_endpoint": "independent_recovery_v121",
+      "original_slot_id": "v117:django__django-13807:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040136",
+      "original_slot_index": 8018,
+      "old_result_overwritten": false
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v121/project-independent-recovery-r1/episodes/8518/result.json",
+      "sha256": "2573ff56b597e8441504b1a0e3d7473e4482fa470df8af1cb188f6ebbbade897",
+      "bytes": 3201
+    },
+    "provider_attempts_already_consumed": 32,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false,
+    "previous_attempt_provenance": {
+      "original_row": {
+        "logical_index": 19,
+        "slot_index": 8018,
+        "task_index": 18,
+        "slot_id": "v117:django__django-13807:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040136",
+        "source_slot_id": "v054-PROJECT-django__django-13807",
+        "instance_id": "django__django-13807",
+        "repo": "django/django",
+        "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+        "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+        "model_key": "DEEPSEEK",
+        "model": "deepseek-flash",
+        "arm": "PROJECT",
+        "thinking": false,
+        "seed": 202611040136,
+        "provider_seed_sent": false,
+        "replicate": 0,
+        "repeat_index": 0,
+        "input_plus_output_tokens": 5000000,
+        "budget_tokens": 5000000,
+        "generation_token_upper_bound": 5000000,
+        "execution_arm": "PROJECT",
+        "measurement_kind": "full_verified_comparison",
+        "panel_kind": "interface_repair_probe_50",
+        "configuration": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/configs/8018.json",
+          "sha256": "601b0ff357cde8ee066555aaabbad556628ac24d8fa7a457d7a3ba65e5a26220",
+          "bytes": 7378
+        }
+      },
+      "original_result": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/episodes/8018/result.json",
+        "sha256": "74fc7dd4baa5502856d87914f05b3359c3d5364866a663946a46996504d36398",
+        "bytes": 3127
+      },
+      "provider_attempts_already_consumed": 6,
+      "original_accounting_retained": true,
+      "original_attempt_overwritten": false,
+      "resume_original_conversation": false,
+      "reuse_old_worktree_or_feedback": false
+    },
+    "new_model_attempt_explicitly_authorized": true,
+    "stop_tree_supplemental_scoring_in_this_batch": false
+  },
+  "preparation_only": true,
+  "execution_authorized": false,
+  "runtime_reuse_proposal": {
+    "target_execution_layer": "v120",
+    "frozen_existing_bundle": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v120/sdk-bundle-r1/manifest.json",
+      "sha256": "c2ffa5969f1122be2470ef675748ba998b247f431d975ce8ae0589d87b6dd601",
+      "bytes": 75409
+    },
+    "new_scope_and_host_API_binding_required": "v123 scope plus v122 amended API view",
+    "this_preparation_does_not_start_runtime": true
+  }
+}
