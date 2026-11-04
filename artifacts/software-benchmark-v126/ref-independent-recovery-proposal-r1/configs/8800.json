@@ -1,0 +1,185 @@
+{
+  "version": "v126-conditional-independent-REF-config-proposal-r1",
+  "slot_index": 8800,
+  "task_index": 22,
+  "slot_id": "v110:matplotlib__matplotlib-22865:DEEPSEEK_NT_REF_ALIGNED_B5000K:20261104012600",
+  "instance_id": "matplotlib__matplotlib-22865",
+  "repo": "matplotlib/matplotlib",
+  "group_id": "DEEPSEEK_NT_REF_ALIGNED_B5000K",
+  "condition_id": "DEEPSEEK_NT_REF_ALIGNED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "REF",
+  "seed": 20261104012600,
+  "provider_seed_sent": false,
+  "replicate": 1,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "REF",
+  "source_slot_id": "v054-REF-matplotlib__matplotlib-22865",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v111/aligned-interface-r1/conditions/REF.json",
+    "sha256": "6768d21fd4d153ac6d44d0e564740e2c1030e662dee30dbb2c5a9ec10cb88e3d",
+    "bytes": 2524
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "matplotlib__matplotlib-22865",
+    "repo": "matplotlib/matplotlib",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "-m",
+      "pytest"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.11.11 | packaged by conda-forge | (main, Dec  5 2024, 14:17:24) [GCC 13.3.0]",
+    "source_identity": {
+      "dataset_base": "c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8",
+      "official_setup_head": "98ae845d67f018d14544934f2a85be258debdd89",
+      "official_setup_tree": "939014cad4a28cb61146183b4993893454148d5b",
+      "actor_head": "98ae845d67f018d14544934f2a85be258debdd89",
+      "actor_tree": "939014cad4a28cb61146183b4993893454148d5b",
+      "actor_image_id": "sha256:b0a83ced722ef91a750ac2d3004c05afd990f7a5914164e0149f84bec5e18352"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/matplotlib__matplotlib-22865.json",
+      "sha256": "6aed179d0b92c346c362f82bce94f802c7295e31bbccda411df964f61bb468d6",
+      "bytes": 22674
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "matplotlib/matplotlib",
+      "python_major_minor": "3.11",
+      "representative": "matplotlib__matplotlib-22719"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/matplotlib__matplotlib-22719.json",
+      "sha256": "7a82752b14d93451bddc0870248f580c067ea093b36b775c1438011ca29c7f7b",
+      "bytes": 30465
+    },
+    "observed_frontend_actor_image_id": "sha256:4b9d9915bd7e967f0ebc6ffaaa3beb69ce63e3581c98b66a6db9bb319de06be7",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "matplotlib__matplotlib-22865",
+    "repo": "matplotlib/matplotlib",
+    "base_commit": "c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8",
+    "problem_statement": "[Bug]: Colorbar with drawedges=True and extend='both' does not draw edges at extremities\n### Bug summary\n\nWhen creating a matplotlib colorbar, it is possible to set drawedges to True which separates the colors of the colorbar with black lines. However, when the colorbar is extended using extend='both', the black lines at the extremities do not show up.\n\n### Code for reproduction\n\n```python\nimport matplotlib as mpl\r\nimport numpy as np\r\nimport matplotlib.pyplot as plt  \r\nfrom matplotlib.colors import from_levels_and_colors\r\n\r\nmy_cmap = mpl.cm.viridis\r\nbounds = np.arange(10)\r\nnb_colors = len(bounds) + 1\r\ncolors = my_cmap(np.linspace(100, 255, nb_colors).astype(int))\r\nmy_cmap, my_norm = from_levels_and_colors(bounds, colors, extend='both')\r\n\r\nplt.figure(figsize=(5, 1))\r\nax = plt.subplot(111)\r\ncbar = mpl.colorbar.ColorbarBase(ax, cmap=my_cmap, norm=my_norm, orientation='horizontal', drawedges=True)\r\nplt.subplots_adjust(left=0.05, bottom=0.4, right=0.95, top=0.9)\r\nplt.show()\n```\n\n\n### Actual outcome\n\n![image](https://user-images.githubusercontent.com/34058459/164254401-7516988d-1efb-4887-a631-de9a68357685.png)\r\n\n\n### Expected outcome\n\n![image](https://user-images.githubusercontent.com/34058459/164254881-92c167b7-aa13-4972-9955-48221b38b866.png)\r\n\n\n### Additional information\n\n_No response_\n\n### Operating system\n\n_No response_\n\n### Matplotlib Version\n\n3.5.1\n\n### Matplotlib Backend\n\n_No response_\n\n### Python version\n\n_No response_\n\n### Jupyter version\n\n_No response_\n\n### Installation\n\n_No response_\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "matplotlib__matplotlib-22865",
+      "repo": "matplotlib/matplotlib",
+      "base_commit": "c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8",
+      "image_id": "sha256:c360512331dd3a9bb6053a0601eb348c7c56d6f65e793127864cba8da5ed6083",
+      "manifest_digest": "sha256:9696098532ade2d1e2fac736a4d9c46ba983fcd92fbada1307df1a78d55e0731"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/matplotlib__matplotlib-22865.json",
+      "sha256": "6aed179d0b92c346c362f82bce94f802c7295e31bbccda411df964f61bb468d6",
+      "bytes": 22674
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "preparation_only": true,
+  "logical_index": 1,
+  "repeat_index": 1,
+  "budget_tokens": 5000000,
+  "panel_kind": "conditional_independent_REF_recovery_2",
+  "analysis_endpoint": "independent_REF_recovery_v126",
+  "execution_authorized": false,
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 45,
+      "slot_index": 7244,
+      "task_index": 22,
+      "slot_id": "v110:matplotlib__matplotlib-22865:DEEPSEEK_NT_REF_ALIGNED_B5000K:202611030133",
+      "source_slot_id": "v054-REF-matplotlib__matplotlib-22865",
+      "instance_id": "matplotlib__matplotlib-22865",
+      "repo": "matplotlib/matplotlib",
+      "group_id": "DEEPSEEK_NT_REF_ALIGNED_B5000K",
+      "condition_id": "DEEPSEEK_NT_REF_ALIGNED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "REF",
+      "thinking": false,
+      "seed": 202611030133,
+      "provider_seed_sent": false,
+      "replicate": 0,
+      "repeat_index": 0,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "REF",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "interface_repair_probe_50",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v111/aligned-interface-r1/configs/7244.json",
+        "sha256": "fa38f6207b01d244d75023b2aa49efd0d43030d3516e4515895289dc64669d4c",
+        "bytes": 7427
+      }
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v111/aligned-interface-r1/episodes/7244/result.json",
+      "sha256": "b7b9073738f377a620b1aa0ab0399e19446f9e51e77b6745b89354ee7ba4a20d",
+      "bytes": 114589
+    },
+    "original_generation_status": "technical_unknown",
+    "prior_supplemental_code_endpoint": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v111/aligned-interface-r1/grading-v114/score-v114-7244/receipt.json",
+      "bytes": 8099,
+      "sha256": "728646eca08e87e72626201b553cf3485b0dc25c48d6f4851e0722c4a388aeb7"
+    },
+    "prior_supplemental_code_result": false,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false,
+    "new_model_attempt_explicitly_authorized": false
+  },
+  "runtime_repair_proposal": {
+    "base_execution_policy": "v110 REF with v113 deadline binding",
+    "only_runtime_behavior_change": "trusted SDK-rejected malformed-call history projection",
+    "factory": "software_benchmark_rejected_history_v114.create_ref_conversation",
+    "changes_model_visible_prompts_or_tools": false,
+    "use_v117_review_or_workflow": false,
+    "separate_deployment_version_required": "v126",
+    "actual_controller_bundle_and_scope_not_implemented_by_this_preparation": true
+  }
+}
