@@ -1,0 +1,184 @@
+{
+  "version": "v121-independent-recovery-configuration-proposal-r1",
+  "slot_index": 8526,
+  "task_index": 27,
+  "slot_id": "v117:pydata__xarray-6461:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012126",
+  "instance_id": "pydata__xarray-6461",
+  "repo": "pydata/xarray",
+  "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "PROJECT",
+  "seed": 20261104012126,
+  "provider_seed_sent": false,
+  "replicate": 1,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "PROJECT",
+  "source_slot_id": "v054-PROJECT-pydata__xarray-6461",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/conditions/PROJECT.json",
+    "sha256": "db8d7a34f6ee4381d72dcc6edf5d1ba2eb144093c4ab6e07a9255a277d5a43b1",
+    "bytes": 2742
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "pydata__xarray-6461",
+    "repo": "pydata/xarray",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "-m",
+      "pytest"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.10.15 | packaged by conda-forge | (main, Oct 16 2024, 01:24:24) [GCC 13.3.0]",
+    "source_identity": {
+      "dataset_base": "851dadeb0338403e5021c3fbe80cbc9127ee672d",
+      "official_setup_head": "1c58de2f4fbc87c54b176fa76f761143b8151adf",
+      "official_setup_tree": "e8c11ae756403de4c4f75a53c35b7fcd111e013c",
+      "actor_head": "1c58de2f4fbc87c54b176fa76f761143b8151adf",
+      "actor_tree": "e8c11ae756403de4c4f75a53c35b7fcd111e013c",
+      "actor_image_id": "sha256:12ba28014ea3e32277ebb1b5c13dc2a050ba0cb79fd6636641d6dbf3feb22fe9"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/pydata__xarray-6461.json",
+      "sha256": "585577a3f9c6494db4440961cf0753246ec7cdaf19311d7c8ea5773abf97ab70",
+      "bytes": 16446
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "pydata/xarray",
+      "python_major_minor": "3.10",
+      "representative": "pydata__xarray-2905"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/pydata__xarray-2905.json",
+      "sha256": "f4f87cd57a9876d702831ecd4b12af631b40a4f423b0323ecbbe5320bd5ff326",
+      "bytes": 26385
+    },
+    "observed_frontend_actor_image_id": "sha256:2fc30f0cee1e0cfc8ddf07c91465643742e67df3faef2348909a5aa192139f18",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "pydata__xarray-6461",
+    "repo": "pydata/xarray",
+    "base_commit": "851dadeb0338403e5021c3fbe80cbc9127ee672d",
+    "problem_statement": "xr.where with scalar as second argument fails with keep_attrs=True\n### What happened?\n\n``` python\r\nimport xarray as xr\r\n\r\nxr.where(xr.DataArray([1, 2, 3]) > 0, 1, 0)\r\n```\r\n\r\nfails with\r\n\r\n```\r\n   1809 if keep_attrs is True:\r\n   1810     # keep the attributes of x, the second parameter, by default to\r\n   1811     # be consistent with the `where` method of `DataArray` and `Dataset`\r\n-> 1812     keep_attrs = lambda attrs, context: attrs[1]\r\n   1814 # alignment for three arguments is complicated, so don't support it yet\r\n   1815 return apply_ufunc(\r\n   1816     duck_array_ops.where,\r\n   1817     cond,\r\n   (...)\r\n   1823     keep_attrs=keep_attrs,\r\n   1824 )\r\n\r\nIndexError: list index out of range\r\n```\r\n\r\nThe workaround is to pass `keep_attrs=False`\n\n### What did you expect to happen?\n\n_No response_\n\n### Minimal Complete Verifiable Example\n\n_No response_\n\n### Relevant log output\n\n_No response_\n\n### Anything else we need to know?\n\n_No response_\n\n### Environment\n\nxarray 2022.3.0\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "pydata__xarray-6461",
+      "repo": "pydata/xarray",
+      "base_commit": "851dadeb0338403e5021c3fbe80cbc9127ee672d",
+      "image_id": "sha256:ffe2941c9f15d0be9816dc041823be247374e398db83e64b0491ad945f8bb72a",
+      "manifest_digest": "sha256:5f0507f4349e057da586ceafba199570b94370808dcefbe55bc8cc39dfeacb0b"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/pydata__xarray-6461.json",
+      "sha256": "585577a3f9c6494db4440961cf0753246ec7cdaf19311d7c8ea5773abf97ab70",
+      "bytes": 16446
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "preparation_only": true,
+  "logical_index": 27,
+  "repeat_index": 1,
+  "budget_tokens": 5000000,
+  "panel_kind": "independent_system_failure_recovery_27",
+  "execution_authorized": false,
+  "analysis_endpoint": "independent_recovery_v121",
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 28,
+      "slot_index": 8027,
+      "task_index": 27,
+      "slot_id": "v117:pydata__xarray-6461:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040145",
+      "source_slot_id": "v054-PROJECT-pydata__xarray-6461",
+      "instance_id": "pydata__xarray-6461",
+      "repo": "pydata/xarray",
+      "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "PROJECT",
+      "thinking": false,
+      "seed": 202611040145,
+      "provider_seed_sent": false,
+      "replicate": 0,
+      "repeat_index": 0,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "PROJECT",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "interface_repair_probe_50",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/configs/8027.json",
+        "sha256": "802d14193bbb578c147e988cccff80f289b9321320521c721a2c45520559e73e",
+        "bytes": 6789
+      }
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/episodes/8027/result.json",
+      "sha256": "d9541b09dea7582b9d8bcd7f5a60f167fecfb518dd1381de4d0f80f8011268ca",
+      "bytes": 66352
+    },
+    "provider_attempts_already_consumed": 8,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false
+  },
+  "runtime_reuse_proposal": {
+    "target_execution_layer": "v120",
+    "frozen_existing_sources": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/runtime-sources-v120.json",
+      "sha256": "92a4c4e87723f27aea7dda3d1af4e63bee4bfd94307fcb65383baaac848de090",
+      "bytes": 120522
+    },
+    "frozen_existing_bundle": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v120/sdk-bundle-r1/manifest.json",
+      "sha256": "c2ffa5969f1122be2470ef675748ba998b247f431d975ce8ae0589d87b6dd601",
+      "bytes": 75409
+    },
+    "v121_scope_manager_and_qualification_bindings_implemented": false,
+    "this_proposal_is_not_a_deployed_runtime": true
+  }
+}

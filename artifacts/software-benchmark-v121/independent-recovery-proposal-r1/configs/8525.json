@@ -1,0 +1,183 @@
+{
+  "version": "v121-independent-recovery-configuration-proposal-r1",
+  "slot_index": 8525,
+  "task_index": 26,
+  "slot_id": "v117:sympy__sympy-23824:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012125",
+  "instance_id": "sympy__sympy-23824",
+  "repo": "sympy/sympy",
+  "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "PROJECT",
+  "seed": 20261104012125,
+  "provider_seed_sent": false,
+  "replicate": 1,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "PROJECT",
+  "source_slot_id": "v054-PROJECT-sympy__sympy-23824",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/conditions/PROJECT.json",
+    "sha256": "db8d7a34f6ee4381d72dcc6edf5d1ba2eb144093c4ab6e07a9255a277d5a43b1",
+    "bytes": 2742
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "sympy__sympy-23824",
+    "repo": "sympy/sympy",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "bin/test"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.9.20 (main, Oct  3 2024, 07:27:41) \n[GCC 11.2.0]",
+    "source_identity": {
+      "dataset_base": "39de9a2698ad4bb90681c0fdb70b30a78233145f",
+      "official_setup_head": "e260f900aed25938cbe5ebea6670ab853d35cb61",
+      "official_setup_tree": "e943975cf67bc4d4cadd9be5082a787dc1d45796",
+      "actor_head": "e260f900aed25938cbe5ebea6670ab853d35cb61",
+      "actor_tree": "e943975cf67bc4d4cadd9be5082a787dc1d45796",
+      "actor_image_id": "sha256:fcf66722744da3a1367f0c9329a221a196f1236d9e0fddd980a700f8fce5707c"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/sympy__sympy-23824.json",
+      "sha256": "d506f08943bf0aab5835c762b71a3232ecc9c2688c390355e15ee4cbc949cbee",
+      "bytes": 16839
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "sympy/sympy",
+      "python_major_minor": "3.9",
+      "representative": "sympy__sympy-11618"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/sympy__sympy-11618.json",
+      "sha256": "873d6b4ba030b565a85c85bb384f9eb603b4f8ff3608e354db0c3e295f41eeb4",
+      "bytes": 6929
+    },
+    "observed_frontend_actor_image_id": "sha256:5aebc0ae29c9f966b39f007a2d686c1d0c29e5f32462200b90ebf6e1b86780dc",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "sympy__sympy-23824",
+    "repo": "sympy/sympy",
+    "base_commit": "39de9a2698ad4bb90681c0fdb70b30a78233145f",
+    "problem_statement": "physics.hep.kahane_simplify() incorrectly reverses order of leading uncontracted gamma matrices\nThe kahane_simplify() function applies [identities](https://en.wikipedia.org/w/index.php?title=Gamma_matrices&oldid=1098219980#Miscellaneous_identities) such as $\\gamma^\\mu \\gamma_\\mu = 4 I_4$ to simplify products of gamma matrices in which contracted matrices occur. Leading gamma matrices without contractions should be unaffected, but a bug causes such leading terms to be prepended in reverse order.\r\n\r\nThe bug is illustrated by the following example:\r\n```python\r\nimport sympy\r\nfrom sympy.physics.hep.gamma_matrices import GammaMatrix as G, gamma_trace, LorentzIndex\r\nfrom sympy.physics.hep.gamma_matrices import kahane_simplify\r\nfrom sympy.tensor.tensor import tensor_indices\r\n\r\ndef test_kahane_leading_gamma_matrix_bug():\r\n    mu, nu, rho, sigma = tensor_indices(\"mu, nu, rho, sigma\", LorentzIndex)\r\n    \r\n    t = G(mu)*G(-mu)*G(rho)*G(sigma)\r\n    r = kahane_simplify(t)\r\n    print(r)\r\n    assert r.equals(4*G(rho)*G(sigma))\r\n    \r\n    t = G(rho)*G(sigma)*G(mu)*G(-mu)\r\n    r = kahane_simplify(t)\r\n    print(r)\r\n    assert r.equals(4*G(rho)*G(sigma))\r\n```\r\n\r\nThe result is\r\n```\r\n4*GammaMatrix(rho)*GammaMatrix(sigma)\r\n4*GammaMatrix(sigma)*GammaMatrix(rho)\r\nTraceback (most recent call last):\r\n  File \"<stdin>\", line 1, in <module>\r\n  File \"/home/gahs/Documents/sympy/sympy-dev/test_kahane_leading_gamma_matrix_bug.py\", line 17, in test_kahane_leading_gamma_matrix_bug\r\n    assert r.equals(4*G(rho)*G(sigma))\r\nAssertionError\r\n```\r\n\r\nBoth $\\gamma^\\mu \\gamma_\\mu \\gamma^\\rho \\gamma^\\sigma$ and $\\gamma^\\rho \\gamma^\\sigma \\gamma^\\mu \\gamma_\\mu$ should simplify to $4\\gamma^\\rho \\gamma^\\sigma$, but the order of $\\gamma^\\rho$ and $\\gamma^\\sigma$ is flipped in the second case due to the bug.\r\n\r\nI found the source of the bug and it is simple to fix. In `kahane_simplify()` the leading matrices are removed at the beginning of the function and then inserted at the start of the product at the end of the function, and the insertion loop is just backward.\r\n\r\nI'll generate a pull request for this shortly.\r\n\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "sympy__sympy-23824",
+      "repo": "sympy/sympy",
+      "base_commit": "39de9a2698ad4bb90681c0fdb70b30a78233145f",
+      "image_id": "sha256:743db3a4c4bae7f7736762ec7029e370955925cbb9ece3ca7f861a6e170c1a37",
+      "manifest_digest": "sha256:285c1306bddef950459d6002de5c21e7a448b46208bfba030a828830af997ae8"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/sympy__sympy-23824.json",
+      "sha256": "d506f08943bf0aab5835c762b71a3232ecc9c2688c390355e15ee4cbc949cbee",
+      "bytes": 16839
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "preparation_only": true,
+  "logical_index": 26,
+  "repeat_index": 1,
+  "budget_tokens": 5000000,
+  "panel_kind": "independent_system_failure_recovery_27",
+  "execution_authorized": false,
+  "analysis_endpoint": "independent_recovery_v121",
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 27,
+      "slot_index": 8026,
+      "task_index": 26,
+      "slot_id": "v117:sympy__sympy-23824:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040144",
+      "source_slot_id": "v054-PROJECT-sympy__sympy-23824",
+      "instance_id": "sympy__sympy-23824",
+      "repo": "sympy/sympy",
+      "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "PROJECT",
+      "thinking": false,
+      "seed": 202611040144,
+      "provider_seed_sent": false,
+      "replicate": 0,
+      "repeat_index": 0,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "PROJECT",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "interface_repair_probe_50",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/configs/8026.json",
+        "sha256": "32e6633390e24da46e42acfc0a2e0d2625bef1efadb000b4b461c1ec176ff3c3",
+        "bytes": 7889
+      }
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/episodes/8026/result.json",
+      "sha256": "ceec7794e82c97a13c61b1a3f59a19327d5f6eb4bfe48cac97eed3da75408c86",
+      "bytes": 3121
+    },
+    "provider_attempts_already_consumed": 3,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false
+  },
+  "runtime_reuse_proposal": {
+    "target_execution_layer": "v120",
+    "frozen_existing_sources": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/runtime-sources-v120.json",
+      "sha256": "92a4c4e87723f27aea7dda3d1af4e63bee4bfd94307fcb65383baaac848de090",
+      "bytes": 120522
+    },
+    "frozen_existing_bundle": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v120/sdk-bundle-r1/manifest.json",
+      "sha256": "c2ffa5969f1122be2470ef675748ba998b247f431d975ce8ae0589d87b6dd601",
+      "bytes": 75409
+    },
+    "v121_scope_manager_and_qualification_bindings_implemented": false,
+    "this_proposal_is_not_a_deployed_runtime": true
+  }
+}

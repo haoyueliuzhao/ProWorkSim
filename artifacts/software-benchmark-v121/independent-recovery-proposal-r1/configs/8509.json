@@ -1,0 +1,184 @@
+{
+  "version": "v121-independent-recovery-configuration-proposal-r1",
+  "slot_index": 8509,
+  "task_index": 9,
+  "slot_id": "v117:astropy__astropy-14995:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012109",
+  "instance_id": "astropy__astropy-14995",
+  "repo": "astropy/astropy",
+  "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "PROJECT",
+  "seed": 20261104012109,
+  "provider_seed_sent": false,
+  "replicate": 1,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "PROJECT",
+  "source_slot_id": "v054-PROJECT-astropy__astropy-14995",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/conditions/PROJECT.json",
+    "sha256": "db8d7a34f6ee4381d72dcc6edf5d1ba2eb144093c4ab6e07a9255a277d5a43b1",
+    "bytes": 2742
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "astropy__astropy-14995",
+    "repo": "astropy/astropy",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "-m",
+      "pytest"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.9.20 (main, Oct  3 2024, 07:27:41) \n[GCC 11.2.0]",
+    "source_identity": {
+      "dataset_base": "b16c7d12ccbc7b2d20364b89fb44285bcbfede54",
+      "official_setup_head": "9afd2dd503b90f8b392bcb98f4e031dc16ee5f38",
+      "official_setup_tree": "fd8ea44ca50d4d9b416095eefdd5ca82f22d8709",
+      "actor_head": "9afd2dd503b90f8b392bcb98f4e031dc16ee5f38",
+      "actor_tree": "fd8ea44ca50d4d9b416095eefdd5ca82f22d8709",
+      "actor_image_id": "sha256:471b64f2c3f1c2b20ab7bdffb9229126386919d738023e5b14d262d401b435af"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/astropy__astropy-14995.json",
+      "sha256": "98d6b1b84393b789c0f3ab7cf959c0a24c4b0589c6115a880ee02f2b010ad686",
+      "bytes": 7740
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "astropy/astropy",
+      "python_major_minor": "3.9",
+      "representative": "astropy__astropy-12907"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/astropy__astropy-12907-writable-help-r2.json",
+      "sha256": "023158da0cece8e65355b9fb5592ed1b896a954ca5dee9dd58691c51e7a9d439",
+      "bytes": 30798
+    },
+    "observed_frontend_actor_image_id": "sha256:b3b91f6a3e1d4a99e72fb3ff225a8e167d29716e2702bcffb471c4efbd6a1728",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "astropy__astropy-14995",
+    "repo": "astropy/astropy",
+    "base_commit": "b16c7d12ccbc7b2d20364b89fb44285bcbfede54",
+    "problem_statement": "In v5.3, NDDataRef mask propagation fails when one of the operand does not have a mask\n### Description\n\nThis applies to v5.3. \r\n\r\nIt looks like when one of the operand does not have a mask, the mask propagation when doing arithmetic, in particular with `handle_mask=np.bitwise_or` fails.  This is not a problem in v5.2.\r\n\r\nI don't know enough about how all that works, but it seems from the error that the operand without a mask is set as a mask of None's and then the bitwise_or tries to operate on an integer and a None and fails.\n\n### Expected behavior\n\nWhen one of the operand does not have mask, the mask that exists should just be copied over to the output.  Or whatever was done in that situation in v5.2 where there's no problem.\n\n### How to Reproduce\n\nThis is with v5.3.   With v5.2, there are no errors.\r\n\r\n```\r\n>>> import numpy as np\r\n>>> from astropy.nddata import NDDataRef\r\n\r\n>>> array = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])\r\n>>> mask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])\r\n\r\n>>> nref_nomask = NDDataRef(array)\r\n>>> nref_mask = NDDataRef(array, mask=mask)\r\n\r\n# multiply no mask by constant (no mask * no mask)\r\n>>> nref_nomask.multiply(1., handle_mask=np.bitwise_or).mask   # returns nothing, no mask,  OK\r\n\r\n# multiply no mask by itself (no mask * no mask)\r\n>>> nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask # return nothing, no mask, OK\r\n\r\n# multiply mask by constant (mask * no mask)\r\n>>> nref_mask.multiply(1., handle_mask=np.bitwise_or).mask\r\n...\r\nTypeError: unsupported operand type(s) for |: 'int' and 'NoneType'\r\n\r\n# multiply mask by itself (mask * mask)\r\n>>> nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask\r\narray([[ 0,  1, 64],\r\n       [ 8,  0,  1],\r\n       [ 2,  1,  0]])\r\n\r\n# multiply mask by no mask (mask * no mask)\r\n>>> nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask\r\n...\r\nTypeError: unsupported operand type(s) for |: 'int' and 'NoneType'\r\n```\r\n\n\n### Versions\n\n>>> import sys; print(\"Python\", sys.version)\r\nPython 3.10.11 | packaged by conda-forge | (main, May 10 2023, 19:07:22) [Clang 14.0.6 ]\r\n>>> import astropy; print(\"astropy\", astropy.__version__)\r\nastropy 5.3\r\n>>> import numpy; print(\"Numpy\", numpy.__version__)\r\nNumpy 1.24.3\r\n>>> import erfa; print(\"pyerfa\", erfa.__version__)\r\npyerfa 2.0.0.3\r\n>>> import scipy; print(\"Scipy\", scipy.__version__)\r\nScipy 1.10.1\r\n>>> import matplotlib; print(\"Matplotlib\", matplotlib.__version__)\r\nMatplotlib 3.7.1\r\n\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "base_commit": "b16c7d12ccbc7b2d20364b89fb44285bcbfede54",
+      "image_id": "sha256:e915829a4346d3235210c1808763acd3c0a7b8d622192d564e540a9968574573",
+      "manifest_digest": "sha256:6a204c3d4002b221144205ad13a0f414ea335170ae8327d3af2c5946b19b387d"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/astropy__astropy-14995.json",
+      "sha256": "98d6b1b84393b789c0f3ab7cf959c0a24c4b0589c6115a880ee02f2b010ad686",
+      "bytes": 7740
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "preparation_only": true,
+  "logical_index": 10,
+  "repeat_index": 1,
+  "budget_tokens": 5000000,
+  "panel_kind": "independent_system_failure_recovery_27",
+  "execution_authorized": false,
+  "analysis_endpoint": "independent_recovery_v121",
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 10,
+      "slot_index": 8009,
+      "task_index": 9,
+      "slot_id": "v117:astropy__astropy-14995:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040127",
+      "source_slot_id": "v054-PROJECT-astropy__astropy-14995",
+      "instance_id": "astropy__astropy-14995",
+      "repo": "astropy/astropy",
+      "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "PROJECT",
+      "thinking": false,
+      "seed": 202611040127,
+      "provider_seed_sent": false,
+      "replicate": 0,
+      "repeat_index": 0,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "PROJECT",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "interface_repair_probe_50",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/configs/8009.json",
+        "sha256": "0d0a7f855f6a9c6eddae876e11f6cfae8613cced2a750fb9d99159fd0e5e78a8",
+        "bytes": 8340
+      }
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/episodes/8009/result.json",
+      "sha256": "b1f7ad7f238a457c44d83e1c8d6eebd03c3917a75fbe1db5fff8cd69e78fb6cf",
+      "bytes": 61293
+    },
+    "provider_attempts_already_consumed": 5,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false
+  },
+  "runtime_reuse_proposal": {
+    "target_execution_layer": "v120",
+    "frozen_existing_sources": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/runtime-sources-v120.json",
+      "sha256": "92a4c4e87723f27aea7dda3d1af4e63bee4bfd94307fcb65383baaac848de090",
+      "bytes": 120522
+    },
+    "frozen_existing_bundle": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v120/sdk-bundle-r1/manifest.json",
+      "sha256": "c2ffa5969f1122be2470ef675748ba998b247f431d975ce8ae0589d87b6dd601",
+      "bytes": 75409
+    },
+    "v121_scope_manager_and_qualification_bindings_implemented": false,
+    "this_proposal_is_not_a_deployed_runtime": true
+  }
+}

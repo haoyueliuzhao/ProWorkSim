@@ -1,0 +1,184 @@
+{
+  "version": "v121-independent-recovery-configuration-proposal-r1",
+  "slot_index": 8515,
+  "task_index": 15,
+  "slot_id": "v117:pydata__xarray-3677:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012115",
+  "instance_id": "pydata__xarray-3677",
+  "repo": "pydata/xarray",
+  "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "PROJECT",
+  "seed": 20261104012115,
+  "provider_seed_sent": false,
+  "replicate": 1,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "PROJECT",
+  "source_slot_id": "v054-PROJECT-pydata__xarray-3677",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/conditions/PROJECT.json",
+    "sha256": "db8d7a34f6ee4381d72dcc6edf5d1ba2eb144093c4ab6e07a9255a277d5a43b1",
+    "bytes": 2742
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "pydata__xarray-3677",
+    "repo": "pydata/xarray",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "-m",
+      "pytest"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.10.15 | packaged by conda-forge | (main, Sep 30 2024, 17:51:04) [GCC 13.3.0]",
+    "source_identity": {
+      "dataset_base": "ef6e6a7b86f8479b9a1fecf15ad5b88a2326b31e",
+      "official_setup_head": "deda502c985dd986597ace798a2340cf9e8381f3",
+      "official_setup_tree": "1fdcd5db73f0c0a52a5567189e11c948f4304586",
+      "actor_head": "deda502c985dd986597ace798a2340cf9e8381f3",
+      "actor_tree": "1fdcd5db73f0c0a52a5567189e11c948f4304586",
+      "actor_image_id": "sha256:9b4ff8ab1572d8959053c18f1c7ed577c7e7cf99d5dfa0130702f1ea8621542b"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/pydata__xarray-3677.json",
+      "sha256": "f4174489ed50b13e01b0d6221a2e4f7ba8cb4045e5e35614fae7e383a7dd1b5f",
+      "bytes": 13517
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "pydata/xarray",
+      "python_major_minor": "3.10",
+      "representative": "pydata__xarray-2905"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/pydata__xarray-2905.json",
+      "sha256": "f4f87cd57a9876d702831ecd4b12af631b40a4f423b0323ecbbe5320bd5ff326",
+      "bytes": 26385
+    },
+    "observed_frontend_actor_image_id": "sha256:2fc30f0cee1e0cfc8ddf07c91465643742e67df3faef2348909a5aa192139f18",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "pydata__xarray-3677",
+    "repo": "pydata/xarray",
+    "base_commit": "ef6e6a7b86f8479b9a1fecf15ad5b88a2326b31e",
+    "problem_statement": "Merging dataArray into dataset using dataset method fails\nWhile it's possible to merge a dataset and a dataarray object using the top-level `merge()` function, if you try the same thing with the `ds.merge()` method it fails.\r\n\r\n```python\r\nimport xarray as xr\r\n\r\nds = xr.Dataset({'a': 0})\r\nda = xr.DataArray(1, name='b')\r\n\r\nexpected = xr.merge([ds, da])  # works fine\r\nprint(expected)\r\n\r\nds.merge(da)  # fails\r\n```\r\n\r\nOutput:\r\n```\r\n<xarray.Dataset>\r\nDimensions:  ()\r\nData variables:\r\n    a        int64 0\r\n    b        int64 1\r\n\r\nTraceback (most recent call last):\r\n  File \"mwe.py\", line 6, in <module>\r\n    actual = ds.merge(da)\r\n  File \"/home/tegn500/Documents/Work/Code/xarray/xarray/core/dataset.py\", line 3591, in merge\r\n    fill_value=fill_value,\r\n  File \"/home/tegn500/Documents/Work/Code/xarray/xarray/core/merge.py\", line 835, in dataset_merge_method\r\n    objs, compat, join, priority_arg=priority_arg, fill_value=fill_value\r\n  File \"/home/tegn500/Documents/Work/Code/xarray/xarray/core/merge.py\", line 548, in merge_core\r\n    coerced = coerce_pandas_values(objects)\r\n  File \"/home/tegn500/Documents/Work/Code/xarray/xarray/core/merge.py\", line 394, in coerce_pandas_values\r\n    for k, v in obj.items():\r\n  File \"/home/tegn500/Documents/Work/Code/xarray/xarray/core/common.py\", line 233, in __getattr__\r\n    \"{!r} object has no attribute {!r}\".format(type(self).__name__, name)\r\nAttributeError: 'DataArray' object has no attribute 'items'\r\n```\r\n\r\n\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "pydata__xarray-3677",
+      "repo": "pydata/xarray",
+      "base_commit": "ef6e6a7b86f8479b9a1fecf15ad5b88a2326b31e",
+      "image_id": "sha256:9565b12e06238c704b0f287e66ba97dd85e039367c3868f5eb7eb58119f3d8ed",
+      "manifest_digest": "sha256:97f5f793df1b6df512d8be87cd9c3180c407f858764f0af3d9d98934deca24a9"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/pydata__xarray-3677.json",
+      "sha256": "f4174489ed50b13e01b0d6221a2e4f7ba8cb4045e5e35614fae7e383a7dd1b5f",
+      "bytes": 13517
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "preparation_only": true,
+  "logical_index": 16,
+  "repeat_index": 1,
+  "budget_tokens": 5000000,
+  "panel_kind": "independent_system_failure_recovery_27",
+  "execution_authorized": false,
+  "analysis_endpoint": "independent_recovery_v121",
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 16,
+      "slot_index": 8015,
+      "task_index": 15,
+      "slot_id": "v117:pydata__xarray-3677:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040133",
+      "source_slot_id": "v054-PROJECT-pydata__xarray-3677",
+      "instance_id": "pydata__xarray-3677",
+      "repo": "pydata/xarray",
+      "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "PROJECT",
+      "thinking": false,
+      "seed": 202611040133,
+      "provider_seed_sent": false,
+      "replicate": 0,
+      "repeat_index": 0,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "PROJECT",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "interface_repair_probe_50",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/configs/8015.json",
+        "sha256": "311ac7c1ea63454767b700f031a2bf00d6045535343643f93369a6f35821f8a9",
+        "bytes": 7279
+      }
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/episodes/8015/result.json",
+      "sha256": "f17d431b565d8312e622afe9376550ec8051846ba9bb3e3267aa7c700aed6730",
+      "bytes": 71997
+    },
+    "provider_attempts_already_consumed": 8,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false
+  },
+  "runtime_reuse_proposal": {
+    "target_execution_layer": "v120",
+    "frozen_existing_sources": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/runtime-sources-v120.json",
+      "sha256": "92a4c4e87723f27aea7dda3d1af4e63bee4bfd94307fcb65383baaac848de090",
+      "bytes": 120522
+    },
+    "frozen_existing_bundle": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v120/sdk-bundle-r1/manifest.json",
+      "sha256": "c2ffa5969f1122be2470ef675748ba998b247f431d975ce8ae0589d87b6dd601",
+      "bytes": 75409
+    },
+    "v121_scope_manager_and_qualification_bindings_implemented": false,
+    "this_proposal_is_not_a_deployed_runtime": true
+  }
+}

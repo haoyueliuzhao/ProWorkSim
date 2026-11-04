@@ -1,0 +1,184 @@
+{
+  "version": "v121-independent-recovery-configuration-proposal-r1",
+  "slot_index": 8511,
+  "task_index": 11,
+  "slot_id": "v117:matplotlib__matplotlib-23476:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:20261104012111",
+  "instance_id": "matplotlib__matplotlib-23476",
+  "repo": "matplotlib/matplotlib",
+  "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+  "model_key": "DEEPSEEK",
+  "model": "deepseek-flash",
+  "arm": "PROJECT",
+  "seed": 20261104012111,
+  "provider_seed_sent": false,
+  "replicate": 1,
+  "input_plus_output_tokens": 5000000,
+  "generation_token_upper_bound": 5000000,
+  "execution_arm": "PROJECT",
+  "source_slot_id": "v054-PROJECT-matplotlib__matplotlib-23476",
+  "measurement_kind": "full_verified_comparison",
+  "thinking": false,
+  "configuration": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/conditions/PROJECT.json",
+    "sha256": "db8d7a34f6ee4381d72dcc6edf5d1ba2eb144093c4ab6e07a9255a277d5a43b1",
+    "bytes": 2742
+  },
+  "public_tasks": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/public-tasks.json",
+    "sha256": "65d130536d04fda752b6ab36534ec657a8cd9bb0243b36067a1eb45413245aaf",
+    "bytes": 1018814
+  },
+  "public_test_registry": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/config/v054-public-test-registry.json",
+    "sha256": "fb0b7ce800a0c07d1068386ca71b84c85e7e7a47fabaae20098e88b992842b1b",
+    "bytes": 1232251
+  },
+  "public_test_entry": {
+    "instance_id": "matplotlib__matplotlib-23476",
+    "repo": "matplotlib/matplotlib",
+    "source": "public_repository",
+    "cwd": "/testbed",
+    "argv": [
+      "/opt/miniconda3/envs/testbed/bin/python",
+      "-m",
+      "pytest"
+    ],
+    "admitted": true,
+    "status": "public_frontend_family_admitted",
+    "public_python": "/opt/miniconda3/envs/testbed/bin/python",
+    "public_python_version": "3.11.11 | packaged by conda-forge | (main, Dec  5 2024, 14:17:24) [GCC 13.3.0]",
+    "source_identity": {
+      "dataset_base": "33a0599711d26dc2b79f851c6daed4947df7c167",
+      "official_setup_head": "c5cea6fb3a73b2395871dbea800dfde41c018e18",
+      "official_setup_tree": "7063bc8d124a9c675eb8cd81794d041ba95a7a21",
+      "actor_head": "c5cea6fb3a73b2395871dbea800dfde41c018e18",
+      "actor_tree": "7063bc8d124a9c675eb8cd81794d041ba95a7a21",
+      "actor_image_id": "sha256:c9ff72b223600de5b2280270a9f41c9aa11e459cab93359290683fd37b25080f"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/matplotlib__matplotlib-23476.json",
+      "sha256": "85c0502ad03ea81e02bc3b06c240f5af14abed2404ed60cab377b7f9a745267c",
+      "bytes": 22856
+    },
+    "policy_sha256": "a67d9030ecfc6a698d83f490606cb7e9823432a5cd330fa08e8829c5d607c3aa",
+    "family": {
+      "repo": "matplotlib/matplotlib",
+      "python_major_minor": "3.11",
+      "representative": "matplotlib__matplotlib-22719"
+    },
+    "family_observation": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/public-entry-family-r1/matplotlib__matplotlib-22719.json",
+      "sha256": "7a82752b14d93451bddc0870248f580c067ea093b36b775c1438011ca29c7f7b",
+      "bytes": 30465
+    },
+    "observed_frontend_actor_image_id": "sha256:4b9d9915bd7e967f0ebc6ffaaa3beb69ce63e3581c98b66a6db9bb319de06be7",
+    "instance_frontend_executed_on_current_actor_image": false,
+    "frontend_qualification_reuse": "same public test source/interpreter/frontend dependency; r2 representative help evidence, independent final r3/r3.1 runtime-version equivalence proof",
+    "current_runtime_version_matches_original_official": true,
+    "full_suite_executed_for_admission": false,
+    "hidden_material_used": false,
+    "selection": "repository-wide public default; no answer-derived files or task-result selection"
+  },
+  "public_task": {
+    "instance_id": "matplotlib__matplotlib-23476",
+    "repo": "matplotlib/matplotlib",
+    "base_commit": "33a0599711d26dc2b79f851c6daed4947df7c167",
+    "problem_statement": "[Bug]: DPI of a figure is doubled after unpickling on M1 Mac\n### Bug summary\r\n\r\nWhen a figure is unpickled, it's dpi is doubled. This behaviour happens every time and if done in a loop it can cause an `OverflowError`.\r\n\r\n### Code for reproduction\r\n\r\n```python\r\nimport numpy as np\r\nimport matplotlib\r\nimport matplotlib.pyplot as plt\r\nimport pickle\r\nimport platform\r\n\r\nprint(matplotlib.get_backend())\r\nprint('Matplotlib ver:', matplotlib.__version__)\r\nprint('Platform:', platform.platform())\r\nprint('System:', platform.system())\r\nprint('Release:', platform.release())\r\nprint('Python ver:', platform.python_version())\r\n\r\n\r\ndef dump_load_get_dpi(fig):\r\n    with open('sinus.pickle','wb') as file:\r\n        pickle.dump(fig, file)\r\n\r\n    with open('sinus.pickle', 'rb') as blob:\r\n        fig2 = pickle.load(blob)\r\n    return fig2, fig2.dpi\r\n\r\n\r\ndef run():\r\n    fig = plt.figure()\r\n    x = np.linspace(0,2*np.pi)\r\n    y = np.sin(x)\r\n\r\n    for i in range(32):\r\n        print(f'{i}: {fig.dpi}')\r\n        fig, dpi = dump_load_get_dpi(fig)\r\n\r\n\r\nif __name__ == '__main__':\r\n    run()\r\n```\r\n\r\n\r\n### Actual outcome\r\n\r\n```\r\nMacOSX\r\nMatplotlib ver: 3.5.2\r\nPlatform: macOS-12.4-arm64-arm-64bit\r\nSystem: Darwin\r\nRelease: 21.5.0\r\nPython ver: 3.9.12\r\n0: 200.0\r\n1: 400.0\r\n2: 800.0\r\n3: 1600.0\r\n4: 3200.0\r\n5: 6400.0\r\n6: 12800.0\r\n7: 25600.0\r\n8: 51200.0\r\n9: 102400.0\r\n10: 204800.0\r\n11: 409600.0\r\n12: 819200.0\r\n13: 1638400.0\r\n14: 3276800.0\r\n15: 6553600.0\r\n16: 13107200.0\r\n17: 26214400.0\r\n18: 52428800.0\r\n19: 104857600.0\r\n20: 209715200.0\r\n21: 419430400.0\r\nTraceback (most recent call last):\r\n  File \"/Users/wsykala/projects/matplotlib/example.py\", line 34, in <module>\r\n    run()\r\n  File \"/Users/wsykala/projects/matplotlib/example.py\", line 30, in run\r\n    fig, dpi = dump_load_get_dpi(fig)\r\n  File \"/Users/wsykala/projects/matplotlib/example.py\", line 20, in dump_load_get_dpi\r\n    fig2 = pickle.load(blob)\r\n  File \"/Users/wsykala/miniconda3/envs/playground/lib/python3.9/site-packages/matplotlib/figure.py\", line 2911, in __setstate__\r\n    mgr = plt._backend_mod.new_figure_manager_given_figure(num, self)\r\n  File \"/Users/wsykala/miniconda3/envs/playground/lib/python3.9/site-packages/matplotlib/backend_bases.py\", line 3499, in new_figure_manager_given_figure\r\n    canvas = cls.FigureCanvas(figure)\r\n  File \"/Users/wsykala/miniconda3/envs/playground/lib/python3.9/site-packages/matplotlib/backends/backend_macosx.py\", line 32, in __init__\r\n    _macosx.FigureCanvas.__init__(self, width, height)\r\nOverflowError: signed integer is greater than maximum\r\n```\r\n\r\n### Expected outcome\r\n\r\n```\r\nMacOSX\r\nMatplotlib ver: 3.5.2\r\nPlatform: macOS-12.4-arm64-arm-64bit\r\nSystem: Darwin\r\nRelease: 21.5.0\r\nPython ver: 3.9.12\r\n0: 200.0\r\n1: 200.0\r\n2: 200.0\r\n3: 200.0\r\n4: 200.0\r\n5: 200.0\r\n6: 200.0\r\n7: 200.0\r\n8: 200.0\r\n9: 200.0\r\n10: 200.0\r\n11: 200.0\r\n12: 200.0\r\n13: 200.0\r\n14: 200.0\r\n15: 200.0\r\n16: 200.0\r\n17: 200.0\r\n18: 200.0\r\n19: 200.0\r\n20: 200.0\r\n21: 200.0\r\n22: 200.0\r\n```\r\n\r\n### Additional information\r\n\r\nThis seems to happen only on M1 MacBooks and the version of python doesn't matter.\r\n\r\n### Operating system\r\n\r\nOS/X\r\n\r\n### Matplotlib Version\r\n\r\n3.5.2\r\n\r\n### Matplotlib Backend\r\n\r\nMacOSX\r\n\r\n### Python version\r\n\r\n3.9.12\r\n\r\n### Jupyter version\r\n\r\n_No response_\r\n\r\n### Installation\r\n\r\npip\n"
+  },
+  "scorer_request_base": {
+    "dataset": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v054/source/trusted-evaluation.json",
+      "sha256": "bdd44ad7182b9cb9dd8d679fbdf119b4372e925f3c08c5a30178db818284cfbb",
+      "bytes": 9795256
+    },
+    "docker_cli": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/scorer-venv/bin/docker",
+      "sha256": "6a8126f750303e2d9dbaeb330102507736cdaa4668326d86d0a6d29b5323f273",
+      "bytes": 44320674
+    },
+    "docker_socket": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-panel-v053/docker/docker.sock",
+    "scorer_manifest": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v056/runtime-r1/scorer-manifest-r2.json",
+      "sha256": "ef52cf4eecc22630c247f6454686d63c7920287cd65af6014d5cd220294133ad",
+      "bytes": 16232
+    },
+    "image": {
+      "instance_id": "matplotlib__matplotlib-23476",
+      "repo": "matplotlib/matplotlib",
+      "base_commit": "33a0599711d26dc2b79f851c6daed4947df7c167",
+      "image_id": "sha256:fb4a58349c84df8568bdfcadc657c01157c99a3a8aead4b82e8fc43f8cb448d4",
+      "manifest_digest": "sha256:64bb043b17a25dbeeba766c82d1d5f66ca446ca32da12c88418ded9e0d79cfdc"
+    },
+    "baseline_mapping": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v054/images/actor-admission-r3/instances/matplotlib__matplotlib-23476.json",
+      "sha256": "85c0502ad03ea81e02bc3b06c240f5af14abed2404ed60cab377b7f9a745267c",
+      "bytes": 22856
+    }
+  },
+  "hidden_material_in_actor_payload": false,
+  "preparation_only": true,
+  "logical_index": 12,
+  "repeat_index": 1,
+  "budget_tokens": 5000000,
+  "panel_kind": "independent_system_failure_recovery_27",
+  "execution_authorized": false,
+  "analysis_endpoint": "independent_recovery_v121",
+  "independent_recovery": {
+    "original_row": {
+      "logical_index": 12,
+      "slot_index": 8011,
+      "task_index": 11,
+      "slot_id": "v117:matplotlib__matplotlib-23476:DEEPSEEK_NT_PROJECT_REPAIRED_B5000K:202611040129",
+      "source_slot_id": "v054-PROJECT-matplotlib__matplotlib-23476",
+      "instance_id": "matplotlib__matplotlib-23476",
+      "repo": "matplotlib/matplotlib",
+      "group_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "condition_id": "DEEPSEEK_NT_PROJECT_REPAIRED_B5000K",
+      "model_key": "DEEPSEEK",
+      "model": "deepseek-flash",
+      "arm": "PROJECT",
+      "thinking": false,
+      "seed": 202611040129,
+      "provider_seed_sent": false,
+      "replicate": 0,
+      "repeat_index": 0,
+      "input_plus_output_tokens": 5000000,
+      "budget_tokens": 5000000,
+      "generation_token_upper_bound": 5000000,
+      "execution_arm": "PROJECT",
+      "measurement_kind": "full_verified_comparison",
+      "panel_kind": "interface_repair_probe_50",
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/configs/8011.json",
+        "sha256": "a945c35aa72fa4e3591a77d8572897105ae2d44edf99521d088672715f054944",
+        "bytes": 9430
+      }
+    },
+    "original_result": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/episodes/8011/result.json",
+      "sha256": "ad0e6e340ad83387116c663c03a956c903775ed574aa97fba9b9704194db8e31",
+      "bytes": 3147
+    },
+    "provider_attempts_already_consumed": 6,
+    "original_accounting_retained": true,
+    "original_attempt_overwritten": false,
+    "resume_original_conversation": false,
+    "reuse_old_worktree_or_feedback": false
+  },
+  "runtime_reuse_proposal": {
+    "target_execution_layer": "v120",
+    "frozen_existing_sources": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v118/project-repaired-r1/runtime-sources-v120.json",
+      "sha256": "92a4c4e87723f27aea7dda3d1af4e63bee4bfd94307fcb65383baaac848de090",
+      "bytes": 120522
+    },
+    "frozen_existing_bundle": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v120/sdk-bundle-r1/manifest.json",
+      "sha256": "c2ffa5969f1122be2470ef675748ba998b247f431d975ce8ae0589d87b6dd601",
+      "bytes": 75409
+    },
+    "v121_scope_manager_and_qualification_bindings_implemented": false,
+    "this_proposal_is_not_a_deployed_runtime": true
+  }
+}

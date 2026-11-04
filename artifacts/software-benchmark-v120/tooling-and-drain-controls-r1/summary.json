@@ -1,0 +1,86 @@
+{
+  "version": "v120-order-projection-and-noncancelling-drain-controls-r1",
+  "passed": true,
+  "sources": [
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_tooling_v120.py",
+      "sha256": "549fd10c0e452e2a541ef5efca854de216bf10c46fb464b815ea2529227ae820",
+      "bytes": 6435
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_dispatch_control_v120.py",
+      "sha256": "ce746b527938aa9b2c18e15b9b4c04dcbe9206161e8480d5bcacc5b3fee49d11",
+      "bytes": 6941
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/check_cursor_projection_sdk_v120.py",
+      "sha256": "01da3b9c78a5d792575d97c1bdba94007be3692fbefe1f4fe74f59162da773b7",
+      "bytes": 10730
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/set_dispatch_admission_v120.py",
+      "sha256": "3c579c2682dd1eb55e067f1601fcec148d006046a9fbd28ab8b25506a8eba946",
+      "bytes": 735
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tests/test_cursor_projection_v120.py",
+      "sha256": "0fc6e2d2d7fdc476fbbd62bb0175490d693c6a9495527366b6f832a673c37943",
+      "bytes": 4925
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tests/test_dispatch_control_v120.py",
+      "sha256": "dd1cc0e8e534063e11e67acb0d9cb5f27940bfe6e732807778c8f843ecb5c6cd",
+      "bytes": 5490
+    }
+  ],
+  "actual_SDK_control": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v120/cursor-sdk-control-r2/summary.json",
+    "sha256": "6949cee9fefdd344bfc2e225048cd7862c9529b4ade416e82fc914c81f3c03d6",
+    "bytes": 1813
+  },
+  "CPU_controls": {
+    "projection_cases": 3,
+    "projection_result": "3 passed in0.15s",
+    "drain_cases": 2,
+    "drain_result": "2 passed in0.66s"
+  },
+  "confirmed_root_cause": "storage.json_bytes preserves dict insertion order; the v117 bridge compared those bytes instead of JSON object meaning. Actual SDK projection of8000 had equal keys/values, different key order, no added defaults.",
+  "repair": {
+    "new_source_only": true,
+    "six_cursor_tools": true,
+    "object_key_order_ignored": true,
+    "equal_JSON_numeric_values_1_and_1_point_0_compared_equal": true,
+    "bool_and_number_distinct": true,
+    "array_order_preserved": true,
+    "raw_provider_arguments_not_rewritten": true,
+    "extra_world_schema_precheck_removed": "Already-admitted pending arguments go to the original gateway and world; a world schema rejection remains ordinary feedback.",
+    "explicit_null_restore_scope_unchanged": true,
+    "original_gateway_preserved": true,
+    "new_prompt_or_tool_schema": false,
+    "old_attempts_replayed": 0
+  },
+  "drain": {
+    "mode": "pause new generation admission; owner remains alive until explicit resume or another authorized lifecycle action",
+    "actual_async_queue_fixture_passed": true,
+    "inflight_generation_finished_naturally": true,
+    "code_and_delivery_scores_finished_naturally": true,
+    "stop_event_remained_unset_while_drained": true,
+    "api_cancelled_was_false_while_drained": true,
+    "unstarted_tasks_resumed_exactly_once": true,
+    "invalid_control_pauses_only_new_admission": true,
+    "undeclared_old_plan_rejected": true,
+    "requires_new_manager_binding": "gate.limit(existing_limit); gate.annotate(progress)",
+    "old_v119_manager_not_retrofitted": true
+  },
+  "ruff": "passed",
+  "real_API_calls": 0,
+  "real_model_calls": 0,
+  "Docker_operations": 0,
+  "GPU_operations": 0,
+  "service_operations": 0,
+  "network_operations": 0,
+  "real_task_tests": 0,
+  "shared_host_configuration_changes": 0,
+  "authorization_written": false,
+  "experiments_started": false
+}
