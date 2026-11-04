@@ -73,6 +73,10 @@
 
 当前状态入口为`runs/software-benchmark-v132/fixed-organization-recovery-r1/api-coordinator/progress.json`；联合统计使用`tools/summarize_fixed_organization_v132.py`。旧v131进度已是停止后的历史，不能继续当作当前队列。正常阶段及其评分结束后自动进入历史异常阶段，全部收尾后仅在归属和空闲证据成立时清理本批资源组；未明对象会保留为`cleanup_deferred`，不强停。
 
+后续实际运行确认了两项仍未解决的初始化OOM：MATRIX的scikit-learn-14894（9204）及scikit-learn-12682（9219），均为`OOMKilled=true／ExitCode=137`且0次API调用。两题通过初始同步后尚未创建模型账本，宿主随后缺少`controller-result.json`是次生错误。流式哈希消除了已验证的一处峰值，并未证明完整大仓库团队初始化已适配16GiB；其余全状态构造／保存路径仍需在异常阶段分析。
+
+必须纠正运行观察中的一个表述：进入`closed_controller_export`阶段只说明容器已退出并开始取回记录，不说明控制器正常闭合。只有退出码、原结果、锁和用量等证据共同通过，才能报告正常生成。上述两题已保留为异常，未重跑，也未中断其余在途任务；按用户最新顺序，留到正常任务及其评分结束后处理。详见[新增初始化OOM记录](../../artifacts/software-benchmark-v132/post-launch-initialization-oom-r1/summary.json)。
+
 主要记录：
 
 - [受控交接授权](../../config/v132-controlled-handoff-user-grant.json)
