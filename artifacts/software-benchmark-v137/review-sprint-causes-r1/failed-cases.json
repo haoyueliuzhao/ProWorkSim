@@ -1,0 +1,703 @@
+[
+  {
+    "slot_index": 9002,
+    "slot_id": "v131:pylint-dev__pylint-4970:DEEPSEEK_NT_REVIEW_TEAM_B5000K:20261104013100",
+    "instance_id": "pylint-dev__pylint-4970",
+    "group": "REVIEW",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4965673,
+    "actual_calls": 103,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 1,
+        "failure_ids": [
+          "tests/checkers/unittest_similar.py::test_set_duplicate_lines_to_zero"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 17,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9002/receipt.json",
+      "sha256": "d3085877158b147b0f724251e1ee06def632c99eff08b076f6a91c1606f2098b",
+      "bytes": 3499
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9002/candidate-lock.json",
+      "sha256": "7536fadddfac03ce895705483d8bf93479f7901e3f396a73f2d98af9e7b169bd",
+      "bytes": 4152
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9002/candidate.patch",
+      "sha256": "2a1e5f46c9cb3fce258f8e17655d1e05f7c3696afe41d82c9eecc016f92bdb76",
+      "bytes": 2407
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9002/official-output/logs/run_evaluation/v066-score-9002-b66510b0666c19eed9b39c02/score-9002/pylint-dev__pylint-4970/test_output.txt",
+      "sha256": "4d0cfd1bd8b1152045b16422346d6e9c1652ae3aabf72b59699a6ca1b1b9d16a",
+      "bytes": 20198
+    },
+    "patch_excerpt": "diff --git a/ChangeLog b/ChangeLog\nindex 97af302af466a0227b76e658ee7a16f57499d25c..9d9a28fd5f1c886c44f8cc2bcc4a05c56ccbac3e 100644\n--- a/ChangeLog\n+++ b/ChangeLog\n@@ -13,6 +13,11 @@ Release date: TBA\n * The python3 porting mode checker and it's ``py3k`` option were removed. You can still find it in older pylint\n   versions.\n \n+* Setting ``min-similarity-lines`` to ``0`` now disables the duplicate code check\n+  instead of treating every line as a duplicate.\n+\n+  Closes #4053\n+\n * ``raising-bad-type`` is now properly emitted when  raising a string\n \n * Added new extension ``SetMembershipChecker`` with ``use-set-for-membership`` check:\ndiff --git a/pylint/checkers/similar.py b/pylint/checkers/similar.py\nindex c65b1c8933daa62f8b75415661d4773f6396b1c0..882a6df4f0b49c08766803f02268a13b77b9debc 100644\n--- a/pylint/checkers/similar.py\n+++ b/pylint/checkers/similar.py\n@@ -471,6 +471,10 @@ class Similar:\n         Last regroups all successive couples in a bigger one. It allows to take into account common chunk of lines that have more\n         than the minimal number of successive lines required.\n         \"\"\"\n+        if self.min_lines <= 0:\n+            # A non-positive number of required common lines means the\n+            # similarity checker is disabled, so no commonality is reported.\n+            return\n         hash_to_index_1: HashToIndex_T\n         hash_to_index_2: HashToIndex_T\n         index_to_lines_1: IndexToLines_T\ndiff --git a/tests/checkers/unittest_similar.py b/tests/checkers/unittest_similar.py\nindex 4ddf2029a2e92cb749dff5401073b99ed738e1fb..88fbb3a0df65894f61be9377f5c940036db3d50b 100644\n--- a/tests/checkers/unittest_similar.py\n+++ b/tests/checkers/unittest_similar.py\n@@ -371,6 +371,20 @@ TOTAL lines=50 duplicates=14 percent=28.00\n     )\n \n \n+def test_min_similarity_lines_zero_disables_the_check() -> None:\n+    \"\"\"Setting min-similarity-lines to 0 should disable the duplicate code check.\"\"\"\n+    output = StringIO()\n+    with redirect_stdout(output):\n+        sim = similar.Similar(min_lines=0)\n+        for filename in (SIMILAR1, SIMILAR2):\n+            with open(filename, encoding=\"utf-8\") as stream:\n+                sim.append_stream(filename, stream)\n+        sim.run()\n+    assert (\n+        output.getvalue().strip() == \"TOTAL lines=62 duplicates=0 percent=0.00\"\n+    )\n+\n+\n def test_help() -> None:\n     output = StringIO()\n     with redirect_stdout(output):\n",
+    "failure_log_sections": [
+      {
+        "test_id": "tests/checkers/unittest_similar.py::test_set_duplicate_lines_to_zero",
+        "first_line": 369,
+        "last_line": 381,
+        "text": "_______________________ test_set_duplicate_lines_to_zero _______________________\n\n    def test_set_duplicate_lines_to_zero() -> None:\n        output = StringIO()\n        with redirect_stdout(output), pytest.raises(SystemExit) as ex:\n            similar.Run([\"--duplicates=0\", SIMILAR1, SIMILAR2])\n        assert ex.value.code == 0\n>       assert output.getvalue() == \"\"\nE       AssertionError: assert 'TOTAL lines=...cent=0.00\\n\\n' == ''\nE         + TOTAL lines=62 duplicates=0 percent=0.00\nE         +\n\ntests/checkers/unittest_similar.py:512: AssertionError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9017,
+    "slot_id": "v131:mwaskom__seaborn-3069:DEEPSEEK_NT_REVIEW_TEAM_B5000K:20261104013103",
+    "instance_id": "mwaskom__seaborn-3069",
+    "group": "REVIEW",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4940789,
+    "actual_calls": 96,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 2,
+        "failure_ids": [
+          "tests/_core/test_plot.py::TestScaling::test_nominal_x_axis_tweaks",
+          "tests/_core/test_plot.py::TestScaling::test_nominal_y_axis_tweaks"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 94,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9017/receipt.json",
+      "sha256": "80292477a6031e22def25c1b3a963084ffda9ca2ac2fc2e814b3faed48384b21",
+      "bytes": 9986
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9017/candidate-lock.json",
+      "sha256": "1f674d1a60070ff5d4ff5acd122e86b9bc8b7ab2ea0d0d43a871f9b8715f71b5",
+      "bytes": 4185
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9017/candidate.patch",
+      "sha256": "9f05220aad6a829974df4b1fc040abc8c7e3e4279915d752b0d013865f45f66d",
+      "bytes": 8379
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9017/official-output/logs/run_evaluation/v066-score-9017-cac2da484f6a2fe00cc47799/score-9017/mwaskom__seaborn-3069/test_output.txt",
+      "sha256": "d6363dee2334d4f0770f39701514bd057531718c27a3911874a818bb9e622ba1",
+      "bytes": 193022
+    },
+    "patch_excerpt": "diff --git a/repro_nominal_check.py b/repro_nominal_check.py\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..4ee97beb49c577b9e44a6db8413cc58eace49528\n--- /dev/null\n+++ b/repro_nominal_check.py\n@@ -0,0 +1,44 @@\n+import matplotlib\n+matplotlib.use(\"Agg\")\n+import numpy as np\n+import pandas as pd\n+import matplotlib.pyplot as plt\n+import seaborn.objects as so\n+\n+\n+def report(name, fig):\n+    axes = fig.axes\n+    for ax in axes:\n+        print(name, \"xlim=\", ax.get_xlim(), \"ylim=\", ax.get_ylim(),\n+              \"xgrid=\", any(l.get_visible() for l in ax.get_xgridlines()),\n+              \"ygrid=\", any(l.get_visible() for l in ax.get_ygridlines()),\n+              \"yinv=\", ax.yaxis_inverted())\n+    plt.close(fig)\n+\n+\n+df = pd.DataFrame({\"cat\": [\"a\", \"b\", \"c\"], \"val\": [1, 2, 3]})\n+\n+# 1. Explicit Nominal on x\n+p1 = so.Plot(df, x=\"cat\", y=\"val\").add(so.Dot()).scale(x=so.Nominal())\n+report(\"explicit-x\", p1.plot())\n+\n+# 2. Inferred Nominal on x (string -> Nominal)\n+p2 = so.Plot(df, x=\"cat\", y=\"val\").add(so.Dot())\n+report(\"inferred-x\", p2.plot())\n+\n+# 3. Nominal on y -> should be inverted\n+p3 = so.Plot(df, x=\"val\", y=\"cat\").add(so.Dot()).scale(y=so.Nominal())\n+report(\"explicit-y\", p3.plot())\n+\n+# 4. Inferred Nominal on y\n+p4 = so.Plot(df, x=\"val\", y=\"cat\").add(so.Dot())\n+report(\"inferred-y\", p4.plot())\n+\n+# 5. User forces grid -> grid should stay\n+p5 = (so.Plot(df, x=\"cat\", y=\"val\").add(so.Dot())\n+      .theme({\"axes.grid\": True}))\n+report(\"forced-grid\", p5.plot())\n+\n+# 6. Numeric x unaffected by nominal logic\n+p6 = so.Plot(df, x=\"val\", y=\"val\").add(so.Dot())\n+report(\"numeric\", p6.plot())\ndiff --git a/seaborn/_core/plot.py b/seaborn/_core/plot.py\nindex 4f0290a49472150066ffef8c8639cc03cf298d41..59dd2fa04606f96670d70d0a18b3c1cdcdcbb932 100644\n--- a/seaborn/_core/plot.py\n+++ b/seaborn/_core/plot.py\n@@ -25,7 +25,7 @@ from seaborn._marks.base import Mark\n from seaborn._stats.base import Stat\n from seaborn._core.data import PlotData\n from seaborn._core.moves import Move\n-from seaborn._core.scales import Scale\n+from seaborn._core.scales import Nominal, Scale\n from seaborn._core.subplots import Subplots\n from seaborn._core.groupby import GroupBy\n from seaborn._core.properties import PROPERTIES, Property\n@@ -1644,6 +1644,39 @@ class Plotter:\n                         hi = cast(float, hi) + 0.5\n                     ax.set(**{f\"{axis}lim\": (lo, hi)})\n \n+        for sub in self._subplots:\n+            ax = sub[\"ax\"]\n+            for axis in \"xy\":\n+                axis_key = sub[axis]\n+\n+                # Nominal scales are drawn like the categorical axis in the\n+                # seaborn categorical functions: the view spans +/- 0.5 around\n+                # the first and last level, margins are disabled, the grid is\n+                # hidden (unless explicitly requested through the theme), and\n+                # the axis is inverted when it is the y axis.\n+                scale = p._scales.get(axis_key)\n+                if not isinstance(scale, Nominal):\n+                    continue\n+                seed = getattr(scale, \"_units_seed\", None)\n+                if seed is None or not len(seed):\n+                    continue\n+\n+                n = len(seed)\n+                lo, hi = -0.5, n - 0.5\n+                if axis == \"y\":\n+                    lo, hi = hi, lo\n+\n+                if axis_key not in p._limits:\n+                    # Disable the normal margin logic and pin the view to the\n+                    # half-step buffer around the first and last level.\n+                    ax.margins(**{axis: 0})\n+                    ax.set(**{f\"{axis}lim\": (lo, hi)})\n+\n+                # Only hide the grid if the user did not ask for it in the\n+                # user-supplied theme (the default darkgrid style enables it)\n+                if (p._theme or {}).get(\"axes.grid\") is None:\n+                    ax.grid(False, axis=axis)\n+\n         engine_default = None if p._target is not None else \"tight\"\n         layout_engine = p._layout_spec.get(\"engine\", engine_default)\n         set_layout_engine(self._figure, layout_engine)\ndiff --git a/seaborn/_core/scales.py b/seaborn/_core/scales.py\nindex bbd71ec1b5ef3b40694cc49a7046241ef8acaf41..9765aa875b2b08ef8d40a0be7165b00e4c6f9200 100644\n--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -193,6 +193,7 @@ class Nominal(Scale):\n             axis.set_view_interval(0, len(units_seed) - 1)\n \n         new._matplotlib_scale = mpl_scale\n+        new._units_seed = units_seed\n \n         # TODO array cast necessary to handle float/int mixture, which we need\n         # to solve in a more systematic way probably\ndiff --git a/tests/_core/test_nominal_axis.py b/tests/_core/test_nominal_axis.py\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..983304538010d4308006dcda336fe2849cde1f19\n--- /dev/null\n+++ b/tests/_core/test_nominal_axis.py\n@@ -0,0 +1,109 @@\n+\"\"\"Regression tests: Nominal scales drawn like categorical axes.\n+\n+Covers the three behaviors requested in the issue:\n+1. limits span first level - 0.5 .. last level + 0.5 (no normal margin logic)\n+2. no grid drawn (even though the default style enables one)\n+3. the y axis is inverted\n+plus deferring to an explicit theme grid request, and inferred nominal scales.\n+\n+These call ``Plotter._finalize_figure`` directly, which is the documented\n+place for this behavior. Going through ``Plot.plot()`` would also run the\n+mark, and mark plotting currently raises in this environment because pandas\n+no longer provides the ``mode.use_inf_as_null`` option that\n+``Plotter._setup_split_generator`` enters. That is a separate, pre-existing\n+environment incompatibility and is not what these tests are about.\n+\"\"\"\n+import matplotlib\n+matplotlib.use(\"Agg\")\n+\n+import matplotlib as mpl\n+import pytest\n+\n+from seaborn._core.plot import Plot, Plotter\n+from seaborn._core.scales import Nominal\n+\n+\n+def _make_plotter(theme=None):\n+    return Plotter(pyplot=False, theme=theme or {})\n+\n+\n+def _finalize(scales, limits=None, theme=None):\n+    \"\"\"Run _finalize_figure on a fresh plotter with the given scales.\"\"\"\n+    p = Plot()\n+    p._scales = dict(scales)\n+    if limits is not None:\n+        p._limits = limits\n+    plotter = _make_plotter(theme)\n+    plotter._figure = mpl.figure.Figure()\n+    plotter._subplots = [{\n+        \"ax\": plotter._figure.add_subplot(111),\n+        \"x\": \"x\",\n+        \"y\": \"y\",\n+    }]\n+    plotter._finalize_figure(p)\n+    return plotter._subplots[0][\"ax\"]\n+\n+\n+def _nominal(levels):\n+    scale = Nominal()\n+    scale._units_seed = list(levels)\n+    return scale\n+\n+\n+def _grid_visible(ax, which):\n+    lines = ax.get_xgridlines() if which == \"x\" else ax.get_ygridlines()\n+    return any(line.get_visible() for line in lines)\n+\n+\n+def test_nominal_x_limits_half_step_around_levels():\n+\n+    ax = _finalize({\"x\": _nominal([\"a\", \"b\", \"c\"])})\n+    assert ax.get_xlim() == (-0.5, 2.5)\n+\n+\n+def test_nominal_x_hides_grid():\n+\n+    # Even though the active style would show a grid, nominal hides it.\n+    ax = _finalize({\"x\": _nominal([\"a\", \"b\", \"c\"])})\n+    assert not _grid_visible(ax, \"x\")\n+\n+\n+def test_nominal_y_is_inverted_and_hides_grid():\n+\n+    ax = _finalize({\"y\": _nominal([\"a\", \"b\", \"c\"])})\n+    assert ax.yaxis_inverted()\n+    assert ax.get_ylim() == (2.5, -0.5)\n+    assert not _grid_visible(ax, \"y\")\n+\n+\n+def test_nominal_grid_restored_by_explicit_theme():\n+\n+    # A user-supplied theme that asks for a grid must win over the default\n+    # nominal suppression: with grid pre-enabled, it stays visible.\n+    plotter = _make_plotter({\"axes.grid\": True})\n+    plotter._figure = mpl.figure.Figure()\n+    ax = plotter._figure.add_subplot(111)\n+    ax.grid(True, axis=\"x\")  # emulate the active style enabling the grid\n+    plotter._subplots = [{\"ax\": ax, \"x\": \"x\", \"y\": \"y\"}]\n+\n+    p = Plot()\n+    p._scales = {\"x\": _nominal([\"a\", \"b\", \"c\"])}\n+    plotter._finalize_figure(p)\n+\n+    assert ax.get_xlim() == (-0.5, 2.5)\n+    assert _grid_visible(ax, \"x\")\n+\n+\n+def test_nominal_respects_explicit_limits():\n+\n+    ax = _finalize({\"x\": _nominal([\"a\", \"b\", \"c\"])}, limits={\"x\": (0, 1)})\n+    assert ax.get_xlim() == (0, 1)\n+\n+\n+def test_numeric_scale_is_untouched():\n+\n+    from seaborn._core.scales import Continuous\n+\n+    ax = _finalize({\"x\": Continuous()})\n+    # No nominal handling should apply: normal margins remain in force.\n+    assert ax.get_xlim() != (-0.5, 2.5)\n",
+    "failure_log_sections": [
+      {
+        "test_id": "tests/_core/test_plot.py::TestScaling::test_nominal_x_axis_tweaks",
+        "first_line": 1870,
+        "last_line": 1884,
+        "text": "____________________ TestScaling.test_nominal_x_axis_tweaks ____________________\n\nself = <tests._core.test_plot.TestScaling object at 0x7f9d364c4730>\n\n    def test_nominal_x_axis_tweaks(self):\n    \n        p = Plot(x=[\"a\", \"b\", \"c\"], y=[1, 2, 3])\n        ax1 = p.plot()._figure.axes[0]\n>       assert ax1.get_xlim() == (-.5, 2.5)\nE       assert (-0.055000000...0000000000001) == (-0.5, 2.5)\nE         \nE         At index 0 diff: -0.05500000000000001 != -0.5\nE         Use -v to get more diff\n\ntests/_core/test_plot.py:652: AssertionError"
+      },
+      {
+        "test_id": "tests/_core/test_plot.py::TestScaling::test_nominal_y_axis_tweaks",
+        "first_line": 1885,
+        "last_line": 1899,
+        "text": "____________________ TestScaling.test_nominal_y_axis_tweaks ____________________\n\nself = <tests._core.test_plot.TestScaling object at 0x7f9d364c4dc0>\n\n    def test_nominal_y_axis_tweaks(self):\n    \n        p = Plot(x=[1, 2, 3], y=[\"a\", \"b\", \"c\"])\n        ax1 = p.plot()._figure.axes[0]\n>       assert ax1.get_ylim() == (2.5, -.5)\nE       assert (-0.055000000...0000000000001) == (2.5, -0.5)\nE         \nE         At index 0 diff: -0.05500000000000001 != 2.5\nE         Use -v to get more diff\n\ntests/_core/test_plot.py:663: AssertionError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9037,
+    "slot_id": "v131:pytest-dev__pytest-6197:DEEPSEEK_NT_REVIEW_TEAM_B5000K:20261104013107",
+    "instance_id": "pytest-dev__pytest-6197",
+    "group": "REVIEW",
+    "failure_category": "target_fixed_but_existing_behavior_regressed",
+    "actual_tokens": 4413798,
+    "actual_calls": 81,
+    "S1_passed": true,
+    "delivery_passed": false,
+    "legal_delivery_evidence": true,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 2,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_PASS": {
+        "success_count": 144,
+        "failure_count": 1,
+        "failure_ids": [
+          "testing/test_collection.py::Test_getinitialnodes::test_pkgfile"
+        ]
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9037/receipt.json",
+      "sha256": "49437d087a882a7bd3e9923a8c314d32041d9ebee5d7cf04971d1da4b906fc80",
+      "bytes": 14577
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9037/candidate-lock.json",
+      "sha256": "d94fdf540a2479d65789c9e69713697ce3a1bd31704a739fb296c0f7bedee9de",
+      "bytes": 4119
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9037/candidate.patch",
+      "sha256": "4692c101d95fc9eb30b7e847ced1cddf7e9cd1472c00bf5318a8b6e21b3f811d",
+      "bytes": 1642
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9037/official-output/logs/run_evaluation/v066-score-9037-0139bdc5e065d68781ea4341/score-9037/pytest-dev__pytest-6197/test_output.txt",
+      "sha256": "6c31360a5d91cd9cb23229e9d64ae5098e667e8f4400495f59aeb8845f9daed2",
+      "bytes": 494632
+    },
+    "patch_excerpt": "diff --git a/src/_pytest/python.py b/src/_pytest/python.py\nindex 306e5f217ce1cf187eb6262c587002c894acaa37..68a2a50465e9bfdeaa5c103763ad2cffa9566021 100644\n--- a/src/_pytest/python.py\n+++ b/src/_pytest/python.py\n@@ -177,9 +177,7 @@ def pytest_collect_file(path, parent):\n     ext = path.ext\n     if ext == \".py\":\n         if not parent.session.isinitpath(path):\n-            if not path_matches_patterns(\n-                path, parent.config.getini(\"python_files\") + [\"__init__.py\"]\n-            ):\n+            if not path_matches_patterns(path, parent.config.getini(\"python_files\")):\n                 return\n         ihook = parent.session.gethookproxy(path)\n         return ihook.pytest_pycollect_makemodule(path=path, parent=parent)\ndiff --git a/testing/python/collect.py b/testing/python/collect.py\nindex f0c12df1672b66ae68f1b038c8c98bd5fe6c46be..caf4790ab036cd0097d1934ed2e999d1d6d6e4bf 100644\n--- a/testing/python/collect.py\n+++ b/testing/python/collect.py\n@@ -1256,6 +1256,15 @@ def test_package_collection_infinite_recursion(testdir):\n     result.stdout.fnmatch_lines([\"*1 passed*\"])\n \n \n+def test_module_not_collected_as_init(testdir):\n+    \"\"\"Regression test for #6251: __init__.py files which do not match\n+    python_files must not be collected.\"\"\"\n+    testdir.mkdir(\"foobar\").join(\"__init__.py\").write(\"assert False\")\n+    testdir.makepyfile(test_foo=\"def test_foo(): pass\")\n+    result = testdir.runpytest()\n+    result.stdout.fnmatch_lines([\"*1 passed*\"])\n+\n+\n def test_package_collection_init_given_as_argument(testdir):\n     \"\"\"Regression test for #3749\"\"\"\n     p = testdir.copy_example(\"collect/package_init_given_as_arg\")\n",
+    "failure_log_sections": [
+      {
+        "test_id": "testing/test_collection.py::Test_getinitialnodes::test_pkgfile",
+        "first_line": 356,
+        "last_line": 382,
+        "text": "______________________ Test_getinitialnodes.test_pkgfile _______________________\n\nself = <test_collection.Test_getinitialnodes object at 0x7f5ff18d38e0>\ntestdir = <Testdir local('/tmp/pytest-of-root/pytest-0/test_pkgfile0')>\n\n    def test_pkgfile(self, testdir):\n        \"\"\"Verify nesting when a module is within a package.\n        The parent chain should match: Module<x.py> -> Package<subdir> -> Session.\n            Session's parent should always be None.\n        \"\"\"\n        tmpdir = testdir.tmpdir\n        subdir = tmpdir.join(\"subdir\")\n        x = subdir.ensure(\"x.py\")\n        subdir.ensure(\"__init__.py\")\n        with subdir.as_cwd():\n            config = testdir.parseconfigure(x)\n        col = testdir.getnode(config, x)\n        assert col.name == \"x.py\"\n        assert isinstance(col, pytest.Module)\n>       assert isinstance(col.parent, pytest.Package)\nE       AssertionError: assert False\nE        +  where False = isinstance(<Session subdir exitstatus='<UNSET>' testsfailed=0 testscollected=1>, <class '_pytest.python.Package'>)\nE        +    where <Session subdir exitstatus='<UNSET>' testsfailed=0 testscollected=1> = <Module x.py>.parent\nE        +    and   <class '_pytest.python.Package'> = pytest.Package\n\n/testbed/testing/test_collection.py:657: AssertionError\n----------------------------- Captured stdout call -----------------------------"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9127,
+    "slot_id": "v131:pydata__xarray-4687:DEEPSEEK_NT_REVIEW_TEAM_B5000K:20261104013125",
+    "instance_id": "pydata__xarray-4687",
+    "group": "REVIEW",
+    "failure_category": "target_fixed_but_existing_behavior_regressed",
+    "actual_tokens": 4999872,
+    "actual_calls": 91,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 1,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_PASS": {
+        "success_count": 1716,
+        "failure_count": 1,
+        "failure_ids": [
+          "xarray/tests/test_computation.py::test_where"
+        ]
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9127/receipt.json",
+      "sha256": "45d642fa08775598957cfd86f3daad48a4f3bd3f9a0acac06944438f507b5dfc",
+      "bytes": 177152
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9127/candidate-lock.json",
+      "sha256": "b16640cde29db13ccd9c28efd28902161dc7a7895a1c91ea2c13f0a34229601a",
+      "bytes": 4111
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9127/candidate.patch",
+      "sha256": "694a15041ec3cfb1fa7e8bc291ec69c55f9f56465d17f2c2efede59a716665cf",
+      "bytes": 3683
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9127/official-output/logs/run_evaluation/v066-score-9127-8cc2f89323feb1068c2e86aa/score-9127/pydata__xarray-4687/test_output.txt",
+      "sha256": "fd12d613e57b385d528a8c9c8c201051919ea3c55f1a0a567e393395e867da0c",
+      "bytes": 230450
+    },
+    "patch_excerpt": "diff --git a/xarray/core/computation.py b/xarray/core/computation.py\nindex 9fe93c88734712ff7d4e717236776b58e5bc63dc..82f142a2dcd3f5f4b71fa1b8eb945d6916a9e486 100644\n--- a/xarray/core/computation.py\n+++ b/xarray/core/computation.py\n@@ -1727,7 +1727,7 @@ def dot(*arrays, dims=None, **kwargs):\n     return result.transpose(*all_dims, missing_dims=\"ignore\")\n \n \n-def where(cond, x, y):\n+def where(cond, x, y, keep_attrs=True):\n     \"\"\"Return elements from `x` or `y` depending on `cond`.\n \n     Performs xarray-like broadcasting across input arguments.\n@@ -1743,6 +1743,11 @@ def where(cond, x, y):\n         values to choose from where `cond` is True\n     y : scalar, array, Variable, DataArray or Dataset\n         values to choose from where `cond` is False\n+    keep_attrs : bool or None, optional\n+        If True (default), the attributes (`attrs`) will be copied from the\n+        original objects to the new ones. If False, the new objects will be\n+        returned with no attributes. If None, the attributes will be kept if\n+        the global option ``keep_attrs`` is True, otherwise dropped.\n \n     Returns\n     -------\n@@ -1809,7 +1814,7 @@ def where(cond, x, y):\n         equivalent methods\n     \"\"\"\n     # alignment for three arguments is complicated, so don't support it yet\n-    return apply_ufunc(\n+    result = apply_ufunc(\n         duck_array_ops.where,\n         cond,\n         x,\n@@ -1819,6 +1824,18 @@ def where(cond, x, y):\n         dask=\"allowed\",\n     )\n \n+    if keep_attrs is None:\n+        keep_attrs = _get_keep_attrs(default=False)\n+\n+    if keep_attrs:\n+        # apply_ufunc operates at the Variable level here, so the merged attrs\n+        # of the input xarray objects have to be reapplied explicitly.\n+        result.attrs = merge_attrs(\n+            [a.attrs for a in (x, y) if hasattr(a, \"attrs\")],\n+            combine_attrs=\"override\",\n+        )\n+    return result\n+\n \n def polyval(coord, coeffs, degree_dim=\"degree\"):\n     \"\"\"Evaluate a polynomial at specific values\ndiff --git a/xarray/tests/test_computation.py b/xarray/tests/test_computation.py\nindex c9a10b7cc4391e3bc9b202aee07120feafdc3a75..6bd77cf1c9c593f860b40e54ddcaf803a963cdcf 100644\n--- a/xarray/tests/test_computation.py\n+++ b/xarray/tests/test_computation.py\n@@ -1922,6 +1922,34 @@ def test_where() -> None:\n     assert_identical(expected, actual)\n \n \n+def test_where_keep_attrs() -> None:\n+    \"\"\"attrs should be preserved by xr.where (GH: \"xr.where not preserving attributes\")\"\"\"\n+    # MCVE from the issue: `xr.where(da == 0, -1, da).attrs` should not be empty\n+    da = xr.DataArray(1)\n+    da.attrs[\"foo\"] = \"bar\"\n+    actual = xr.where(da == 0, -1, da)\n+    assert actual.attrs == {\"foo\": \"bar\"}\n+    assert_identical(actual, xr.DataArray(1, attrs={\"foo\": \"bar\"}, name=None))\n+\n+    # attrs are also kept for the other MCVE (explicit keep_attrs=True)\n+    data = xr.DataArray(np.ones([2, 2], dtype=np.int8))\n+    data.attrs[\"attr_1\"] = \"test1\"\n+    data.attrs[\"attr_2\"] = \"test2\"\n+    assert xr.where(data == 1, 5, 0, keep_attrs=True).attrs == {\n+        \"attr_1\": \"test1\",\n+        \"attr_2\": \"test2\",\n+    }\n+\n+    # explicit opt-out still drops the attributes\n+    assert xr.where(da == 0, -1, da, keep_attrs=False).attrs == {}\n+\n+    # default (keep_attrs=None) follows the global ``keep_attrs`` option\n+    with xr.set_options(keep_attrs=True):\n+        assert xr.where(da == 0, -1, da).attrs == {\"foo\": \"bar\"}\n+    with xr.set_options(keep_attrs=False):\n+        assert xr.where(da == 0, -1, da).attrs == {}\n+\n+\n @pytest.mark.parametrize(\"use_dask\", [True, False])\n @pytest.mark.parametrize(\"use_datetime\", [True, False])\n def test_polyval(use_dask, use_datetime) -> None:\n",
+    "failure_log_sections": [
+      {
+        "test_id": "xarray/tests/test_computation.py::test_where",
+        "first_line": 735,
+        "last_line": 759,
+        "text": "__________________________________ test_where __________________________________\n\n    def test_where() -> None:\n        cond = xr.DataArray([True, False], dims=\"x\")\n>       actual = xr.where(cond, 1, 0)\n\n/testbed/xarray/tests/test_computation.py:1920: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/testbed/xarray/core/computation.py:1833: in where\n    result.attrs = merge_attrs(\n/testbed/xarray/core/common.py:274: in __setattr__\n    object.__setattr__(self, name, value)\n/testbed/xarray/core/dataarray.py:800: in attrs\n    self.variable.attrs = value  # type: ignore[assignment]\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <xarray.Variable (x: 2)>\narray([1, 0]), value = None\n\n    @attrs.setter\n    def attrs(self, value: Mapping[Any, Any]) -> None:\n>       self._attrs = dict(value)\nE       TypeError: 'NoneType' object is not iterable\n\n/testbed/xarray/core/variable.py:876: TypeError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9192,
+    "slot_id": "v131:mwaskom__seaborn-3187:DEEPSEEK_NT_REVIEW_TEAM_B5000K:20261104013138",
+    "instance_id": "mwaskom__seaborn-3187",
+    "group": "REVIEW",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4973841,
+    "actual_calls": 98,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 1,
+        "failure_count": 1,
+        "failure_ids": [
+          "tests/test_relational.py::TestRelationalPlotter::test_legend_has_no_offset"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 248,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9192/receipt.json",
+      "sha256": "0ec1fd53d9c6ff836e7a640c82ca6aef007012264efd1b46d94a6fc037b99393",
+      "bytes": 23630
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9192/candidate-lock.json",
+      "sha256": "2627ebf80680997b690e81da9d75e1221b72f50c0af2366882255aa567d0fed0",
+      "bytes": 4076
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9192/candidate.patch",
+      "sha256": "267f8f55d5c753e9d0879db93a3088b4906404a1ff37c52fde7ee9c78866c3bc",
+      "bytes": 1689
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9192/official-output/logs/run_evaluation/v066-score-9192-f53d6991b3d6f7c9e86329ee/score-9192/mwaskom__seaborn-3187/test_output.txt",
+      "sha256": "5f934f5ce968b92a1c61f453481661432afe98ec3ebad76dad034d9c7783fd03",
+      "bytes": 39708
+    },
+    "patch_excerpt": "diff --git a/seaborn/_core/scales.py b/seaborn/_core/scales.py\nindex 55874bf2edc0fd125ff1252612e5ce42b32d8590..9a823e8c7fc901fe50dfb04c8da744ee2ab10520 100644\n--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -378,7 +378,16 @@ class ContinuousBase(Scale):\n             axis.set_view_interval(vmin, vmax)\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n-            labels = axis.major.formatter.format_ticks(locs)\n+            # Note that we ignore the offset label for the legend title,\n+            # because it makes the legend look cluttered, and it's also\n+            # usually not necessary (the offset is typically a power of ten).\n+            # But we do need to account for it in the tick labels, so that\n+            # large values are not misleadingly small (see GH#3249).\n+            formatter = axis.major.formatter\n+            labels = formatter.format_ticks(locs)\n+            offset = _get_offset_from_formatter(formatter)\n+            if offset:\n+                labels = [f\"{offset}{label}\" for label in labels]\n             new._legend = list(locs), list(labels)\n \n         return new\n@@ -890,6 +899,16 @@ class PseudoAxis:\n # Transform function creation\n \n \n+def _get_offset_from_formatter(formatter: Formatter) -> str:\n+    \"\"\"Return a multiplicative offset string for a matplotlib Formatter, if any.\"\"\"\n+    get_offset = getattr(formatter, \"get_offset\", None)\n+    try:\n+        offset = get_offset() if callable(get_offset) else None\n+    except Exception:\n+        offset = None\n+    return f\"{offset}\" if offset else \"\"\n+\n+\n def _make_identity_transforms() -> TransFuncs:\n \n     def identity(x):\n",
+    "failure_log_sections": [
+      {
+        "test_id": "tests/test_relational.py::TestRelationalPlotter::test_legend_has_no_offset",
+        "first_line": 356,
+        "last_line": 375,
+        "text": "_______________ TestRelationalPlotter.test_legend_has_no_offset ________________\n\nself = <tests.test_relational.TestRelationalPlotter object at 0x7fa3f2aca760>\nlong_df =      x         y         z  a  b  ...  s    f a_cat  s_cat  s_str\n0   12  0.449243  6.611886  b  p  ...  2  0.2     b ...  8  0.3     a      8      8\n99  15  0.073484  1.036343  c  p  ...  8  0.2     c      8      8\n\n[100 rows x 13 columns]\n\n    def test_legend_has_no_offset(self, long_df):\n    \n        g = relplot(data=long_df, x=\"x\", y=\"y\", hue=long_df[\"z\"] + 1e8)\n        for text in g.legend.texts:\n>           assert float(text.get_text()) > 1e7\nE           AssertionError: assert 2.5 > 10000000.0\nE            +  where 2.5 = float('2.5')\nE            +    where '2.5' = get_text()\nE            +      where get_text = Text(0, 0, '2.5').get_text\n\ntests/test_relational.py:682: AssertionError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9003,
+    "slot_id": "v131:pylint-dev__pylint-4970:DEEPSEEK_NT_SPRINT_TEAM_B5000K:20261104013100",
+    "instance_id": "pylint-dev__pylint-4970",
+    "group": "SPRINT",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4962642,
+    "actual_calls": 106,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 1,
+        "failure_ids": [
+          "tests/checkers/unittest_similar.py::test_set_duplicate_lines_to_zero"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 17,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9003/receipt.json",
+      "sha256": "4e4e6a700271752bea1f496d4d22855ee9bc3226c7448ab16c5fb7b49fdd0e0e",
+      "bytes": 3499
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9003/candidate-lock.json",
+      "sha256": "aee9b46dd90f94ccbc959c77a5a7c730dd8f2349380e6a62562f7e53c73e1489",
+      "bytes": 4133
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9003/candidate.patch",
+      "sha256": "d727fb27f4b84e2b9acf9b0ebe75773c60635d444b6f5be7ac31462677c5cc8e",
+      "bytes": 1686
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9003/official-output/logs/run_evaluation/v066-score-9003-2e15930a6200724cac818710/score-9003/pylint-dev__pylint-4970/test_output.txt",
+      "sha256": "a2708fc7512b296a49163cde0bdfc27637937b02501058e58007c69196002c0a",
+      "bytes": 19518
+    },
+    "patch_excerpt": "diff --git a/pylint/checkers/similar.py b/pylint/checkers/similar.py\nindex c65b1c8933daa62f8b75415661d4773f6396b1c0..b7e9b6005ccc34acc6c5a43ecbbaf1c8f6482554 100644\n--- a/pylint/checkers/similar.py\n+++ b/pylint/checkers/similar.py\n@@ -471,6 +471,9 @@ class Similar:\n         Last regroups all successive couples in a bigger one. It allows to take into account common chunk of lines that have more\n         than the minimal number of successive lines required.\n         \"\"\"\n+        if self.min_lines == 0:\n+            return\n+\n         hash_to_index_1: HashToIndex_T\n         hash_to_index_2: HashToIndex_T\n         index_to_lines_1: IndexToLines_T\ndiff --git a/tests/checkers/unittest_similar.py b/tests/checkers/unittest_similar.py\nindex 4ddf2029a2e92cb749dff5401073b99ed738e1fb..5f683baedbbd199e072a1d85692f01370ed2ca73 100644\n--- a/tests/checkers/unittest_similar.py\n+++ b/tests/checkers/unittest_similar.py\n@@ -316,6 +316,16 @@ def test_no_hide_code_with_imports() -> None:\n     assert \"TOTAL lines=32 duplicates=16 percent=50.00\" in output.getvalue()\n \n \n+def test_min_similarity_lines_zero_disables_duplicate_code() -> None:\n+    \"\"\"Setting min-similarity-lines to 0 disables the duplicate code check.\"\"\"\n+    output = StringIO()\n+    with redirect_stdout(output), pytest.raises(SystemExit) as ex:\n+        similar.Run([\"--duplicates=0\", SIMILAR1, SIMILAR2])\n+    assert ex.value.code == 0\n+    # No duplicate code sections are reported, only the summary line.\n+    assert output.getvalue().strip() == \"TOTAL lines=62 duplicates=0 percent=0.00\"\n+\n+\n def test_ignore_nothing() -> None:\n     output = StringIO()\n     with redirect_stdout(output), pytest.raises(SystemExit) as ex:\n",
+    "failure_log_sections": [
+      {
+        "test_id": "tests/checkers/unittest_similar.py::test_set_duplicate_lines_to_zero",
+        "first_line": 347,
+        "last_line": 359,
+        "text": "_______________________ test_set_duplicate_lines_to_zero _______________________\n\n    def test_set_duplicate_lines_to_zero() -> None:\n        output = StringIO()\n        with redirect_stdout(output), pytest.raises(SystemExit) as ex:\n            similar.Run([\"--duplicates=0\", SIMILAR1, SIMILAR2])\n        assert ex.value.code == 0\n>       assert output.getvalue() == \"\"\nE       AssertionError: assert 'TOTAL lines=...cent=0.00\\n\\n' == ''\nE         + TOTAL lines=62 duplicates=0 percent=0.00\nE         +\n\ntests/checkers/unittest_similar.py:512: AssertionError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9018,
+    "slot_id": "v131:mwaskom__seaborn-3069:DEEPSEEK_NT_SPRINT_TEAM_B5000K:20261104013103",
+    "instance_id": "mwaskom__seaborn-3069",
+    "group": "SPRINT",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4947608,
+    "actual_calls": 107,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 2,
+        "failure_ids": [
+          "tests/_core/test_plot.py::TestScaling::test_nominal_x_axis_tweaks",
+          "tests/_core/test_plot.py::TestScaling::test_nominal_y_axis_tweaks"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 94,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9018/receipt.json",
+      "sha256": "0fb7f2aa975c754d73945479d8d19579aba55b70801695cd6a469c7045bc16f7",
+      "bytes": 9986
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9018/candidate-lock.json",
+      "sha256": "edf2860786984849533e5a96bda121fe2fab07a463a75a06a82d99adfe49da12",
+      "bytes": 4107
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9018/candidate.patch",
+      "sha256": "dad21fd215543336ae635ad422945cb45e67951c7ca887f1b26f6c39da6a89f9",
+      "bytes": 2710
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9018/official-output/logs/run_evaluation/v066-score-9018-8d7a538ee53056b7a30814cd/score-9018/mwaskom__seaborn-3069/test_output.txt",
+      "sha256": "327c9c2e1620272cd4c5c7664694c5ece526caae55249db3cffbf47496061091",
+      "bytes": 192520
+    },
+    "patch_excerpt": "diff --git a/seaborn/_core/plot.py b/seaborn/_core/plot.py\nindex 4f0290a49472150066ffef8c8639cc03cf298d41..89aa9fb340c99f292a8398dcd9537bbe26f07541 100644\n--- a/seaborn/_core/plot.py\n+++ b/seaborn/_core/plot.py\n@@ -1644,6 +1644,34 @@ class Plotter:\n                         hi = cast(float, hi) + 0.5\n                     ax.set(**{f\"{axis}lim\": (lo, hi)})\n \n+                # Nominal scales get the same treatment as seaborn's\n+                # categorical plots: limits ending at half a unit past the\n+                # first and last tick, no grid, and an inverted y axis.\n+                # Nominal scales are identified by the private matplotlib\n+                # scale they install (its name attribute is None, which is\n+                # not a public matplotlib scale).\n+                scale = self._scales.get(axis_key)\n+                mpl_scale = getattr(scale, \"_matplotlib_scale\", None)\n+                is_nominal = (\n+                    mpl_scale is not None\n+                    and getattr(mpl_scale, \"name\", \"\") is None\n+                )\n+                if is_nominal:\n+                    if axis_key not in p._limits:\n+                        # Sticky edge + zero margin reproduces the categorical\n+                        # limit rule without depending on data limits, which\n+                        # matplotlib may already have padded.\n+                        lo, hi = ((0, -1) if axis == \"y\" else (-1, 0))\n+                        ax.margins(0, tight=True)\n+                        ax.set(**{f\"{axis}lim\": (lo, hi)})\n+                    # Defer to the theme: only hide the grid when the scale\n+                    # did not ask for one explicitly.\n+                    if getattr(scale, \"_grid\", False) is not True:\n+                        ax.grid(False, axis=axis)\n+                    ax.set_axisbelow(True)\n+                    if axis == \"y\":\n+                        ax.invert_yaxis()\n+\n         engine_default = None if p._target is not None else \"tight\"\n         layout_engine = p._layout_spec.get(\"engine\", engine_default)\n         set_layout_engine(self._figure, layout_engine)\ndiff --git a/seaborn/_core/scales.py b/seaborn/_core/scales.py\nindex bbd71ec1b5ef3b40694cc49a7046241ef8acaf41..1b95a0061298d7f2fd0e2954092add6a2e0bd4f3 100644\n--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -61,6 +61,10 @@ class Scale:\n     _spacer: staticmethod\n     _legend: tuple[list[str], list[Any]] | None\n \n+    # Whether the scale wants a grid drawn on the axis it is paired with.\n+    # Nominal scales default to no grid; users can force one via the theme.\n+    _grid: ClassVar[bool | None] = None\n+\n     def __post_init__(self):\n \n         self._tick_params = None\n",
+    "failure_log_sections": [
+      {
+        "test_id": "tests/_core/test_plot.py::TestScaling::test_nominal_x_axis_tweaks",
+        "first_line": 1854,
+        "last_line": 1868,
+        "text": "____________________ TestScaling.test_nominal_x_axis_tweaks ____________________\n\nself = <tests._core.test_plot.TestScaling object at 0x7f2023e4eca0>\n\n    def test_nominal_x_axis_tweaks(self):\n    \n        p = Plot(x=[\"a\", \"b\", \"c\"], y=[1, 2, 3])\n        ax1 = p.plot()._figure.axes[0]\n>       assert ax1.get_xlim() == (-.5, 2.5)\nE       assert (-1.0, 0.0) == (-0.5, 2.5)\nE         \nE         At index 0 diff: -1.0 != -0.5\nE         Use -v to get more diff\n\ntests/_core/test_plot.py:652: AssertionError"
+      },
+      {
+        "test_id": "tests/_core/test_plot.py::TestScaling::test_nominal_y_axis_tweaks",
+        "first_line": 1869,
+        "last_line": 1883,
+        "text": "____________________ TestScaling.test_nominal_y_axis_tweaks ____________________\n\nself = <tests._core.test_plot.TestScaling object at 0x7f2023e61fa0>\n\n    def test_nominal_y_axis_tweaks(self):\n    \n        p = Plot(x=[1, 2, 3], y=[\"a\", \"b\", \"c\"])\n        ax1 = p.plot()._figure.axes[0]\n>       assert ax1.get_ylim() == (2.5, -.5)\nE       assert (-1.0, 0.0) == (2.5, -0.5)\nE         \nE         At index 0 diff: -1.0 != 2.5\nE         Use -v to get more diff\n\ntests/_core/test_plot.py:663: AssertionError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9038,
+    "slot_id": "v131:pytest-dev__pytest-6197:DEEPSEEK_NT_SPRINT_TEAM_B5000K:20261104013107",
+    "instance_id": "pytest-dev__pytest-6197",
+    "group": "SPRINT",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4972684,
+    "actual_calls": 101,
+    "S1_passed": true,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 2,
+        "failure_ids": [
+          "testing/test_collection.py::test_does_not_eagerly_collect_packages",
+          "testing/test_collection.py::test_does_not_put_src_on_path"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 145,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9038/receipt.json",
+      "sha256": "e39e84684657796ea4702d3a9007af9b9a347fd1226133f6eae2d0648c89bcbd",
+      "bytes": 14565
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9038/candidate-lock.json",
+      "sha256": "f491aa25ae07be40b9624cdcc3a9c4cc07fbce4a0c1e1d524d1262dfa8e1b655",
+      "bytes": 4080
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9038/candidate.patch",
+      "sha256": "30f6aa3b2c0a40cca6c933d74a3ccf6296dfe1da7235322d030898bde15e7f4f",
+      "bytes": 747
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9038/official-output/logs/run_evaluation/v066-score-9038-fd165099c58b1753e062abb1/score-9038/pytest-dev__pytest-6197/test_output.txt",
+      "sha256": "4177e5165a9bfb730a7727b3150640eaecc53f3fc4c217dcf473bac404d1f9c6",
+      "bytes": 497109
+    },
+    "patch_excerpt": "diff --git a/src/_pytest/main.py b/src/_pytest/main.py\nindex 3c205027d9f8f5bff9e0b1a428767884faf953fe..59ea91eaf083275a9aa0aa86b356288435f67207 100644\n--- a/src/_pytest/main.py\n+++ b/src/_pytest/main.py\n@@ -534,9 +534,9 @@ class Session(nodes.FSCollector):\n                     pkginit = dirpath.join(\"__init__.py\")\n                     if pkginit.exists():\n                         for x in self._collectfile(pkginit):\n-                            yield x\n                             if isinstance(x, Package):\n                                 self._pkg_roots[dirpath] = x\n+                                yield x\n                 if dirpath in self._pkg_roots:\n                     # Do not collect packages here.\n                     continue\n",
+    "failure_log_sections": [
+      {
+        "test_id": "testing/test_collection.py::test_does_not_eagerly_collect_packages",
+        "first_line": 335,
+        "last_line": 350,
+        "text": "____________________ test_does_not_eagerly_collect_packages ____________________\n\ntestdir = <Testdir local('/tmp/pytest-of-root/pytest-0/test_does_not_eagerly_collect_packages0')>\n\n    def test_does_not_eagerly_collect_packages(testdir):\n        testdir.makepyfile(\"def test(): pass\")\n        pydir = testdir.mkpydir(\"foopkg\")\n        pydir.join(\"__init__.py\").write(\"assert False\")\n        result = testdir.runpytest()\n>       assert result.ret == ExitCode.OK\nE       assert <ExitCode.INTERRUPTED: 2> == <ExitCode.OK: 0>\nE        +  where <ExitCode.INTERRUPTED: 2> = <RunResult ret=<ExitCode.INTERRUPTED: 2> len(stdout.lines)=13 len(stderr.lines)=1 duration=0.08s>.ret\nE        +  and   <ExitCode.OK: 0> = ExitCode.OK\n\n/testbed/testing/test_collection.py:1267: AssertionError\n----------------------------- Captured stdout call -----------------------------"
+      },
+      {
+        "test_id": "testing/test_collection.py::test_does_not_put_src_on_path",
+        "first_line": 363,
+        "last_line": 383,
+        "text": "________________________ test_does_not_put_src_on_path _________________________\n\ntestdir = <Testdir local('/tmp/pytest-of-root/pytest-0/test_does_not_put_src_on_path0')>\n\n    def test_does_not_put_src_on_path(testdir):\n        # `src` is not on sys.path so it should not be importable\n        testdir.tmpdir.join(\"src/nope/__init__.py\").ensure()\n        testdir.makepyfile(\n            \"import pytest\\n\"\n            \"def test():\\n\"\n            \"    with pytest.raises(ImportError):\\n\"\n            \"        import nope\\n\"\n        )\n        result = testdir.runpytest()\n>       assert result.ret == ExitCode.OK\nE       assert <ExitCode.TESTS_FAILED: 1> == <ExitCode.OK: 0>\nE        +  where <ExitCode.TESTS_FAILED: 1> = <RunResult ret=<ExitCode.TESTS_FAILED: 1> len(stdout.lines)=18 len(stderr.lines)=1 duration=0.02s>.ret\nE        +  and   <ExitCode.OK: 0> = ExitCode.OK\n\n/testbed/testing/test_collection.py:1280: AssertionError\n----------------------------- Captured stdout call -----------------------------"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9043,
+    "slot_id": "v131:psf__requests-2931:DEEPSEEK_NT_SPRINT_TEAM_B5000K:20261104013108",
+    "instance_id": "psf__requests-2931",
+    "group": "SPRINT",
+    "failure_category": "target_behavior_still_fails",
+    "actual_tokens": 4995972,
+    "actual_calls": 102,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 1,
+        "failure_ids": [
+          "test_requests.py::TestRequests::test_binary_put"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 84,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9043/receipt.json",
+      "sha256": "afb100b901117c621fd6bf254fa2c18bbe2b92ed20dadea011b404fdc71f9092",
+      "bytes": 8608
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9043/candidate-lock.json",
+      "sha256": "f1f336a10d4f38da9cf8df4057a29d91bd293fd0e03372a87f0f6432f755233f",
+      "bytes": 4054
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9043/candidate.patch",
+      "sha256": "68d20d447e2d25f7bb390a7f34cde23e889eb7feda4b0e5a7743016957f09c9e",
+      "bytes": 939
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9043/official-output/logs/run_evaluation/v066-score-9043-68f9f4249be24748745077f6/score-9043/psf__requests-2931/test_output.txt",
+      "sha256": "f2ad5d9d323519e189c82deef192c8a7fd37047be4d0e0b9f68547fe9a86f864",
+      "bytes": 78981
+    },
+    "patch_excerpt": "diff --git a/requests/models.py b/requests/models.py\nindex 9c624d3c112ef99e7a4acfc38dca2bed8c7840fb..a634a5ff312a29bcb8382fe6024d562c52ff411f 100644\n--- a/requests/models.py\n+++ b/requests/models.py\n@@ -450,6 +450,13 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):\n                     else:\n                         content_type = 'application/x-www-form-urlencoded'\n \n+                    # _encode_params normalises str/bytes input through\n+                    # to_native_string(); that is correct for URL parameters but\n+                    # would corrupt a raw binary payload (issue #2844). For the\n+                    # request body, bytes must reach the wire unchanged.\n+                    if isinstance(data, bytes) and not isinstance(data, basestring):\n+                        body = data\n+\n             self.prepare_content_length(body)\n \n             # Add content-type if it wasn't explicitly provided.\n",
+    "failure_log_sections": [
+      {
+        "test_id": "test_requests.py::TestRequests::test_binary_put",
+        "first_line": 325,
+        "last_line": 364,
+        "text": "_________________________ TestRequests.test_binary_put _________________________\n\nself = <test_requests.TestRequests object at 0x7f75a8669df0>\n\n    def test_binary_put(self):\n>       request = requests.Request('PUT', 'http://example.com',\n                                   data=u\"ööö\".encode(\"utf-8\")).prepare()\n\ntest_requests.py:161: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nrequests/models.py:239: in prepare\n    p.prepare(\nrequests/models.py:296: in prepare\n    self.prepare_body(data, files, json)\nrequests/models.py:447: in prepare_body\n    body = self._encode_params(data)\nrequests/models.py:84: in _encode_params\n    return to_native_string(data)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nstring = b'\\xc3\\xb6\\xc3\\xb6\\xc3\\xb6', encoding = 'ascii'\n\n    def to_native_string(string, encoding='ascii'):\n        \"\"\"\n        Given a string object, regardless of type, returns a representation of that\n        string in the native string type, encoding and decoding where necessary.\n        This assumes ASCII unless told otherwise.\n        \"\"\"\n        out = None\n    \n        if isinstance(string, builtin_str):\n            out = string\n        else:\n            if is_py2:\n                out = string.encode(encoding)\n            else:\n>               out = string.decode(encoding)\nE               UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 0: ordinal not in range(128)\n\nrequests/utils.py:700: UnicodeDecodeError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": false,
+    "base_git_tree_equals_candidate": false,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  },
+  {
+    "slot_index": 9128,
+    "slot_id": "v131:pydata__xarray-4687:DEEPSEEK_NT_SPRINT_TEAM_B5000K:20261104013125",
+    "instance_id": "pydata__xarray-4687",
+    "group": "SPRINT",
+    "failure_category": "unchanged_designated_final_tree",
+    "actual_tokens": 4974872,
+    "actual_calls": 99,
+    "S1_passed": false,
+    "delivery_passed": false,
+    "legal_delivery_evidence": false,
+    "tests": {
+      "FAIL_TO_PASS": {
+        "success_count": 0,
+        "failure_count": 1,
+        "failure_ids": [
+          "xarray/tests/test_computation.py::test_where_attrs"
+        ]
+      },
+      "PASS_TO_PASS": {
+        "success_count": 1717,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "FAIL_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      },
+      "PASS_TO_FAIL": {
+        "success_count": 0,
+        "failure_count": 0,
+        "failure_ids": []
+      }
+    },
+    "official_receipt": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9128/receipt.json",
+      "sha256": "2ff9a7b91f77e6bd39c548bd4804f71de05a46e6796463b507d66bc53d7f9461",
+      "bytes": 177140
+    },
+    "candidate_lock": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9128/candidate-lock.json",
+      "sha256": "681bc44421c91025a18fb8b2f56eea9c673100a7f218b92fb82d2e1faadbdfd1",
+      "bytes": 4023
+    },
+    "candidate_patch": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/candidate-recovery-r1/episodes/9128/candidate.patch",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "official_log": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v132/grading-recovery-r1/grading/score-9128/official-output/logs/run_evaluation/v066-score-9128-d9370657cdc4ff5ea2d23cb4/score-9128/pydata__xarray-4687/test_output.txt",
+      "sha256": "87a7a18748ae8f5fb34edc2554f6aa1e4bd7eda5ef627266bb000adfc1d339e7",
+      "bytes": 226153
+    },
+    "patch_excerpt": "",
+    "failure_log_sections": [
+      {
+        "test_id": "xarray/tests/test_computation.py::test_where_attrs",
+        "first_line": 637,
+        "last_line": 646,
+        "text": "_______________________________ test_where_attrs _______________________________\n\n    def test_where_attrs() -> None:\n        cond = xr.DataArray([True, False], dims=\"x\", attrs={\"attr\": \"cond\"})\n        x = xr.DataArray([1, 1], dims=\"x\", attrs={\"attr\": \"x\"})\n        y = xr.DataArray([0, 0], dims=\"x\", attrs={\"attr\": \"y\"})\n>       actual = xr.where(cond, x, y, keep_attrs=True)\nE       TypeError: where() got an unexpected keyword argument 'keep_attrs'\n\n/testbed/xarray/tests/test_computation.py:1929: TypeError"
+      }
+    ],
+    "baseline_equals_terminal_snapshot": true,
+    "base_git_tree_equals_candidate": true,
+    "ordinary_framework_stdout_failures_not_automatically_scoring_failures": true
+  }
+]
