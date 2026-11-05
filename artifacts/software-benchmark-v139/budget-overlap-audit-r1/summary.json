@@ -1,0 +1,150 @@
+{
+  "version": "v139-selected-budget-overlap-audit-r1",
+  "observed_utc": "2026-11-05T07:39:54.289530+00:00",
+  "sources": {
+    "retained68": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v136/cash-excluded-analysis-r1/selected-per-task.json",
+      "sha256": "450720487d72cab8f8dc510ee30dbb3d94f00543e38a27186ba5ef4a3a9788fd",
+      "bytes": 53722
+    },
+    "chief_pipeline": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/chief-pipeline-causes-r1/per-task.json",
+      "sha256": "3f359c578d302a789ff5c3b5664560305ae893bcade145f2b4c9596499bbfb43",
+      "bytes": 296888
+    },
+    "review_sprint_failures": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/review-sprint-causes-r1/failed-cases.json",
+      "sha256": "cc638adc688d21493705d89df9570217ce9522f62d9c0f6ffa958e116b195b9c",
+      "bytes": 61894
+    },
+    "matrix": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/matrix-causes-r1/per-task.json",
+      "sha256": "921636ae431952239408977a098eb54277befef2989837fccec27ca80be59401",
+      "bytes": 83753
+    }
+  },
+  "scope": "Exactly the68 v136 valid-score noncash episodes; no excluded61 or121 cash-ending rows reintroduced.",
+  "groups": {
+    "CHIEF": {
+      "retained_n": 10,
+      "all_retained_end_reasons": {
+        "team_5M_boundary": 10
+      },
+      "empty_candidates": 0,
+      "empty_candidate_end_reasons": {},
+      "code_passed_delivery_failed": 2,
+      "code_passed_delivery_failed_end_reasons": {
+        "team_5M_boundary": 2
+      }
+    },
+    "PIPELINE": {
+      "retained_n": 17,
+      "all_retained_end_reasons": {
+        "organization_contract_blocked": 12,
+        "team_5M_boundary": 5
+      },
+      "empty_candidates": 13,
+      "empty_candidate_end_reasons": {
+        "organization_contract_blocked": 8,
+        "team_5M_boundary": 5
+      },
+      "code_passed_delivery_failed": 0,
+      "code_passed_delivery_failed_end_reasons": {}
+    },
+    "REVIEW": {
+      "retained_n": 16,
+      "all_retained_end_reasons": {
+        "team_5M_boundary": 8,
+        "all_members_stopped_or_no_reachable_event": 8
+      },
+      "empty_candidates": 0,
+      "empty_candidate_end_reasons": {},
+      "code_passed_delivery_failed": 2,
+      "code_passed_delivery_failed_end_reasons": {
+        "team_5M_boundary": 2
+      }
+    },
+    "SPRINT": {
+      "retained_n": 11,
+      "all_retained_end_reasons": {
+        "team_5M_boundary": 11
+      },
+      "empty_candidates": 1,
+      "empty_candidate_end_reasons": {
+        "team_5M_boundary": 1
+      },
+      "code_passed_delivery_failed": 5,
+      "code_passed_delivery_failed_end_reasons": {
+        "team_5M_boundary": 5
+      }
+    },
+    "MATRIX": {
+      "retained_n": 14,
+      "all_retained_end_reasons": {
+        "team_5M_boundary": 14
+      },
+      "empty_candidates": 6,
+      "empty_candidate_end_reasons": {
+        "team_5M_boundary": 6
+      },
+      "code_passed_delivery_failed": 3,
+      "code_passed_delivery_failed_end_reasons": {
+        "team_5M_boundary": 3
+      }
+    }
+  },
+  "empty_candidate_overlap": {
+    "n": 20,
+    "end_reasons": {
+      "organization_contract_blocked": 8,
+      "team_5M_boundary": 12
+    },
+    "team_token_boundary_n": 12,
+    "team_token_boundary_fraction": 0.6,
+    "meaning": "Two simultaneous observations: empty designated candidate and recorded closure reason. Not causal attribution of every empty patch to its closure condition."
+  },
+  "code_correct_delivery_missing_overlap": {
+    "n": 12,
+    "all_team_token_boundary": true,
+    "end_reasons": {
+      "team_5M_boundary": 12
+    },
+    "actual_tokens_min": 4912549,
+    "actual_tokens_max": 4996282,
+    "meaning": "The final selected code was correct, delivery was not accepted, and the shared pool reached its admission boundary. More budget effectiveness was not tested."
+  },
+  "pipeline_contract_blocked": {
+    "n": 12,
+    "passed_code": 3,
+    "passed_delivery": 3,
+    "empty_final_candidate": 8,
+    "actual_tokens_min": 1285316,
+    "actual_tokens_max": 4546953,
+    "actual_tokens_mean": 2828268.5,
+    "actual_tokens_median": 2750926.0,
+    "nominal_remaining_tokens_min": 453047,
+    "nominal_remaining_tokens_max": 3714684,
+    "nominal_remaining_tokens_mean": 2171731.5,
+    "nominal_remaining_tokens_median": 2249074.0,
+    "episodes_with_at_least_1M_nominal_headroom": 10,
+    "episodes_with_at_least_2M_nominal_headroom": 6,
+    "actual_requests_min": 29,
+    "actual_requests_max": 85,
+    "headroom_definition": "5,000,000 minus accounted actual input+output tokens; not an API cash balance, reserved token allowance, or proof another action was currently legal."
+  },
+  "conclusions_and_limits": [
+    "Budget and collaboration bottlenecks can reinforce one another: more organizational actions consume shared resources, and reaching the token boundary cuts off further repair/closure attempts.",
+    "All12 code-correct but delivery-failed episodes reached the5M boundary; this supports a budget/closure association, not proof that extra tokens would complete delivery.",
+    "Only12 of20 empty candidates ended at the token boundary; the other8 ended in organization_contract_blocked. An all-budget explanation is contradicted by the recorded end states.",
+    "The12 PIPELINE blocked episodes retained substantial nominal token headroom, and3 already passed both endpoints. The block label means no eligible next organizational step, not uniformly unfinished or failed code.",
+    "No timestamp analysis of when the code first became correct was performed; token is total across all members, not a separate allowance each agent can spend.",
+    "Rows can overlap across failure mechanisms, but an empty baseline failure is not also a code-passed delivery deficit. Statistics do not estimate an isolated causal budget effect.",
+    "This selection excludes cash-ending episodes; these findings do not estimate the influence of monetary cutoff on the complete original250 panel."
+  ],
+  "new_API_calls": 0,
+  "new_scoring_calls": 0,
+  "Docker_operations": 0,
+  "new_tests": 0,
+  "large_trajectories_or_archives_read": false,
+  "ledger_recomputed": false
+}

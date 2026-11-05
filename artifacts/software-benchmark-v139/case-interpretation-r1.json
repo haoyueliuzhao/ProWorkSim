@@ -1,0 +1,246 @@
+{
+  "version": "v139-budget-process-case-interpretation-r1",
+  "created_at": "2026-11-05T07:40:52.492321+00:00",
+  "sources": {
+    "SPRINT_events": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/review-sprint-causes-r1/case-events.json",
+      "sha256": "09ab75a52332614c15dd048406bb4a11b6b64d4b37906850065200447968ce02",
+      "bytes": 142145
+    },
+    "MATRIX_integration": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/matrix-causes-r1/xarray4966-integration-chain.json",
+      "sha256": "aee91a7d05efa9a070754edd0e1daeefd8df7383da9281eba902103285f13bfa",
+      "bytes": 6733
+    },
+    "MATRIX_terminal_cost": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/matrix-causes-r1/per-task.json",
+      "sha256": "921636ae431952239408977a098eb54277befef2989837fccec27ca80be59401",
+      "bytes": 83753
+    },
+    "PIPELINE_cases": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/chief-pipeline-causes-r1/cases.json",
+      "sha256": "01088098afc8a3b8425420f945acf27318cca3c2d1cefb41369e49959564486c",
+      "bytes": 58687
+    },
+    "PIPELINE_terminal_cost": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v137/chief-pipeline-causes-r1/per-task.json",
+      "sha256": "3f359c578d302a789ff5c3b5664560305ae893bcade145f2b4c9596499bbfb43",
+      "bytes": 296888
+    },
+    "selected_terminal_behavior": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v136/cash-excluded-mechanism-r1/per-task.json",
+      "sha256": "3c3f20641f84e5b37b925cfcb71319300548a2e462cd3a7ebc928e46be4d9ade",
+      "bytes": 943952
+    }
+  },
+  "scope": "Only previously extracted compact cases/events and terminal cost summaries; no raw controller, world, model ledger or archive reread.",
+  "headline": "这些案例观察到的是当前团队5M预算与组织闭合流程的共同约束。提前出现的业务拒绝不能与最后一次预算拒绝混为一事；但也不能据此认定最终未交付与预算无关。",
+  "per_action_budget_observability": {
+    "reliable_remaining_tokens_available": false,
+    "reason": "这些精简事件只有动作顺序、部分model_call_id、业务响应和终态总用量，没有逐请求结算charge、累计预算、在途预约或动作前可派发余额。",
+    "not_used": [
+      "事件序号占总回合数的比例不是token消耗比例。",
+      "终态5M减已用token不是早先动作的剩余token，也不是考虑预约后还能执行的动作数。",
+      "后续存在动作仅证明当时尚有后续执行机会，不证明有足够预算完成整条剩余协议。"
+    ],
+    "no_reconstruction_from_raw_ledger_attempted": true
+  },
+  "cases": [
+    {
+      "group": "SPRINT",
+      "slot_index": 9128,
+      "instance_id": "pydata__xarray-4687",
+      "evidence_source": "SPRINT_events",
+      "timeline": [
+        {
+          "outcome_index": 32,
+          "fact": "001启动Sprint被拒：只有SM可记录计划完成。"
+        },
+        {
+          "outcome_index": 43,
+          "fact": "004启动被拒：两位开发者尚未共同确认非空计划。"
+        },
+        {
+          "outcome_index": 84,
+          "fact": "002私有v7公开测试2/2通过；仅为所选公开测试。"
+        },
+        {
+          "outcome_index": 87,
+          "fact": "002私有v8公开测试2/2通过。"
+        },
+        {
+          "outcome_index": 88,
+          "fact": "002固定补丁被拒：Sprint尚非active。"
+        }
+      ],
+      "terminal": {
+        "end_class": "team_5M_boundary",
+        "actual_tokens": 4974872,
+        "actual_calls": 99,
+        "final001_unchanged": true
+      },
+      "established": "组织条件拒绝发生在最终收口前，早期拒绝后还有真实编辑/测试；最终唯一候选没有包含002的修改。",
+      "budget_process_interpretation": "协调/修订未在5M内走到合法发布与集成，预算不足可能使后续纠正无法完成；无法量化流程本身与预算上限各贡献多少。",
+      "not_established": [
+        "拒绝时的确切剩余token。",
+        "增加预算后一定会启动Sprint、整合或通过官方评分。",
+        "002的私有代码已经正确通过官方验收。"
+      ]
+    },
+    {
+      "group": "MATRIX",
+      "slot_index": 9214,
+      "instance_id": "pydata__xarray-4966",
+      "evidence_source": "MATRIX_integration",
+      "timeline": [
+        {
+          "outcome_index": 67,
+          "fact": "003私有v5公开测试18/18通过。"
+        },
+        {
+          "outcome_index": 69,
+          "fact": "003固定patch-1成功。"
+        },
+        {
+          "outcome_index": 71,
+          "fact": "001整合被拒：同一候选缺独立项目/技术双线接受。"
+        },
+        {
+          "outcome_index": 73,
+          "fact": "003向001交接patch-1。"
+        },
+        {
+          "outcome_index": 77,
+          "fact": "003向002交接patch-1。"
+        },
+        {
+          "outcome_index": 94,
+          "fact": "002登记技术线接受；项目线接受仍未出现。"
+        }
+      ],
+      "terminal": {
+        "end_class": "team_5M_boundary",
+        "actual_tokens": 4984136,
+        "actual_calls": 98,
+        "final001_unchanged": true
+      },
+      "established": "业务拒绝并非最后预算停止的别名；拒绝之后仍有交接和一次接受，但缺少另一接受及重新整合。",
+      "budget_process_interpretation": "双线确认需要额外真实机会，而该链在预算上限前未闭合；不能把未完成直接称为预算无关的组织固有缺陷。",
+      "not_established": [
+        "第71或94动作时的实际可派发token。",
+        "还差几次调用及其token成本。",
+        "更多预算能否促成正确确认和最终官方通过。"
+      ]
+    },
+    {
+      "group": "PIPELINE",
+      "slot_index": 9006,
+      "instance_id": "sphinx-doc__sphinx-7889",
+      "evidence_source": "PIPELINE_cases",
+      "timeline": [
+        {
+          "outcome_index": 25,
+          "fact": "002登记implementation后阶段转verification。"
+        },
+        {
+          "outcome_index": 29,
+          "fact": "003整合002的非空patch-1。"
+        },
+        {
+          "outcome_index": 31,
+          "fact": "003在该树公开8/8通过。"
+        },
+        {
+          "outcome_index": 41,
+          "fact": "003请求staff_done。"
+        },
+        {
+          "outcome_index": 45,
+          "fact": "003又执行一次公开8/8通过；此后无org_pipeline_validation或001整合。"
+        }
+      ],
+      "terminal": {
+        "end_class": "organization_contract_blocked",
+        "actual_tokens": 2079976,
+        "actual_calls": 47,
+        "final001_unchanged": true
+      },
+      "established": "最终停在协议可达性/阶段链，而非记录为团队token边界；003验证内容没有完成回传001的合法链。",
+      "budget_process_interpretation": "本例不支持“所有交接缺口都是token用尽”的解释；但它也不证明其它预算截止案例与预算无关。",
+      "not_established": [
+        "逐动作剩余token。",
+        "003私有补丁官方正确。"
+      ]
+    },
+    {
+      "group": "PIPELINE",
+      "slot_index": 9021,
+      "instance_id": "pytest-dev__pytest-7571",
+      "evidence_source": "PIPELINE_cases",
+      "timeline": [
+        {
+          "outcome_index": 43,
+          "fact": "002登记实现阶段。"
+        },
+        {
+          "outcome_index": 46,
+          "fact": "003整合patch-1。"
+        },
+        {
+          "outcome_index": 68,
+          "fact": "003将流程退回implementation。"
+        },
+        {
+          "outcome_index": 69,
+          "fact": "002普通handoff_patch后未重新走通组织阶段/验证/001整合。"
+        }
+      ],
+      "terminal": {
+        "end_class": "organization_contract_blocked",
+        "actual_tokens": 3692768,
+        "actual_calls": 76,
+        "final001_unchanged": true
+      },
+      "established": "可见阶段退回与未再闭合，终态没有token-boundary标签。",
+      "budget_process_interpretation": "只能按协议阻塞解释已记录的直接终止，不能将无001候选一律等同已耗光5M；也不能外推增加预算完全无益。"
+    },
+    {
+      "group": "PIPELINE",
+      "slot_index": 9031,
+      "instance_id": "pytest-dev__pytest-7490",
+      "evidence_source": "PIPELINE_cases",
+      "timeline": [
+        {
+          "outcome_index": 27,
+          "fact": "002固定非空patch-1。"
+        },
+        {
+          "outcome_index": 28,
+          "fact": "002做普通handoff_patch。"
+        },
+        {
+          "outcome_index": 29,
+          "fact": "002请求staff_done；未出现org_pipeline_implementation，003验证阶段未被激活。"
+        }
+      ],
+      "terminal": {
+        "end_class": "organization_contract_blocked",
+        "actual_tokens": 1557365,
+        "actual_calls": 33,
+        "final001_unchanged": true
+      },
+      "established": "普通交接没有完成组织阶段转换，流水线停在协议阻塞，未触发记录中的5M边界。",
+      "budget_process_interpretation": "这是独立于“该回合已用尽5M”这一具体事件的流程停止证据；不是组织模式总体与预算无关的证明。"
+    }
+  ],
+  "recommended_report_wording": "在本轮预算条件下，部分团队虽然形成了私有修改，却未完成确认、集成和交付。业务拒绝与阶段错位有的发生在预算截止前，但现有精简证据不足以分离流程负担和预算不足各自造成的影响；增加预算能否让这些链条闭合，尚未验证。另有流水线案例以协议阻塞结束、实际用量明显低于5M，说明不能把所有缺口都归为token用尽。",
+  "twelve_code_correct_undelivered_boundary": "12个代码正确但未交付的筛选后回合都达到团队token边界。可描述为“预算截止时交付链尚未完成”；不得改写为“已证明与预算无关的固定流程损失”，也不得断言追加预算即可全部补齐。",
+  "actions": {
+    "new_model_calls": 0,
+    "new_tests_or_grading": 0,
+    "Docker_operations": 0,
+    "new_raw_trajectory_reads": 0,
+    "budget_or_configuration_changes": 0,
+    "automatic_budget_increase_or_new_experiment_suggested": false
+  }
+}
