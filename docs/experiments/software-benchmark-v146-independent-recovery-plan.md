@@ -13,3 +13,8 @@
 已经通过的原环境控制与诊断通过来源和环境身份对应复用。新身份解析、API故障恢复路径和实际controller/bundle适配另做必要CPU检查；不重复执行相同gold/empty控制来增加成本。新源码、运行包、成员工具声明、环境资格及控制结果全部冻结后才启动；运行中不热改冻结源码。
 
 准备工具为`tools/prepare_role_recovery_v146.py`，默认只写清单和配置；`--seal`须等实际bundle、API声明、评分器与CPU检查均齐备才生成源码封存及现有用户授权的具体运行范围。此文档与准备操作本身没有调用API、创建容器或启动实验。
+# 已实际启动
+
+2026-11-07北京时间约21:12，已通过现有普通用户服务的新生命周期启动真实恢复，SOURCE为`c9387bc9707a33e4142ee564ab1b868853795d3d1431a099b8c5d9a0ae15d219`。21:23轻量监测为8路活动、13项待派发、186次真实HTTP请求已结算、0新技术未知及0API重试；新增已结算约5.8959元。此时尚无正常闭合回合，不能把API成功响应当作最终任务通过。
+
+当前状态读取`runs/software-benchmark-v146/api-recovery21-r1/api-coordinator/progress.json`，子账本为`runs/software-benchmark-v145/api-recovery-prepared-r1/ledger.sqlite`。旧v143已完成记录和v145停止版本补评不代表这次独立模型回合的最终结果。已封存运行源保持不变，后续评分侧环境修订另列版本和候选身份。
