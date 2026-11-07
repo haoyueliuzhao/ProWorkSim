@@ -31,3 +31,9 @@ CPU控制针对完整managed serve→native配置验证→ready路径，而不�
 新SOURCE SHA256为`b62b919f4f690015c37709697c392a7340952739c4a57e37f216aeda58922cfa`，修订提案SHA256为`880215a8dd85e559840224406915d8361a150cfefe4623bb12c818b7808a0e78`。派生授权明确依据原120回合／400元批准及后来新增的非干扰实验Docker通用权限，没有伪称用户逐字审阅过v143新提案。
 
 修订服务已实际启动，诊断5已取得真实actor和controller ready；不重复原端点探测。此时仍为零模型准备，不能称120回合已运行。当前读取`runs/software-benchmark-v142/role-pilot40-r1/deployment-v143/api-coordinator`，不再把旧v142停止进度当当前进度。启动证据见[launch-status-r1](../../artifacts/software-benchmark-v143/launch-status-r1/summary.json)。
+
+## 正式队列已进入
+
+四个真实零模型诊断均通过；代表性大仓库controller峰值RSS为4,231,593,984字节（约3.94GiB），仅代表该初始化／闭合诊断，不等于完整5M回合峰值。新10项gold／empty控制均得到有效官方回执，五题分别gold=true／empty=false，最终40/40环境资格通过。
+
+三组均已取得正式API结算回执，队列按原16生成／4启动／2异步评分配置运行。最新带时间快照见[launch-status-r2](../../artifacts/software-benchmark-v143/launch-status-r2/summary.json)；启动快照不代表120回合已结束或已有能力结论。三份组预算视图共享同一400元账本，不能重复相加。当前进度可用普通用户运行` .venv/bin/python tools/summarize_role_pilot_v143.py`只读查询；该新增分析工具不在已运行source闭包，不修改正在执行的代码。
