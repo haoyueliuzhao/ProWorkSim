@@ -1,5 +1,7 @@
 # ProWorkSim
 
+> 当前资源策略（2026-11-08）：后续不再进行训练，已清理废弃训练数据及四个本地模型的权重；本地模型暂不可加载，不自动重新下载。历史评测结果、报告、分词器和 API 评测／评分依赖保留。详见[清理记录](docs/operations/training-and-local-model-retirement-20261108.md)。以下带日期的运行状态均为历史记录，不代表当前任务仍在使用 GPU。
+
 > 2026-10-21 19:19 更新：三组原库存已恢复，GPU3／6各两个MATCH／PROJECT会话，GPU7一个REF会话，共五回合并发；75个生成回合闭合、5在途、1420待运行，73槽必要评分已明确。单题评分超时保留为技术未知，新宿主协调器将局部异常留到末尾处理，原五个在途worker完整接管，未重载模型或重跑正式生成。见[恢复与异常处理](docs/experiments/software-benchmark-v054-recovery-and-deferred-scoring-r1.md)及[性能分析](docs/experiments/software-benchmark-v054-performance-recovery-r1.md)。此前[同卡交错准入及准备成本](docs/experiments/software-benchmark-v054-interleaved-execution-r1.md)另行保留。
 
 ## v0.54：完整500题三组评价运行中，保留常驻模型并扩展资源调度（2026-10-21）
