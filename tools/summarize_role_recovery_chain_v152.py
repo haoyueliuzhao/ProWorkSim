@@ -1,7 +1,7 @@
 """Read-only current view of model, normal export, official scoring and shared cash.
 
-Original v146 export errors are preserved; validated v149/v151 recovery is
-reported separately rather than repeatedly calling those models unfinished.
+Original errors are preserved; validated export and scoring repairs are
+reported separately, including candidate failures proved by real execution.
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEL = ROOT/'runs/software-benchmark-v146/api-recovery21-r1'
 EXPORT = ROOT/'runs/software-benchmark-v149/closed-export-recovery-r1'
 SCORING = ROOT/'runs/software-benchmark-v151/same-tree-score-handoff-r1'
+OVERLAY = ROOT/'runs/software-benchmark-v154/three-score-recovery-r1/canonical-overlay.json'
 
 
 def read(path, default=None):
@@ -41,7 +42,17 @@ def summarize():
     plan = read(MODEL/'execution-plan.json')
     model = read(MODEL/'api-coordinator/progress.json', {})
     scoring = read(SCORING/'watch-progress.json', {})
-    targets = scoring.get('targets', {})
+    targets = dict(scoring.get('targets', {}))
+    overlay = read(OVERLAY, {})
+    expected = {f"{row['slot_index']}:{endpoint}": row['slot_id']
+                for row in plan['rows'] for endpoint in ('code', 'delivery')}
+    for key, updated in overlay.get('canonical_results', {}).items():
+        if key not in expected or updated.get('slot_id') != expected[key]:
+            raise ValueError('Scoring repair identity differs from its planned model attempt')
+        old = targets.get(key, {})
+        if type(old.get('resolved')) is bool and old['resolved'] != updated.get('resolved'):
+            raise ValueError('A scoring repair may not replace an already determined outcome')
+        targets[key] = updated
     result = []
     for first in [r for r in plan['rows'] if r['recovery_round'] == 1]:
         attempts = sorted([r for r in plan['rows'] if r['original_slot_id'] == first['original_slot_id']],
@@ -59,6 +70,7 @@ def summarize():
             measured.append({'slot_index':index, 'recovery_round':row['recovery_round'],
                 'normal_work_exported': export is not None,
                 'code_status':code.get('state','waiting_normal_export'),
+                'code_basis':code.get('basis', 'official_report' if code_known else None),
                 'code':code.get('resolved') if code_known else None,
                 'delivery_status':delivery.get('state','waiting_normal_export'),
                 'delivery':delivery.get('resolved') if delivery_known else None,
@@ -77,7 +89,11 @@ def summarize():
         rows = [r['selected_attempt'] for r in result if r['group_id'] == group]
         groups[group] = {'planned_original_episodes':len(rows),
             'normal_work_exported':sum(r['normal_work_exported'] for r in rows),
-            'code_scored':sum(type(r['code']) is bool for r in rows),
+            'code_measured':sum(type(r['code']) is bool for r in rows),
+            'code_official_reports':sum(type(r['code']) is bool and
+                                        r['code_basis'] != 'validated_candidate_failure' for r in rows),
+            'code_validated_candidate_execution_failures':sum(
+                r['code_basis'] == 'validated_candidate_failure' for r in rows),
             'code_passed':sum(r['code'] is True for r in rows),
             'delivery_measured':sum(type(r['delivery']) is bool for r in rows),
             'delivery_passed':sum(r['delivery'] is True for r in rows),
@@ -88,12 +104,16 @@ def summarize():
         'planned_original_episodes':21, 'conditional_extra_identities_not_new_tasks':21,
         'model_phase':model.get('phase'), 'active':model.get('generation_active'),
         'pending':model.get('generation_pending'), 'raw_model_prepared_statuses':model.get('prepared_statuses'),
-        'normal_export_and_official_scoring':groups,
+        'raw_model_status_note':'Historical export-ID failures; current outcomes use the validated export/scoring chain below.',
+        'normal_export_and_scoring_assessments':groups,
+        'unmeasured_selected_episodes':sum(not r['selected_attempt']['fully_measured'] for r in result),
+        'validated_candidate_failure_is_not_a_parsed_official_test_report':True,
         'old_stopped_code_supplements_not_counted_as_new_normal_runs':True,
         'independent_second_attempts_selected':sum(r['independent_second_attempt_selected'] for r in result),
         'cash':{'cumulative_cap_CNY':450, 'original_pilot':original,'independent_recovery':recovery,
                 'remaining_after_all_reservations_CNY':450-original['committed_upper_CNY']-recovery['committed_upper_CNY']},
-        'source_progress_paths':[str(MODEL/'api-coordinator/progress.json'),str(SCORING/'watch-progress.json')],
+        'source_progress_paths':[str(MODEL/'api-coordinator/progress.json'),str(SCORING/'watch-progress.json')]
+                               + ([str(OVERLAY)] if overlay else []),
         'rows':result}
 
 
