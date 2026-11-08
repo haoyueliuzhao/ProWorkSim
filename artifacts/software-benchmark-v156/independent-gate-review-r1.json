@@ -1,0 +1,435 @@
+{
+  "version": "v156-independent-gate-review-r1",
+  "reviewed_at_utc": "2026-11-08T04:27:45.256700+00:00",
+  "reviewer_task": "/root/communication_p0_gate_review_v156",
+  "review_method": "独立静态审查与现有产物定向只读复核；未重复运行测试、API、模型、Docker、GPU或git。仅新增本审阅JSON。",
+  "protocol": "/data0/zhuxinrui/projects/Communication_Optimization_Pilot_V1_通信优化实验协议_20261108.docx",
+  "decision": {
+    "P0_engineering_controls_completed_in_declared_domains": true,
+    "P0_all_protocol_gates_passed": false,
+    "provider_exact_source_attribution_passed": false,
+    "P1_admitted": false,
+    "P1_start_authorized": false,
+    "P1_cash_budget_authorized": false,
+    "conclusion": "P0工程控制按声明的CPU/只读证据域通过；精确供应商Token归因门未通过，P1部署绑定、现金预算和单独启动确认未完成。不得启动P1。"
+  },
+  "evidence_level_definitions": {
+    "static_implementation": "代码和接口行为审阅，不等于执行结果。",
+    "CPU_control": "CPU脚本/合成transport或实际SDK及CPU公开测试；无真实模型调用。",
+    "historical_real_provider_read_only": "只读已有真实请求与响应；无本轮模型调用。",
+    "provider_exact": "必须有请求绑定的兼容tokenizer/rendering/封装或供应商直接证据；本轮未达到。"
+  },
+  "gates": {
+    "G0-1": {
+      "status": "passed_in_P0_CPU_control_domain",
+      "evidence_levels": [
+        "static_implementation",
+        "CPU_scripted_native_SDK",
+        "CPU_scripted_physical_transport"
+      ],
+      "evidence": [
+        "native_SDK_control",
+        "CPU_controls",
+        "compressor_final_attempt_receipts"
+      ],
+      "conclusion": "18个正常SDK脚本请求均保留实际规范化payload和来源原件；v145物理HTTP适配器按每次retry身份采集，压缩器r4也保存每次请求、响应或异常。采集副作用不会擦除已知结算或替换原重试分类。",
+      "limits": [
+        "原生SDK控制的18条是逻辑脚本请求，不是真实HTTP。",
+        "注入磁盘故障的负控制明确保留observer error；该次缺失原件不能被称为完整捕获，负控制通过仅证明结算/重试不受观察错误污染。",
+        "P1全部请求路径的冻结部署绑定尚未完成。"
+      ]
+    },
+    "G0-2-payload-byte-binding": {
+      "status": "passed_in_P0_CPU_control_domain",
+      "evidence_levels": [
+        "CPU_scripted_native_SDK",
+        "retained_actual_payload_bytes"
+      ],
+      "evidence": [
+        "native_SDK_control",
+        "source_coverage"
+      ],
+      "conclusion": "18条正常脚本请求的1,130,839个语义payload字节全部有来源，八类来源均出现，未知字节为0；来源绑定精确请求位置，重复内容按每次出现保留。",
+      "limits": [
+        "字节覆盖不代表供应商输入Token覆盖。",
+        "摘要父来源不被展开计为原文实际呈现。"
+      ]
+    },
+    "G0-2-payload-local-estimate": {
+      "status": "passed_engineering_estimate_threshold_only",
+      "evidence_levels": [
+        "offline_local_tokenizer_estimate"
+      ],
+      "evidence": [
+        "source_coverage",
+        "root_gate"
+      ],
+      "conclusion": "来源片段本地估算的未归因aggregate=0、单请求p95=0，满足工程阈值；本地分片计数是非加性的估算代理。",
+      "limits": [
+        "本地估算不作为API计费Token的精确拆分，不按比例分配供应商usage。"
+      ]
+    },
+    "G0-2-provider-exact": {
+      "status": "not_passed",
+      "evidence_levels": [
+        "historical_real_provider_requests_read_only",
+        "offline_official_recipe_comparison"
+      ],
+      "evidence": [
+        "historical_tokenizer_audit",
+        "root_gate"
+      ],
+      "conclusion": "3条保留的真实历史请求中，API prompt usage比官方recipe本地值分别多47、47、56 Token；尚无供应商兼容的精确归因证据。",
+      "limits": [
+        "未知差额的原因未被单独识别。",
+        "128 Token预约余量只覆盖所查三条样本，不能作为通用修正或精确来源归因证明。",
+        "不能据此宣布协议P0全部准入门通过。"
+      ]
+    },
+    "G0-3": {
+      "status": "passed_in_P0_CPU_control_domain",
+      "evidence_levels": [
+        "CPU_scripted_usage_reconciliation",
+        "CPU_scripted_physical_retry_ledger"
+      ],
+      "evidence": [
+        "usage_reconciliation",
+        "CPU_controls",
+        "compressor_shared_pools"
+      ],
+      "conclusion": "正常SDK脚本账本输入4608、输出450、合计5058；cache作为input子集，不重复相加。物理retry负控制保留失败/未知请求成本或预约；压缩器r4的付费503及重试各结算一次。",
+      "limits": [
+        "5058是脚本usage，不是真实供应商消耗或现金支出。",
+        "正式成本权威应为物理provider ledger；逻辑observer仅为过程摘要，分析子账不得再次加到团队总量。"
+      ]
+    },
+    "G0-4": {
+      "status": "passed_in_P0_controlled_scenarios",
+      "evidence_levels": [
+        "CPU_lifecycle_unit_controls",
+        "CPU_scripted_native_SDK"
+      ],
+      "evidence": [
+        "CPU_controls",
+        "observer_controls",
+        "native_SDK_control"
+      ],
+      "conclusion": "生命周期阶段独立；实际输入呈现使用来源occurrence及payload范围，按需回读保留原消息父来源；presented/retrieved不自动表示理解或行为使用。",
+      "limits": [
+        "r4仅presentations有完整覆盖证明，其余observer channel未声明全局完整。",
+        "legacy lifecycle.presented计数与source_presentations分开，不能把legacy的0解读为本轮没有输入呈现。"
+      ]
+    },
+    "G0-5": {
+      "status": "passed_in_P0_CPU_control_domain",
+      "evidence_levels": [
+        "CPU_unit_controls",
+        "CPU_scripted_native_SDK_with_actual_CPU_public_tests"
+      ],
+      "evidence": [
+        "CPU_controls",
+        "observer_controls"
+      ],
+      "conclusion": "75项统一CPU检查无失败。原生SDK实际执行2次CPU公开测试均未通过，独立review accept仍为1；保存2份报告，按每请求实际反馈摘录记录9次呈现。嵌套session、重复journal、零测试、异常闭合均有控制。",
+      "limits": [
+        "9次呈现不等于9次测试，也不保证完整测试日志可见。",
+        "这些是执行/观察契约控制，不是模型能力、题目正确率或实验效果结果。"
+      ]
+    },
+    "G0-6": {
+      "status": "passed_in_P0_controlled_scenarios",
+      "evidence_levels": [
+        "static_version_and_ACL_implementation",
+        "CPU_version_and_permission_controls"
+      ],
+      "evidence": [
+        "CPU_controls",
+        "native_SDK_control",
+        "reviewed_implementation"
+      ],
+      "conclusion": "旧accept不会继承到新候选；版本关联实际publication中的source_reference、files_sha256、entry_metadata_sha256及其描述符digest。接收者与压缩器只从合法已发布对象取材，越权pull控制被拒绝。",
+      "limits": [
+        "metadata叶子hash、已发布消息content hash与代码版本描述符digest是不同身份，不相互冒充。",
+        "实际P1运行、评分入口与最终源码冻结仍待单独部署绑定。"
+      ]
+    },
+    "G0-7": {
+      "status": "passed_recording_contract_in_P0",
+      "evidence_levels": [
+        "CPU_response_capture_controls",
+        "historical_real_response_metadata_read_only"
+      ],
+      "evidence": [
+        "CPU_controls",
+        "compressor_final_attempt_receipts",
+        "historical_tokenizer_audit"
+      ],
+      "conclusion": "响应中的model/fingerprint可用则记录，不可用则明确unavailable；压缩器有独立响应原件及元数据。",
+      "limits": [
+        "脚本返回model/fingerprint不能证明真实供应商权重身份。",
+        "不声明严格权重冻结。"
+      ]
+    },
+    "G0-8": {
+      "status": "passed_in_P0_controlled_scenarios",
+      "evidence_levels": [
+        "CPU_physical_identity_controls",
+        "CPU_recovery_and_replay_controls"
+      ],
+      "evidence": [
+        "CPU_controls",
+        "compressor_final_attempt_receipts",
+        "native_SDK_control"
+      ],
+      "conclusion": "物理请求身份与重试序号分离；压缩器attempt_id已使用完整physical request ID。重放不再次dispatch，重复结算不重复计费，恢复保留partial/unknown与未知预约。",
+      "limits": [
+        "未执行72个P1团队回合，不据此声称正式实验分母已得到实测验证。"
+      ]
+    }
+  },
+  "mechanism_review": {
+    "C0": "原始消息与合法引用，CPU控制证明不调用压缩器。",
+    "C1": "通用字段的模型选择式抽取摘要；仅CPU脚本验证。",
+    "C2": "接收者角色与字段顺序不同的L0/L1，L2/L3使用各组相同pull schema/ACL。",
+    "compressor_contract": "非自主成员、无工具；固定temperature=0.2/top_p=1/max_tokens=512；选择确切fact ID，关键/失败/unknown不静默遗漏，失效回退raw并保留所有压缩费用。",
+    "raw_fallback_cost_and_retry_controls": "r4含成功、付费schema fallback、付费503重试与dispatch后磁盘采集失败；已知usage仍结算，原异常重试分类保留。",
+    "empirical_compression_or_quality_benefit_established": false,
+    "P1_native_communication_budget_scorer_binding_complete": false
+  },
+  "analytic_subaccount_scope": {
+    "team_total_authority": "physical provider ledger only",
+    "available_estimates": {
+      "known_direct_peer_and_message_pull_fragment_tokens_estimate": 578,
+      "retrieved_fragment_tokens_estimate": 117,
+      "repeated_source_fragment_tokens_estimate": 212921,
+      "sender_send_message_body_tokens_estimate": 17,
+      "peer_origin_inside_mixed_summaries_or_composite_code": "unidentified_not_proportionally_allocated",
+      "duplicate_measure": "episode+consumer+source_or_exact_file_material+literal_fragment_hash",
+      "duplicate_is_automatically_waste": false
+    },
+    "source_identity_scope": "episode + consumer + immutable source/material identity；已补episode namespace及read_work_event原消息父来源。",
+    "full_peer_attribution_of_mixed_summaries_and_composite_code_established": false,
+    "local_estimates_are_exact_API_decomposition": false
+  },
+  "resolved_findings": [
+    {
+      "finding": "r2/r3来源及呈现派生口径缺口",
+      "resolution": "最终r4所有正常请求含condenser均零未知来源字节；测试报告呈现与原tool identity绑定。"
+    },
+    {
+      "finding": "Artifact叶子内容hash误作版本证据的风险",
+      "resolution": "新增真实publication版本描述符绑定，明确metadata/content hash与代码版本hash区别。"
+    },
+    {
+      "finding": "peer消息回读来源血缘与跨episode source_id冲突",
+      "resolution": "新增episode namespace、原作者及原消息parent source。复合摘要/代码peer净细分仍明确未知。"
+    },
+    {
+      "finding": "压缩器请求/响应原件缺口",
+      "resolution": "新增独立audited compressor transport，最终r4原件可追溯，wrapper不另记预算。"
+    },
+    {
+      "finding": "压缩器attempt_id重复与观察写错误干扰结算/重试",
+      "resolution": "完整physical attempt ID；dispatch后采集错误隔离，故障控制保留已知结算及原重试行为。"
+    }
+  ],
+  "remaining_before_P1": [
+    {
+      "item": "供应商兼容的精确来源归因",
+      "status": "未通过；或由用户明确修订原协议精确准入条件，当前无该修订授权。"
+    },
+    {
+      "item": "P1原生通信、共享预算与评分部署冻结绑定",
+      "status": "未完成。"
+    },
+    {
+      "item": "P1新现金预算和单独启动确认",
+      "status": "均未授权。"
+    }
+  ],
+  "panel_boundary": {
+    "approved_public_panel": true,
+    "tasks": 24,
+    "repositories": 12,
+    "Flask_tasks": 1,
+    "Requests_tasks": 3,
+    "other_repositories_tasks_each": 2,
+    "all_500_Verified_tasks_previously_exposed": true,
+    "classification": "已暴露开发性pilot，不是独立确认",
+    "panel_approval_is_P1_launch_approval": false
+  },
+  "root_gate_agreement": {
+    "agrees_with_not_admitted_decision": true,
+    "root_true_gates_interpreted_only_within_evidence_domain": true,
+    "logical_scripted_18_request_reconciliation_is_not_real_HTTP_execution": true
+  },
+  "references": {
+    "root_gate": {
+      "path": "artifacts/software-benchmark-v156/p0-admission-r1/summary.json",
+      "sha256": "3f2ff583f83381283c37d458e0d852c567d3e7cc1b9b183729acd0ad32b7302b",
+      "bytes": 5522
+    },
+    "source_coverage": {
+      "path": "artifacts/software-benchmark-v156/p0-admission-r1/source-coverage.json",
+      "sha256": "2d5c10394af3c54d6169f86ab4f06fa3e201ae1e66be518bdb7d75d49f01ed3c",
+      "bytes": 8992331
+    },
+    "usage_reconciliation": {
+      "path": "artifacts/software-benchmark-v156/p0-admission-r1/usage-reconciliation.json",
+      "sha256": "cc53f289714b3c8087d5fec268f278a3f85c07fbd4597ef916767ccc0d4fd61b",
+      "bytes": 1615
+    },
+    "CPU_controls": {
+      "path": "artifacts/software-benchmark-v156/p0-cpu-controls-r1/junit.xml",
+      "sha256": "6df5c5f89bda0277298a62907c907c34e413ca799f2f9d979782be4dc2904341",
+      "bytes": 11586
+    },
+    "native_SDK_control": {
+      "path": "artifacts/software-benchmark-v156/observer-sdk-r4/summary.json",
+      "sha256": "33d7389c1894e78017853849f1cdc5915cd19c107c8ff8a4664e5892e4439fdf",
+      "bytes": 54942
+    },
+    "observer_controls": {
+      "path": "artifacts/software-benchmark-v156/observer-controls-r1/summary.json",
+      "sha256": "a1b5557194742baa1c4e4e5ec6a96f6e1e2acefc0b439c8eb3b208e05284ac7c",
+      "bytes": 6565
+    },
+    "historical_tokenizer_audit": {
+      "path": "artifacts/software-benchmark-v156/tokenizer-audit-r1/summary.json",
+      "sha256": "e44b7e762c66382168320d9e1bb3ce305aa8ba4d73b130371b0e61a2765c73fd",
+      "bytes": 8553
+    },
+    "approved_panel": {
+      "path": "artifacts/software-benchmark-v156/communication-design-r1/approved-panel.json",
+      "sha256": "6461a484cd525476a6f572670d206eef870191458992bf6ff959e08ce6556f81",
+      "bytes": 151818
+    },
+    "sampling_authorization": {
+      "path": "artifacts/software-benchmark-v156/communication-design-r1/user-panel-decision.json",
+      "sha256": "6b3d52f37bc2e5fdc285753b86388c153b05b63c77e7262d01d140a7df5f36e9",
+      "bytes": 663
+    },
+    "condenser_repair": {
+      "path": "artifacts/software-benchmark-v156/condenser-source-repair-r1/summary.json",
+      "sha256": "f40c66a1efee5f7db8816042a10a8c4b6e093e93e675704997c150bca49c8e11",
+      "bytes": 6260
+    },
+    "compressor_final_attempt_receipts": [
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_503_retry_keeps_each_attempt_exception_response_and_single_budget_charge/retry/390f956dc406b41e01cc35260df463968787fd2dbf44258051e1d5de8eb365e3/receipt.json",
+        "sha256": "f40ff0ba4089ef39b8007be9835af7017c1f52410a0194d33c2844cdd4890964",
+        "bytes": 2914
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_503_retry_keeps_each_attempt_exception_response_and_single_budget_charge/retry/9cda5f057fba95128d258836035d479be03deac904d24b71e1e8c09b38255a28/receipt.json",
+        "sha256": "ebe07f5e543cabd240d8b2835ebdecb1829023edd500bc250ef1abc99cfc7a31",
+        "bytes": 2918
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_observer_disk_failure_does_not_erase_paid_usage_or_replace_retry/observer-failure/0a76bb2e8c6c761bd856e93482d49114325c9e663c19bb4300a8005d8cabfa6a/receipt.json",
+        "sha256": "80a66c389012f8c3b739c936cd4a203b11b8730c5e46d30af65b69330115ea64",
+        "bytes": 2758
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_observer_disk_failure_does_not_erase_paid_usage_or_replace_retry/observer-failure/9db5b9e1e73429e99930279aced067959435f2daa2f0957c3a31265b6df45201/receipt.json",
+        "sha256": "aedf83a5dd0de7a7c3be63dc96c9485f725d302e5cbe7d674509ddcdde366d93",
+        "bytes": 2753
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_success_and_paid_schema_fallback_have_exact_provenance_and_usage/schema-fallback/a635846cc9a764794256363ac12572bd22c9ae5b7afe0d54471d63a4dd7be575/receipt.json",
+        "sha256": "3c96ed58f6935f9a8fc8255cea553738d5692f2cd9ed2432b6cef27cc89a7da4",
+        "bytes": 2942
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_success_and_paid_schema_fallback_have_exact_provenance_and_usage/success/3ad1d79131bb72f312742c0adb986accb54fdac81479cefab00e0272a4490866/receipt.json",
+        "sha256": "affbe4b0343905b4718a29e1d72cab06c70da310bdbae805c85e1093aaf00ae9",
+        "bytes": 2878
+      }
+    ],
+    "compressor_shared_pools": [
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_503_retry_keeps_each_attempt_exception_response_and_single_budget_charge/pool/pool.json",
+        "sha256": "d4a963cda328e7e860bd05d790cd60a4a180a7ee4ca2bd1bf95e6e166e39ec38",
+        "bytes": 2183
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_observer_disk_failure_does_not_erase_paid_usage_or_replace_retry/pool/pool.json",
+        "sha256": "c62ef2b41284128d469c607f5d20588fdb76dca28c6ef8ae1468acedd952ff72",
+        "bytes": 2203
+      },
+      {
+        "path": "artifacts/software-benchmark-v156/compressor-capture-controls-r4/test_success_and_paid_schema_fallback_have_exact_provenance_and_usage/pool/pool.json",
+        "sha256": "8ef88553809f0c00ea8370dfdeff1fc9c1a2c15744a6cbf6316b5b077d7e8650",
+        "bytes": 2189
+      }
+    ],
+    "reviewed_implementation": [
+      {
+        "path": "src/proworksim/software_input_provenance_v156.py",
+        "sha256": "bf54030f081538a5f8a224002c71f6d626c1290e78e88865de8d6ced71b3f036",
+        "bytes": 42800
+      },
+      {
+        "path": "src/proworksim/software_benchmark_host_api_v156.py",
+        "sha256": "60e75576f113d5876579488d6fafd20c57ee1b854f2dd3ce5975284621a49db7",
+        "bytes": 14968
+      },
+      {
+        "path": "src/proworksim/software_sdk_input_sources_v156.py",
+        "sha256": "e690dbdf7b5b14ac66d2600e184fc23226faa81ce8ece5ce585ff29017176547",
+        "bytes": 22322
+      },
+      {
+        "path": "src/proworksim/software_condenser_input_sources_v156.py",
+        "sha256": "d1eb1421304da5ea28273384514ce7045bfc1b5107a8eb570cee9011fb8de7b7",
+        "bytes": 13538
+      },
+      {
+        "path": "src/proworksim/software_collaboration_observation_v156.py",
+        "sha256": "a885a53d859c9881bb771f0a7dabd5c8178f60c628a80eb4d4b0061dfca53d04",
+        "bytes": 22702
+      },
+      {
+        "path": "src/proworksim/software_collaboration_runtime_observer_v156.py",
+        "sha256": "1173bf0d9bb9a452a00a8db69d622f44b0686852cd51e3cf5eaf2a5d487fa3cc",
+        "bytes": 27007
+      },
+      {
+        "path": "src/proworksim/software_role_baseline_runtime_v156.py",
+        "sha256": "cc7eeec10cbf78014f3cbb35173626f8096cc75a41f139c98e9af3ec9aa43d5c",
+        "bytes": 12367
+      },
+      {
+        "path": "src/proworksim/software_communication_runtime_v156.py",
+        "sha256": "4094f495e1ff856865bb942ccb645c39045ef46fab11146cd27d21fe2b3d863b",
+        "bytes": 16416
+      },
+      {
+        "path": "src/proworksim/software_communication_pilot_v156.py",
+        "sha256": "7a9e32bed55b4643a73a4054593413a64e59984b1b66e2df7b2218d973e633e1",
+        "bytes": 24547
+      },
+      {
+        "path": "src/proworksim/software_compressor_capture_v156.py",
+        "sha256": "1fdac767e5ae9e8947007676b0d8d1643342baf8248cfc8b889cd128e6774448",
+        "bytes": 12219
+      }
+    ]
+  },
+  "historical_failed_controls_preserved": [
+    "observer-sdk-r2",
+    "observer-sdk-r3",
+    "compressor-capture-controls-r2",
+    "compressor-capture-controls-r3"
+  ],
+  "reviewer_side_effects": {
+    "new_model_calls": 0,
+    "new_API_calls": 0,
+    "Docker_operations": 0,
+    "GPU_operations": 0,
+    "training_steps": 0,
+    "test_reruns": 0,
+    "git_operations": 0,
+    "implementation_changes": 0
+  }
+}

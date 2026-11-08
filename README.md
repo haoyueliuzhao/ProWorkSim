@@ -1,5 +1,7 @@
 # ProWorkSim
 
+> 通信机制验证进度（2026-11-08）：[P0工程与准入报告](docs/experiments/software-benchmark-v156-p0-admission-report.md)及[审计修订协议](docs/experiments/software-benchmark-v156-communication-pilot-protocol.md)。零模型控制已完成；供应商精确token来源门未通过，72回合P1尚未启动。24题已按用户选择冻结。
+
 > 最新实验报告（2026-11-08）：[40题S1／FREE2／REVIEW2最终对照](docs/experiments/software-benchmark-v155-role-pilot-final-report.md)，包含恢复后的完整结果、实际token消耗、同题配对、协作与系统问题，以及全部尝试的费用。
 
 > 当前资源策略（2026-11-08）：后续不再进行训练，已清理废弃训练数据及四个本地模型的权重；本地模型暂不可加载，不自动重新下载。历史评测结果、报告、分词器和 API 评测／评分依赖保留。详见[清理记录](docs/operations/training-and-local-model-retirement-20261108.md)。以下带日期的运行状态均为历史记录，不代表当前任务仍在使用 GPU。
