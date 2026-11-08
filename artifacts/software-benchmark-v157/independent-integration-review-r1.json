@@ -1,0 +1,353 @@
+{
+  "version": "v157-independent-integration-review-r1",
+  "reviewed_at_utc": "2026-11-08T05:45:31.035695+00:00",
+  "reviewer": "/root/communication_runtime_v157",
+  "scope": "Independent read-only review of deployment/coordinator/FIFO/host episode/formal closure/scoring seams; not a repetition of this agent's runtime implementation tests.",
+  "passed": true,
+  "code_integration_review_passed": true,
+  "all_original_blocking_findings_resolved_in_current_source": true,
+  "blocking_findings": [
+    {
+      "id": "integration-01",
+      "severity_at_discovery": "blocking",
+      "title": "Frozen C1-first queue collided with C0-first admission rotation",
+      "original_failure": "Coordinator selected smallest logical_index, whose actual first group is C1; FairAdmission demanded C0 and returned False. Coordinator then broke admission without changing rotation, leaving all teams unstarted.",
+      "prior_read_only_reproduction": {
+        "first_frozen_group": "C1",
+        "first_logical_index": 0,
+        "try_enter": false,
+        "active": {},
+        "rotation": 0,
+        "real_model_calls": 0
+      },
+      "status": "resolved_in_current_source",
+      "fix": "Admission no longer selects a competing group rotation; the coordinator owns frozen ordering while resource, startup and per-group capacity constraints remain.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_group_admission_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_group_admission_v157.py",
+          "line": 168,
+          "sha256": "3bc7c7b6dd2d1c3755bab6c268ecccc0e9107249d31ed2ab8387b6bc4b938c42",
+          "bytes": 10585,
+          "matched_source_anchor": "            # The coordinator already chooses the smallest frozen logical_index."
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 343,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "            row=min(heads,key=lambda r:r['logical_index']);group=row['group_id']"
+        }
+      ]
+    },
+    {
+      "id": "integration-02",
+      "severity_at_discovery": "blocking",
+      "title": "Controller rejected retained compressor-unknown usage after valid runtime closure",
+      "original_failure": "The legacy end check rejected complete_actual_tokens=None or any uncertain_reserved_tokens, undoing the new auxiliary-service fallback and preventing export.",
+      "status": "resolved_in_current_source",
+      "fix": "Controller uses the same bounded auxiliary-unknown admission rule and explicitly records incomplete actual usage plus retained reservations; agent/condenser uncertainty and integrity faults remain rejected.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_controller_v157.py",
+          "relative_path": "tools/run_communication_controller_v157.py",
+          "line": 341,
+          "sha256": "46fe7e74a1c980ac18c52c291557146d78950d324be9d66460dbfa934646d7e2",
+          "bytes": 20914,
+          "matched_source_anchor": "            from proworksim.software_communication_finish_v157 import require_known_usage"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_communication_finish_v157.py",
+          "relative_path": "src/proworksim/software_communication_finish_v157.py",
+          "line": 18,
+          "sha256": "5f62145467b61123f665a0aa08c0826adfdc31604133e72bae5e92fb5b9fb307",
+          "bytes": 6940,
+          "matched_source_anchor": "def require_known_usage(snapshot):"
+        }
+      ]
+    },
+    {
+      "id": "integration-03",
+      "severity_at_discovery": "blocking",
+      "title": "Formal candidate export used legacy observer-finalization callback",
+      "original_failure": "v141 lock_fixed_candidates called the v156 observer without completion_status, closing it permanently as unknown and losing normal presentation-coverage proof even for normal episodes.",
+      "status": "resolved_in_current_source",
+      "fix": "Formal export now calls v157 lock_fixed_candidates, which retains the v156 observed lock that suppresses premature old finalization then records explicit normal closure with actual request-source proof.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_project_closure_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_project_closure_v157.py",
+          "line": 115,
+          "sha256": "1ab37fe412f6aad7189504e395c5dd49b430293eaf05092886a1731967192242",
+          "bytes": 12157,
+          "matched_source_anchor": "    from .software_role_baseline_runtime_v157 import lock_fixed_candidates"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_role_baseline_runtime_v157.py",
+          "relative_path": "src/proworksim/software_role_baseline_runtime_v157.py",
+          "line": 25,
+          "sha256": "c38e7e424600049f343bd5a71c8eb9442ee1639676d18df849500c205dd27aa0",
+          "bytes": 7602,
+          "matched_source_anchor": "lock_fixed_candidates = observed.lock_fixed_candidates"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_role_baseline_runtime_v156.py",
+          "relative_path": "src/proworksim/software_role_baseline_runtime_v156.py",
+          "line": 215,
+          "sha256": "cc7eeec10cbf78014f3cbb35173626f8096cc75a41f139c98e9af3ec9aa43d5c",
+          "bytes": 12367,
+          "matched_source_anchor": "def lock_fixed_candidates(prepared, folder, *, sdk_closed, coverage_evidence=None):"
+        }
+      ]
+    },
+    {
+      "id": "integration-04",
+      "severity_at_discovery": "blocking",
+      "title": "Formal coordinator replayed already consumed preparation diagnostics and environment controls",
+      "original_failure": "Formal run unconditionally entered the same three diagnostic pairs and fresh Requests control identities after pre-dispatch qualification had already consumed them. A follow-up repair initially passed the environment wrapper instead of its task-keyed qualifications map, which would defer every task.",
+      "status": "resolved_in_current_source",
+      "fix": "Formal run only validates retained real diagnostic and environment proofs, does not create those objects again, verifies passed, extracts environment_preparation[qualifications], and retains the wrapper as a separate reuse receipt.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 580,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "        from proworksim.software_benchmark_diagnostics_v157 import validate_preparation"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 587,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "        qualifications = environment_preparation['qualifications']"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_diagnostics_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_diagnostics_v157.py",
+          "line": 7,
+          "sha256": "46f1d244c3afc8a281b270c7a2090eb1c1cac488f2547216fb5b70412b71ddf9",
+          "bytes": 1716,
+          "matched_source_anchor": "def validate_preparation():"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_grading_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_grading_v157.py",
+          "line": 167,
+          "sha256": "18396f3778d6a455f124ea371af801e10495e4b88b106ac04fe8c6fc4d69515e",
+          "bytes": 13596,
+          "matched_source_anchor": "def validate_environment_preparation():"
+        }
+      ]
+    },
+    {
+      "id": "integration-05",
+      "severity_at_discovery": "blocking",
+      "title": "Host final-usage validator mixed logical calls with physical attempts",
+      "discovery_attribution": "Deployment agent confirmed while resolving the independent controller-closure finding; independently read and confirmed the new host binding in this review.",
+      "original_failure": "Inherited v066 validation required len(logical calls)==physical attempts and zero unknown reservations, rejecting otherwise valid bounded retries or retained compressor uncertainty.",
+      "status": "resolved_in_current_source",
+      "fix": "Host episode now invokes the v157 validator against exact physical SQLite records, checks unique physical identities, known tokens and retained auxiliary holds, and does not substitute logical-call list length for physical attempts.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_episode_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_episode_v157.py",
+          "line": 145,
+          "sha256": "7cd0d576b5d28c0b4143323627737a3d22dd38c4d4ac1cf302fadc6db0156981",
+          "bytes": 9770,
+          "matched_source_anchor": "    from .software_benchmark_closed_usage_v157 import validate_closed_usage"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_closed_usage_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_closed_usage_v157.py",
+          "line": 5,
+          "sha256": "eeccdd5297364c3d6d775734cb1b9909f9128271bde22c59d10ecd4b378ba09e",
+          "bytes": 2426,
+          "matched_source_anchor": "def validate_usage(ledger,limits,physical):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_closed_usage_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_closed_usage_v157.py",
+          "line": 27,
+          "sha256": "eeccdd5297364c3d6d775734cb1b9909f9128271bde22c59d10ecd4b378ba09e",
+          "bytes": 2426,
+          "matched_source_anchor": "def validate_closed_usage(ledger,limits):"
+        }
+      ]
+    }
+  ],
+  "remaining_source_blockers_observed": [],
+  "reviewed_nonblocking_or_excluded_hypotheses": [
+    {
+      "topic": "controller_candidate_lock/project_candidate_lock alias",
+      "finding": "Not a new missing-key blocker: v132 normalize_project_closure explicitly adds and verifies the alias before host relocation.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_episode_v132.py",
+          "relative_path": "src/proworksim/software_benchmark_episode_v132.py",
+          "line": 22,
+          "sha256": "6c697117783f7187f629a3e79e20e7ea725a67f16339bf3959efe8ca68c00a01",
+          "bytes": 9533,
+          "matched_source_anchor": "def normalize_project_closure(value):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_episode_v132.py",
+          "relative_path": "src/proworksim/software_benchmark_episode_v132.py",
+          "line": 83,
+          "sha256": "6c697117783f7187f629a3e79e20e7ea725a67f16339bf3959efe8ca68c00a01",
+          "bytes": 9533,
+          "matched_source_anchor": "                call.func.id = \"normalize_project_closure\""
+        }
+      ]
+    },
+    {
+      "topic": "v156 prepared slots versus v157 actual slots and cash authority",
+      "finding": "Actual host api_for passes execution_plan_ref. API binds actual rows back to source_preparation_slot_id and frozen condition/task/seed/wave; the 500-CNY authority includes the execution-plan hash.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_host_api_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_host_api_v157.py",
+          "line": 45,
+          "sha256": "637b312ad2e6304d5c7fcf29242a2f15130879a406b87a925cb498e642dd2509",
+          "bytes": 20152,
+          "matched_source_anchor": "def api_for(group):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_host_api_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_host_api_v157.py",
+          "line": 51,
+          "sha256": "637b312ad2e6304d5c7fcf29242a2f15130879a406b87a925cb498e642dd2509",
+          "bytes": 20152,
+          "matched_source_anchor": "def initialize_authority():"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_deepseek_api_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_deepseek_api_v157.py",
+          "line": 255,
+          "sha256": "b52de0b2b21084488317a6a16d4a3781a285512e1882cfefb44d63071abd2b37",
+          "bytes": 37011,
+          "matched_source_anchor": "def group_api(group_id, ledger_path, *, max_concurrency, panel_ref, cash_authority_ref, execution_plan_ref=None):"
+        }
+      ]
+    },
+    {
+      "topic": "FIFO auxiliary uncertainty",
+      "finding": "Host transport-error subclasses cross IPC as the same key-free APIUncertainFailure taxonomy, retaining before_dispatch_proven=false; no added model retry is made by the controller.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_model_fifo_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_model_fifo_v157.py",
+          "line": 299,
+          "sha256": "f8debb1749e8d252702f8e9fa339efc13ae1e9ae5b3d90291b8452251564b12d",
+          "bytes": 19741,
+          "matched_source_anchor": "def provider_failure(error):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_model_fifo_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_model_fifo_v157.py",
+          "line": 312,
+          "sha256": "f8debb1749e8d252702f8e9fa339efc13ae1e9ae5b3d90291b8452251564b12d",
+          "bytes": 19741,
+          "matched_source_anchor": "def raise_provider_failure(value):"
+        }
+      ]
+    },
+    {
+      "topic": "Generation and scoring separation plus condition identity",
+      "finding": "Generation, candidate preparation and scoring use separate pools/queues; official endpoints bind request/candidate identity. C0/C1/C2 are distinct group IDs while organization stays REVIEW2.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 417,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "    def execute(self):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 51,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "def official_endpoint(request_ref, completion, *, cleanup_proven):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_benchmark_grading_v157.py",
+          "relative_path": "src/proworksim/software_benchmark_grading_v157.py",
+          "line": 105,
+          "sha256": "18396f3778d6a455f124ea371af801e10495e4b88b106ac04fe8c6fc4d69515e",
+          "bytes": 13596,
+          "matched_source_anchor": "    def planned(request):"
+        }
+      ]
+    },
+    {
+      "topic": "First-wave integrity gate and exception inventory",
+      "finding": "Wave advance waits for drained first-wave work and reads physical usage/source/observer integrity without scores. Task exceptions and technical scoring outcomes retain original task identity; no original model attempt is silently replayed.",
+      "source_locations": [
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 297,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "    def _advance_wave(self):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/advance_communication_wave_v157.py",
+          "relative_path": "tools/advance_communication_wave_v157.py",
+          "line": 14,
+          "sha256": "b7831f22c55921bf012adad386e69e8816d54d6b83c27aef943a31d2d8a07da0",
+          "bytes": 5300,
+          "matched_source_anchor": "def build_gate(coordinator):"
+        },
+        {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_communication_pilot_v157.py",
+          "relative_path": "tools/run_communication_pilot_v157.py",
+          "line": 243,
+          "sha256": "5f26cff54b199816471ad59a8afafffe810d8ff1f482b48337de32b163acb5c2",
+          "bytes": 36255,
+          "matched_source_anchor": "    def _record_exception(self, stage, row, error):"
+        }
+      ]
+    }
+  ],
+  "panel_evidence": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v156/communication-design-r1/approved-panel.json",
+    "sha256": "6461a484cd525476a6f572670d206eef870191458992bf6ff959e08ce6556f81",
+    "bytes": 151818
+  },
+  "actual_plan_evidence": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v157/communication-pilot24-r1/execution-plan-r2.json",
+    "sha256": "9468814d6d925c757f6f6fa4d5b54a5d6f6f7a7ebdf2bc712e27949f41fe2353",
+    "bytes": 407967
+  },
+  "actual_diagnostics": {
+    "status": "pending_independent_root_gate_confirmation",
+    "required_real_zero_model_pairs": 3,
+    "completed_claimed_by_this_review": false,
+    "required_before_formal_dispatch": true,
+    "validation_entry": "proworksim.software_benchmark_diagnostics_v157.validate_preparation",
+    "must_not_be_replaced_by_this_source_review": true
+  },
+  "formal_dispatch_decision": "Reserved for root final admission after real diagnostic evidence and independent environment qualification checks.",
+  "limitations": [
+    "This is a source integration review, not a claim that actual three Docker diagnostics have completed.",
+    "No new model, Docker, scoring or prior test suite was run while producing this evidence.",
+    "The first-wave audit and exception queues are code-reviewed here; their full live behavior remains to be observed in the authorized pilot."
+  ],
+  "actions_for_this_evidence_pass": {
+    "source_reads": true,
+    "only_written_file": "artifacts/software-benchmark-v157/independent-integration-review-r1.json",
+    "source_edits": 0,
+    "tests_run": 0,
+    "API_calls": 0,
+    "Docker_operations": 0,
+    "GPU_operations": 0,
+    "root_operations": 0
+  }
+}
