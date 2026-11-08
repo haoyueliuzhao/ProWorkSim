@@ -1,0 +1,235 @@
+{
+  "version": "v155-independent-method-audit-r1",
+  "date_local": "2026-11-08",
+  "timezone": "Asia/Shanghai",
+  "audit_scope": "只读方法与系统问题边界核查；未新增模型、评分、环境控制、服务器检查或训练。主统计由独立统计汇总提供，不重复扫描全部轨迹。",
+  "panel": {
+    "source": "artifacts/software-benchmark-v118/preparation-r1/panel.json",
+    "frozen_panel": "artifacts/software-benchmark-v142/pilot-design-r1/panel.json",
+    "dataset": "SWE-bench Verified",
+    "dataset_revision": "78f471bf655a3137b2e8a75af1501690ec009ec3",
+    "source_pool_distinct_tasks": 50,
+    "source_pool_repositories": 12,
+    "selected_tasks": 40,
+    "planned_conditions": 3,
+    "planned_cells": 120,
+    "source_pool_previously_exposed": true,
+    "independent_confirmation_set": false,
+    "selector_source": "tools/prepare_role_pilot_v142.py",
+    "selection_seed": 20261106141,
+    "condition_order_seed": 20261106142,
+    "selection_rule": "按仓库排序、仓库内题ID排序后固定seed打乱；每仓库先取最多3题，再从随机排序的有剩余题仓库各增1题直到40。单仓库最多4题。",
+    "selector_accepted_fields": [
+      "instance_id",
+      "repo",
+      "base_commit",
+      "problem_statement"
+    ],
+    "selector_reads_prior_scores_or_reference_patch": false,
+    "selection_strata": "仓库；没有单独按缺陷类型标签分层。",
+    "repository_counts": {
+      "sphinx-doc/sphinx": 4,
+      "scikit-learn/scikit-learn": 4,
+      "pydata/xarray": 4,
+      "psf/requests": 4,
+      "mwaskom/seaborn": 2,
+      "sympy/sympy": 4,
+      "astropy/astropy": 4,
+      "matplotlib/matplotlib": 3,
+      "django/django": 3,
+      "pylint-dev/pylint": 3,
+      "pytest-dev/pytest": 4,
+      "pallets/flask": 1
+    },
+    "order_rule": "对同题三组的6种顺序分块打乱，减轻组别总是早/晚运行；并发与时长差异仍可造成时段混杂。",
+    "order_positions_0_1_2": {
+      "S1": [
+        13,
+        14,
+        13
+      ],
+      "FREE2": [
+        14,
+        12,
+        14
+      ],
+      "REVIEW2": [
+        13,
+        14,
+        13
+      ]
+    },
+    "scope_limit": "同一旧开发/校准面板上的配对工程试跑，不是完整500题成绩、独立确认集或有充分检验效力的架构排名。"
+  },
+  "common_solver": {
+    "conditions": {
+      "S1": "单成员受管OpenHands",
+      "FREE2": "2名自主协作者，无预设开发/复核角色门",
+      "REVIEW2": "开发兼交付001 + 独立复核002，合法交付需版本绑定的实际接收、测试及接受证据"
+    },
+    "all_conditions_project_managed": true,
+    "native_REF_in_this_batch": false,
+    "provider_request_model": "deepseek-flash",
+    "thinking": false,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "context_tokens_per_private_member": 131072,
+    "maximum_full_input_tokens_per_request": 98304,
+    "maximum_output_tokens_per_request": 32768,
+    "team_input_plus_output_tokens": 5000000,
+    "team_all_model_attempts": 512,
+    "team_agent_decisions": 512,
+    "team_soft_seconds": 21600,
+    "team_hard_seconds": 23400,
+    "request_timeout_seconds": 1800,
+    "budget_scope": "整个团队共享，包括摘要及通信对应的模型输入输出；增加成员不复制5M预算。上下文上限则针对各成员私有会话，不是团队所有历史合并后的总容量。",
+    "final_self_review": "每成员最多一次，计入共享预算；S1最多1次，双人最多2次。因此可描述同一每成员规则，不能说全团队自检机会完全相等。",
+    "same_core_permissions_and_tests": true,
+    "private_histories": true,
+    "dynamic_membership": false,
+    "code_endpoint": "预先指定member_001最后工作版本，不能best-of挑选未合并同伴版本。",
+    "delivery_endpoint": "最后合法提交，独立于最终代码端点；REVIEW2额外独立复核门为实验处理的一部分。",
+    "provider_seed_sent": false,
+    "provider_seed_determinism_claim": false,
+    "seed_role": "同题三组及独立恢复保留同一本地seed和身份；不代表API确定性输出、相同随机流或权重可复现。",
+    "refs": [
+      "src/proworksim/software_benchmark_alignment_contract_v141.py",
+      "src/proworksim/software_role_baseline_contract_v141.py",
+      "src/proworksim/software_role_baseline_runtime_v141.py",
+      "src/proworksim/software_benchmark_alignment_contract_v146.py"
+    ]
+  },
+  "actual_schedule": {
+    "within_episode": "公平轮转单写者。一次只选择一个未停止/未等待且合资格成员，给予一个原生SDK机会，最多执行一个实际工具/控制动作；之后轮到下一成员。不可执行者跳过，真实新事件可唤醒原会话。",
+    "within_episode_model_requests_simultaneous_max": 1,
+    "cross_episode_generations_initial_max": 16,
+    "cross_episode_generations_recovery_max": 8,
+    "environment_startups_max": 4,
+    "asynchronous_graders_max": 2,
+    "inference_boundary": "双人成员没有获得同题2路同时生成或2倍团队预算；本批不能直接检验成员并行加速或生产团队墙钟收益。",
+    "refs": [
+      "src/proworksim/software_role_baseline_runtime_v141.py:247",
+      "src/proworksim/harness_runtime.py:56",
+      "src/proworksim/staff_runtime.py:142",
+      "docs/experiments/software-benchmark-v143-startup-recovery.md",
+      "docs/experiments/software-benchmark-v146-independent-recovery-plan.md"
+    ]
+  },
+  "provider_identity_evidence": {
+    "original_ledger": "runs/software-benchmark-v142/role-pilot40-r1/ledgers/pilot.sqlite",
+    "original_settled_responses": 7375,
+    "original_response_model": "deepseek-flash",
+    "original_system_fingerprint": "bc19ba97cbe016479903222bb1578db6",
+    "original_errors_missing_response_identity": 21,
+    "recovery_ledger": "runs/software-benchmark-v145/api-recovery-prepared-r1/ledger.sqlite",
+    "recovery_physical_requests": 1772,
+    "recovery_all_settled": true,
+    "recovery_all_attempt_index": 1,
+    "recovery_breaker_events": 0,
+    "recovery_ledger_identity_gap": "新账本和宿主成功收据保留response_id、usage和响应哈希，但未单列response_model/system_fingerprint；本次未全扫恢复轨迹验证整个期间fingerprint。",
+    "recovery_one_verified_example": {
+      "slot_index": 10209,
+      "system_fingerprint": "bc19ba97cbe016479903222bb1578db6",
+      "source": "runs/software-benchmark-v146/api-recovery21-r1/episodes/10209/controller-output/controller-result.json"
+    },
+    "inference_boundary": "同一个商业API alias和已观察fingerprint不能替代可固定、可校验的本地权重版本；没有证据声称供应商换版，也不能证明整个恢复期底层权重绝对不变。"
+  },
+  "recovery_and_fairness": {
+    "initial_formal_run": "v142的零模型启动失败后改为v143；v142没有实际模型调用，120题单/seed/求解合同保持。",
+    "original_first_attempts": 120,
+    "original_normal": 99,
+    "original_technical_unknown": 21,
+    "independent_recovery": "FREE2的11题和REVIEW2的10题以新v146身份、原任务/本地seed/求解合同、独立初态运行。不是原SDK会话续接；保留原失败费用和停止版本。",
+    "selection_for_completed_panel": "原99 + 每个未知槽位最早完整的独立正常恢复21；实际全为attempt1。不是从多次成绩挑最高，不用停止树补评代替正式新回合。",
+    "reserved_second_attempts": 21,
+    "second_attempts_selected": 0,
+    "report_panels_separately": [
+      "原120首次尝试：99正常+21未知",
+      "补齐的120槽位：99原回合+21独立恢复，带来源标签",
+      "恢复21单独结果及旧失败调用开销"
+    ],
+    "cash_cap_history_CNY": [
+      400,
+      450
+    ],
+    "execution_differences": "恢复期采用有限HTTP重试/更清晰异常分类/文件缓存资源门修订，跨题并发从16降为8，并在较晚时段运行；同一模型/采样/角色与团队5M合同保持。",
+    "time_confounding": "原S1最后API在14:21:36结算；21未定请求均于15:02—16:07预约。未知集中在双人组不能单独归因于协作结构。",
+    "scoring_revisions": "Requests1766评分连接idle60→180，随后修正实际TLS构造器绑定；pytest6197补齐本地离线构建依赖。均仅评分侧、锁定候选与官方测试不变、gold/empty真实合格。",
+    "fairness_limit": "后处理修复不向模型反馈、不得挑选补丁，可恢复可信端点；但恢复面板不是三个条件完全同一运行时段/执行层版本的一次同期随机对照。应保留修订及独立恢复标签。",
+    "same_tree_delivery": "代码与合法交付确为同树时复用同一个代码评分，加合法交付证据；不同树才另评分。早期重复评分保留为附加历史，不能择优。",
+    "refs": [
+      "docs/experiments/software-benchmark-v143-startup-recovery.md",
+      "docs/experiments/software-benchmark-v146-independent-recovery-plan.md",
+      "docs/experiments/software-benchmark-v149-closed-export-recovery.md",
+      "docs/experiments/software-benchmark-v150-v151-normal-export-scoring.md",
+      "docs/experiments/software-benchmark-v154-three-score-recovery.md"
+    ]
+  },
+  "system_findings_by_validation_level": [
+    {
+      "finding": "单次API临时错误终止整队并放大损失",
+      "historical_evidence": "7396请求中21未知(11 HTTP500、8 HTTP503、2 ValueError)，0.284%请求级放大为17.5%团队未知。",
+      "validation": "历史账本+真实源码链已证；2 ValueError具体阶段历史证据不足。"
+    },
+    {
+      "finding": "有限HTTP重试、逐物理尝试计费及token预约、滚动冷却",
+      "validation": "23项本地CPU故障注入通过；后续1772实际HTTP全部第一次成功，无真实500/503重试事件，因此真实网络故障恢复成功率尚未实测。"
+    },
+    {
+      "finding": "新版运行身份在最后候选导出被旧v141前缀门拒绝",
+      "validation": "真实正常bounded_work_closed后异常栈与纯补导出已证；21份从原留存状态恢复，无新模型/工具动作。入口CPU校验未覆盖完整导出链，是明确系统测试覆盖缺口。"
+    },
+    {
+      "finding": "Requests1766每连接60秒空闲门过早断开持久连接",
+      "validation": "真实gold/empty及同候选补评合格；原相关连接在新180秒界限下78.74—86.83秒自然EOF。180秒仍是有界缓解，未实现可信完整HTTP分帧证明，不能保证更慢时绝不复发。"
+    },
+    {
+      "finding": "环境声明与Containers.create实际TLS构造器不一致",
+      "validation": "旧真实错误Frozen grading environment changed发生在容器启动/CA/网络前；新实际构造路径CPU控制及gold/empty+2原候选真实评测通过。"
+    },
+    {
+      "finding": "禁网评分环境缺少pytest隔离构建依赖",
+      "validation": "补齐6个本地wheel后官方安装成功、gold通过empty失败；原候选实际启动失败归因已从网络故障区分。"
+    },
+    {
+      "finding": "同树code/delivery重复评分",
+      "validation": "真实重复执行已观察；新只读身份/同树证据复用路径已在实际真/假收据上验证。没有证据声称已观察到重复评分制造的虚假差异。"
+    },
+    {
+      "finding": "管理进程页缓存被当作不可回收工作集阻塞新任务",
+      "validation": "旧两次真实文件缓存抖动/准入停顿已记录；新保守可回收页估计通过CPU正反例且恢复批次正常执行；没有独立因果测速证明此单项提速幅度。"
+    }
+  ],
+  "candidate_10219_boundary": {
+    "group": "REVIEW2",
+    "task": "pytest-dev__pytest-6197",
+    "canonical_state": "candidate_execution_failed",
+    "canonical_resolved": false,
+    "canonical_basis": "validated_candidate_failure",
+    "raw_wrapper_status": "technical_unknown",
+    "raw_wrapper_resolved": null,
+    "raw_official_fields": {
+      "resolved": false,
+      "infra_failure": false,
+      "patch_successfully_applied": false
+    },
+    "actual_proof": "原锁定补丁在修正后的合格环境已实际应用；安装及editable构建成功，pytest启动导入原候选src/_pytest/python.py第1行时因未定义placeholder触发NameError。",
+    "not_equivalent_to_parsed_official_report": true,
+    "no_fabricated_per_test_results": true,
+    "attribution_limit": "后续v155已核对控制器outcome[42]中的member_001工具决定成功写入placeholder，返回版本与文件摘要吻合最终锁定候选，可排除导出器引入该内容；模型为何选择覆盖、是否计划后续补写仍未知，不能从一个错误推断总体推理能力。",
+    "source": "artifacts/software-benchmark-v154/final-assessments-r1/pytest6197-candidate-failure-proof.json",
+    "overlay": "runs/software-benchmark-v154/three-score-recovery-r1/canonical-overlay.json",
+    "initial_attribution_limit_before_controller_provenance": "证明留存候选无法执行，不能仅据此认定模型主动写placeholder、推理能力差，或排除工具/导出环节贡献；未进行该额外轨迹归因。",
+    "later_controller_provenance": {
+      "path": "artifacts/software-benchmark-v155/mechanism-analysis-r1/pytest6197-model-write-provenance.json",
+      "sha256": "e1f6daa74253954c372e4cf1cfdc3a34d69592c0187a93073eb2d9c606007650"
+    }
+  },
+  "report_wording_rules": [
+    "三组均是项目受管OpenHands环境：S1为单人基线，FREE2/REVIEW2为两人组织处理，不是本轮REF/PROJECT对照。",
+    "将代码正确率与合法交付率分开；人员增加、私有历史/通信和显式复核的合并效应不能由总差值自动拆成因果百分比。",
+    "选定120回合的平均token与全实验运营成本分开，旧21失败调用/未知预约不能消失；无usage的未定预约不是实际token。",
+    "最终未定0指canonical端点均已判断，仍保留1项validated_candidate_failure以及历史技术未知，不说每项都有普通官方可解析测试报告。",
+    "本次没有训练、角色自改进/通信压缩处理或新能力实验；工程修复通过不等于模型/协作方案优越性已确认。"
+  ]
+}
