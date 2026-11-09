@@ -1,6 +1,6 @@
 # ProWorkSim
 
-> 通信机制验证进度（2026-11-08）：[P0工程与准入报告](docs/experiments/software-benchmark-v156-p0-admission-report.md)及[审计修订协议](docs/experiments/software-benchmark-v156-communication-pilot-protocol.md)。零模型控制已完成；供应商精确token来源门未通过，72回合P1尚未启动。24题已按用户选择冻结。
+> 上下文压缩验证（2026-11-09）：[v175实验报告](docs/experiments/software-benchmark-v175-context-compression-results.md)与[冻结协议](docs/experiments/software-benchmark-v175-context-compression-protocol.md)。已完成216次固定决策点Replay，M1净输入节省34.14%，全部264次API调用结算；这不是新的完整任务正确率。摘要后的原文恢复缺口已另作[v176修复](docs/experiments/software-benchmark-v176-summary-recovery-repair.md)，尚未开启新的完整任务批次。
 
 > 最新实验报告（2026-11-08）：[40题S1／FREE2／REVIEW2最终对照](docs/experiments/software-benchmark-v155-role-pilot-final-report.md)，包含恢复后的完整结果、实际token消耗、同题配对、协作与系统问题，以及全部尝试的费用。
 
