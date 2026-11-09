@@ -1,6 +1,6 @@
 # ProWorkSim
 
-> 上下文压缩验证（2026-11-09）：[v175实验报告](docs/experiments/software-benchmark-v175-context-compression-results.md)与[冻结协议](docs/experiments/software-benchmark-v175-context-compression-protocol.md)。已完成216次固定决策点Replay，M1净输入节省34.14%，全部264次API调用结算；这不是新的完整任务正确率。摘要后的原文恢复缺口已另作[v176修复](docs/experiments/software-benchmark-v176-summary-recovery-repair.md)，尚未开启新的完整任务批次。
+> 最新审计修订（2026-11-09）：[v179真实模型恢复验证](docs/experiments/software-benchmark-v179-recovery-validation-report.md)最终12例通过，三轮开发记录与费用均保留；[v180四条件完整任务协议](docs/experiments/software-benchmark-v180-context-task-pilot-protocol.md)已预选12题及重复子集，共60个预定回合，尚未派发。此前[v175压缩结果](docs/experiments/software-benchmark-v175-context-compression-results.md)保持原数值，M2明确为观察块筛选，单步输入节省不等于完整任务正确率。
 
 > 最新实验报告（2026-11-08）：[40题S1／FREE2／REVIEW2最终对照](docs/experiments/software-benchmark-v155-role-pilot-final-report.md)，包含恢复后的完整结果、实际token消耗、同题配对、协作与系统问题，以及全部尝试的费用。
 

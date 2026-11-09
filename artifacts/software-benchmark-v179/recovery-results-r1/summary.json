@@ -1,0 +1,2416 @@
+{
+  "version": "v179-recovery-three-revision-report-r1",
+  "groups": {
+    "v177": {
+      "planned_cases": 12,
+      "closed_cases": 12,
+      "raw_gate_passed": false,
+      "raw_all_criteria_passes": 4,
+      "fact_fields_requested": 41,
+      "exact_fact_errors": 4,
+      "physical_requests": 40,
+      "actual_input_tokens": 211746,
+      "actual_output_tokens": 7756,
+      "actual_total_tokens": 219502,
+      "cached_input_tokens": 128128,
+      "uncached_input_tokens": 83618,
+      "cost_nanoyuan": 234409120,
+      "peak_tariff_CNY": 0.23440912,
+      "actual_context_reads": 23,
+      "JSON_format_repair_responses": 5,
+      "citation_format_repairs": 0,
+      "wall_seconds": 7.874667160212994,
+      "frozen_sources_unchanged": true,
+      "raw_summary": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/summary.json",
+        "sha256": "4520a1ff5c0efb9d889e50f9477188534cfc62c0489359387fb21fdfd1e188a1",
+        "bytes": 242160
+      }
+    },
+    "v178": {
+      "planned_cases": 12,
+      "closed_cases": 12,
+      "raw_gate_passed": false,
+      "raw_all_criteria_passes": 6,
+      "fact_fields_requested": 42,
+      "exact_fact_errors": 1,
+      "physical_requests": 51,
+      "actual_input_tokens": 292759,
+      "actual_output_tokens": 12619,
+      "actual_total_tokens": 305378,
+      "cached_input_tokens": 201856,
+      "uncached_input_tokens": 90903,
+      "cost_nanoyuan": 290832240,
+      "peak_tariff_CNY": 0.29083224,
+      "actual_context_reads": 31,
+      "JSON_format_repair_responses": 8,
+      "citation_format_repairs": 0,
+      "wall_seconds": 12.293990511447191,
+      "frozen_sources_unchanged": true,
+      "raw_summary": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/summary.json",
+        "sha256": "f140c678d5fbc4ff4f3523772e5f4d67c9a44250cea6206bfdb3d1577f44cbac",
+        "bytes": 274514
+      }
+    },
+    "v179": {
+      "planned_cases": 12,
+      "closed_cases": 12,
+      "raw_gate_passed": true,
+      "raw_all_criteria_passes": 12,
+      "fact_fields_requested": 42,
+      "exact_fact_errors": 0,
+      "physical_requests": 38,
+      "actual_input_tokens": 221061,
+      "actual_output_tokens": 8408,
+      "actual_total_tokens": 229469,
+      "cached_input_tokens": 121088,
+      "uncached_input_tokens": 99973,
+      "cost_nanoyuan": 272053520,
+      "peak_tariff_CNY": 0.27205352,
+      "actual_context_reads": 22,
+      "JSON_format_repair_responses": 3,
+      "citation_format_repairs": 1,
+      "wall_seconds": 10.38420706987381,
+      "frozen_sources_unchanged": true,
+      "raw_summary": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/summary.json",
+        "sha256": "3b33335803fe8b1f96f70b77edc92423b4e2e6abfdb65757988ae052f7a5efd1",
+        "bytes": 321535
+      }
+    }
+  },
+  "rows": [
+    {
+      "version": "v177",
+      "case_id": "r00",
+      "kind": "historical_action",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": false,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 63473,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 24722,
+      "cost_nanoyuan": 25971760,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r00",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "path": "src/_pytest/compat.py",
+          "old": "    mock_modules = [sys.modules.get(\"mock\"), sys.modules.get(\"unittest.mock\")]\n    if any(mock_modules):\n        sentinels = [m.DEFAULT for m in mock_modules if m is not None]\n        return len(\n            [p for p in patchings if not p.attribute_name and p.new in sentinels]\n        )\n    return len(patchings)",
+          "new": "    mock_modules = [sys.modules.get(\"mock\"), sys.modules.get(\"unittest.mock\")]\n    if any(mock_modules):\n        # We iterate through the patched attributes looking for the mock\n        # sentinel DEFAULT.  Identity comparison is used instead of the\n        # ``in`` operator because the latter would call ``__eq__`` on\n        # ``p.new``, which raises (e.g. for numpy arrays) or can produce a\n        # non-boolean result for arbitrary user objects.\n        sentinels = [m.DEFAULT for m in mock_modules if m is not None]\n        return len(\n            [\n                p\n                for p in patchings\n                if not p.attribute_name\n                and any(p.new is sentinel for sentinel in sentinels)\n            ]\n        )\n    return len(patchings)"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:0fafd7fc44225712e952af41",
+            "message_index": 2
+          },
+          {
+            "reference": "ctx:0fafd7fc44225712e952af41",
+            "message_index": 14
+          }
+        ],
+        "next_decision": "use_recorded_version_only",
+        "rationale": "The archive's message_offsets list replace_file tool calls only at messages 14, 23 and 32; message 14 is the earliest. Its raw arguments were read verbatim, giving path, old, and new as recorded. This is historical evidence only; it does not validate the current workspace version or any test result."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r00/result.json",
+        "sha256": "20553a539e991acbfecef0621db4c098398d258dabc6ab9ce1867257511dcc12",
+        "bytes": 23573
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r01",
+      "kind": "rejected_edit",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": true,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 29760,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 4,
+      "actual_tokens": 15942,
+      "cost_nanoyuan": 15923600,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r01",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "rejection_code": "replacement_not_unique",
+          "exact_occurrences": 0,
+          "version_id": "v8",
+          "edit_performed": false
+        },
+        "evidence": [
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3",
+            "message_index": 5
+          },
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3",
+            "message_index": 6
+          }
+        ],
+        "next_decision": "inspect_current_file_before_edit",
+        "rationale": "The earliest replace_file call (message 5, call_00_ZYUJeraCiH7Kxi2Q4qWx0462, action-51, logical_time 51) was rejected with ok=false: ToolRejection code 'replacement_not_unique', exact_occurrences 0 against astropy/units/format/cds.py at version v8, and the tool states 'No occurrence was selected and no edit was made.' The recorded recovery hint was to read the file; the caller-supplied old text (multi-line parsing.yacc with debug=False) did not exist in v8, so a blind retry would fail again. The snapshot notes v9 as a later version (only current at logical_time 59, not server-now and not validated here), so the exact current text is unknown relative to the edit context; reading the file before editing is the recorded-appropriate next step. This is historical evidence only, not current-version validation or task success."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r01/result.json",
+        "sha256": "f26f56148e9bd99cf4d09361ee29bfb23be36ec0996ce916c551eed23552f582",
+        "bytes": 13107
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r02",
+      "kind": "failed_test",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": false,
+      "facts_requested": 6,
+      "exact_fact_errors": [
+        "error_test_node",
+        "exception_type",
+        "passed"
+      ],
+      "assessment": {
+        "passed": false,
+        "facts_correct": false,
+        "fact_error_keys": [
+          "error_test_node",
+          "exception_type",
+          "passed"
+        ],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": true,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 79474,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 18925,
+      "cost_nanoyuan": 25029920,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r02",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "error_test_node": "test_serialize_nested_class_method (migrations.test_writer.WriterTests.test_serialize_nested_class_method)",
+          "exception_type": "AttributeError: type object 'TestModel2' has no attribute '_meta' (raised at tests/migrations/test_writer.py line 565, in `field = TestModel2._meta.get_field(\"capabilities\")`)",
+          "version_id": "v5",
+          "passed": 1,
+          "errors": 1,
+          "failed": 0
+        },
+        "evidence": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 16
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 17
+          }
+        ],
+        "next_decision": "fix_failing_test_before_delivery",
+        "rationale": "Message 16 requested run_tests for migrations.test_writer.WriterTests.test_serialize_nested_class_method and test_serialize_functions; the tool result in message 17 reports ok:true but executed:true, passed:false, source_reference version_id v5, with output 'ERROR: test_serialize_nested_class_method', AttributeError: type object 'TestModel2' has no attribute '_meta', and counts collected=2, passed=1, errors=1, failed=0, exitstatus 1. This archived result is therefore a failing run and cannot be used as a passing basis; the last captured snapshot is v6, so this v5 evidence is historic and does not validate any current version. The test must be fixed before delivery, and per policy public pass would not constitute official acceptance anyway."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r02/result.json",
+        "sha256": "9af91c0329fd9358f797f11aa35583715ccfc99f15077640c4abc62a3fbd6c70",
+        "bytes": 27771
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r03",
+      "kind": "successful_test",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": true,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 133017,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 18466,
+      "cost_nanoyuan": 23840800,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r03",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "passed": true,
+          "passed_count": 256,
+          "version_id": "v2",
+          "files_sha256": "9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1",
+            "message_index": 27
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1",
+            "message_index": 28
+          }
+        ],
+        "next_decision": "public_pass_is_not_official_acceptance",
+        "rationale": "Message 27 is the run_tests call (django: model_forms.tests, forms_tests.tests.test_forms); message 28 holds the tool result: executed=true, passed=true, source_reference version_id v2, files_sha256 9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6, counts passed=256 / tests_run=256 (Ran 256 tests ... OK), collection_complete=true, no errors/failures/skips. The same report states public_verification_is_hidden_acceptance=false, independent_acceptance=\"not_run_by_public_tool\", scope=\"Model-selected public tests only; no hidden evaluator\", so a public pass does not equal official hidden acceptance. These are historical records only, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r03/result.json",
+        "sha256": "e0e85f33b477efd90170d0552ea7b7ebed6aa35b25f41204d838ccae83a152bc",
+        "bytes": 29067
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r04",
+      "kind": "exact_version_hash",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 2,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": false,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 46072,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 13682,
+      "cost_nanoyuan": 15548160,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r04",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "version_id": "v3",
+          "files_sha256": "b85f29dea43bb22f549b6528e7d23ad0162b166f01dfaf29102dde3c8f8d1d04"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:a37dcb13db6bdc56d19c528e",
+            "message_index": 11
+          },
+          {
+            "reference": "ctx:a37dcb13db6bdc56d19c528e",
+            "message_index": 12
+          }
+        ],
+        "next_decision": "recover_action_before_comparing",
+        "rationale": "Read the retained archive via message offsets. Message 11 is the replace_file call on tests/test_domain_py.py; message 12 is its tool result with ok=true, source_reference version_id v3 (object obj-c567f5b9c7d905481548e89b), files_sha256 b85f29dea43bb22f549b6528e7d23ad0162b166f01dfaf29102dde3c8f8d1d04, action_id action-32, logical_time 32. This is the last replace_file success recorded in the archive and supersedes the older v2 hash in the derived summary; the snapshot version v4 is a later snapshot, not this result. No current-version validation was performed."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r04/result.json",
+        "sha256": "7f50d25b911461e3410598aad9c0ee07a55a764ff5846d70801c02788810c89e",
+        "bytes": 9742
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r05",
+      "kind": "historical_path",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": false,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 122847,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 28561,
+      "cost_nanoyuan": 27966560,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r05",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "paths": [
+            "sympy/functions/elementary/tests/test_hyperbolic.py"
+          ],
+          "files_sha256": "0998d9e0799b2ac5f708ab5cb895af73239f0e030aab7d24b471d50d71c5c264",
+          "version_id": "v3"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a",
+            "message_index": 26
+          },
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a",
+            "message_index": 27
+          }
+        ],
+        "next_decision": "report_unknown",
+        "rationale": "Message 26 is the last replace_file call in the retained history: it edited sympy/functions/elementary/tests/test_hyperbolic.py (the test_coth regression test). Its result at message 27 reports operation 'write' with paths array containing exactly that one path (path_count 1), files_sha256 0998d9e0799b2ac5f708ab5cb895af73239f0e030aab7d24b471d50d71c5c264, and source_reference version_id v3. No claim is made about later test runs, the current workspace, or acceptance."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r05/result.json",
+        "sha256": "eff8fc3a3058f734e76b1f017f09c99cc780771a57bc9a76587b0b07f4ad51f3",
+        "bytes": 28644
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r06",
+      "kind": "old_vs_current_version",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": false,
+        "actual_original_messages_cited": false,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": false,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 101627,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 4,
+      "actual_tokens": 25933,
+      "cost_nanoyuan": 23650000,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r06",
+        "status": "recovered",
+        "scope": "snapshot_comparison",
+        "facts": {
+          "test_version": "v5",
+          "current_version": "v6",
+          "test_passed": false,
+          "same_version": false
+        },
+        "evidence": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 17
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 20
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 21
+          }
+        ],
+        "next_decision": "fix_failing_test_before_delivery",
+        "rationale": "The archived run_tests report (message 17) shows the test on source_reference version v5, where executed=true and passed=false: it contains an AttributeError because TestModel2 has no _meta. After that, the test file was edited at message 20, which produced version v6, and the last captured snapshot (message 21, logical_time 25) shows the workspace at v6. No test result for v6 appears in the retained history. Therefore the old failed test ran on v5, not on the current version v6, and it cannot serve as evidence for v6."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r06/result.json",
+        "sha256": "40f4041463c039017d74310b9e32b07f8ba4acffba325328d95d200ac40877b7",
+        "bytes": 25904
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r07",
+      "kind": "collection_environment_state",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": true,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 47607,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 27578,
+      "cost_nanoyuan": 24406800,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r07",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "validation_status": "collection_failed",
+          "collected": 0,
+          "errors": 1,
+          "tests_run": 0
+        },
+        "evidence": [
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60",
+            "message_index": 8
+          },
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60",
+            "message_index": 9
+          }
+        ],
+        "next_decision": "investigate_collection_error",
+        "rationale": "The earliest archived run_tests (message 8, selection kind pytest targeting repro_nominal.py) returned at message 9 with report_id test-report-35e4921f15520bd30fc46a0c: validation_status 'collection_failed', counts collected 0, errors 1, failed 0, passed 0, skipped 0, tests_run 0; session exitstatus 2 with collection_errors 1 and empty test_reports. With collected and tests_run both 0 and one collection error, no test case was actually executed, so the collection error needs to be investigated before any behavioral verification. This is historical evidence from the retained archive, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r07/result.json",
+        "sha256": "8bc07562f0c1bc593c3dab752dc01d607bc7b5fa799af8770a345fb4f9cdb641",
+        "bytes": 23082
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r08",
+      "kind": "deep_indexed_seek",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": false,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 162874,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 9702,
+      "cost_nanoyuan": 12121680,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r08",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "action_id": "action-19",
+          "version_id": "v4",
+          "files_sha256": "1c5aa48885942074cc424bd3a018f101f8e676ff67f45f47a397ba2cfdcde8d4"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:ff847768253431f1d3438ea9",
+            "message_index": 29
+          },
+          {
+            "reference": "ctx:ff847768253431f1d3438ea9",
+            "message_index": 30
+          }
+        ],
+        "next_decision": "recover_action_before_comparing",
+        "rationale": "Message index 29 (offset 162874) is the last replace_file tool result in the archived range (two earlier replace_file results appear at indices 22 and 26); it records action_id action-19, source_reference version_id v4, and files_sha256 1c5aa48885942074cc424bd3a018f101f8e676ff67f45f47a397ba2cfdcde8d4. This is historical evidence only, not current-version or task-success validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r08/result.json",
+        "sha256": "5bd6489517789136bc4b3e804bd9a4376be03a4e33c8c764358cb42d7b88ca4e",
+        "bytes": 13254
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r09",
+      "kind": "zero_tests_not_success",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": true,
+        "expected_unknown_control": false,
+        "index_actually_observed": true,
+        "largest_actual_read_start": 37551,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 29291,
+      "cost_nanoyuan": 27183280,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r09",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "validation_status": "no_tests",
+          "passed": false,
+          "collected": 0,
+          "tests_run": 0
+        },
+        "evidence": [
+          {
+            "reference": "ctx:55da4253abfcd249ccdb78ca",
+            "message_index": 9
+          },
+          {
+            "reference": "ctx:55da4253abfcd249ccdb78ca",
+            "message_index": 10
+          }
+        ],
+        "next_decision": "record_zero_tests_not_pass",
+        "rationale": "Earliest run_tests observed in the retained archive is the keyword-filtered pytest run on test_requests.py (keyword 'content_length or body or headers'); its tool result reports validation_status 'no_tests', passed false, counts collected=0 and tests_run=0 (session exitstatus 5, collection_complete true, empty test_reports). Zero collected tests means 'no failing cases' is merely an artifact of nothing running, so it cannot be counted as a pass, and a public run is not official acceptance."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r09/result.json",
+        "sha256": "7b436dbbefb029445c5d32d86a292c0bd8aa79985222c202ce1cca1c36241705",
+        "bytes": 28000
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r10",
+      "kind": "unknown_test_count",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": false,
+        "scope_correct": true,
+        "decision_correct": false,
+        "expected_unknown_control": true,
+        "index_actually_observed": false,
+        "largest_actual_read_start": 0,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 1,
+      "physical_requests": 2,
+      "actual_tokens": 4656,
+      "cost_nanoyuan": 7988560,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r10",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "validation_status": "failed",
+          "passed": false,
+          "tests_run": null
+        },
+        "evidence": [
+          {
+            "reference": "ctx:0c477941e01d26574986fd2a",
+            "message_index": 9
+          }
+        ],
+        "next_decision": "investigate_collection_error",
+        "rationale": "The archived run_tests observation (version v3, report test-report-26cb6cd241375e3be773c935, logical_time 18) shows executed=true, passed=false, validation_status=\"failed\". However, tests_run is explicitly null in the counts object (collected/passed/failed/errors/skipped/xfailed/xpassed/tests_run all null), and test_evidence reports error \"missing framework start or complete finish report\" with report_count 0 and journal_record_count 0. So the archive does not establish how many test cases actually executed — the count is unknown/null, not zero. The appropriate next step is to investigate the collection/framework-report error rather than treating the result as a run with a known test count."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r10/result.json",
+        "sha256": "d02ebdc09c821804a642bbd53b5286d774aec658ef866876f1c04b5f6f059fc6",
+        "bytes": 5203
+      }
+    },
+    {
+      "version": "v177",
+      "case_id": "r11",
+      "kind": "unobserved_hidden_outcome",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": false,
+      "facts_requested": 1,
+      "exact_fact_errors": [
+        "official_resolved"
+      ],
+      "assessment": {
+        "passed": false,
+        "facts_correct": false,
+        "fact_error_keys": [
+          "official_resolved"
+        ],
+        "actual_original_ranges_read": true,
+        "actual_original_messages_cited": true,
+        "status_correct": true,
+        "scope_correct": true,
+        "decision_correct": true,
+        "expected_unknown_control": true,
+        "index_actually_observed": false,
+        "largest_actual_read_start": 0,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 0,
+      "physical_requests": 1,
+      "actual_tokens": 2044,
+      "cost_nanoyuan": 4778000,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r11",
+        "status": "unknown",
+        "scope": "not_observed",
+        "facts": {
+          "official_resolved": "unknown"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:dc7a03e670dcd94fe60e3fe1",
+            "message_index": 0
+          }
+        ],
+        "next_decision": "report_unknown",
+        "rationale": "The derived summary (and its reference to the full archive) contains no observation of official hidden grading or a final resolved status; only public test runs, a review accept, and a delivery record are mentioned, which cannot establish hidden grading outcomes."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v177/recovery-probe-r1/cases/r11/result.json",
+        "sha256": "afd1604bf0afe665f9668cfed4fa3957a99dca246b028803ddf7e77bd00fbf9b",
+        "bytes": 1313
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r00",
+      "kind": "historical_action",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 63473,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 19982,
+      "cost_nanoyuan": 23550880,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r00",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "path": "src/_pytest/compat.py",
+          "old": "    mock_modules = [sys.modules.get(\"mock\"), sys.modules.get(\"unittest.mock\")]\n    if any(mock_modules):\n        sentinels = [m.DEFAULT for m in mock_modules if m is not None]\n        return len(\n            [p for p in patchings if not p.attribute_name and p.new in sentinels]\n        )\n    return len(patchings)",
+          "new": "    mock_modules = [sys.modules.get(\"mock\"), sys.modules.get(\"unittest.mock\")]\n    if any(mock_modules):\n        # We iterate through the patched attributes looking for the mock\n        # sentinel DEFAULT.  Identity comparison is used instead of the\n        # ``in`` operator because the latter would call ``__eq__`` on\n        # ``p.new``, which raises (e.g. for numpy arrays) or can produce a\n        # non-boolean result for arbitrary user objects.\n        sentinels = [m.DEFAULT for m in mock_modules if m is not None]\n        return len(\n            [\n                p\n                for p in patchings\n                if not p.attribute_name\n                and any(p.new is sentinel for sentinel in sentinels)\n            ]\n        )\n    return len(patchings)"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:0fafd7fc44225712e952af41",
+            "message_index": 14
+          },
+          {
+            "reference": "ctx:0fafd7fc44225712e952af41",
+            "message_index": 15
+          }
+        ],
+        "decision_checks": {
+          "execute_edit_now": false,
+          "new_code_uses_identity_comparison": true
+        },
+        "rationale": "The archive index for ctx:0fafd7fc44225712e952af41 lists replace_file calls at message indices 14, 23, and 32; index 14 is the earliest. Reading its retained text recovered the exact replace_file arguments: path src/_pytest/compat.py, old block containing the containment test `p.new in sentinels`, and new block using identity comparison `any(p.new is sentinel for sentinel in sentinels)` with an explanatory comment. The paired tool result at index 15 confirms the write committed against version v2. No edits were executed; this is read-only historical recovery, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r00/result.json",
+        "sha256": "03a9febddfc062332c72a196c8ffcb37cd2660bbb91cc33424f9c783c005e42d",
+        "bytes": 19444
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r01",
+      "kind": "rejected_edit",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": false,
+        "missing_fact_evidence": [
+          "rejection_code",
+          "exact_occurrences",
+          "version_id"
+        ],
+        "invalid_citations": [
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3 message_index 5 — replace_file call_00_ZYUJeraCiH7Kxi2Q4qWx0462 with old text assuming a multi-line parsing.yacc( block containing debug=False",
+            "message_index": 5
+          },
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3 message_index 6 — ToolRejection: code replacement_not_unique, exact_occurrences 0, source_reference v8, logical_time 51, recovery read_file astropy/units/format/cds.py",
+            "message_index": 6
+          },
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3 message_index 9 — search_file: actual text at line 263 is single-line parsing.yacc(tabmodule=\"cds_parsetab\", package=\"astropy/units\"), total_matches 1, v8",
+            "message_index": 9
+          }
+        ],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 44925,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 5,
+      "actual_tokens": 32525,
+      "cost_nanoyuan": 27951840,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r01",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "edit_performed": false,
+          "exact_occurrences": 0,
+          "rejection_code": "replacement_not_unique",
+          "version_id": "v8"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3 message_index 5 — replace_file call_00_ZYUJeraCiH7Kxi2Q4qWx0462 with old text assuming a multi-line parsing.yacc( block containing debug=False",
+            "message_index": 5
+          },
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3 message_index 6 — ToolRejection: code replacement_not_unique, exact_occurrences 0, source_reference v8, logical_time 51, recovery read_file astropy/units/format/cds.py",
+            "message_index": 6
+          },
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3 message_index 9 — search_file: actual text at line 263 is single-line parsing.yacc(tabmodule=\"cds_parsetab\", package=\"astropy/units\"), total_matches 1, v8",
+            "message_index": 9
+          }
+        ],
+        "decision_checks": {
+          "blind_retry_of_same_edit_is_justified": false,
+          "read_current_file_before_edit": true
+        },
+        "rationale": "The earliest replace_file (call_00_ZYUJeraCiH7Kxi2Q4qWx0462, action-51, logical_time 51) did not succeed and made no edit: rejection code replacement_not_unique with exact_occurrences 0 against workspace version v8. Its old string assumed a multi-line parsing.yacc(... debug=False) form that was never observed in the file; the later search_file at v8 showed line 263 held the single-line call, so the guess was wrong. Retrying the identical edit would fail again; as the rejection itself directed, the recovery is to read the current file and craft the replacement from actual text. The second replace_file (call_00_XcYCrlZiuBdwkZBzURJP8962) is a distinct, differently-constructed edit, and the last snapshot v9 postdates this historical v8 observation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r01/result.json",
+        "sha256": "183a5df079c4398f887de75d4fd1ed645671f7d146088ffc30128aafa29a9f76",
+        "bytes": 21747
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r02",
+      "kind": "failed_test",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 7,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": false,
+        "missing_fact_evidence": [
+          "error_test_node",
+          "exception_type",
+          "version_id",
+          "errors",
+          "failed",
+          "overall_passed",
+          "passed_count"
+        ],
+        "invalid_citations": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210 message 17 (run_tests tool result, report test-report-0ddaeb38145cc7b212a1c79f, source_reference v5)",
+            "message_index": 17
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210 message 16 (run_tests call selecting migrations.test_writer.WriterTests.test_serialize_nested_class_method and test_serialize_functions)",
+            "message_index": 16
+          }
+        ],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 79474,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 19104,
+      "cost_nanoyuan": 24567040,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r02",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "error_test_node": "migrations.test_writer.WriterTests.test_serialize_nested_class_method",
+          "exception_type": "AttributeError",
+          "version_id": "v5",
+          "overall_passed": false,
+          "passed_count": 1,
+          "errors": 1,
+          "failed": 0
+        },
+        "evidence": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210 message 17 (run_tests tool result, report test-report-0ddaeb38145cc7b212a1c79f, source_reference v5)",
+            "message_index": 17
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210 message 16 (run_tests call selecting migrations.test_writer.WriterTests.test_serialize_nested_class_method and test_serialize_functions)",
+            "message_index": 16
+          }
+        ],
+        "decision_checks": {
+          "archived_public_run_passed": false,
+          "fix_or_investigate_test_error_before_delivery": true
+        },
+        "rationale": "The archived run_tests observation (message 17) on version v5 shows executed=true, passed=false for the whole round, with collected=2, errors=1, failed=0, passed=1. The erroring node is migrations.test_writer.WriterTests.test_serialize_nested_class_method, which raised AttributeError: type object 'TestModel2' has no attribute '_meta' — so the round failed overall even though one test (the other selected test) passed. Therefore the test error should be fixed/investigated before delivery. This is historical evidence from the archived private history, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r02/result.json",
+        "sha256": "770af083ba876e1b2a3ef96b3583c62bcae47c30a5766cd46ee6ce69a95e1499",
+        "bytes": 28347
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r03",
+      "kind": "successful_test",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": false,
+      "facts_requested": 4,
+      "exact_fact_errors": [
+        "version_id"
+      ],
+      "assessment": {
+        "passed": false,
+        "facts_correct": false,
+        "fact_error_keys": [
+          "version_id"
+        ],
+        "necessary_fact_spans_read_and_cited": false,
+        "missing_fact_evidence": [
+          "passed",
+          "passed_count",
+          "version_id",
+          "files_sha256"
+        ],
+        "invalid_citations": [
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 27: run_tests call, selection kind=django, targets model_forms.tests and forms_tests.tests.test_forms)",
+            "message_index": 27
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 28: run_tests result — ok:true, executed:true, passed:true, version paged-public-test-feedback-v0.42, files_sha256 9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6, counts.passed=256, tests_run=256, source_reference v2)",
+            "message_index": 28
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 28: test_evidence public_verification_is_hidden_acceptance=false, independent_acceptance='not_run_by_public_tool', fixed_submission_is_acceptance=false, stdout_used_for_verdict=false)",
+            "message_index": 28
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 32: last observed snapshot logical_time 17, patch_count 0, delivery_count 0, tasks empty — no submission or hidden evaluation recorded)",
+            "message_index": 32
+          }
+        ],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 149276,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 5,
+      "actual_tokens": 34553,
+      "cost_nanoyuan": 34162960,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r03",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "passed": true,
+          "passed_count": 256,
+          "version_id": "paged-public-test-feedback-v0.42",
+          "files_sha256": "9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 27: run_tests call, selection kind=django, targets model_forms.tests and forms_tests.tests.test_forms)",
+            "message_index": 27
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 28: run_tests result — ok:true, executed:true, passed:true, version paged-public-test-feedback-v0.42, files_sha256 9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6, counts.passed=256, tests_run=256, source_reference v2)",
+            "message_index": 28
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 28: test_evidence public_verification_is_hidden_acceptance=false, independent_acceptance='not_run_by_public_tool', fixed_submission_is_acceptance=false, stdout_used_for_verdict=false)",
+            "message_index": 28
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1 (message 32: last observed snapshot logical_time 17, patch_count 0, delivery_count 0, tasks empty — no submission or hidden evaluation recorded)",
+            "message_index": 32
+          }
+        ],
+        "decision_checks": {
+          "archived_public_run_passed": true,
+          "official_hidden_result_known": false
+        },
+        "rationale": "The archived run_tests observation (message 28) records executed=true, passed=true, 256 tests passed with 0 failed and 0 errors, tests_run=256, against workspace version v2 under report version 'paged-public-test-feedback-v0.42', with full files_sha256 9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6. The same body labels this as public, model-selected verification only, explicitly stating public_verification_is_hidden_acceptance=false and independent_acceptance='not_run_by_public_tool'. The last captured snapshot (message 32) shows patch_count 0 and delivery_count 0, so no official hidden acceptance run exists in retained history. Therefore the public pass is confirmed but does not equal official hidden acceptance; the hidden outcome is unobserved (unknown, not inferred as passing). These are historical archive observations, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r03/result.json",
+        "sha256": "8eccacbfe48419658ee5d4c17d2db19e91dfd816f91bd5746f8ec9dfd225a523",
+        "bytes": 30164
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r04",
+      "kind": "exact_version_hash",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 2,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 46072,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 15825,
+      "cost_nanoyuan": 18777360,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r04",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "version_id": "v3",
+          "files_sha256": "b85f29dea43bb22f549b6528e7d23ad0162b166f01dfaf29102dde3c8f8d1d04"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:a37dcb13db6bdc56d19c528e",
+            "message_index": 12
+          }
+        ],
+        "decision_checks": {
+          "last_archived_hash_supersedes_older_summary_hash": true,
+          "archive_alone_validates_current_snapshot": false
+        },
+        "rationale": "The archived history at ctx:a37dcb13db6bdc56d19c528e contains a single replace_file result, at message index 12 (tool_call_id call_00_LDJGtuYkl9U3Ze81z8yC8379, action-32, logical_time 32). That result is ok=true for path tests/test_domain_py.py, with source_reference version_id v3 and files_sha256 b85f29dea43bb22f549b6528e7d23ad0162b166f01dfaf29102dde3c8f8d1d04. Because it is the last archived replace_file outcome, it supersedes the older summary figure of v2 / ecc0d06e9b126bc9bf5403a7525c7e4ca90dacd859d953488a381317b276b3d0. The archive's retained range ends at message 14, while the last captured snapshot is at logical_time 37 with workspace version v4, so the archive alone cannot validate the current snapshot and v3 is not claimed to be the latest state. The separate reference ctx:8a197c2ed52e5711be89e869 was not read and is not cited."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r04/result.json",
+        "sha256": "5a1afbe0fec0f9c847094e84041db8f6a2da4138c7d88e9d775f43fee5649c94",
+        "bytes": 12110
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r05",
+      "kind": "historical_path",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": false,
+        "missing_fact_evidence": [
+          "paths",
+          "files_sha256",
+          "version_id"
+        ],
+        "invalid_citations": [
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a message 26 (assistant replace_file call, path sympy/functions/elementary/tests/test_hyperbolic.py)",
+            "message_index": 26
+          },
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a message 27 (replace_file result: paths, files_sha256, version_id v3, action-17, logical_time 17)",
+            "message_index": 27
+          }
+        ],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 124000,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 4,
+      "actual_tokens": 14345,
+      "cost_nanoyuan": 14801520,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r05",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "paths": [
+            "sympy/functions/elementary/tests/test_hyperbolic.py"
+          ],
+          "version_id": "v3",
+          "files_sha256": "0998d9e0799b2ac5f708ab5cb895af73239f0e030aab7d24b471d50d71c5c264"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a message 26 (assistant replace_file call, path sympy/functions/elementary/tests/test_hyperbolic.py)",
+            "message_index": 26
+          },
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a message 27 (replace_file result: paths, files_sha256, version_id v3, action-17, logical_time 17)",
+            "message_index": 27
+          }
+        ],
+        "decision_checks": {
+          "last_changed_path_is_a_test_file": true,
+          "archive_alone_establishes_final_acceptance": false
+        },
+        "rationale": "The full-history archive lists only two replace_file calls (messages 11 and 26); the later one is message 26, whose committed result in message 27 reports paths=[sympy/functions/elementary/tests/test_hyperbolic.py], files_sha256=0998d9e0799b2ac5f708ab5cb895af73239f0e030aab7d24b471d50d71c5c264, source_reference version_id v3, action-17 at logical_time 17. That path is a test file, confirming the first check. The archive shows the regression test was added but not re-run afterwards, so it does not on its own establish final acceptance; also this is historical evidence, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r05/result.json",
+        "sha256": "fa411e334fface60cdc9d8012b6fb79caa25fabe2b11fe029fcfdc516540ec99",
+        "bytes": 14681
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r06",
+      "kind": "old_vs_current_version",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 101627,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 5,
+      "actual_tokens": 27277,
+      "cost_nanoyuan": 23745120,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r06",
+        "status": "recovered",
+        "scope": "snapshot_comparison",
+        "facts": {
+          "current_version": "v6",
+          "same_version": false,
+          "test_passed": false,
+          "test_version": "v5"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 16
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 17
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 20
+          }
+        ],
+        "decision_checks": {
+          "archived_test_validates_last_snapshot": false,
+          "same_version_test_evidence_needed": true
+        },
+        "rationale": "The only archived run_tests (call at message 16, result at message 17) executed against source_reference version v5 with passed=false: 2 collected, 1 passed, 1 error — AttributeError because TestModel2 is a plain class with no _meta. The last captured snapshot is v6 (obj-c567f5b9c7d905481548e89b), produced by the later replace_file at message 19/20 that rewrote the test to serialize TestModel2.Capability.default directly. Since the archived run predates that change, it is not same-version evidence: its failure of the old test form cannot validate the v6 candidate, and no passing same-version observation exists in the retained history, so fresh test evidence for v6 is required."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r06/result.json",
+        "sha256": "de7801e5b35f05a8ee355f95ff7d54f69f7383fac52d23c9cd04fb7f8cd49b7e",
+        "bytes": 18319
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r07",
+      "kind": "collection_environment_state",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": false,
+        "missing_fact_evidence": [
+          "validation_status",
+          "collected",
+          "errors",
+          "tests_run"
+        ],
+        "invalid_citations": [
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60 (message 8: run_tests, selection kind=pytest, targets=[repro_nominal.py])",
+            "message_index": 8
+          },
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60 (message 9: report_id test-report-35e4921f15520bd30fc46a0c; validation_status=collection_failed; counts collected=0, errors=1, failed=0, passed=0, skipped=0, tests_run=0; session exitstatus=2, collection_errors=1, test_reports=[])",
+            "message_index": 9
+          },
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60 (message 5: preceding tool call was create_file only — no earlier run_tests)",
+            "message_index": 5
+          }
+        ],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 47607,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 3,
+      "physical_requests": 5,
+      "actual_tokens": 34099,
+      "cost_nanoyuan": 30564320,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r07",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "collected": 0,
+          "errors": 1,
+          "tests_run": 0,
+          "validation_status": "collection_failed"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60 (message 8: run_tests, selection kind=pytest, targets=[repro_nominal.py])",
+            "message_index": 8
+          },
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60 (message 9: report_id test-report-35e4921f15520bd30fc46a0c; validation_status=collection_failed; counts collected=0, errors=1, failed=0, passed=0, skipped=0, tests_run=0; session exitstatus=2, collection_errors=1, test_reports=[])",
+            "message_index": 9
+          },
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60 (message 5: preceding tool call was create_file only — no earlier run_tests)",
+            "message_index": 5
+          }
+        ],
+        "decision_checks": {
+          "test_cases_actually_executed": false,
+          "investigate_collection_before_behavior_claim": true
+        },
+        "rationale": "The earliest run_tests in the retained history is the message-8 call targeting the non-test script repro_nominal.py; its result (message 9) records validation_status=collection_failed, collected=0, errors=1, tests_run=0, with the pytest session exiting status 2, one collection error, and an empty test_reports list. Although the envelope reports executed=true (a process ran), no test cases were collected or run and no pass/fail/skip counts exist, so no behavioral verification was obtained. The failure is a collection error (script is not test-shaped), so the collection problem must be resolved — e.g. a test-shaped module or a valid pytest target — before any claim about nominal-axis behavior. This is historical evidence, not current-version validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r07/result.json",
+        "sha256": "04a56f37580ce6f11edb550e80bf62bed5a959227115ce6e0665c21645605050",
+        "bytes": 23634
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r08",
+      "kind": "deep_indexed_seek",
+      "status": "closed",
+      "passed": false,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": false,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [
+          {
+            "reference": "ctx:ff847768253431f1d3438ea9",
+            "message_index": 25
+          }
+        ],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 162874,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 15062,
+      "cost_nanoyuan": 17015120,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r08",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "action_id": "action-19",
+          "version_id": "v4",
+          "files_sha256": "1c5aa48885942074cc424bd3a018f101f8e676ff67f45f47a397ba2cfdcde8d4"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:ff847768253431f1d3438ea9",
+            "message_index": 29
+          },
+          {
+            "reference": "ctx:ff847768253431f1d3438ea9",
+            "message_index": 25
+          }
+        ],
+        "decision_checks": {
+          "result_is_last_archived_mutation": true,
+          "archive_alone_validates_current_snapshot": false
+        },
+        "rationale": "The archive index for ctx:ff847768253431f1d3438ea9 lists replace_file tool results at message indices 22, 26, and 29; index 29 is the last one (call_00_O6NwWPdpJR4CGsO7kCQN9240, paired with the assistant replace_file at index 25). Reading its exact text yields ok=true, path sklearn/utils/_set_output.py, source_reference.version_id v4, files_sha256 1c5aa48885942074cc424bd3a018f101f8e676ff67f45f47a397ba2cfdcde8d4, action_id action-19, logical_time 19. Earlier mutations (e.g. the index 22 result) were not substituted. This is historical evidence only: the supplied last snapshot is logical_time 26 at workspace version v6, later than the archived v4, so the archive does not validate the current workspace state."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r08/result.json",
+        "sha256": "69e70629bb6b869eefaa34cbec4adf1d8008a3229cdeba4b11efd0b1afe5c657",
+        "bytes": 13504
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r09",
+      "kind": "zero_tests_not_success",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 37551,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 18684,
+      "cost_nanoyuan": 24455680,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r09",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "collected": 0,
+          "passed": false,
+          "tests_run": 0,
+          "validation_status": "no_tests"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:55da4253abfcd249ccdb78ca",
+            "message_index": 9
+          },
+          {
+            "reference": "ctx:55da4253abfcd249ccdb78ca",
+            "message_index": 10
+          }
+        ],
+        "decision_checks": {
+          "zero_collected_tests_counts_as_pass": false,
+          "correct_test_selection_needed": true
+        },
+        "rationale": "The earliest recorded run_tests call in the retained archive (message 9, keyword 'content_length or body or headers' against test_requests.py, report test-report-d5a766a3a15539d3c1d6e27e at logical_time 34) is returned in message 10: executed=true, passed=false, validation_status='no_tests', counts collected=0 and tests_run=0, exitstatus 5, empty test_reports list, collection_complete=true. With zero tests collected, no failures occurred, but that reflects the selection matching no tests, not verified passing behavior. Since the run only covers model-selected public tests and executed no tests, the selection was incorrect/insufficient for validating the Content-Length fix.",
+        "scope_note": "The fact that this was the earliest run_tests occurrence is based on retained archive message_offsets; later runs (e.g., message 12/13 with 21 failed/26 collected) are not part of this recovery. The last_captured_snapshot (v6, logical_time 44) is not used as evidence; this record is historical only."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r09/result.json",
+        "sha256": "8af500c73d8d094f33c5066a6205b8562d760c5272a64b5df533124fb2e4c8c6",
+        "bytes": 28615
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r10",
+      "kind": "unknown_test_count",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [
+          "tests_run"
+        ],
+        "index_actually_observed": false,
+        "largest_actual_read_start": 0,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 1,
+      "physical_requests": 2,
+      "actual_tokens": 4826,
+      "cost_nanoyuan": 8634560,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r10",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "passed": false,
+          "tests_run": null,
+          "validation_status": "failed"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:0c477941e01d26574986fd2a",
+            "message_index": 9
+          }
+        ],
+        "decision_checks": {
+          "executed_test_count_known": false,
+          "substitute_zero_for_null": false
+        },
+        "rationale": "The retained run_tests observation (report_id test-report-26cb6cd241375e3be773c935, source obj-c567f5b9c7d905481548e89b v3, logical_time 18 / sequence 14) records executed=true, passed=false, validation_status='failed', while every counts field, including tests_run, is JSON null; test_evidence reports 'missing framework start or complete finish report' with zero sessions and zero report_count. Therefore the actual executed test count is not determinable, and tests_run must remain null rather than 0. The record exists, so status is recovered; this is historical evidence only and does not validate any current workspace version."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r10/result.json",
+        "sha256": "ce08585c82e2097a2a84f4822ef6f03fe99b01999efac9e1982672848bd794a0",
+        "bytes": 5277
+      }
+    },
+    {
+      "version": "v178",
+      "case_id": "r11",
+      "kind": "unobserved_hidden_outcome",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 1,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [
+          "official_resolved"
+        ],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 98264,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 5,
+      "physical_requests": 7,
+      "actual_tokens": 69096,
+      "cost_nanoyuan": 42605840,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r11",
+        "status": "unknown",
+        "scope": "not_observed",
+        "facts": {
+          "official_resolved": null
+        },
+        "evidence": [],
+        "decision_checks": {
+          "official_hidden_result_known": false,
+          "infer_hidden_pass_from_review": false
+        },
+        "rationale": "No supplied private history reports an official hidden grading outcome. The observations contain only same-version public evidence (patch-1 published, review-1 accept, delivery-1 recorded, public tests passing), and delivery status explicitly states submission is not official acceptance; the public test report likewise marks independent acceptance as not run. Since no official resolved observation exists, official_resolved is JSON null with no evidence citations."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v178/recovery-probe-clarified-r1/cases/r11/result.json",
+        "sha256": "a6753eaef0dacd48201980daaa1b15d36c907edfe420e056239f93468d19ac75",
+        "bytes": 43224
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r00",
+      "kind": "historical_action",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 63473,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 32083,
+      "cost_nanoyuan": 35920240,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r00",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "path": "src/_pytest/compat.py",
+          "old": "    mock_modules = [sys.modules.get(\"mock\"), sys.modules.get(\"unittest.mock\")]\n    if any(mock_modules):\n        sentinels = [m.DEFAULT for m in mock_modules if m is not None]\n        return len(\n            [p for p in patchings if not p.attribute_name and p.new in sentinels]\n        )\n    return len(patchings)",
+          "new": "    mock_modules = [sys.modules.get(\"mock\"), sys.modules.get(\"unittest.mock\")]\n    if any(mock_modules):\n        # We iterate through the patched attributes looking for the mock\n        # sentinel DEFAULT.  Identity comparison is used instead of the\n        # ``in`` operator because the latter would call ``__eq__`` on\n        # ``p.new``, which raises (e.g. for numpy arrays) or can produce a\n        # non-boolean result for arbitrary user objects.\n        sentinels = [m.DEFAULT for m in mock_modules if m is not None]\n        return len(\n            [\n                p\n                for p in patchings\n                if not p.attribute_name\n                and any(p.new is sentinel for sentinel in sentinels)\n            ]\n        )\n    return len(patchings)"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:0fafd7fc44225712e952af41",
+            "message_index": 14
+          },
+          {
+            "reference": "ctx:0fafd7fc44225712e952af41",
+            "message_index": 15
+          }
+        ],
+        "decision_checks": {
+          "execute_edit_now": false,
+          "new_code_uses_identity_comparison": true
+        },
+        "rationale": "The archive index for ctx:0fafd7fc44225712e952af41 lists three replace_file actions, at message indices 14, 23 and 32. The earliest is message 14 (tool call id call_00_cROvhVvAN2x8HNm54N6h6092), whose arguments were read verbatim: path src/_pytest/compat.py plus the exact old/new strings above. The old text uses the containment test `p.new in sentinels`; the new text replaces it with `any(p.new is sentinel for sentinel in sentinels)`, keeping the `not p.attribute_name` filter and the trailing `return len(patchings)`. The paired tool result is message 15, reporting a committed write to src/_pytest/compat.py and a workspace bump to version_id v2 (a historical workspace/source version, not a schema version). No edit was executed now; this is read-only historical recovery. The later replace_file actions at messages 23 and 32 were only seen as index metadata, so they are not cited."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r00/result.json",
+        "sha256": "3f1836723bf347c52cd9f5e35e07690e2c4bbc0d6a813ca85ee1549e693232c9",
+        "bytes": 35783
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r01",
+      "kind": "rejected_edit",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 28360,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 16775,
+      "cost_nanoyuan": 20047040,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r01",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "edit_performed": false,
+          "exact_occurrences": 0,
+          "rejection_code": "replacement_not_unique",
+          "version_id": "v8"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3",
+            "message_index": 5
+          },
+          {
+            "reference": "ctx:70d6a81f6b003359871ac2d3",
+            "message_index": 6
+          }
+        ],
+        "decision_checks": {
+          "blind_retry_of_same_edit_is_justified": false,
+          "read_current_file_before_edit": true
+        },
+        "rationale": "The earliest archived replace_file attempt (call_00_ZYUJeraCiH7Kxi2Q4qWx0462, message 5) tried to expand the one-line parsing.yacc(tabmodule=\"cds_parsetab\", package=\"astropy/units\", debug=False) call into a multi-line form with write_tables=False. It failed: the tool result (message 6) reports ok=false, ToolRejection with code replacement_not_unique, exact_occurrences=0, source_reference.version_id=v8, and no edit made (automatic_match_selection=false, action_id action-51 at logical_time 51). The recovery hint and error message both instruct reading the current file (read_file) and preserving exact whitespace, so a blind retry of the identical old/new pair would fail the same way; the current file must be read first. Note the summary's step-1 claim about a net-zeroed exploratory edit is not corroborated by these two messages; only this specific failed replace_file is established here. Workspace later versions (v8/v9) mean the archived text is historical, not current validation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r01/result.json",
+        "sha256": "deadb8f1db5f7f1e0e21f3de9fde64ab76a6963b925294188bbf779fdcc33a2b",
+        "bytes": 22307
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r02",
+      "kind": "failed_test",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 7,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 79474,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 17145,
+      "cost_nanoyuan": 22818080,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r02",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "error_test_node": "migrations.test_writer.WriterTests.test_serialize_nested_class_method",
+          "exception_type": "AttributeError",
+          "version_id": "v5",
+          "overall_passed": false,
+          "passed_count": 1,
+          "errors": 1,
+          "failed": 0
+        },
+        "evidence": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 16
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 17
+          }
+        ],
+        "decision_checks": {
+          "archived_public_run_passed": false,
+          "fix_or_investigate_test_error_before_delivery": true
+        },
+        "rationale": "Message 16 issued run_tests for migrations.test_writer.WriterTests.test_serialize_nested_class_method and test_serialize_functions. Message 17 (report schema paged-public-test-feedback-v0.42, source_reference.version_id v5, workspace obj-c567f5b9c7d905481548e89b) returned passed: false / validation_status failed, with output 'ERROR: test_serialize_nested_class_method (migrations.test_writer.WriterTests.test_serialize_nested_class_method)' and 'AttributeError: type object 'TestModel2' has no attribute '_meta''; counts error=1, failed=0, passed=1, collected=2 (Ran 2 tests, FAILED errors=1). So the whole run failed even though the sibling test test_serialize_functions passed; the erroring test must be fixed or investigated before delivery. The later snapshot (logical_time 32, v6) does not confirm any passing re-run, so this historical failure stands as the last observed test result."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r02/result.json",
+        "sha256": "c0af549e7f97d0400a270121d25f78cddad0c99d9e79b7ee13c228004239331c",
+        "bytes": 26890
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r03",
+      "kind": "successful_test",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 133017,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 21345,
+      "cost_nanoyuan": 28419760,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r03",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "passed": true,
+          "passed_count": 256,
+          "version_id": "v2",
+          "files_sha256": "9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1",
+            "message_index": 27
+          },
+          {
+            "reference": "ctx:96f185f78360c9567e75dcd1",
+            "message_index": 28
+          }
+        ],
+        "decision_checks": {
+          "archived_public_run_passed": true,
+          "official_hidden_result_known": false
+        },
+        "rationale": "Message 27 is the archived run_tests action with selection kind=django, targets model_forms.tests and forms_tests.tests.test_forms. Message 28 is the archived tool result: executed true, passed true, version_id v2 (workspace_version_id of the source reference; distinct from the report format label 'paged-public-test-feedback-v0.42'), files_sha256 9c0c351560b6d0d83337fb889f26005608c8dbd19a9e5e5260b741d5adfcaea6, counts.collected 256, passed 256, failed 0, errors 0, skipped 0, exitstatus 0, validation_status 'verified', with 'Ran 256 tests ... OK'. Both fields were read directly from the exact retained message, not inferred. The same result payload explicitly states public_verification_is_hidden_acceptance: false, independent_acceptance: 'not_run_by_public_tool', and fixed_submission_is_acceptance: false, plus the scope note 'Model-selected public tests only; no hidden evaluator'. Therefore the archived public run passing does not equal official hidden acceptance, and no official hidden result was ever observed in this history, so official_hidden_result_known is false (the hidden verdict is unobserved, not a failure). Note the derived summary said 256 tests via agent claim; the exact archived tool output confirms it. Snapshot workspace_reference v2 at logical_time 22 matches the version_id of this run result, but this is historical evidence only and not a validation of the current workspace."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r03/result.json",
+        "sha256": "d46b787218cff1cac2c0400ef002df289269a00c03ae6b6a98e1889f05585e8d",
+        "bytes": 36794
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r04",
+      "kind": "exact_version_hash",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 2,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 46072,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 17476,
+      "cost_nanoyuan": 18196560,
+      "citation_format_repairs": 1,
+      "answer": {
+        "case_id": "r04",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "version_id": "v3",
+          "files_sha256": "b85f29dea43bb22f549b6528e7d23ad0162b166f01dfaf29102dde3c8f8d1d04"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:a37dcb13db6bdc56d19c528e",
+            "message_index": 12
+          }
+        ],
+        "decision_checks": {
+          "last_archived_hash_supersedes_older_summary_hash": true,
+          "archive_alone_validates_current_snapshot": false
+        },
+        "rationale": "History archive ctx:a37dcb13db6bdc56d19c528e was read at offsets covering message 11 (the final replace_file action, action-32, logical_time 32) and message 12 (its exact tool result). Message 12 returned workspace obj-c567f5b9c7d905481548e89b at version_id v3 with files_sha256 b85f29dea43bb22f549b6528e7d23ad0162b166f01dfaf29102dde3c8f8d1d04, writing tests/test_domain_py.py (the regression-test edit). This v3 hash is distinct from and supersedes the older v2 hash ecc0d06e... in the derived summary. The last captured snapshot (v4, logical_time 37) is only a captured workspace reference, not validation; reader metadata states current_version_validated=false, so the archive alone does not validate the current snapshot."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r04/result.json",
+        "sha256": "7e54bfaf0cb511fbb80aaede9b68cabb95cc25e56508df2cd0767e3e2c025c95",
+        "bytes": 15968
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r05",
+      "kind": "historical_path",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 122847,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 20223,
+      "cost_nanoyuan": 26692160,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r05",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "files_sha256": "0998d9e0799b2ac5f708ab5cb895af73239f0e030aab7d24b471d50d71c5c264",
+          "paths": [
+            "sympy/functions/elementary/tests/test_hyperbolic.py"
+          ],
+          "version_id": "v3"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a",
+            "message_index": 26
+          },
+          {
+            "reference": "ctx:f1f7e5710e765ceca9938a2a",
+            "message_index": 27
+          }
+        ],
+        "decision_checks": {
+          "last_changed_path_is_a_test_file": true,
+          "archive_alone_establishes_final_acceptance": false
+        },
+        "rationale": "The last replace_file in the archived history (logical_time 17, action_id action-17) targeted sympy/functions/elementary/tests/test_hyperbolic.py, adding an issue-13480 regression loop in test_coth; the tool result reports path_count 1 with exactly that path, source_reference version_id v3, and files_sha256 0998d9e0799b2ac5f708ab5cb895af73239f0e030aab7d24b471d50d71c5c264. The path is under tests/ and named test_*.py, so it is a test file. Acceptance is not established: delivery_status shows public_test_executed false, public_test_passed null, fixed_patch_id null, legal_delivery_id null, current_workspace_has_net_changes true, and explicitly that submission is not official acceptance; the regression test had not been re-run."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r05/result.json",
+        "sha256": "79bd343fe7c6b41969779e7e44da6f467f8424308e8cb080fa99a394c5f67a0a",
+        "bytes": 34696
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r06",
+      "kind": "old_vs_current_version",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 79474,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 20424,
+      "cost_nanoyuan": 26089520,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r06",
+        "status": "recovered",
+        "scope": "snapshot_comparison",
+        "facts": {
+          "test_version": "v5",
+          "current_version": "v6",
+          "test_passed": false,
+          "same_version": false
+        },
+        "evidence": [
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 16
+          },
+          {
+            "reference": "ctx:4acb52a344d5794d79e57210",
+            "message_index": 17
+          }
+        ],
+        "decision_checks": {
+          "archived_test_validates_last_snapshot": false,
+          "same_version_test_evidence_needed": true
+        },
+        "rationale": "The archived run_tests (message 16) executed the two focused migration writer tests and its tool result (message 17) reports source_reference version_id v5 with files_sha256 fa79c6f6..., executed true, passed false: 2 collected, 1 error, 1 passed, with AttributeError: 'TestModel2' has no attribute '_meta' in test_serialize_nested_class_method. The provided last captured snapshot is obj-c567f5b9c7d905481548e89b at version_id v6, which is a later version than the tested v5 (subsequent replace_file after the test run advanced the workspace). Hence the test was not run against the last snapshot; it also failed, and in any case cannot certify the current v6 state. Fresh same-version test evidence on v6 is required. Note the report format version 'paged-public-test-feedback-v0.42' is only the schema version, not the workspace version."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r06/result.json",
+        "sha256": "8c4fff269174b08705cfe5dd4afb7f9bfe983cf76f0d72c08feb5de009ace86a",
+        "bytes": 31722
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r07",
+      "kind": "collection_environment_state",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 47607,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 32461,
+      "cost_nanoyuan": 29427440,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r07",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "collected": 0,
+          "errors": 1,
+          "tests_run": 0,
+          "validation_status": "collection_failed"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60",
+            "message_index": 8
+          },
+          {
+            "reference": "ctx:de6b13c67e12e0e19bf04e60",
+            "message_index": 9
+          }
+        ],
+        "decision_checks": {
+          "test_cases_actually_executed": false,
+          "investigate_collection_before_behavior_claim": true
+        },
+        "rationale": "The earliest archived run_tests call is message 8 (run_tests, pytest target repro_nominal.py), paired with tool result message 9 at logical_time 48, report_id test-report-35e4921f15520bd30fc46a0c, workspace version v5. The report records validation_status \"collection_failed\" with counts collected=0, errors=1, failed=0, passed=0, skipped=0, tests_run=0; the single session shows exitstatus 2, collection_errors=1, collection_complete=true and empty test_reports. Hence pytest ran but no test case was collected or executed, so the collection error (non-test-shaped repro script) had to be investigated/fixed before making any behavioral claim about the patch. source_reference.version_id v5 identifies the historical workspace, not the report schema paged-public-test-feedback-v0.42; this evidence is historical only and does not validate the current snapshot v8."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r07/result.json",
+        "sha256": "ea18cd660a3c15834c590b33d5bcb6f20c616e939bba93e3b736d3dbda0b93e3",
+        "bytes": 30454
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r08",
+      "kind": "deep_indexed_seek",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 162874,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 3,
+      "actual_tokens": 17427,
+      "cost_nanoyuan": 21207040,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r08",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "action_id": "action-19",
+          "version_id": "v4",
+          "files_sha256": "1c5aa48885942074cc424bd3a018f101f8e676ff67f45f47a397ba2cfdcde8d4"
+        },
+        "evidence": [
+          {
+            "reference": "ctx:ff847768253431f1d3438ea9",
+            "message_index": 29
+          }
+        ],
+        "decision_checks": {
+          "result_is_last_archived_mutation": true,
+          "archive_alone_validates_current_snapshot": false
+        },
+        "rationale": "The archive index for ctx:ff847768253431f1d3438ea9 lists three replace_file tool results at message_index 22 (paired action 21), 26 (paired action 25), and 29 (paired action 28); message 29 is the latest, matching the summary's third edit (astype in the DataFrame branch). Reading message 29's exact text shows replace_file returned ok=true with source_reference.version_id v4, action_id action-19, logical_time 19, files_sha256 1c5aa488..., path sklearn/utils/_set_output.py. These are the latest archived replace_file values, not the earlier successful edits (the summary's ctx:91c7a1959b45975cf00172d2 corresponds to an earlier one). The archived snapshot is historical (last captured v6, logical_time 26 per the prompt), so this record does not validate the current snapshot; the archived write itself reported committed_revision 19 and workspace v4, while the supplied last snapshot is v6, showing later state exists beyond this observation."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r08/result.json",
+        "sha256": "5ff4b57d0d90908f984ff1ef7481cf80e78004676b7c63fc862879b1a4f83552",
+        "bytes": 27067
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r09",
+      "kind": "zero_tests_not_success",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 4,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 37551,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 2,
+      "physical_requests": 4,
+      "actual_tokens": 22074,
+      "cost_nanoyuan": 23258080,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r09",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "validation_status": "no_tests",
+          "passed": false,
+          "collected": 0,
+          "tests_run": 0
+        },
+        "evidence": [
+          {
+            "reference": "ctx:55da4253abfcd249ccdb78ca",
+            "message_index": 9
+          },
+          {
+            "reference": "ctx:55da4253abfcd249ccdb78ca",
+            "message_index": 10
+          }
+        ],
+        "decision_checks": {
+          "zero_collected_tests_counts_as_pass": false,
+          "correct_test_selection_needed": true
+        },
+        "rationale": "The earliest run_tests in the retained archive is the call at message_index 9 (logical_time 34, action-34, report_id test-report-d5a766a3a15539d3c1d6e27e, source_reference.version_id v4), running pytest on test_requests.py with keyword 'content_length or body or headers'. Its result at message_index 10 records validation_status 'no_tests', passed false, and counts collected 0, failed 0, passed 0, tests_run 0, with session exitstatus 5 and collection_complete true. Although no test failed, that outcome reflects an empty keyword selection rather than verified behavior: the Content-Length fix remained unverified by this report. Hence zero collected tests cannot be treated as a pass, and a correct, non-empty test selection targeting the changed behavior is necessary before any pass claim. The later full-suite v4 run (21 failed) and the v6 snapshot are separate, later states and are not merged into this earliest report."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r09/result.json",
+        "sha256": "3fd67944c5aaf012e22c45440065ee41ee1cea55786d10df9d339f704d8d536f",
+        "bytes": 21103
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r10",
+      "kind": "unknown_test_count",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 3,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [
+          "tests_run"
+        ],
+        "index_actually_observed": false,
+        "largest_actual_read_start": 0,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 1,
+      "physical_requests": 2,
+      "actual_tokens": 5149,
+      "cost_nanoyuan": 8729680,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r10",
+        "status": "recovered",
+        "scope": "historical",
+        "facts": {
+          "validation_status": "failed",
+          "passed": false,
+          "tests_run": null
+        },
+        "evidence": [
+          {
+            "reference": "ctx:0c477941e01d26574986fd2a",
+            "message_index": 9
+          }
+        ],
+        "decision_checks": {
+          "executed_test_count_known": false,
+          "substitute_zero_for_null": false
+        },
+        "rationale": "The retained run_tests observation for obj-c567f5b9c7d905481548e89b v3 records validation_status \"failed\" and passed false. Its counts object explicitly sets tests_run to null (as do collected, passed, failed, errors, skipped, xfailed, xpassed), and test_evidence shows no reports (report_count 0, journal_record_count 0, error \"missing framework start or complete finish report\"). Therefore the number of actually executed test cases cannot be determined from the archive; tests_run is preserved as JSON null rather than inferred or set to 0, and no zero substitution was made. The report schema version (paged-public-test-feedback-v0.42) and observer schema (v141-...) are format versions, distinct from the source workspace version_id v3."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r10/result.json",
+        "sha256": "63114f9e07cca6759f2a74c1b93b32ccfba0c6b1dcd04f022649afa976bccfa3",
+        "bytes": 6355
+      }
+    },
+    {
+      "version": "v179",
+      "case_id": "r11",
+      "kind": "unobserved_hidden_outcome",
+      "status": "closed",
+      "passed": true,
+      "facts_correct": true,
+      "facts_requested": 1,
+      "exact_fact_errors": [],
+      "assessment": {
+        "passed": true,
+        "facts_correct": true,
+        "fact_error_keys": [],
+        "necessary_fact_spans_read_and_cited": true,
+        "missing_fact_evidence": [],
+        "invalid_citations": [],
+        "decision_error_keys": [],
+        "status_correct": true,
+        "scope_correct": true,
+        "expected_unknown_fields": [
+          "official_resolved"
+        ],
+        "index_actually_observed": true,
+        "largest_actual_read_start": 0,
+        "full_message_read_required": false,
+        "not_a_full_task_quality_measure": true
+      },
+      "reads": 1,
+      "physical_requests": 2,
+      "actual_tokens": 6887,
+      "cost_nanoyuan": 11247920,
+      "citation_format_repairs": 0,
+      "answer": {
+        "case_id": "r11",
+        "status": "unknown",
+        "scope": "not_observed",
+        "facts": {
+          "official_resolved": null
+        },
+        "evidence": [],
+        "decision_checks": {
+          "official_hidden_result_known": false,
+          "infer_hidden_pass_from_review": false
+        },
+        "rationale": "The visible private history (index page of ctx:dc7a03e670dcd94fe60e3fe1) covers repository search, test runs, publish/handoff, review-1 accept (event 33) and delivery-1. No official hidden grading result is present or observable in that history; the summary similarly notes no hidden grading. Official resolution is therefore unobserved and reported as JSON null. Review acceptance and delivery records do not establish hidden scoring, so no inference is made."
+      },
+      "source": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r11/result.json",
+        "sha256": "8f613e24ae7c345ce0f03c56c0b44c571a750f80fc946b3897b4b77be92091da",
+        "bytes": 12964
+      }
+    }
+  ],
+  "latest_gate_passed": true,
+  "best_of_across_revisions_used": false,
+  "v177_has_documented_measurement_defects": true,
+  "latest_functional_criterion": "42 exact facts plus necessary actual reads/citations and24 boolean decisions",
+  "independent_heldout_confirmation_claimed": false,
+  "autonomous_full_task_recovery_claimed": false,
+  "new_API_cost_CNY": 0.79729488,
+  "new_actual_tokens": 754349,
+  "cumulative_cost_CNY": 21.86307688,
+  "remaining_CNY": 228.13692312,
+  "unknown_or_reserved_requests": 0,
+  "actual_models": {
+    "deepseek-flash": 129
+  },
+  "actual_fingerprints": {
+    "bc19ba97cbe016479903222bb1578db6": 129
+  },
+  "new_world_actions": 0,
+  "deep_read_case": {
+    "version": "v179",
+    "case_id": "r08",
+    "kind": "deep_indexed_seek",
+    "status": "closed",
+    "passed": true,
+    "facts_correct": true,
+    "facts_requested": 3,
+    "exact_fact_errors": [],
+    "assessment": {
+      "passed": true,
+      "facts_correct": true,
+      "fact_error_keys": [],
+      "necessary_fact_spans_read_and_cited": true,
+      "missing_fact_evidence": [],
+      "invalid_citations": [],
+      "decision_error_keys": [],
+      "status_correct": true,
+      "scope_correct": true,
+      "expected_unknown_fields": [],
+      "index_actually_observed": true,
+      "largest_actual_read_start": 162874,
+      "full_message_read_required": false,
+      "not_a_full_task_quality_measure": true
+    },
+    "reads": 2,
+    "physical_requests": 3,
+    "actual_tokens": 17427,
+    "cost_nanoyuan": 21207040,
+    "citation_format_repairs": 0,
+    "answer": {
+      "case_id": "r08",
+      "status": "recovered",
+      "scope": "historical",
+      "facts": {
+        "action_id": "action-19",
+        "version_id": "v4",
+        "files_sha256": "1c5aa48885942074cc424bd3a018f101f8e676ff67f45f47a397ba2cfdcde8d4"
+      },
+      "evidence": [
+        {
+          "reference": "ctx:ff847768253431f1d3438ea9",
+          "message_index": 29
+        }
+      ],
+      "decision_checks": {
+        "result_is_last_archived_mutation": true,
+        "archive_alone_validates_current_snapshot": false
+      },
+      "rationale": "The archive index for ctx:ff847768253431f1d3438ea9 lists three replace_file tool results at message_index 22 (paired action 21), 26 (paired action 25), and 29 (paired action 28); message 29 is the latest, matching the summary's third edit (astype in the DataFrame branch). Reading message 29's exact text shows replace_file returned ok=true with source_reference.version_id v4, action_id action-19, logical_time 19, files_sha256 1c5aa488..., path sklearn/utils/_set_output.py. These are the latest archived replace_file values, not the earlier successful edits (the summary's ctx:91c7a1959b45975cf00172d2 corresponds to an earlier one). The archived snapshot is historical (last captured v6, logical_time 26 per the prompt), so this record does not validate the current snapshot; the archived write itself reported committed_revision 19 and workspace v4, while the supplied last snapshot is v6, showing later state exists beyond this observation."
+    },
+    "source": {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v179/recovery-reader-validation-r1/cases/r08/result.json",
+      "sha256": "5ff4b57d0d90908f984ff1ef7481cf80e78004676b7c63fc862879b1a4f83552",
+      "bytes": 27067
+    }
+  },
+  "all_prior_request_rows_retained": true,
+  "model_parameter_training": false
+}
