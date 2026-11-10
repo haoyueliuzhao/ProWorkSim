@@ -1,6 +1,7 @@
 """Read-only status: task denominators, official endpoints and the actual cash ledger."""
 import json
 import sqlite3
+import time
 from pathlib import Path
 from collections import Counter
 
@@ -14,7 +15,7 @@ def read(path):return json.loads(path.read_bytes()) if path.is_file() else {}
 def summary():
     plan=read(RUN/'execution-plan.json');progress=read(RUN/'api-coordinator/progress.json')
     layers=[progress];owners=[(RUN/'api-coordinator',progress)]
-    for folder in ('software-benchmark-v182/context-continuation-r1','software-benchmark-v184/pylint-completion-r1','software-benchmark-v186/resume20-r1','software-benchmark-v187/budget-continuation-r1','software-benchmark-v188/budget-continuation-r1'):
+    for folder in ('software-benchmark-v182/context-continuation-r1','software-benchmark-v184/pylint-completion-r1','software-benchmark-v186/resume20-r1','software-benchmark-v187/budget-continuation-r1','software-benchmark-v188/budget-continuation-r1','software-benchmark-v189/lease-race-recovery-r1'):
         directory=ROOT/'runs'/folder/'api-coordinator'
         value=read(directory/'progress.json')
         if value:
@@ -42,9 +43,13 @@ def summary():
         combined['stage']=current.get('pipeline_status',current['stage'])
         combined['capacity_gate']=current.get('capacity_gate')
         combined['generation_inflight_or_waiting']=current.get('generation_inflight_or_waiting',0)
-        combined['grading_active']=current.get('grading_active',0)
-        if current_directory.parent.parent.name in ('software-benchmark-v186','software-benchmark-v187','software-benchmark-v188'):
+        combined['grading_active']=len(list((RUN/'resource-claims').glob('active-grader-*.json')))
+        if current_directory.parent.parent.name in ('software-benchmark-v186','software-benchmark-v187','software-benchmark-v188','software-benchmark-v189'):
             combined['exceptions']=current.get('exceptions',{})
+    current_error=read(current_directory/'coordinator-error.json')
+    if current_error:
+        combined['stage']='coordinator_failed_workers_finishing' if combined['generation_active']+combined['grading_active'] else 'coordinator_failed'
+        combined['generation_inflight_or_waiting']=combined['generation_active']
     progress=combined
     rows={r['slot_id']:r for r in plan['rows']};groups={}
     ledger=ROOT/'runs/software-benchmark-v175/context-replay-r1/api-ledger.sqlite'
@@ -99,7 +104,9 @@ def summary():
         'capacity_gate':progress.get('capacity_gate'),'nominal_new_admission_limit_CNY':effective_cap/1e9,
         'original_policy_cap_CNY':original_cap/1e9,'approved_added_CNY':(effective_cap-original_cap)/1e9,'active_tasks_may_finish_above_limit':True,
         'current_owner':str(current_directory),'successor_waiting':str(owners[-1][0]) if owners[-1][1].get('stage')=='waiting_predecessor' else None,
-        'exceptions':progress.get('exceptions',{}),'coordinator_error':read(current_directory/'coordinator-error.json'),
+        'exceptions':progress.get('exceptions',{}),'coordinator_error':current_error,
+        'progress_age_seconds':round(time.time()-current.get('updated_unix',time.time()),1),
+        'generation_records_total':len(progress['records']),'planned_total':len(rows),
         'recovered_zero_call_startups':recovered,'readonly':True,'old_reports_rewritten':False}
 
 
