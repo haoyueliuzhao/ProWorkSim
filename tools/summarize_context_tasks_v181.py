@@ -13,13 +13,15 @@ def read(path):return json.loads(path.read_bytes()) if path.is_file() else {}
 
 def summary():
     plan=read(RUN/'execution-plan.json');progress=read(RUN/'api-coordinator/progress.json')
-    layers=[progress]
-    for folder in ('software-benchmark-v182/context-continuation-r1','software-benchmark-v184/pylint-completion-r1','software-benchmark-v186/resume20-r1'):
-        value=read(ROOT/'runs'/folder/'api-coordinator/progress.json')
+    layers=[progress];owners=[(RUN/'api-coordinator',progress)]
+    for folder in ('software-benchmark-v182/context-continuation-r1','software-benchmark-v184/pylint-completion-r1','software-benchmark-v186/resume20-r1','software-benchmark-v187/budget-continuation-r1','software-benchmark-v188/budget-continuation-r1'):
+        directory=ROOT/'runs'/folder/'api-coordinator'
+        value=read(directory/'progress.json')
         if value:
             if folder.startswith('software-benchmark-v182/') and read(ROOT/'artifacts/software-benchmark-v186/idle-handoff-r1/completion.json').get('old_manager_stopped'):
                 value={**value,'generation_active':0,'grading_active':0,'retired_owner':True}
             layers.append(value)
+            owners.append((directory,value))
     combined={'records':{},'scores':{},'exceptions':{},'generation_active':0,'grading_active':0}
     for value in layers:
         for key in ('records','scores','exceptions'):combined[key].update(value.get(key,{}))
@@ -32,11 +34,17 @@ def summary():
         combined['exceptions'].pop('qualification:pylint-dev__pylint-8898',None)
     combined['generation_inflight_or_waiting']=combined['generation_active']
     combined['generation_active']=len(list((RUN/'resource-claims').glob('active-actor-*.json')))
-    current=read(ROOT/'runs/software-benchmark-v186/resume20-r1/api-coordinator/progress.json')
+    # A waiting successor reports the shared leases, not its own running jobs.
+    # Keep the actual predecessor visible until the successor has taken over.
+    current_directory,current=next(((directory,value) for directory,value in reversed(owners)
+        if value.get('stage')!='waiting_predecessor'),owners[-1])
     if current:
         combined['stage']=current.get('pipeline_status',current['stage'])
         combined['capacity_gate']=current.get('capacity_gate')
         combined['generation_inflight_or_waiting']=current.get('generation_inflight_or_waiting',0)
+        combined['grading_active']=current.get('grading_active',0)
+        if current_directory.parent.parent.name in ('software-benchmark-v186','software-benchmark-v187','software-benchmark-v188'):
+            combined['exceptions']=current.get('exceptions',{})
     progress=combined
     rows={r['slot_id']:r for r in plan['rows']};groups={}
     ledger=ROOT/'runs/software-benchmark-v175/context-replay-r1/api-ledger.sqlite'
@@ -46,6 +54,12 @@ def summary():
         calls=[dict(r) for r in db.execute("SELECT * FROM requests WHERE job_id LIKE 'v181:%'")]
         recovery_exists=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zero_call_recoveries_v182'").fetchone()
         recovered=[r[0] for r in db.execute('SELECT job_id FROM zero_call_recoveries_v182')] if recovery_exists else []
+        original_cap=json.loads(db.execute("SELECT value FROM metadata WHERE name='policy'").fetchone()[0])['cap_nanoyuan']
+        effective_cap=original_cap
+        amendment_exists=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='cash_amendments_v187'").fetchone()
+        if amendment_exists:
+            amendment=db.execute('SELECT effective_cap FROM cash_amendments_v187 ORDER BY applied DESC LIMIT 1').fetchone()
+            if amendment:effective_cap=amendment[0]
     for slot in recovered:
         record=progress['records'].get(slot,{})
         if record.get('error',{}).get('type')=='FileExistsError' and not record.get('result'):progress['records'].pop(slot,None)
@@ -53,6 +67,7 @@ def summary():
     for group in ('M0','M1-5','M1-10','M3-R'):
         items=[r for r in rows.values() if r['group_id']==group]
         primary={r['slot_id'] for r in items if r['primary_panel']}
+        repeats={r['slot_id'] for r in items if not r['primary_panel']}
         finished=[v for s,v in progress.get('records',{}).items() if s in primary]
         code=[v for v in progress.get('scores',{}).values() if v['slot_id'] in primary and v['endpoint']=='code']
         delivery=[v for v in progress.get('scores',{}).values() if v['slot_id'] in primary and v['endpoint']=='delivery']
@@ -62,6 +77,9 @@ def summary():
         closed={v['row']['slot_id'] for v in finished if v['status']=='closed'}
         closed_tokens=sum(json.loads(c['usage'])['total_tokens'] for c in billed if c['job_id'] in closed)
         groups[group]={'primary_planned':len(primary),'repeat_planned':len(items)-len(primary),
+            'repeat_generation_states':dict(Counter(v['status'] for s,v in progress['records'].items() if s in repeats)),
+            'repeat_code_scored':sum(type(v.get('resolved')) is bool for v in progress['scores'].values() if v['slot_id'] in repeats and v['endpoint']=='code'),
+            'repeat_code_pass':sum(v.get('resolved') is True for v in progress['scores'].values() if v['slot_id'] in repeats and v['endpoint']=='code'),
             'primary_generation_states':dict(Counter(v['status'] for v in finished)),
             'primary_code_scored':sum(type(v.get('resolved')) is bool for v in code),
             'primary_code_pass':sum(v.get('resolved') is True for v in code),
@@ -78,8 +96,10 @@ def summary():
         'physical_statuses_this_phase':dict(Counter(c['status'] for c in calls)),
         'cumulative_paid_upper_CNY':(cumulative['paid'] or 0)/1e9,
         'cumulative_unknown_or_live_upper_CNY':(cumulative['held'] or 0)/1e9,
-        'capacity_gate':progress.get('capacity_gate'),'nominal_new_admission_limit_CNY':250,'active_tasks_may_finish_above_limit':True,
-        'exceptions':progress.get('exceptions',{}),'coordinator_error':read(ROOT/'runs/software-benchmark-v186/resume20-r1/api-coordinator/coordinator-error.json') if current else read(RUN/'api-coordinator/coordinator-error.json'),
+        'capacity_gate':progress.get('capacity_gate'),'nominal_new_admission_limit_CNY':effective_cap/1e9,
+        'original_policy_cap_CNY':original_cap/1e9,'approved_added_CNY':(effective_cap-original_cap)/1e9,'active_tasks_may_finish_above_limit':True,
+        'current_owner':str(current_directory),'successor_waiting':str(owners[-1][0]) if owners[-1][1].get('stage')=='waiting_predecessor' else None,
+        'exceptions':progress.get('exceptions',{}),'coordinator_error':read(current_directory/'coordinator-error.json'),
         'recovered_zero_call_startups':recovered,'readonly':True,'old_reports_rewritten':False}
 
 
