@@ -39,7 +39,7 @@ def dump(name,value):
 def csv_write(name,rows):
     fields=list(dict.fromkeys(k for row in rows for k in row))
     with (OUT/name).open('w',newline='') as f:
-        writer=csv.DictWriter(f,fieldnames=fields);writer.writeheader()
+        writer=csv.DictWriter(f,fieldnames=fields,lineterminator='\n');writer.writeheader()
         for row in rows:writer.writerow({k:json.dumps(v,ensure_ascii=False) if isinstance(v,(dict,list)) else v for k,v in row.items()})
 def usage_total(requests):
     result={key:sum(q['usage'][key] for q in requests) for key in USAGE}
