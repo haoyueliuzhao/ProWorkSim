@@ -14,9 +14,12 @@ def read(path):return json.loads(path.read_bytes()) if path.is_file() else {}
 def summary():
     plan=read(RUN/'execution-plan.json');progress=read(RUN/'api-coordinator/progress.json')
     layers=[progress]
-    for folder in ('software-benchmark-v182/context-continuation-r1','software-benchmark-v184/pylint-completion-r1'):
+    for folder in ('software-benchmark-v182/context-continuation-r1','software-benchmark-v184/pylint-completion-r1','software-benchmark-v186/resume20-r1'):
         value=read(ROOT/'runs'/folder/'api-coordinator/progress.json')
-        if value:layers.append(value)
+        if value:
+            if folder.startswith('software-benchmark-v182/') and read(ROOT/'artifacts/software-benchmark-v186/idle-handoff-r1/completion.json').get('old_manager_stopped'):
+                value={**value,'generation_active':0,'grading_active':0,'retired_owner':True}
+            layers.append(value)
     combined={'records':{},'scores':{},'exceptions':{},'generation_active':0,'grading_active':0}
     for value in layers:
         for key in ('records','scores','exceptions'):combined[key].update(value.get(key,{}))
@@ -29,6 +32,11 @@ def summary():
         combined['exceptions'].pop('qualification:pylint-dev__pylint-8898',None)
     combined['generation_inflight_or_waiting']=combined['generation_active']
     combined['generation_active']=len(list((RUN/'resource-claims').glob('active-actor-*.json')))
+    current=read(ROOT/'runs/software-benchmark-v186/resume20-r1/api-coordinator/progress.json')
+    if current:
+        combined['stage']=current.get('pipeline_status',current['stage'])
+        combined['capacity_gate']=current.get('capacity_gate')
+        combined['generation_inflight_or_waiting']=current.get('generation_inflight_or_waiting',0)
     progress=combined
     rows={r['slot_id']:r for r in plan['rows']};groups={}
     ledger=ROOT/'runs/software-benchmark-v175/context-replay-r1/api-ledger.sqlite'
@@ -70,8 +78,8 @@ def summary():
         'physical_statuses_this_phase':dict(Counter(c['status'] for c in calls)),
         'cumulative_paid_upper_CNY':(cumulative['paid'] or 0)/1e9,
         'cumulative_unknown_or_live_upper_CNY':(cumulative['held'] or 0)/1e9,
-        'nominal_new_admission_limit_CNY':250,'active_tasks_may_finish_above_limit':True,
-        'exceptions':progress.get('exceptions',{}),'coordinator_error':read(RUN/'api-coordinator/coordinator-error.json'),
+        'capacity_gate':progress.get('capacity_gate'),'nominal_new_admission_limit_CNY':250,'active_tasks_may_finish_above_limit':True,
+        'exceptions':progress.get('exceptions',{}),'coordinator_error':read(ROOT/'runs/software-benchmark-v186/resume20-r1/api-coordinator/coordinator-error.json') if current else read(RUN/'api-coordinator/coordinator-error.json'),
         'recovered_zero_call_startups':recovered,'readonly':True,'old_reports_rewritten':False}
 
 
