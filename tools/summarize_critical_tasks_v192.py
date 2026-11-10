@@ -102,6 +102,9 @@ def summary():
         'diagnostics_complete': progress.get('diagnostics_complete', 4 if (scope.API_ROOT / 'diagnostics.json').exists() else 0),
         'qualified_environments': progress.get('qualified_environments', 0),
         'reported_generation_active': progress.get('generation_active'),
+        'generation_called_and_not_closed': sum(r['generation_state'] == 'running' and r['called_model'] for r in all_rows),
+        'generation_admitted_without_API': sum(r['generation_state'] == 'running' and not r['called_model'] for r in all_rows),
+        'reported_generation_active_counts_threads_including_capacity_waiters': True,
         'reported_grading_active': progress.get('grading_active'),
         'resource_gate': progress.get('capacity_gate'),
         'cash': {
