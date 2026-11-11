@@ -1,0 +1,243 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No direct tests for added _cstack CompoundModel branches, asymmetric shapes or custom hooks.",
+    "No baseline failing execution of new regression, although expected matrix is independently supplied by issue."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P043",
+  "decision": "Correct the causal explanation: normal nested recursion supplies arrays, and preserving the right array fixes the reported matrix. Review or test the extra direct-CompoundModel branches separately before concluding.",
+  "necessary_entities": [
+    "astropy/modeling/separable.py:_separable",
+    "astropy/modeling/separable.py:_cstack",
+    "astropy/modeling/tests/test_separable.py:test_nested_compound_separable"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Duplicate early public API read.",
+      "source_messages": [
+        5
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Old stack body superseded by current read.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Recursion reread at 102.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "Default custom hook context may inform extension cases.",
+      "source_messages": [
+        17
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Existing direct Model tests clarify that added CompoundModel branches lack direct tests.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "Existing is_separable assertions add public behavior context.",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Public API entry point conversion is outside current source excerpts.",
+      "source_messages": [
+        29
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Old operator/stack body reread recently.",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Duplicate recursion reread recently.",
+      "source_messages": [
+        35
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "Duplicate default hook read.",
+      "source_messages": [
+        41
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Duplicate existing test read.",
+      "source_messages": [
+        44
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Intermediate edit superseded; actions retained.",
+      "source_messages": [
+        47
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Repeated public API read.",
+      "source_messages": [
+        50
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "irrelevant",
+      "reason": "Intermediate stack body superseded.",
+      "source_messages": [
+        53
+      ]
+    },
+    {
+      "event": "E015",
+      "label": "irrelevant",
+      "reason": "Edit text retained and current source shows final implementation.",
+      "source_messages": [
+        56
+      ]
+    },
+    {
+      "event": "E016",
+      "label": "irrelevant",
+      "reason": "Resolved stale source cursor.",
+      "source_messages": [
+        59
+      ]
+    },
+    {
+      "event": "E017",
+      "label": "irrelevant",
+      "reason": "Recursion reread at 102.",
+      "source_messages": [
+        65
+      ]
+    },
+    {
+      "event": "E018",
+      "label": "useful",
+      "reason": "Diff identifies added direct-Compound branches, but retained edits/current source suffice.",
+      "source_messages": [
+        68
+      ]
+    },
+    {
+      "event": "E019",
+      "label": "irrelevant",
+      "reason": "Eleven-test v3 result superseded by expanded v4 result.",
+      "source_messages": [
+        71
+      ]
+    },
+    {
+      "event": "E020",
+      "label": "irrelevant",
+      "reason": "Repeated existing test read.",
+      "source_messages": [
+        74
+      ]
+    },
+    {
+      "event": "E021",
+      "label": "irrelevant",
+      "reason": "Repeated test tail.",
+      "source_messages": [
+        77
+      ]
+    },
+    {
+      "event": "E022",
+      "label": "useful",
+      "reason": "Exact fixed expected matrices define issue regression; full edit action is retained.",
+      "source_messages": [
+        80
+      ]
+    },
+    {
+      "event": "E023",
+      "label": "useful",
+      "reason": "Authoritative 12-test v4 result confirms scope, repeated by current state/delivery narrative.",
+      "source_messages": [
+        83
+      ]
+    },
+    {
+      "event": "E024",
+      "label": "useful",
+      "reason": "Combined diff supports self-review, though implementation/current test action are retained.",
+      "source_messages": [
+        86
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_nested_compound_separable",
+      "to": "separability_matrix flat/nested models",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        79,
+        82,
+        83
+      ],
+      "reason": "New test asserts fixed diagonal/block matrices for exact issue examples and full module run passes."
+    },
+    {
+      "from": "_separable(CompoundModel)",
+      "to": "_cstack ndarray branch",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        99,
+        102
+      ],
+      "reason": "Children are recursively matrices before dispatch; assignment right replaces erroneous scalar ones. Extra direct-Model recursion is separate."
+    }
+  ]
+}

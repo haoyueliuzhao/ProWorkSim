@@ -1,0 +1,51 @@
+{
+  "point": "P025",
+  "decision": "v2 改为 >= 后 7 项 hexbin 测试通过，但 mincnt=None 仍设为 0，会新增对空箱调用 reducer 的行为。应保留默认只处理非空箱的语义，明确 mincnt=0 的契约、更新文档并用边界断言验证两条分支一致。",
+  "labels": [],
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_axes.py"
+  ],
+  "dependencies": [
+    {
+      "from": "Axes.hexbin C-supplied accumulation",
+      "to": "reduce_C_function",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        5,
+        8,
+        10
+      ],
+      "reason": "默认 reducer=np.mean；>= 与默认0组合允许空列表调用，静态可见但运行影响尚未专测。"
+    },
+    {
+      "from": "selected hexbin tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        11,
+        13,
+        14
+      ],
+      "reason": "7 项真实通过绑定当前编辑，未见断言覆盖默认/显式零边界。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "mincnt=None/0/1 阈值边界测试",
+    "默认 reducer 空输入语义检查",
+    "文档从 more than 改为 inclusive 的核对"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No historical candidates. Both reviews identify the same visible default-zero plus >= consequence. Retain reducer syntax and v2 binding; seven passes do not establish default-empty-input or threshold boundary coverage."
+}

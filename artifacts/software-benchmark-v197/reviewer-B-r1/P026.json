@@ -1,0 +1,81 @@
+{
+  "point": "P026",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "自审 diff 可确认显式 mincnt 的包含阈值修复，但默认 None 被转成0后也会对空箱调用 reducer。应验证并区分默认行为与显式零行为，检查文档，再增加直接比较 C 有无两条路径的边界回归。",
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_axes.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "两分支及 good_idxs 过滤完整上下文有助比较行为；近期 diff 已足够发现默认0改变。",
+      "source_messages": [
+        8,
+        30
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "修改文本在近期最终 diff 完整重现。",
+      "source_messages": [
+        10,
+        11,
+        30
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "7 项选择通过的原始版本证据可复核，但当前状态与保留调用已说明范围。",
+      "source_messages": [
+        13,
+        14,
+        31
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "C-supplied hexbin branch",
+      "to": "reduce_C_function(empty bin)",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        8,
+        30
+      ],
+      "reason": "None→0 与 >= 的静态组合允许空箱调用；具体 reducer 结果未经当前测试正文验证。"
+    },
+    {
+      "from": "selected hexbin tests / patch-1 / delivery-1",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        14,
+        20,
+        23,
+        30
+      ],
+      "reason": "同版通过与发布不等于所有边界已覆盖。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "默认 None 与显式0的回归及 reducer 异常行为",
+    "mincnt 文档一致性",
+    "新增行为专用断言"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

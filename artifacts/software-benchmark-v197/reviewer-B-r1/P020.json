@@ -1,0 +1,231 @@
+{
+  "point": "P020",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "重复运行相同只检查异常类型的测试没有补上 message 断言。自审应添加消息及合法尾点主机的针对性检查，考虑缩小空段校验；准确报告已有 6 项通过、较广运行 7 错且仅一例证实 fixture 递归。",
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py:TestRequests.test_invalid_url",
+    "tests/conftest.py:httpbin"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "完整 URL 准备背景可审查边界。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "helper 原始异常传播语义可识别冗余捕获。",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Request 包装结构不决定当前边界。",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "旧无操作错误已恢复。",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "host 分支后续多次重复。",
+      "source_messages": [
+        26,
+        92
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "helper 修改在近期最终 diff 重现。",
+      "source_messages": [
+        29,
+        108
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "测试完整主体确认只断言类型，近期 diff 与助手已指出这点。",
+      "source_messages": [
+        44,
+        108,
+        110
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "新增参数在近期 diff 重现。",
+      "source_messages": [
+        47,
+        108
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "旧失败提供 issue 修复前对照，非当前失败。",
+      "source_messages": [
+        50,
+        53
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "完整 preconditions 提供语境，当前 loop 已在 diff。",
+      "source_messages": [
+        56
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "不完整 helper 读取。",
+      "source_messages": [
+        62
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "重复 host 片段。",
+      "source_messages": [
+        65
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "最终 host loop 变更在近期 diff 完整重现。",
+      "source_messages": [
+        68,
+        108
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "irrelevant",
+      "reason": "同版本相同测试结果已在近期重复。",
+      "source_messages": [
+        71,
+        98,
+        111
+      ]
+    },
+    {
+      "event": "E015",
+      "label": "useful",
+      "reason": "真实较广运行 7 错不能被最近聚焦通过抹去。",
+      "source_messages": [
+        74,
+        77,
+        80
+      ]
+    },
+    {
+      "event": "E016",
+      "label": "useful",
+      "reason": "一例 httpbin fixture 递归错误有确切证据；可限定错误原因，不足推广所有七例。",
+      "source_messages": [
+        83,
+        86
+      ]
+    },
+    {
+      "event": "E017",
+      "label": "irrelevant",
+      "reason": "同一最终 diff 在近期重复。",
+      "source_messages": [
+        89,
+        108
+      ]
+    },
+    {
+      "event": "E018",
+      "label": "useful",
+      "reason": "当前源码上下文但与最终 diff 关键内容相同。",
+      "source_messages": [
+        92
+      ]
+    },
+    {
+      "event": "E019",
+      "label": "irrelevant",
+      "reason": "产物绑定在近期交付及状态中已明确。",
+      "source_messages": [
+        95,
+        101,
+        112
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_post_json_nan",
+      "to": "tests/conftest.py:httpbin → httpbin",
+      "relation": "test",
+      "necessary": false,
+      "certainty": "observed_execution",
+      "source_messages": [
+        83,
+        86
+      ],
+      "reason": "实际 setup 因 fixture 递归失败，测试主体未运行；不等于其他错误已诊断。"
+    },
+    {
+      "from": "InvalidURL parameterized regression",
+      "to": "v4",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        98,
+        108,
+        110,
+        111
+      ],
+      "reason": "同版 6 项重复通过，源码断言未变，因此没有新增消息验证。"
+    },
+    {
+      "from": "prepare_url",
+      "to": "host.split('.') validation",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        108
+      ],
+      "reason": "拒绝所有空段包含末尾空段；已有通过用例不排除合法尾点回归。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "错误消息的执行断言",
+    "合法尾点主机回归",
+    "其余六个 setup 错误的原始原因"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

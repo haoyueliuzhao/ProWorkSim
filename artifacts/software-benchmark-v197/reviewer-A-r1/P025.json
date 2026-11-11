@@ -1,0 +1,49 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No direct boundary/default regression; no test of reducer that rejects empty input.",
+    "Visible documentation still says more than mincnt."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P025",
+  "decision": "Preserve the default nonempty-bin behavior while making explicit mincnt inclusive; changing only > to >= with default 0 now invokes reducers on empty bins. Add threshold and default-reducer regressions and update the docstring.",
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_axes.py"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "Axes.hexbin C branch",
+      "to": "reduce_C_function(acc)",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8,
+        10
+      ],
+      "reason": "Default mincnt remains zero, so inclusive comparison now permits empty lists; this behavior follows code, not test coverage."
+    },
+    {
+      "from": "hexbin selected tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        11,
+        13,
+        14
+      ],
+      "reason": "Seven tests pass on edited version, but explicit threshold/default coverage is unknown."
+    }
+  ]
+}

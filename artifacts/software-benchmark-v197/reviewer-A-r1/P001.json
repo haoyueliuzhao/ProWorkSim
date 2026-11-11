@@ -1,0 +1,46 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Base adapter __array__ body has not yet been shown; no reproduction or test execution."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high",
+  "point": "P001",
+  "decision": "Read the base adapter array conversion and trace preservation of coordinate dtype before choosing a repair; the level branch visibly ignores its stored dtype.",
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/core/indexing.py:PandasIndexingAdapter.__array__",
+    "xarray/core/indexes.py:PandasMultiIndex.create_variables"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+      "to": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "Constructs adapter with each level's preserved dtype; establishes the cross-file dtype handoff, not runtime execution."
+    },
+    {
+      "from": "PandasMultiIndexingAdapter.__array__",
+      "to": "pandas.MultiIndex.get_level_values",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        18
+      ],
+      "reason": "Level branch returns pandas values directly, unlike the delegated nonlevel branch."
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No executed weighted-None case or helper implementation inspection; negative search in unrelated file establishes no runtime dependency."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high",
+  "point": "P039",
+  "decision": "Stop searching absent ensemble/_base.py and unrelated weight_boosting.py; inspect helper in voting.py or add the concrete weighted-None refit regression to existing voting tests.",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_parallel_fit_estimator",
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/tests/test_voting.py:test_sample_weight"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Unrelated weight-boosting header.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Absent-path fact repeated in recent rejection/list result.",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Old fit body reread as current at 63.",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Guard visible in recent current body and retained edit.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Existing 18-test result bounds validation claims.",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Current state repeats patch identity.",
+      "source_messages": [
+        29
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "Current state repeats delivery identity.",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Diff duplicates retained edit/current body.",
+      "source_messages": [
+        39
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Same current fit body reread at 63.",
+      "source_messages": [
+        42
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "Complete sample_weight test checks weighted active estimators and unsupported KNN, with no None case; good insertion context.",
+      "source_messages": [
+        51
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_sample_weight",
+      "to": "VotingClassifier.fit / KNeighborsClassifier rejection",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "Existing test asserts weights forwarding and unsupported-estimator error; none of shown cases sets an estimator to None."
+    },
+    {
+      "from": "_BaseVoting.fit",
+      "to": "_parallel_fit_estimator",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        63
+      ],
+      "reason": "Generator already filters None before cloning/fitting; capability check guard is the changed relevant boundary."
+    }
+  ]
+}

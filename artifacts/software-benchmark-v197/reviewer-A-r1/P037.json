@@ -1,0 +1,47 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Helper implementation and regression test bodies are not yet visible; no execution."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high",
+  "point": "P037",
+  "decision": "Skip None estimators before sample_weight capability inspection, preserving validation for active estimators and the all-None error; add weighted refit regressions for both voting classes.",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/voting.py:VotingClassifier.fit",
+    "sklearn/ensemble/voting.py:VotingRegressor.fit"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "_BaseVoting.fit sample_weight validation",
+      "to": "has_fit_parameter(step, 'sample_weight')",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        20
+      ],
+      "reason": "Validation inspects every step including None, unlike the fitting generator."
+    },
+    {
+      "from": "VotingClassifier.fit / VotingRegressor.fit",
+      "to": "_BaseVoting.fit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        17,
+        20
+      ],
+      "reason": "Subclass fit previews delegate to super; common guard should address both without skipping active-estimator validation."
+    }
+  ]
+}

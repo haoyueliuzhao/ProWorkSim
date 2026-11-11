@@ -1,0 +1,55 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No focused leading-dot regression or runtime reproduction yet."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high",
+  "point": "P017",
+  "decision": "Reject leading-dot ASCII hosts alongside wildcard hosts; the existing UnicodeError handler already covers non-ASCII IDNA conversion, so the attempted identical edit cannot repair this case.",
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Earlier full URL preparation provides parsing context, while recent message 26 already exposes the relevant ASCII branch.",
+      "source_messages": [
+        8
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "PreparedRequest.prepare_url",
+      "to": "_get_idna_encoded_host",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        14,
+        26
+      ],
+      "reason": "IDNA conversion is conditional on non-ASCII host; leading dot ASCII bypasses it."
+    },
+    {
+      "from": "Request.prepare",
+      "to": "PreparedRequest.prepare",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        20
+      ],
+      "reason": "Literal preparation path can support network-free regression, but internal prepare dispatch body not shown."
+    }
+  ]
+}

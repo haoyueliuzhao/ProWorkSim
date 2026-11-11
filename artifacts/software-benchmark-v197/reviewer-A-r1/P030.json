@@ -1,0 +1,74 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No None-boundary regression yet."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P030",
+  "decision": "Restore boundary-based deletion when fetchone returns a row, guarding only None. The v2 edit removed all range culling, causing both cache suites to retain 49 instead of 29 entries.",
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "tests/cache/tests.py:_perform_cull_test"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Backend imports/general accessors do not resolve missing deletion.",
+      "source_messages": [
+        5
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "_base_set trigger explains culling through normal set calls; test and current failure already establish impact.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Original _cull context helps restore behavior, but exact removed DELETE remains in retained edit action 13.",
+      "source_messages": [
+        11
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "cache.tests.DBCacheTests / DBCacheWithTimeZoneTests.test_cull",
+      "to": "DatabaseCache._cull",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        13,
+        17,
+        23,
+        26
+      ],
+      "reason": "Executed public tests observe 49 versus 29 after normal set loop, consistent with removed delete; no full internal execution stack is shown."
+    },
+    {
+      "from": "boundary cursor.fetchone result",
+      "to": "DELETE WHERE cache_key < boundary",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        13,
+        17
+      ],
+      "reason": "Retained before/after edit proves deletion was removed rather than conditionally guarded."
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No regression execution or concrete database-ops implementation yet."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high",
+  "point": "P029",
+  "decision": "Store the culling-boundary fetch result and skip range deletion when no row is returned; add a regression distinguishing that query from COUNT(*).",
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "django/core/cache/backends/db.py:DatabaseCache._base_set"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "DatabaseCache._base_set",
+      "to": "DatabaseCache._cull",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8
+      ],
+      "reason": "Cache size threshold triggers culling before write."
+    },
+    {
+      "from": "DatabaseCache._cull",
+      "to": "connection.ops.cache_key_culling_sql / cursor.fetchone",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11
+      ],
+      "reason": "Returned boundary row is directly subscripted for deletion; a None row is the reported failure. Concrete backend SQL body remains unknown."
+    }
+  ]
+}

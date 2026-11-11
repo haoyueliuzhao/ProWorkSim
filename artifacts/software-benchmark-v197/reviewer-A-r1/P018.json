@@ -1,0 +1,98 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Visible traceback excerpt does not establish Requests import path; build/lib suspicion is unsupported.",
+    "No ASCII leading-dot fix yet."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P018",
+  "decision": "Repair ASCII host validation, because the new leading-dot regression fails in connection handling and widening the non-ASCII helper catch cannot affect it. Do not assume a build/lib import problem from this failure.",
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py:TestRequests.test_invalid_url",
+    "urllib3/util/connection.py:create_connection"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full URL-preparation read is alternative context to the focused host block.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Confirms helper conversion/catch behavior, but changed block is already retained.",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Request preparation route supports a network-free targeted test; not needed to identify the bypass.",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Resolved no-op rejection gives no current behavior evidence.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "essential",
+      "reason": "Focused source establishes that ASCII leading-dot hosts bypass IDNA helper and wildcard-only guard; this is needed to select the correct repair boundary.",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "Retained change shows widened helper catch is ineffective for ASCII input; card is dispensable because action has full change.",
+      "source_messages": [
+        29
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "PreparedRequest.prepare_url",
+      "to": "_get_idna_encoded_host",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        26
+      ],
+      "reason": "Only non-ASCII hosts enter helper; leading-dot ASCII requires separate validation."
+    },
+    {
+      "from": "test_invalid_url[InvalidURL-http://.example.com]",
+      "to": "urllib3.util.connection.create_connection",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        46,
+        50,
+        53
+      ],
+      "reason": "Focused failing case reached connection handling and raised urllib3 LocationParseError, not expected Requests InvalidURL."
+    }
+  ]
+}

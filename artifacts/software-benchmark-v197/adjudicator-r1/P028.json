@@ -1,0 +1,186 @@
+{
+  "point": "P028",
+  "decision": "Do not equate explicit-threshold success with default behavior safety: final one-line diff still sends empty bins to reducers for mincnt=None, and focused regressions were removed. Verify that gap or report it plainly.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Original branch/NaN behavior aids default compatibility assessment.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Change repeated in final diff.",
+      "source_messages": [
+        11
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Old seven-test run superseded by exact current run.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Old diff repeated recently.",
+      "source_messages": [
+        17
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "旧 tree hash 可与 v6 核对相等，当前产物已经重新发布。",
+      "source_messages": [
+        20,
+        60
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Superseded delivery.",
+      "source_messages": [
+        23
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "Duplicate old diff.",
+      "source_messages": [
+        30
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "useful",
+      "reason": "Full branch context establishes count versus reduction paths; current diff already exposes default zero.",
+      "source_messages": [
+        33
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Unused script was deleted and never executed.",
+      "source_messages": [
+        39
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "临时回归全文存在保留 create 动作，历史创建卡不补必要信息。",
+      "source_messages": [
+        41,
+        42
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E011",
+      "label": "useful",
+      "reason": "Four executed tests corroborate reproduction claims but apply to v4 with test file present.",
+      "source_messages": [
+        45
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Script deletion is completed and current final diff confirms scope.",
+      "source_messages": [
+        48
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_mincnt_issue_check.py"
+  ],
+  "dependencies": [
+    {
+      "from": "v4 focused tests",
+      "to": "Axes.hexbin explicit mincnt 1/2/3",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        41,
+        45
+      ],
+      "reason": "Valid past evidence for counts and singleton inclusion; not default reducer behavior or identical bin positions."
+    },
+    {
+      "from": "v6 selected tests / patch-2 / delivery-2",
+      "to": "final source diff",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        54,
+        57,
+        60,
+        63
+      ],
+      "reason": "Seven tests bind to final version while focused test was deleted at 51."
+    },
+    {
+      "from": "mincnt=None",
+      "to": "reduce_C_function([])",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        54
+      ],
+      "reason": "Default 0 with >= admits empty lists, unresolved by reported tests."
+    },
+    {
+      "from": "temporary issue regression",
+      "to": "v4 (not current v6 whole tree)",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        42,
+        45,
+        48,
+        51
+      ],
+      "reason": "测试含在 v4，v6 已删除；生产 diff 不变不等于整树相同。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Default None/empty-bin behavior unverified; API documentation remains unchanged.",
+    "Delivered tree has no new regression test."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. E005 is useful for independently checking the claimed restoration against old candidate hash, despite superseded publication. E010 is irrelevant because the complete temporary test source is retained in action 41; its creation response adds no assertion. Preserve the v4 executed checks while binding v6 evidence separately. Empty-input behavior remains a static inference, not an observed failing run."
+}

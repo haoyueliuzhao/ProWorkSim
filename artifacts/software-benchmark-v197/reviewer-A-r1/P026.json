@@ -1,0 +1,71 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No independent mincnt boundary/default assertions or documentation update."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P026",
+  "decision": "Self-review the untested default-empty-bin change and create boundary regressions; the visible diff leaves default mincnt=0 while making reducer invocation inclusive.",
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_axes.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Both branches and NaN filtering contextualize consistency; current diff already reveals default-empty-bin issue.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Edit fully repeated in recent diff.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Exact passing test scope/count is useful for audit, but retained action and current state already identify the selected run.",
+      "source_messages": [
+        14
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "mincnt=None",
+      "to": "reduce_C_function([])",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        30
+      ],
+      "reason": "Default becomes zero and >= includes empty lists; explicit mincnt=1 change is correct but default compatibility needs checking."
+    },
+    {
+      "from": "seven selected hexbin tests",
+      "to": "v2 delivery-1",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        14,
+        23
+      ],
+      "reason": "Passing same-version tests do not establish threshold and empty-reducer coverage."
+    }
+  ]
+}

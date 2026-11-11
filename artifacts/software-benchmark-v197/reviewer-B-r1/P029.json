@@ -1,0 +1,48 @@
+{
+  "point": "P029",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "在 _cull 的边界键查询后先保存 fetchone() 并检查是否返回行，再索引并发出 DELETE；保留有行时原行为。应查找数据库缓存测试和后端 SQL，增加无行回归，不应无依据修改 COUNT(*) 聚合读取。",
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "django/core/cache/backends/db.py:DatabaseCache._base_set",
+    "connection.ops.cache_key_culling_sql"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "DatabaseCache._base_set",
+      "to": "DatabaseCache._cull",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8
+      ],
+      "reason": "计数超过上限时使用同一 cursor 调用清理。"
+    },
+    {
+      "from": "DatabaseCache._cull",
+      "to": "connection.ops.cache_key_culling_sql / cursor.fetchone",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11
+      ],
+      "reason": "查询返回直接 [0] 索引是可见风险，实际后端与无行原因未知。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "数据库后端 culling SQL",
+    "可控无行回归和有行行为验证",
+    "实际并发/无行发生原因"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high"
+}

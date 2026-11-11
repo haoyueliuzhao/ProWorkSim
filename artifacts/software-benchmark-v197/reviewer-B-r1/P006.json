@@ -1,0 +1,224 @@
+{
+  "point": "P006",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v6 失败显示 matcher 将直接 __eq__ 返回的 NotImplemented 放入布尔上下文；v7 已加转换。应重测此前失败的核心选择并新增未知类型反射比较回归，不能把尚未阅读完的 50 个错误都认定同因。",
+  "necessary_entities": [
+    "sympy/core/basic.py:Basic._has_matcher",
+    "sympy/core/basic.py:Basic._has",
+    "sympy/core/basic.py:Basic.__eq__",
+    "sympy/core/expr.py:Expr.__lt__",
+    "sympy/core/tests/test_expr.py:test_relational"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Basic 的 Pow 等特例提供背景，核心编辑已保留。",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "完整排序分支可核对边界，但当前修复及重测选择不依赖这次旧读取。",
+      "source_messages": [
+        21
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "eq/ne 内容在保留编辑 41 重复。",
+      "source_messages": [
+        30,
+        41
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "与旧 Basic 读取及编辑重复。",
+      "source_messages": [
+        33,
+        41
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "_n2 及模块底部导入不能解释当前 matcher 警告。",
+      "source_messages": [
+        39
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "记录最初语义变更版本，但动作 41 已保留具体差异。",
+      "source_messages": [
+        41,
+        42
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "排序分支调用 has 的静态上下文有助解释跨文件影响。",
+      "source_messages": [
+        51
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "mpmath 转换和 is_number 非当前问题。",
+      "source_messages": [
+        54
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "numbers 导入 Expr 可辅助定位继承背景，不能证明执行。",
+      "source_messages": [
+        57
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "排序尾部/mpmath 与当前 bool 警告无必要关系。",
+      "source_messages": [
+        60
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "useful",
+      "reason": "确认修改后的 Basic 实现；编辑已保留，因此非必要。",
+      "source_messages": [
+        63,
+        41
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "单一 ge 旧异常分支在编辑 71 已重现。",
+      "source_messages": [
+        66,
+        71
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "ge 修改动作保留。",
+      "source_messages": [
+        71,
+        72
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "irrelevant",
+      "reason": "le 修改动作保留。",
+      "source_messages": [
+        74,
+        75
+      ]
+    },
+    {
+      "event": "E015",
+      "label": "irrelevant",
+      "reason": "gt 修改动作保留。",
+      "source_messages": [
+        77,
+        78
+      ]
+    },
+    {
+      "event": "E016",
+      "label": "irrelevant",
+      "reason": "lt 修改动作保留。",
+      "source_messages": [
+        80,
+        81
+      ]
+    },
+    {
+      "event": "E017",
+      "label": "useful",
+      "reason": "汇总 v6 修改范围但不包含刚完成的 v7 matcher 修复。",
+      "source_messages": [
+        84
+      ]
+    },
+    {
+      "event": "E018",
+      "label": "useful",
+      "reason": "真实 v6 失败栈可核对错误和影响范围；近期源码、修复动作及保留失败说明已足以选择 v7 重测，不能据此断言全部 50 错误同因。",
+      "source_messages": [
+        87,
+        90,
+        93,
+        95,
+        98
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "sympy/core/tests/test_expr.py:test_relational",
+      "to": "sympy/core/numbers.py:__gt__ → sympy/core/expr.py:__lt__ → Basic.has/_has",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        90,
+        93
+      ],
+      "reason": "失败栈直接显示这条执行链，警告终点为 any(match(arg))；其他 reported paths 多为警告位置不能当覆盖。"
+    },
+    {
+      "from": "Basic._has_matcher",
+      "to": "Basic.__eq__",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        96,
+        99,
+        104
+      ],
+      "reason": "旧 matcher 返回绑定 eq；新 wrapper 将 NotImplemented 映射 False。"
+    },
+    {
+      "from": "failed report",
+      "to": "v6",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        87,
+        105,
+        106
+      ],
+      "reason": "v6 失败不能证明 v7 修复结果，v7 尚未测试。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "v7 测试结果",
+    "剩余错误页的实际原因",
+    "未知类型反射比较回归"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

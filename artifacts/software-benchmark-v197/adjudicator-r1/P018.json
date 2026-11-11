@@ -1,0 +1,117 @@
+{
+  "point": "P018",
+  "decision": "Repair ASCII host validation, because the new leading-dot regression fails in connection handling and widening the non-ASCII helper catch cannot affect it. Do not assume a build/lib import problem from this failure.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full URL-preparation read is alternative context to the focused host block.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Confirms helper conversion/catch behavior, but changed block is already retained.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Request preparation route supports a network-free targeted test; not needed to identify the bypass.",
+      "source_messages": [
+        20
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Resolved no-op rejection gives no current behavior evidence.",
+      "source_messages": [
+        23
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "essential",
+      "reason": "Focused source establishes that ASCII leading-dot hosts bypass IDNA helper and wildcard-only guard; this is needed to select the correct repair boundary.",
+      "source_messages": [
+        26
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "helper 的前后代码和成功编辑已由保留动作及当前版本体现。",
+      "source_messages": [
+        28,
+        29
+      ],
+      "resolution": "adjudicated"
+    }
+  ],
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py:TestRequests.test_invalid_url",
+    "urllib3/util/connection.py:create_connection"
+  ],
+  "dependencies": [
+    {
+      "from": "prepare_url",
+      "to": "_get_idna_encoded_host",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        26
+      ],
+      "reason": "调用受 not unicode_is_ascii(host) 条件控制，ASCII leading-dot 不经过 helper。"
+    },
+    {
+      "from": "test_invalid_url[InvalidURL-http://.example.com]",
+      "to": "urllib3.util.connection.create_connection",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        50,
+        53
+      ],
+      "reason": "失败报告给出该测试和连接层 LocationParseError；中间完整调用链与 requests 导入路径尚未见。"
+    },
+    {
+      "from": "failed regression",
+      "to": "v3",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        47,
+        50,
+        53
+      ],
+      "reason": "真实失败绑定添加回归后的 v3，必须修复再测。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Visible traceback excerpt does not establish Requests import path; build/lib suspicion is unsupported.",
+    "No ASCII leading-dot fix yet."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. E003 is useful because Request.prepare supplies a concrete network-free test entry, though it is dispensable for locating the ASCII branch. E006 is irrelevant: its helper replacement is fully retained at action 28 and current version state supplies completion. Keep agreed E005 essential for the branch-selection evidence. The actual v3 failure reaches urllib3 connection handling; it gives no Requests import-origin proof."
+}

@@ -1,0 +1,228 @@
+{
+  "point": "P022",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "删除跳过的测试后 v6 仍有 1 失败，不能继续用未证实的测试目录干扰或缩进猜测解释。应从保存报告第一页按正确游标读取真正断言错误，再设计会执行的共享 doctree EPUB 回归。",
+  "necessary_entities": [
+    "tests/test_ext_viewcode.py:test_viewcode",
+    "sphinx/ext/viewcode.py:collect_pages"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "原 doctree guard/数据生产可解释目标，后续读取重复。",
+      "source_messages": [
+        6
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "完整 collect_pages 消费逻辑可用于排查，但下一步先读失败正文。",
+      "source_messages": [
+        9
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "事件注册帮助界定构建路径，非当前错误定位必需。",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "缓存 source 引用是后续回归边界。",
+      "source_messages": [
+        15
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "间接事件调用的静态证据。",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "空读取无 EPUB 实现。",
+      "source_messages": [
+        35
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "重复空读取。",
+      "source_messages": [
+        38
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "与 E001 相同源码重复。",
+      "source_messages": [
+        47,
+        6
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "collect_pages/引用完整上下文，待具体失败后可能需用。",
+      "source_messages": [
+        50
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "生成尾部和注册与旧卡重合。",
+      "source_messages": [
+        53,
+        12
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "生产改动保留且近期 diff 重现。",
+      "source_messages": [
+        56,
+        55,
+        116
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "useful",
+      "reason": "测试完整主体可判断断言含义；目前没有实际失败断言。",
+      "source_messages": [
+        62
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "已删除的 placeholder 文件。",
+      "source_messages": [
+        65
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "irrelevant",
+      "reason": "scratch 删除在保留动作中，当前 diff 不含它。",
+      "source_messages": [
+        68
+      ]
+    },
+    {
+      "event": "E015",
+      "label": "irrelevant",
+      "reason": "已删除的跳过测试，其内容完整保留。",
+      "source_messages": [
+        71,
+        70,
+        112
+      ]
+    },
+    {
+      "event": "E016",
+      "label": "useful",
+      "reason": "证明 v5 原测试失败、新测试跳过，反驳初始归因；保留动作已指出这两个事实，近期 v6 也失败。",
+      "source_messages": [
+        74,
+        77,
+        80,
+        83,
+        86,
+        89
+      ]
+    },
+    {
+      "event": "E017",
+      "label": "useful",
+      "reason": "test_viewcode 断言源码可用于接下来匹配失败，但不能代替 traceback。",
+      "source_messages": [
+        95
+      ]
+    },
+    {
+      "event": "E018",
+      "label": "irrelevant",
+      "reason": "旧 diff 含已删除测试，当前 diff 为准。",
+      "source_messages": [
+        101,
+        116
+      ]
+    },
+    {
+      "event": "E019",
+      "label": "useful",
+      "reason": "当前生产 guard 完整结构可排除误读 diff，但修改动作已提供同样语法。",
+      "source_messages": [
+        104,
+        55
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_viewcode / test_viewcode_epub_default",
+      "to": "v5",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        77,
+        80
+      ],
+      "reason": "call 阶段分别失败与跳过，不能把 skip 说成失败原因或有效 EPUB 验证。"
+    },
+    {
+      "from": "test_viewcode",
+      "to": "app.builder.build_all / generated HTML assertions",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        95
+      ],
+      "reason": "源码检查生成 HTML/代码片段，实际失败在哪个断言未知。"
+    },
+    {
+      "from": "remaining public failure",
+      "to": "v6",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        113,
+        116,
+        118,
+        119
+      ],
+      "reason": "恢复原测试后当前树仍失败，旧测试干扰假设未被支持。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "v5/v6 的实际失败断言和 traceback",
+    "会执行且复用 HTML 环境的 EPUB 回归",
+    "具体 fixture 隔离语义"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

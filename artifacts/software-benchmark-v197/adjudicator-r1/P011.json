@@ -1,0 +1,115 @@
+{
+  "point": "P011",
+  "decision": "Verify corrected v3 zero-share branch with a direct regression; previous five-test evidence belongs to the inadequate v2 and cannot verify the new edit.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Current complete functions are reread in message 36.",
+      "source_messages": [
+        3
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "jobs=0 caller wiring helps choose integration regression but is not needed for the direct CPU-count check.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Superseded first edit is repeated in current diff and new before text.",
+      "source_messages": [
+        11
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "Records what previous tests actually covered; retained action scope and recent admission already explain insufficiency.",
+      "source_messages": [
+        17
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Same old diff repeated at message 33.",
+      "source_messages": [
+        20
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Old patch is invalidated by v3 edit and supplies no new repair evidence.",
+      "source_messages": [
+        23
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "pylint/lint/run.py:_cpu_count",
+    "pylint/lint/run.py:_query_cpu"
+  ],
+  "dependencies": [
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        36,
+        38
+      ],
+      "reason": "Explicit zero-share input now produces guarded min return; None remains the undetected-share branch."
+    },
+    {
+      "from": "v2 public test-report-c349ec9b405acdce7694ab03",
+      "to": "v3 repair",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        17,
+        39,
+        40
+      ],
+      "reason": "Older passing report predates corrected guard, so current version is untested."
+    },
+    {
+      "from": "reported issue:PyLinter.check",
+      "to": "pylint/lint/parallel.py:check_parallel / multiprocessing.Pool",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_execution",
+      "source_messages": [
+        1
+      ],
+      "reason": "The supplied issue traceback crosses these files; it cannot validate v3."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No executed assertion for zero share or fractional quota.",
+    "_query_cpu itself still returns zero; fix acts at _cpu_count consumer boundary."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. All labels agree and match the recent reread/retained edit. The corrected consumer guard is syntax evidence, not executed regression evidence. Cross-file coverage is present in the original issue traceback (message 1), explicitly historical and user-reported rather than a current run."
+}

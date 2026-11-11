@@ -1,0 +1,91 @@
+{
+  "point": "P010",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "虽然 5 项筛选测试通过并已交付，近期 diff 仍显示 cpu_share 非 None 会提前返回 0。下一步应纠正该分支并加入 issue 的实际 cgroup 输入回归；交付说明把 _cpu_count 误称 _query_cpu 且声称覆盖 min 分支，均与源码不符。",
+  "necessary_entities": [
+    "pylint/lint/run.py:_query_cpu",
+    "pylint/lint/run.py:_cpu_count",
+    "pylint/lint/run.py:Run.__init__"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "完整源码可纠正函数命名并确认 shares→零的计算；近期 diff 和 issue 已足以看出提前返回缺陷。",
+      "source_messages": [
+        3,
+        20
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "提供 jobs=0 的真实调用关系，非下一步修正 guard 所必需。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "变更已由保留动作及近期 diff 完整重现。",
+      "source_messages": [
+        10,
+        11,
+        20
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        3,
+        20
+      ],
+      "reason": "得到零份额后提前 min 返回，尾部 guard 不执行。"
+    },
+    {
+      "from": "Run.__init__",
+      "to": "_cpu_count",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8
+      ],
+      "reason": "自动 jobs 采用返回值；尚无运行跟踪证明小 shares 场景被测试。"
+    },
+    {
+      "from": "5 selected tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        16,
+        17,
+        20,
+        23,
+        26
+      ],
+      "reason": "通过、diff、发布、交付均 v2；不能扩展到未见断言的 cgroup 场景。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "shares=2 / quota=-1 的专用执行证据",
+    "已选 5 项测试实际断言"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

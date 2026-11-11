@@ -1,0 +1,167 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No explicit None-plus-sample_weight regression; second kwargs test body not fully shown.",
+    "No direct helper traceback, only static guard reasoning."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high",
+  "point": "P040",
+  "decision": "The two sample_weight tests pass but do not establish the reported fit-after-set_params(None) scenario. Add that focused case or state the remaining coverage limitation before completing self-review.",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/voting.py:_parallel_fit_estimator",
+    "sklearn/ensemble/tests/test_voting.py:test_sample_weight",
+    "sklearn/utils/validation.py:has_fit_parameter"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Unrelated header.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Resolved absent path.",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Old fit body repeated by current recent reads.",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Guard visible recently and edit retained.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Broader 18-test evidence remains relevant beyond latest two-test subset.",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Candidate identity repeated in current state.",
+      "source_messages": [
+        29
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "Delivery identity repeated in current state.",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Diff duplicated by recent guarded code.",
+      "source_messages": [
+        39
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Full fit context repeated recently.",
+      "source_messages": [
+        42
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "essential",
+      "reason": "Exact existing sample_weight assertions are needed to assess the latest subset's issue coverage; they exercise active estimators and KNN rejection, with no None case.",
+      "source_messages": [
+        51
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Repeated absent-path rejection no longer relevant.",
+      "source_messages": [
+        54
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Current fit body repeated at 84/87.",
+      "source_messages": [
+        63
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Repeated absent-path rejection resolved by actual helper read.",
+      "source_messages": [
+        75
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "sklearn/ensemble/voting.py",
+      "to": "sklearn/utils/validation.py:has_fit_parameter",
+      "relation": "import",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        78
+      ],
+      "reason": "Exact relative import identifies helper source; helper internals remain unseen."
+    },
+    {
+      "from": "_BaseVoting.fit",
+      "to": "_parallel_fit_estimator / estimator.fit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        78,
+        84,
+        87
+      ],
+      "reason": "None filtered before clone/parallel call and before capability inspection, statically preventing the reported dereference path."
+    },
+    {
+      "from": "sample_weight test selection",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        89,
+        90
+      ],
+      "reason": "Two tests pass on unchanged v2; no added issue-specific test."
+    }
+  ]
+}

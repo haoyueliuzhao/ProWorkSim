@@ -1,0 +1,252 @@
+{
+  "point": "P020",
+  "decision": "Check valid trailing-dot behavior and add an exception-message assertion; repeating the unchanged type-only test cannot verify its message. Preserve broad-run limitations during self-review.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "General URL-preparation context is dispensable to the current visible loop concern.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Helper catch context bounds separate non-ASCII edit.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Request construction is peripheral.",
+      "source_messages": [
+        20
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Resolved no-op.",
+      "source_messages": [
+        23
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Old host block repeated in current diff/action.",
+      "source_messages": [
+        26
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Helper change repeated in current diff.",
+      "source_messages": [
+        29
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Test body proves only exception type is asserted, partly repeated by current diff.",
+      "source_messages": [
+        44
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Parameter edit repeated in diff.",
+      "source_messages": [
+        47
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "Original failing regression supports before/after account; not current failure.",
+      "source_messages": [
+        50,
+        53
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "Parser exception context helps keep transport and preparation distinct.",
+      "source_messages": [
+        56
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Partial helper context adds no distinct fact.",
+      "source_messages": [
+        62
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Host block duplicated by action/current diff.",
+      "source_messages": [
+        65
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Exact new loop remains in current diff.",
+      "source_messages": [
+        68
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E014",
+      "label": "irrelevant",
+      "reason": "Same focused result is repeated by recent runs.",
+      "source_messages": [
+        71
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E015",
+      "label": "useful",
+      "reason": "真实较广运行 7 错不能被最近聚焦通过抹去。",
+      "source_messages": [
+        74,
+        77,
+        80
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E016",
+      "label": "useful",
+      "reason": "一例 httpbin fixture 递归错误有确切证据；可限定错误原因，不足推广所有七例。",
+      "source_messages": [
+        83,
+        86
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E017",
+      "label": "irrelevant",
+      "reason": "Final diff repeated at 108.",
+      "source_messages": [
+        89
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E018",
+      "label": "irrelevant",
+      "reason": "Current host read duplicated by final diff and retained edit.",
+      "source_messages": [
+        92
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E019",
+      "label": "irrelevant",
+      "reason": "Current state and delivery repeat fixed-candidate identity.",
+      "source_messages": [
+        95
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py:TestRequests.test_invalid_url",
+    "tests/conftest.py:httpbin"
+  ],
+  "dependencies": [
+    {
+      "from": "test_post_json_nan",
+      "to": "tests/conftest.py:httpbin → httpbin",
+      "relation": "test",
+      "necessary": false,
+      "certainty": "observed_execution",
+      "source_messages": [
+        83,
+        86
+      ],
+      "reason": "实际 setup 因 fixture 递归失败，测试主体未运行；不等于其他错误已诊断。"
+    },
+    {
+      "from": "test_invalid_url",
+      "to": "InvalidURL exception type",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        108,
+        110,
+        111
+      ],
+      "reason": "Repeated selection passes type-only assertions; no message assertion was added."
+    },
+    {
+      "from": "prepare_url",
+      "to": "host.split('.')",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        108
+      ],
+      "reason": "Blank trailing segment is rejected, so valid trailing-root-dot handling warrants a focused check."
+    },
+    {
+      "from": "InvalidURL parameterized regression",
+      "to": "v4",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        98,
+        108,
+        110,
+        111
+      ],
+      "reason": "同版 6 项重复通过，源码断言未变，因此没有新增消息验证。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No assertion checks exception message.",
+    "One recursive fixture trace does not independently prove all seven errors or baseline causality.",
+    "No valid trailing-dot regression."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Resolve E015/E016 as useful, not essential: recent diff and retained assertion text already require message/trailing-dot checks; the old errors help qualify broader claims but are not needed to choose that next action. Message 86 proves one fixture recursion only. E018 repeats the host-validation logic in current diff 108, so irrelevant. Do not convert this scoped choice into a claim that the broader suite passed."
+}

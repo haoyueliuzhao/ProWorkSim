@@ -1,0 +1,67 @@
+{
+  "point": "P017",
+  "decision": "Reject leading-dot ASCII hosts alongside wildcard hosts; the existing UnicodeError handler already covers non-ASCII IDNA conversion, so the attempted identical edit cannot repair this case.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Earlier full URL preparation provides parsing context, while recent message 26 already exposes the relevant ASCII branch.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "adjudicated"
+    }
+  ],
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py"
+  ],
+  "dependencies": [
+    {
+      "from": "PreparedRequest.prepare_url",
+      "to": "_get_idna_encoded_host",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        14,
+        26
+      ],
+      "reason": "IDNA conversion is conditional on non-ASCII host; leading dot ASCII bypasses it."
+    },
+    {
+      "from": "Request.prepare",
+      "to": "PreparedRequest.prepare",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        20
+      ],
+      "reason": "Literal preparation path can support network-free regression, but internal prepare dispatch body not shown."
+    },
+    {
+      "from": "_get_idna_encoded_host",
+      "to": "idna.encode",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        14
+      ],
+      "reason": "源码有局部 import 和 encode 调用，IDNAError 转为 UnicodeError；不是本场景实际执行证明。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No focused leading-dot regression or runtime reproduction yet."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Resolve E001 as useful: message 8 additionally shows byte/string normalization, non-HTTP bypass and parse_url dispatch that can inform a preparation-only regression, though message 26 suffices for the immediate ASCII-host edit. Include the explicit idna.encode syntax edge; this supports static cross-module coverage, not an execution path for the ASCII input."
+}

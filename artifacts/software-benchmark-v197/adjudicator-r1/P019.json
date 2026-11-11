@@ -1,0 +1,188 @@
+{
+  "point": "P019",
+  "decision": "Inspect actual setup-error pages and test valid trailing-dot hosts before delivery: the new split-label loop rejects a trailing root dot as well as the reported leading empty label.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full preparation context helps assess edge cases; changed host block is retained.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "IDNA helper context explains separate non-ASCII path, not current broad errors.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Request object construction is peripheral to current error-page navigation.",
+      "source_messages": [
+        20
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Resolved no-op edit.",
+      "source_messages": [
+        23
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Old host block repeated in current replacement action.",
+      "source_messages": [
+        26
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "Shows extra helper exception edit for final scope audit; full action retained.",
+      "source_messages": [
+        29
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Exact pytest.raises contract underlies focused pass; retained test edit alone omits body.",
+      "source_messages": [
+        44
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Regression parameter is retained in edit action.",
+      "source_messages": [
+        47
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "Before-fix leading-dot failure plus current pass is useful regression evidence but not needed to investigate new broad errors.",
+      "source_messages": [
+        50,
+        53
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "Parser catch context helps distinguish validation from transport error, without proving setup cause.",
+      "source_messages": [
+        56
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Partial helper read ends before meaningful catch body.",
+      "source_messages": [
+        62
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Host block repeated by retained v4 replacement.",
+      "source_messages": [
+        65
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py:TestRequests.test_invalid_url",
+    "tests/test_requests.py:TestPreparingURLs"
+  ],
+  "dependencies": [
+    {
+      "from": "test_invalid_url[http://.example.com]",
+      "to": "requests.get / InvalidURL expectation",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        44,
+        46,
+        70,
+        71
+      ],
+      "reason": "Exact six-case selection passes after host validation; inference to this case is bounded by selected parameter set."
+    },
+    {
+      "from": "PreparedRequest.prepare_url",
+      "to": "host.split('.')",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        67
+      ],
+      "reason": "Empty trailing segment is also rejected; literal loop raises edge-case concern independently of test names."
+    },
+    {
+      "from": "broad URL test errors",
+      "to": "fixture/network setup",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "uncertain",
+      "source_messages": [
+        74,
+        77,
+        80
+      ],
+      "reason": "Visible pages show counts and nodes, not root cause; author's attribution remains unconfirmed."
+    },
+    {
+      "from": "issue regression / broader URL run",
+      "to": "v4",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        68,
+        70,
+        71,
+        73,
+        74
+      ],
+      "reason": "6 项通过和 7 errors 的较广测试均为 v4；后者不是通过。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Root-cause setup traceback not yet retrieved.",
+    "Valid trailing-dot regression not shown; broad selection cannot establish it."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. All candidate labels agree. The six-case selected execution and visible pytest.raises body support the specific regression behavior, not internal line coverage. Add v4 version binding for both runs. Keep the attribution of seven errors uncertain: the read pages show summary/nodes, not the exception cause. The literal split loop also rejects a final empty segment, warranting a boundary test before delivery."
+}

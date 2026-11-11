@@ -1,0 +1,59 @@
+{
+  "point": "P009",
+  "decision": "当前修改只处理 cpu_share 为 None 时的尾部分支，issue 的 shares=2 路径仍返回 min(0,cpu_count)=0。应修正实际受影响分支并加入配额/份额小于 1 CPU 的回归，再执行测试。",
+  "labels": [],
+  "necessary_entities": [
+    "pylint/lint/run.py:_query_cpu",
+    "pylint/lint/run.py:_cpu_count",
+    "pylint/lint/run.py:Run.__init__"
+  ],
+  "dependencies": [
+    {
+      "from": "Run.__init__ (jobs == 0)",
+      "to": "_cpu_count",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8
+      ],
+      "reason": "源码明确将自动计算值写回 jobs。"
+    },
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        3,
+        10
+      ],
+      "reason": "cpu_share 非 None 直接取 min，尾部 or 1 不涵盖 issue 的零份额。"
+    },
+    {
+      "from": "reported issue:Run.__init__ / PyLinter.check",
+      "to": "pylint/lint/parallel.py:check_parallel / multiprocessing.Pool",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_execution",
+      "source_messages": [
+        1
+      ],
+      "reason": "The issue includes this explicit failure stack ending in processes must be at least 1; execution is user-reported on the issue environment, not reproduced for current v2."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "当前代码的 issue 复现/回归测试执行",
+    "并行 pool 的仓库调用实现"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No historical candidates. The issue's supplied traceback (message 1) explicitly crosses run.py, pylinter.py, parallel.py and multiprocessing; this is reported historical execution, not a current workspace reproduction. Correct both reviewers' cross_file=false accordingly. Keep current inspected _cpu_count and jobs assignment as syntax evidence; do not infer a current Pool execution from it."
+}

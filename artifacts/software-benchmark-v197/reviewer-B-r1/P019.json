@@ -1,0 +1,170 @@
+{
+  "point": "P019",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v4 的新增 issue 用例已通过，但统一拒绝 host.split('.') 中空段会同时拒绝尾点主机，需要验证并收窄边界。较广 URL 运行有 7 错，当前读到的是摘要和成功记录，尚不足以归因 fixture；应读实际错误段。",
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "tests/test_requests.py:TestRequests.test_invalid_url",
+    "tests/test_requests.py:TestPreparingURLs"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "完整 URL 准备背景有助检查 IPv6/尾点边界；当前改动完整保留。",
+      "source_messages": [
+        8,
+        67
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "原 helper 异常语义可用于清理冗余捕获。",
+      "source_messages": [
+        14,
+        28
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Request 包装类与当前 host 边界无必要关系。",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "旧无操作错误已解决。",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "原 host 分支重复于更近期读取和保留编辑。",
+      "source_messages": [
+        26,
+        56,
+        67
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "冗余 UnicodeError 捕获的变更记录，完整代码在动作 28。",
+      "source_messages": [
+        29,
+        28
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "确认回归通过 requests.get 断言异常，非只检查 helper。",
+      "source_messages": [
+        44
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "新增 URL 参数完整保留在编辑动作。",
+      "source_messages": [
+        47,
+        46
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "v3 issue 失败是修复前对照，当前 6 项通过及保留说明已足以继续验证。",
+      "source_messages": [
+        50,
+        53,
+        71
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "v3 prepare_url 的完整语法可核对改动上下文。",
+      "source_messages": [
+        56
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "截断在 try 前的 helper 读取不补充当前需要的信息。",
+      "source_messages": [
+        62
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "host 分支在保留编辑 67 中完整重现。",
+      "source_messages": [
+        65,
+        67
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_invalid_url",
+      "to": "requests.get",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        44,
+        46
+      ],
+      "reason": "参数回归通过公开请求 API 检查异常。"
+    },
+    {
+      "from": "issue regression / broader URL run",
+      "to": "v4",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        68,
+        70,
+        71,
+        73,
+        74
+      ],
+      "reason": "6 项通过和 7 errors 的较广测试均为 v4；后者不是通过。"
+    },
+    {
+      "from": "prepare_url host validation",
+      "to": "host.split('.') empty segments",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        67
+      ],
+      "reason": "循环无尾点例外，静态上也拒绝末尾空段；兼容性后果尚需专用测试。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "7 个错误的具体 fixture/异常正文",
+    "尾点、IPv6 及合法 URL 回归",
+    "环境实际 requests 模块绑定证据"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

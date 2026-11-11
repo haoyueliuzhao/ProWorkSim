@@ -1,0 +1,76 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No test asserting cpu.shares=2 or fractional quota result.",
+    "No execution of Kubernetes scenario; reported success overstates the visible diff."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P010",
+  "decision": "Reopen the repair: the delivered diff leaves the zero-share early return unchanged, so the five selected passing tests do not substantiate the reported fix. Correct the branch and add an issue-specific test.",
+  "necessary_entities": [
+    "pylint/lint/run.py:_query_cpu",
+    "pylint/lint/run.py:_cpu_count",
+    "tests/test_self.py",
+    "tests/lint/unittest_lint.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full function boundaries establish actual _cpu_count location and None contract, but recent diff already exposes unguarded early return.",
+      "source_messages": [
+        3
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Shows jobs=0 caller wiring; helps choose integration check without being needed to identify the visible branch error.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Change text fully repeated in current diff and retained action.",
+      "source_messages": [
+        11
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        3,
+        20
+      ],
+      "reason": "Non-None zero share returns through unguarded min before fallback; function attribution in publication is wrong."
+    },
+    {
+      "from": "selected jobs/cpu/parallel tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        16,
+        17,
+        20
+      ],
+      "reason": "Five tests passed on v2, with no assertion/trace proving low-shares branch coverage."
+    }
+  ]
+}

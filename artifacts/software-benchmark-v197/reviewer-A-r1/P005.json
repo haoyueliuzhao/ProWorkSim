@@ -1,0 +1,81 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No tests yet for v2.",
+    "Numeric subtype override behavior is not yet established.",
+    "Changing unequal known SymPy types is broader than only unsupported conversion and needs justification."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P005",
+  "decision": "Extend unsupported-operand delegation to Expr ordering methods and test reflected comparisons; separately justify changing the known-but-different SymPy-type equality branch.",
+  "necessary_entities": [
+    "sympy/core/basic.py:Basic.__eq__",
+    "sympy/core/basic.py:Basic.__ne__",
+    "sympy/core/expr.py:Expr rich comparison methods"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Original equality's identity/Pow exceptions add context beyond the replacement block.",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Expr comparison implementation has been read again in the recent window.",
+      "source_messages": [
+        21
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Equality and inequality code duplicates the retained edit's before text.",
+      "source_messages": [
+        30
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Repeated partial Basic read adds no needed fact beyond E001 and retained edit.",
+      "source_messages": [
+        33
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "Basic.__ne__",
+      "to": "Basic.__eq__",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        41
+      ],
+      "reason": "Negation must propagate NotImplemented rather than coerce it."
+    },
+    {
+      "from": "Expr.__ge__/__le__/__gt__/__lt__",
+      "to": "_sympify(other)",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "Conversion failure currently raises before reflected ordering can run; literal code establishes dependency."
+    }
+  ]
+}

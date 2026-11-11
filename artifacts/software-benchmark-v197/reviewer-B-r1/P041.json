@@ -1,0 +1,96 @@
+{
+  "point": "P041",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "_cstack 对右侧 ndarray 用1填满块，丢失已计算的独立性；应像左侧一样拷贝 right，并增加右侧嵌套 CompoundModel 的明确矩阵回归。当前普通 Model 分支测试不足以覆盖该缺陷。",
+  "necessary_entities": [
+    "astropy/modeling/separable.py:_cstack",
+    "astropy/modeling/separable.py:_separable",
+    "astropy/modeling/separable.py:separability_matrix",
+    "astropy/modeling/tests/test_separable.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "公开函数和前段代码已在近期29完全重复。",
+      "source_messages": [
+        5,
+        29
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "_cstack 缺陷及矩阵处理已在近期32完全重复。",
+      "source_messages": [
+        8,
+        32
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "essential",
+      "reason": "近期只见公开入口和 _cstack，需这段递归及 & dispatch 明确嵌套右子树为何成为 ndarray，支撑定位而非仅凭对称猜测。",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "默认 hook 返回 NotImplemented 解释递归默认路径，非最小块复制修复所必需。",
+      "source_messages": [
+        17
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "separability_matrix",
+      "to": "_separable",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        29
+      ],
+      "reason": "入口计算后将非零项转为布尔矩阵。"
+    },
+    {
+      "from": "_separable CompoundModel recursion",
+      "to": "_operators['&'] → _cstack",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11,
+        32
+      ],
+      "reason": "递归左右子树生成矩阵，并按 op 分派；right ndarray 块必须保留已有元素。"
+    },
+    {
+      "from": "_separable",
+      "to": "core.Model._calculate_separability_matrix",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11,
+        17
+      ],
+      "reason": "先尝试定制 hook，默认返回NotImplemented后递归；未观察实际执行。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "右侧嵌套矩阵专用回归",
+    "issue 实际运行结果"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high"
+}

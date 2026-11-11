@@ -1,0 +1,57 @@
+{
+  "point": "P017",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "现有 UnicodeError 转换分支已经存在，刚才替换没有改动。问题输入是 ASCII 且以点开头，应针对 ASCII host 校验补拒绝路径并增加无网络 URL 准备回归，避免重复修改非 ASCII 异常分支。",
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "requests/models.py:PreparedRequest._get_idna_encoded_host",
+    "tests/test_requests.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "与当前决策相关的 host 分支已在最近读取 26 完整重现。",
+      "source_messages": [
+        8,
+        26
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "PreparedRequest.prepare_url",
+      "to": "PreparedRequest._get_idna_encoded_host",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        26
+      ],
+      "reason": "仅非 ASCII host 调用该 helper，ASCII .example.com 不走此分支。"
+    },
+    {
+      "from": "_get_idna_encoded_host",
+      "to": "idna.encode",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        14
+      ],
+      "reason": "源码有局部 import 和 encode 调用，IDNAError 转为 UnicodeError；不是本场景实际执行证明。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "ASCII 点开头 host 的直接回归",
+    "实际异常发生位置的运行栈"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high"
+}

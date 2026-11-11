@@ -1,0 +1,48 @@
+{
+  "point": "P001",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "检查 PandasIndexingAdapter 的构造及 __array__，确认层坐标已有 dtype 如何在物化时被忽略，再设计保留该 dtype 的最小修复。当前只见源码，尚无运行验证。",
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/core/indexing.py:PandasIndexingAdapter",
+    "xarray/core/indexes.py:PandasMultiIndex.create_variables"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+      "to": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "源码明确传入 level_coords_dtype 对应 dtype 和 level；没有执行证明。"
+    },
+    {
+      "from": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "to": "xarray/core/indexing.py:PandasIndexingAdapter",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        18,
+        21
+      ],
+      "reason": "继承及 super 调用可见，但父类 __array__ 主体尚未读到。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "父类 __array__ 和 dtype 初始化完整实现",
+    "issue 复现及回归测试执行"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high"
+}

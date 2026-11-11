@@ -1,0 +1,46 @@
+{
+  "point": "P014",
+  "decision": "构造函数只有点字符校验，应在相邻位置添加空名称 ValueError，并测试空名称与有效名称。当前搜索仅排除了测试中该错误文案，不能当作没有名称测试。",
+  "labels": [],
+  "necessary_entities": [
+    "src/flask/blueprints.py:Blueprint.__init__"
+  ],
+  "dependencies": [
+    {
+      "from": "Blueprint.__init__ name checks",
+      "to": "Blueprint.name assignment",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12,
+        18
+      ],
+      "reason": "name: str 的参数在点校验之后赋值，应于赋值前拒绝空值。"
+    },
+    {
+      "from": "Blueprint.__init__",
+      "to": "Scaffold.__init__",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "Superclass setup precedes current name validation; source shows ordering only, not an observed failing execution."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "现有名称测试内容",
+    "空名回归执行"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No historical candidates. The annotations are complementary: visible validation/assignment order is central, while the superclass call is ancillary syntax. The search excludes one error phrase only, not all name tests."
+}

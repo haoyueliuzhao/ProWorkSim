@@ -1,0 +1,59 @@
+{
+  "point": "P037",
+  "decision": "Skip None estimators before sample_weight capability inspection, preserving validation for active estimators and the all-None error; add weighted refit regressions for both voting classes.",
+  "labels": [],
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/voting.py:VotingClassifier.fit",
+    "sklearn/ensemble/voting.py:VotingRegressor.fit"
+  ],
+  "dependencies": [
+    {
+      "from": "_BaseVoting.fit sample_weight validation",
+      "to": "has_fit_parameter(step, 'sample_weight')",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        20
+      ],
+      "reason": "Validation inspects every step including None, unlike the fitting generator."
+    },
+    {
+      "from": "VotingClassifier.fit / VotingRegressor.fit",
+      "to": "_BaseVoting.fit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        17,
+        20
+      ],
+      "reason": "Subclass fit previews delegate to super; common guard should address both without skipping active-estimator validation."
+    },
+    {
+      "from": "_BaseVoting.fit",
+      "to": "_parallel_fit_estimator",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        17,
+        20
+      ],
+      "reason": "仅 non-None clfs 被 clone 并通过 delayed 拟合；运行链尚未观察。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Helper implementation and regression test bodies are not yet visible; no execution."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No historical candidates. Combine subclass-to-base delegation, capability-check call and filtered fitting helper syntax; all are visible in 17/20. The has_fit_parameter implementation and actual execution remain unknown, so no cross-file/runtime chain is asserted."
+}

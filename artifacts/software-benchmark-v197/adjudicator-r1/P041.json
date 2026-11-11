@@ -1,0 +1,97 @@
+{
+  "point": "P041",
+  "decision": "Preserve the computed right matrix in _cstack instead of filling its block with ones, then test nested right-hand compounds and nesting equivalence.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Public API code repeated in recent read 29.",
+      "source_messages": [
+        5
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Operator/stack code repeated at 32.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "essential",
+      "reason": "Recursive dispatch and '&' operator mapping establish why nested CompoundModels reach the ndarray right branch, linking observed bug to the repair site.",
+      "source_messages": [
+        11
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "Default custom-matrix hook clarifies fallback behavior without being needed for block preservation.",
+      "source_messages": [
+        17
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "astropy/modeling/separable.py:_cstack",
+    "astropy/modeling/separable.py:_separable",
+    "astropy/modeling/tests/test_separable.py"
+  ],
+  "dependencies": [
+    {
+      "from": "separability_matrix",
+      "to": "_separable -> _operators['&'] -> _cstack",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11,
+        29,
+        32
+      ],
+      "reason": "Recursion yields operand matrices; right ndarray block currently discards matrix contents by assigning scalar one."
+    },
+    {
+      "from": "_separable",
+      "to": "Model._calculate_separability_matrix",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11,
+        17
+      ],
+      "reason": "Custom hook precedes default recursion; source is static and no model execution shown."
+    },
+    {
+      "from": "test_cstack",
+      "to": "_cstack",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        23
+      ],
+      "reason": "Existing direct tests pass Model operands, so ndarray/right nested case needs explicit coverage."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No runtime failure or current regression execution."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Keep agreed E003 essential: source 11 supplies recursive matrix dispatch and the & mapping absent from the recent excerpts. Verify the default custom hook at 17 and Model-only direct _cstack tests at 23. Dependencies are static source relations only; no runtime success or failure is inferred."
+}

@@ -1,0 +1,104 @@
+{
+  "point": "P002",
+  "decision": "当前 v2 的选定测试已执行通过，diff 显示 dtype 修复；下一步应补充或确认 int32 stack 的直接回归，不能把两组筛选测试说成所有索引测试或原始复现。",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "提供 dtype 从层坐标传到 adapter 的静态链路，帮助判断修复，但下一步直接回归可由 issue 和现有 diff 确定。",
+      "source_messages": [
+        12
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "完整适配器上下文有助兼容性检查，关键旧表达式已由保留编辑及近期 diff 重现。",
+      "source_messages": [
+        18,
+        23,
+        42
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "标量及索引 dtype 处理是相关旁路，非本次 array 转换下一步的必要事实。",
+      "source_messages": [
+        21
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "变更内容和当前版本由保留动作、近期 diff 与状态重复提供。",
+      "source_messages": [
+        23,
+        24,
+        42,
+        43
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "旧路径拒绝已由近期同类拒绝及成功的正确路径运行取代。",
+      "source_messages": [
+        27,
+        30,
+        36
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+    "xarray/tests/test_indexes.py"
+  ],
+  "dependencies": [
+    {
+      "from": "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+      "to": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "传 dtype/level 的调用可见，未证明实际覆盖。"
+    },
+    {
+      "from": "selected stack/index tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        35,
+        36,
+        38,
+        39,
+        42
+      ],
+      "reason": "67 和 12 个通过均绑定当前 v2，未见这些测试的具体断言或源码级覆盖。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "直接 int32 stack 回归断言及执行证据",
+    "父类 array 转换完整语义"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. All candidate labels agree and are source supported. Resolve necessity disagreement for the historical dtype handoff as helpful but dispensable for selecting a direct regression; retain its observed syntax edge with necessary=false. Current selected test runs bind to v2, but no line-level or exact issue coverage is established."
+}

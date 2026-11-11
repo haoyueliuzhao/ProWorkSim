@@ -1,0 +1,179 @@
+{
+  "point": "P040",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v2 的两个 sample_weight 测试再次通过，但已读测试未组合 None，仍不能称 issue 复现执行成功。应补 set_params(lr=None) 后带 sample_weight 的直接回归；helper 已在 voting.py 找到，路径搜索无需继续。",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/voting.py:_parallel_fit_estimator",
+    "sklearn/ensemble/tests/test_voting.py:test_sample_weight",
+    "sklearn/utils/validation.py:has_fit_parameter"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "无关 weight boosting 片段。",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "错误路径已在近期78找到真正 helper 后失去作用。",
+      "source_messages": [
+        14,
+        78
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "旧 fit 与近期87重复。",
+      "source_messages": [
+        20,
+        87
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "新增guard已在近期87完整提供。",
+      "source_messages": [
+        23,
+        87
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "此前18项全模块通过是较广兼容性证据，当前2项选择不能替代全部范围。",
+      "source_messages": [
+        25,
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "产物在当前状态重复。",
+      "source_messages": [
+        29,
+        91
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "交付在当前状态重复。",
+      "source_messages": [
+        32,
+        91
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "diff 的guard已近期源码重现。",
+      "source_messages": [
+        39,
+        87
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "完整 fit 关键部分近期84/87重现。",
+      "source_messages": [
+        42,
+        84,
+        87
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "essential",
+      "reason": "最近只有2项测试通过的标题/计数，此旧源码说明权重测试只使用非None estimator，必须据此识别 exact issue 覆盖仍缺，不能被通过计数误导。",
+      "source_messages": [
+        51
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "重复错误路径现已定位正确文件。",
+      "source_messages": [
+        54,
+        78
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "同一 fit 及 set_params 近期84/87重现。",
+      "source_messages": [
+        63,
+        84,
+        87
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "最近已读 helper 定义和导入，不再需要旧路径拒绝。",
+      "source_messages": [
+        75,
+        78
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "sklearn/ensemble/voting.py",
+      "to": "sklearn/utils/validation.py:has_fit_parameter",
+      "relation": "import",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        78
+      ],
+      "reason": "相对导入确定 helper 所属模块，未读实现或直接运行 None 检查。"
+    },
+    {
+      "from": "test_sample_weight",
+      "to": "VotingClassifier.fit (non-None estimator combinations)",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "既有断言涵盖等权、随机权重、KNN错误，未设置None。"
+    },
+    {
+      "from": "selected sample_weight tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        89,
+        90,
+        91
+      ],
+      "reason": "2项执行通过，同版但不是新覆盖场景。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "None+sample_weight 专用回归",
+    "all-None 和 regressor 带权场景的针对性验证"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

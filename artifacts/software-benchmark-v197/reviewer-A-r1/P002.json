@@ -1,0 +1,92 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No explicit int32 regression assertion or executed MVCE is visible; 12 selected tests do not mean all index tests."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P002",
+  "decision": "Review v2 dtype conversion and add or confirm a focused int32 regression before publication; selected tests passed but their names do not establish the exact reported reproduction.",
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+    "xarray/tests/test_indexes.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Supplies the dtype handoff underlying the fix; the current diff and issue already support a next focused validation decision.",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Class context helps assess other adapter behavior, but the changed original branch is retained in the recent diff.",
+      "source_messages": [
+        18
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Scalar conversion and slicing give ancillary consistency context; not needed to interpret current selected test evidence.",
+      "source_messages": [
+        21
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Change details and current version are fully repeated by the recent diff and retained edit action.",
+      "source_messages": [
+        24,
+        42
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Invalid-path rejection is repeated recently and corrected paths have already executed successfully.",
+      "source_messages": [
+        27,
+        30,
+        35,
+        36
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "PandasMultiIndex.create_variables",
+      "to": "PandasMultiIndexingAdapter",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "Stored level dtype is passed to the adapter; old code remains context, without proving execution."
+    },
+    {
+      "from": "test-report-233f2e76e6825d2a8f568416",
+      "to": "v2:xarray/core/indexing.py",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        36,
+        42
+      ],
+      "reason": "67 selected tests and inspected diff share v2; this is version binding, not per-line coverage."
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "point": "P018",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "新增 issue 测试实际失败为 urllib3 LocationParseError，未证明导入了 build/lib。应回到 ASCII host 分支修复点开头校验，并读取缺失的前一错误页以确认请求链；在 helper 中捕获再抛同类 UnicodeError 无法修复绕过 helper 的输入。",
+  "necessary_entities": [
+    "requests/models.py:PreparedRequest.prepare_url",
+    "requests/models.py:PreparedRequest._get_idna_encoded_host",
+    "tests/test_requests.py:TestRequests.test_invalid_url"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "全 prepare_url 源码包含关键 ASCII 条件；较集中旧卡 E005 足以支撑下一步。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "helper 实现可确认捕获变化效果有限，完整变更已在保留动作。",
+      "source_messages": [
+        14,
+        28
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Request.prepare 的包装上下文不解释 ASCII 缺漏。",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "早期无操作拒绝已由后续真实编辑取代。",
+      "source_messages": [
+        23,
+        29
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "essential",
+      "reason": "最近窗口只见测试与失败，需此源码确认 .example.com 为 ASCII 会跳过 helper，从而纠正错误的导入路径假设。",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "helper 的前后代码和成功编辑已由保留动作及当前版本体现。",
+      "source_messages": [
+        28,
+        29
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "prepare_url",
+      "to": "_get_idna_encoded_host",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        26
+      ],
+      "reason": "调用受 not unicode_is_ascii(host) 条件控制，ASCII leading-dot 不经过 helper。"
+    },
+    {
+      "from": "test_invalid_url[InvalidURL-http://.example.com]",
+      "to": "urllib3.util.connection.create_connection",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        50,
+        53
+      ],
+      "reason": "失败报告给出该测试和连接层 LocationParseError；中间完整调用链与 requests 导入路径尚未见。"
+    },
+    {
+      "from": "failed regression",
+      "to": "v3",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        47,
+        50,
+        53
+      ],
+      "reason": "真实失败绑定添加回归后的 v3，必须修复再测。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "报告前一页完整 requests 调用栈",
+    "ASCII host 的修复与执行",
+    "build/lib 导入假设的证据"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

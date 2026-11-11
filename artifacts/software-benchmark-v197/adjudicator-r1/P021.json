@@ -1,0 +1,146 @@
+{
+  "point": "P021",
+  "decision": "v2 在 collect_pages 增加 builder/config guard，下一步读取现有测试并建立 HTML→EPUB 复用 doctree 的回归，同时检查禁用时页面与 source 链接、启用时页面仍生成。缓存泄漏机制目前主要为源码推断。",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "doctree guard 及收集逻辑已在近期完整读取重复。",
+      "source_messages": [
+        6,
+        47
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "collect_pages 和引用逻辑在近期页 50 重复。",
+      "source_messages": [
+        9,
+        50
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "setup 注册和生成尾部已在近期 53 重复。",
+      "source_messages": [
+        12,
+        53
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "pending_xref 源码在近期 50 重复。",
+      "source_messages": [
+        15,
+        50
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "HTML builder 发事件/写页面的真实语法有助验证跨文件链路，但直接回归可从当前 guard 和 issue 设计。",
+      "source_messages": [
+        32
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "读取越过文件末尾，空文本不提供 EPUB 行为证据。",
+      "source_messages": [
+        35
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "重复空读取无实现证据。",
+      "source_messages": [
+        38
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "sphinx/ext/viewcode.py:collect_pages",
+    "sphinx/ext/viewcode.py:doctree_read",
+    "sphinx/ext/viewcode.py:missing_reference",
+    "tests/test_ext_viewcode.py",
+    "sphinx/builders/html/__init__.py:gen_pages_from_extensions"
+  ],
+  "dependencies": [
+    {
+      "from": "sphinx/builders/html/__init__.py:gen_pages_from_extensions",
+      "to": "sphinx/ext/viewcode.py:collect_pages",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        32,
+        53
+      ],
+      "reason": "Literal html-collect-pages emission and registration connect generator to page handling; no runtime invocation yet."
+    },
+    {
+      "from": "doctree_read",
+      "to": "env._viewcode_modules / collect_pages",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        47,
+        50,
+        55
+      ],
+      "reason": "Recording guard alone does not prevent consuming preexisting module cache; new guard is at consumer."
+    },
+    {
+      "from": "HTML persisted _viewcode_modules",
+      "to": "later EPUB collect_pages",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        47,
+        50,
+        55
+      ],
+      "reason": "生产与消费同名环境数据可见；保存/复用和 EPUB 继承的完整路径尚未证实。"
+    },
+    {
+      "from": "EPUB builder",
+      "to": "HTML builder collection event",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "uncertain",
+      "source_messages": [
+        35,
+        38
+      ],
+      "reason": "Empty EPUB reads cannot prove inheritance or execution; issue and author supply hypothesis only."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "共享环境 HTML→EPUB 的实际回归",
+    "EPUB builder 继承/事件执行路径",
+    "缓存 source 链接在禁用输出时的行为"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. All labels agree. Message 32 emit and 53 connect establish a static cross-file event route. Producer/consumer access to _viewcode_modules is directly visible, but persistence across builders and EPUB inheritance remain inferred/unconfirmed; empty reads supply no execution evidence. The next regression should test this explicit gap."
+}

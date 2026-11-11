@@ -1,0 +1,70 @@
+{
+  "point": "P035",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "最终 diff 与请求的一行恢复一致，v2 同版测试和交付记录齐全，可按140通过、1预期失败的范围收尾。若要声称目录链接场景已实际执行，需核查专用断言；目前尚未显示该覆盖。",
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit",
+    "testing/test_pathlib.py",
+    "testing/test_collection.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "visit 的关键递归实现已在近期最终 diff 重现，外围包解析无关本次收尾。",
+      "source_messages": [
+        9,
+        24
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "编辑和当前版本绑定由保留动作、近期 diff/交付状态重复。",
+      "source_messages": [
+        11,
+        12,
+        24,
+        27
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "visit",
+      "to": "entry.is_dir / recurse / recursive visit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        24
+      ],
+      "reason": "恢复默认 is_dir 并保留过滤回调，语法修复与 issue 相符。"
+    },
+    {
+      "from": "pathlib/collection test run and delivery",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        18,
+        21,
+        24,
+        27
+      ],
+      "reason": "同一 v2 有140通过和1xfailed，发布交付亦同版。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "目录链接专用执行断言及收集器调用路径"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

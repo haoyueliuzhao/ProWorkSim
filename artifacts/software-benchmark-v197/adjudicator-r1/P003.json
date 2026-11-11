@@ -1,0 +1,162 @@
+{
+  "point": "P003",
+  "decision": "Create a focused dtype-preservation regression and remove the unsupported issue-number claim; the visible searches do not establish absence of all existing tests.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Shows original dtype propagation to the adapter and supports choosing a regression boundary.",
+      "source_messages": [
+        12
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Adapter context may inform a direct unit regression; original changed lines already appear in recent diff.",
+      "source_messages": [
+        18
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "标量 dtype 是相关边界，尚无必须改动此旁路的证据。",
+      "source_messages": [
+        21
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Edit is preserved in action text and recent diff.",
+      "source_messages": [
+        24
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Rejected obsolete test paths no longer constrain the current focused check.",
+      "source_messages": [
+        27
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Repeated invalid-path attempt supplies no additional current evidence.",
+      "source_messages": [
+        30
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Exact scope and count can audit the broad-test claim; retained actions and recent self-review already identify the coverage gap.",
+      "source_messages": [
+        36
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "useful",
+      "reason": "Separately records 12 selected passing tests, but cannot prove int32 coverage.",
+      "source_messages": [
+        39
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Same diff repeated at message 55.",
+      "source_messages": [
+        42
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "Current state repeats patch identity and source version.",
+      "source_messages": [
+        45
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Current state repeats delivery identity and limited acceptance status.",
+      "source_messages": [
+        48
+      ],
+      "resolution": "adjudicated"
+    }
+  ],
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/tests/test_indexes.py",
+    "xarray/tests/test_indexing.py"
+  ],
+  "dependencies": [
+    {
+      "from": "v2:PandasMultiIndexingAdapter.__array__",
+      "to": "numpy.asarray",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        55
+      ],
+      "reason": "Current diff supplies explicit dtype/default stored dtype conversion."
+    },
+    {
+      "from": "selected public tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        36,
+        39,
+        55,
+        65
+      ],
+      "reason": "当前变更和既有筛选测试同属 v2；没有测试源码证明 issue 断言。"
+    },
+    {
+      "from": "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+      "to": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "The visible constructor call passes preserved dtype; helpful context, not an observed Dataset.stack runtime trace."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No focused dtype assertion has been executed.",
+    "Message 61 search is incomplete; no-match cannot establish suite-wide absence.",
+    "Issue number 7376 lacks support in visible issue."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. E003 supplies useful dtype boundary context although dispensable; E010/E011 are irrelevant because message 65 repeats both current patch/delivery identities and v2 binding. Resolve cross-file coverage as true from the observed create_variables-to-adapter call at message 12, not the inferred complete stack runtime path."
+}

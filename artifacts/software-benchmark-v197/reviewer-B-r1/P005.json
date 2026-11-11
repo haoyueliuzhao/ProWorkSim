@@ -1,0 +1,87 @@
+{
+  "point": "P005",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "Basic 已修改但未测试。下一步应确认 Expr 的未知类型失败分支应返回 NotImplemented，并检查数值类的覆盖和反射比较回归，同时保留复杂数/NaN 的合法错误语义。",
+  "necessary_entities": [
+    "sympy/core/basic.py:Basic.__eq__",
+    "sympy/core/basic.py:Basic.__ne__",
+    "sympy/core/expr.py:Expr comparison methods",
+    "sympy/core/numbers.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Pow 特例等完整上下文有助检查 equality 影响；关键编辑代码已保留。",
+      "source_messages": [
+        12,
+        41
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Expr 比较源码已在当前 v2 的近期读取重复提供。",
+      "source_messages": [
+        21,
+        51
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "同一 eq/ne 分支在保留编辑中完整重现。",
+      "source_messages": [
+        30,
+        41
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "提供 Pow 和类型检查上下文，但旧 Basic 重复读取不单独必需。",
+      "source_messages": [
+        33,
+        12
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "Basic.__ne__",
+      "to": "Basic.__eq__",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        41,
+        42
+      ],
+      "reason": "ne 直接使用 eq 返回值，必须透传 NotImplemented 而不能取反。"
+    },
+    {
+      "from": "Expr.__ge__/__le__/__gt__/__lt__",
+      "to": "_sympify / relational constructors",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "仅转换失败分支决定是否允许反射；复杂数和 NaN 分支另有 TypeError。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "未知类双向 eq/ne 及 ordering 的测试",
+    "numbers.py 各子类完整实现",
+    "v2 运行证据"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

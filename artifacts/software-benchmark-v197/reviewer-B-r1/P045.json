@@ -1,0 +1,194 @@
+{
+  "point": "P045",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "当前临时回归因调用 _setup 参数错误而未测试图例行为，应改用 _setup(data, prop[, axis]) 并检查标签数值是否等于刻度。直接把 label 与 get_offset 字符串拼接没有证明加性/乘性或MathText语义正确；还需检验 scatterplot 的独立路径。",
+  "necessary_entities": [
+    "seaborn/_core/scales.py:ContinuousBase._setup",
+    "seaborn/_core/scales.py:Continuous._get_formatter",
+    "tests/_core/test_issue_offset_tmp.py",
+    "seaborn/_core/plot.py:_update_legend_contents"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "完整_setup/PseudoAxis上下文有助正确调用，但近期83已经给出签名。",
+      "source_messages": [
+        3,
+        83
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Scale._get_scale如何配置formatter的静态链路。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "自定义formatter/like等契约约束后续修复。",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "默认ScalarFormatter及其他formatter分支有助边界设计，不是修正调用参数的必要旧卡。",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "旧legend块已被当前71重现。",
+      "source_messages": [
+        23,
+        71
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "导入与更完整旧页重复。",
+      "source_messages": [
+        29,
+        8
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Temporal共享基类及PseudoAxis背景，提示不能通用拼接offset。",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "无操作拒绝已后续编辑解决。",
+      "source_messages": [
+        38
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "未使用的_legend_offset草稿已替换。",
+      "source_messages": [
+        41,
+        52
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "custom format与locator配置参考。",
+      "source_messages": [
+        47
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "旧unused offset实现已取代。",
+      "source_messages": [
+        50,
+        71
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "拼接修改完整保留并近期源码重现。",
+      "source_messages": [
+        52,
+        53,
+        71
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "当前拼接diff与近期71相同。",
+      "source_messages": [
+        62,
+        71
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "useful",
+      "reason": "v3尺度兼容性83通过1xfail，但不验证新临时用例也不证明offset正确。",
+      "source_messages": [
+        64,
+        65
+      ]
+    },
+    {
+      "event": "E015",
+      "label": "useful",
+      "reason": "v3选择16项通过范围可复核，不能替代具体数值断言。",
+      "source_messages": [
+        67,
+        68
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_legend_labels_include_offset",
+      "to": "ContinuousBase._setup",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        73,
+        77,
+        80,
+        83
+      ],
+      "reason": "调用7个位置参数触发TypeError，两参数化项均未进入目标语义验证。"
+    },
+    {
+      "from": "ContinuousBase._setup",
+      "to": "formatter.format_ticks / get_offset",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        71
+      ],
+      "reason": "获取标签与offset后直接字符串拼接，语法可见，数值正确性尚无证据。"
+    },
+    {
+      "from": "seaborn/_core/plot.py:_update_legend_contents",
+      "to": "scales[var]._legend",
+      "relation": "other",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        44
+      ],
+      "reason": "搜索片段显示读取(values,labels)，不证明scatterplot或实际渲染覆盖。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "正确调用后的numeric legend回归",
+    "乘性/加性offset及MathText案例",
+    "scatterplot图例实现与验证"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

@@ -1,0 +1,88 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No discovered-directory-symlink regression; latest 64 passes should not be described as exact issue reproduction."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P036",
+  "decision": "Add or identify a regression for discovering a symlinked directory inside a collected parent; the selected explicit symlink test exercises files and broken links, not directory recursion.",
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit",
+    "testing/test_collection.py:test_collect_sub_with_symlinks"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full traversal context supports designing an indirect-directory case; edit/diff is already retained.",
+      "source_messages": [
+        9
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Exact edit preserved in action text.",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Broader earlier run covers more collection tests than latest subset, with no direct branch proof.",
+      "source_messages": [
+        18
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Current delivery/state retain patch identity.",
+      "source_messages": [
+        21
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Diff includes recursive call context; retained edit and issue already establish intended change.",
+      "source_messages": [
+        24
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_collect_sub_with_symlinks",
+      "to": "symlink_or_skip / testdir.runpytest",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        37,
+        39,
+        40
+      ],
+      "reason": "Executed parameterized test creates symlinks to files inside a real subdirectory, so it does not test symlink-directory descent."
+    },
+    {
+      "from": "visit",
+      "to": "directory symlink traversal",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        24
+      ],
+      "reason": "is_dir() change supports intended behavior statically, but no matching runtime test is shown."
+    }
+  ]
+}

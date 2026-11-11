@@ -1,0 +1,116 @@
+{
+  "point": "P038",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "自审源码确认 None 在训练环节已过滤，新增检查正好修复更早的 sample_weight 校验。应查找现有 None 与权重测试的组合并直接验证 issue；按函数名搜索无匹配不证明缺少相关测试。",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/voting.py:_BaseVoting.set_params",
+    "sklearn/ensemble/tests/test_voting.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "weight_boosting 文档片段与 voting None 校验无关。",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "错误路径已通过 voting.py 定位解决。",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "旧 fit 完整实现在近期 v2 读取42重复。",
+      "source_messages": [
+        20,
+        42
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "变更在近期 diff39完整重现。",
+      "source_messages": [
+        23,
+        39
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "18项真实通过与当前版本绑定可复核，尚无具体测试内容证明 issue 场景。",
+      "source_messages": [
+        25,
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "产物版本绑定已在近期交付/状态保留。",
+      "source_messages": [
+        29,
+        32,
+        46
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_BaseVoting.set_params",
+      "to": "_set_params('estimators',...) ",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        42
+      ],
+      "reason": "文档明确允许设置 None，具体父类替换实现未读取。"
+    },
+    {
+      "from": "_BaseVoting.fit",
+      "to": "has_fit_parameter / _parallel_fit_estimator",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        39,
+        42
+      ],
+      "reason": "新增 None 跳过与后续训练过滤一致，同时保留非None estimator 的权重支持错误。"
+    },
+    {
+      "from": "voting test run",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        26,
+        39,
+        42
+      ],
+      "reason": "18项通过与当前源码同版，无特定 issue 覆盖明细。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "None 与 sample_weight 同时出现的专用断言",
+    "has_fit_parameter 的真实实现",
+    "regressor 同样路径的执行"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

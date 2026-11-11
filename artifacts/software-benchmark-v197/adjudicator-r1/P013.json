@@ -1,0 +1,35 @@
+{
+  "point": "P013",
+  "decision": "读取 Blueprint.__init__ 剩余部分及现有名称校验，再在构造时拒绝空名称并补回归。单次搜索没有 if not name 不能证明不存在其他形式的校验。",
+  "labels": [],
+  "necessary_entities": [
+    "src/flask/blueprints.py:Blueprint.__init__"
+  ],
+  "dependencies": [
+    {
+      "from": "BlueprintSetupState.add_url_rule",
+      "to": "app.add_url_rule endpoint name",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        6
+      ],
+      "reason": "可见名称拼入 endpoint 的语法，说明名称用途；不是实际路由运行证据。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "构造函数体及已有校验",
+    "名称相关测试",
+    "空名错误的执行证据"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No candidates or substantive disagreements. The visible endpoint-construction call is explanatory syntax; it does not establish a concrete cross-file implementation target or execution. The constructor body is still missing."
+}

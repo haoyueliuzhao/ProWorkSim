@@ -1,0 +1,105 @@
+{
+  "point": "P011",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v3 已在 min 分支补上零值回退，静态上覆盖 issue 路径。下一步应加入 _query_cpu 返回 0 的直接回归并验证 v3；旧 v2 的 5 项通过不能证明该缺陷已修复。",
+  "necessary_entities": [
+    "pylint/lint/run.py:_cpu_count",
+    "pylint/lint/run.py:_query_cpu",
+    "tests/lint/unittest_lint.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "完整计算逻辑已在近期 v2 源码读取重复。",
+      "source_messages": [
+        3,
+        36
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "jobs=0 的调用者证据仍相关，但直接 helper 回归可独立完成。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "旧修改完整存在保留动作与近期 diff。",
+      "source_messages": [
+        10,
+        11,
+        33
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "说明此前测试未暴露真实缺陷，选择内容在保留调用中；非当前通过。",
+      "source_messages": [
+        16,
+        17
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "旧 diff 在近期再次呈现。",
+      "source_messages": [
+        20,
+        33
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "v2 旧产物不能代表当前修复，当前状态已明确未测试未发布。",
+      "source_messages": [
+        23,
+        40
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        36,
+        38
+      ],
+      "reason": "返回0触发非None分支，v3 min(... ) or 1 把0变为1。"
+    },
+    {
+      "from": "5 selected passing tests",
+      "to": "v2 (not v3)",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        17,
+        39,
+        40
+      ],
+      "reason": "编辑使当前版本变为 v3，需新验证。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "零份额的回归断言与执行",
+    "v3 测试结果"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

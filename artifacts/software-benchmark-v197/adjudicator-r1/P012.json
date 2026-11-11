@@ -1,0 +1,165 @@
+{
+  "point": "P012",
+  "decision": "v3 两条返回路径都防零且选定 5 项测试通过，仍缺 shares=2 的直接回归。若收尾，应明确这一缺口，并纠正『仓库没有 helper 测试』的断言：搜索 42 是未完成的空页。可通过有针对性的测试补齐而无需容器。",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "完整 probe 实现有助设计 mocked cgroup 回归；近期动作已复述具体路径。",
+      "source_messages": [
+        3,
+        38
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "自动 jobs 调用者有助端到端范围定义。",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "错误初稿在最终 diff 和保留动作可重建。",
+      "source_messages": [
+        11,
+        45
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "旧 v2 相同选择通过已由 v3 结果取代。",
+      "source_messages": [
+        17,
+        48
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "旧单分支 diff 已被最终差异取代。",
+      "source_messages": [
+        20,
+        45
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "旧产物被 patch-2 取代。",
+      "source_messages": [
+        23,
+        51
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "旧交付被 delivery-2 取代。",
+      "source_messages": [
+        26,
+        54
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "重复的旧 diff。",
+      "source_messages": [
+        33,
+        45
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "完整 helper 源码有助独立验证静态推导，但下一步补回归已有 issue 和保留修复足够定位。",
+      "source_messages": [
+        36,
+        38
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "最终修复动作和近期 diff 完整重复。",
+      "source_messages": [
+        38,
+        39,
+        45
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "pylint/lint/run.py:_cpu_count",
+    "pylint/lint/run.py:_query_cpu",
+    "tests/lint/unittest_lint.py"
+  ],
+  "dependencies": [
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        36,
+        38,
+        45
+      ],
+      "reason": "shares 取整为 0 后返回值经 or 1 防零；属源码推断，无对应执行。"
+    },
+    {
+      "from": "selected jobs/cpu/parallel tests",
+      "to": "v3 / patch-2 / delivery-2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        47,
+        48,
+        51,
+        54
+      ],
+      "reason": "当前版本的 5 项实际通过，选择名称本身不构成 helper 分支覆盖。"
+    },
+    {
+      "from": "reported issue:PyLinter.check",
+      "to": "pylint/lint/parallel.py:check_parallel / multiprocessing.Pool",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_execution",
+      "source_messages": [
+        1
+      ],
+      "reason": "Explicit user-supplied historical issue stack; not a current v3 reproduction."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "issue cgroup 值的直接执行",
+    "未完成搜索的后续结果",
+    "选定测试的具体断言"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Preserve all agreed labels. Normalize the helper dependency as the actual _cpu_count-to-_query_cpu call rather than a reverse dataflow label. Five passing selected tests bind to v3 without proving the zero-share branch executed. The incomplete empty search does not establish absence of helper tests. Cross-file coverage comes from the issue's historical supplied traceback, not the current passing run."
+}

@@ -1,0 +1,92 @@
+{
+  "point": "P030",
+  "decision": "v2 删除了整个按边界键清理的 DELETE，两个 test_cull 实测剩49而预期29。应恢复正常 DELETE，只在 fetchone 返回 None 时跳过它，并增加无行回归后重跑这两组数据库缓存测试。",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "模块前段 get/set 基础代码不决定当前需要恢复的删除语句。",
+      "source_messages": [
+        5
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "set 到 _cull 的真实调用条件帮助解释回归，修复文本本身已在保留动作。",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "原 DELETE 完整文本保留在编辑13，当前 _cull 源码也已近期读到。",
+      "source_messages": [
+        11,
+        13,
+        17
+      ],
+      "resolution": "adjudicated"
+    }
+  ],
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "tests/cache/tests.py:_perform_cull_test",
+    "tests/cache/tests.py:DBCacheTests / DBCacheWithTimeZoneTests"
+  ],
+  "dependencies": [
+    {
+      "from": "_perform_cull_test",
+      "to": "cache.set / cache.has_key",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        26
+      ],
+      "reason": "循环插入49项再计数，期望29条存活，明确正常清理契约。"
+    },
+    {
+      "from": "DBCacheTests.test_cull / DBCacheWithTimeZoneTests.test_cull",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        20,
+        23
+      ],
+      "reason": "两种配置均实际49!=29，不能报告通过。"
+    },
+    {
+      "from": "removed DELETE",
+      "to": "missing size cull",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        13,
+        17,
+        23,
+        26
+      ],
+      "reason": "源码删除与计数失败一致，因果分析为有明确支持的推断。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "fetchone=None 专用回归",
+    "恢复 DELETE 后当前版本验证"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. E003 is irrelevant for the immediate restoration because retained edit 13 supplies the original DELETE and recent 17 supplies current _cull. The tests directly report 49 versus 29, while the causal connection to removed range deletion is a supported inference rather than a traced internal call. Preserve separate test syntax and v2 binding."
+}

@@ -1,0 +1,186 @@
+{
+  "point": "P042",
+  "decision": "Test the corrected right-array assignment with the exact nested example and assess whether newly added direct-CompoundModel branches in _cstack are necessary; normal _separable recursion already passes arrays.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Older public API read duplicated later.",
+      "source_messages": [
+        5
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Older stack body duplicated by current diff.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Recursion now reread at 65.",
+      "source_messages": [
+        11
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "Default hook context helps bound recursion behavior; duplicated later core read.",
+      "source_messages": [
+        17
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Existing direct _cstack Model tests indicate controls needed for additional branches.",
+      "source_messages": [
+        23
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "Existing public matrix/is_separable assertions guide nested regression insertion.",
+      "source_messages": [
+        26
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Public APIs call _separable and convert matrix results; no execution proof.",
+      "source_messages": [
+        29
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Original right-block bug and surrounding branches visible in current diff.",
+      "source_messages": [
+        32
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Repeated recursion body, now recent.",
+      "source_messages": [
+        35
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "Default hook duplicates E004.",
+      "source_messages": [
+        41
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Repeated test read adds no new fact beyond E005.",
+      "source_messages": [
+        44
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Historical edit superseded and repeated by current diff/action.",
+      "source_messages": [
+        47
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Repeated public API portion.",
+      "source_messages": [
+        50
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E014",
+      "label": "useful",
+      "reason": "Intermediate stack code context is dispensable with complete current diff.",
+      "source_messages": [
+        53
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "astropy/modeling/separable.py:_cstack",
+    "astropy/modeling/separable.py:_separable",
+    "astropy/modeling/tests/test_separable.py"
+  ],
+  "dependencies": [
+    {
+      "from": "_separable(CompoundModel)",
+      "to": "_operators['&']/_cstack with ndarray operands",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        65,
+        68
+      ],
+      "reason": "Child recursion computes matrices before dispatch, so replacing one by scalar one is the direct issue path."
+    },
+    {
+      "from": "_cstack direct CompoundModel branch",
+      "to": "_separable / numpy.pad",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        68
+      ],
+      "reason": "New direct-Model support extends beyond normal recursive dispatch and needs focused branch tests if retained."
+    },
+    {
+      "from": "astropy/modeling/separable.py:_separable",
+      "to": "astropy/modeling/core.py:Model._calculate_separability_matrix",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        17,
+        65
+      ],
+      "reason": "Default hook and caller are visible across files; no runtime hook trace is claimed."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No tests executed on v3; exact issue and new direct-CompoundModel branches remain unverified."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Resolve repeated-source disputes by retaining E007 as useful API context and treating duplicate E001/E013 as irrelevant; E002 is repeated by later stack context and E011 duplicates E005 tests. The exact issue route recursively produces arrays before _cstack, so direct CompoundModel additions are unproven extra behavior. Cross-file coverage remains supported by the core Model hook and tests, despite recent edits being in one file."
+}

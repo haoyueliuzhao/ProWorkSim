@@ -1,0 +1,58 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No current-version execution; pool implementation has not been inspected."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P009",
+  "decision": "Fix the non-None cpu-share branch: current edit only guards the fallback and still returns min(0, cpu_count) for the issue's shares=2 case. Add focused cgroup tests.",
+  "necessary_entities": [
+    "pylint/lint/run.py:_query_cpu",
+    "pylint/lint/run.py:_cpu_count",
+    "pylint/lint/run.py:Run.__init__"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "_cpu_count",
+      "to": "_query_cpu",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        3,
+        10
+      ],
+      "reason": "Zero from int(shares/1024) follows non-None branch, bypassing edited final fallback."
+    },
+    {
+      "from": "Run.__init__:jobs==0",
+      "to": "_cpu_count",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8
+      ],
+      "reason": "Literal caller stores detected count in linter.config.jobs."
+    },
+    {
+      "from": "linter.config.jobs",
+      "to": "multiprocessing.Pool",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        8
+      ],
+      "reason": "Issue reports downstream crash; inspected caller has no direct Pool call, so full runtime propagation is not established by this source read."
+    }
+  ]
+}

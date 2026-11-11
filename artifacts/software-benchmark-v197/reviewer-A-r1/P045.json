@@ -1,0 +1,182 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Temporary false-useoffset case asserts True and cannot validate correctness.",
+    "No numerical meaning assertion, additive-offset/mathtype check or legacy scatterplot path inspection."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P045",
+  "decision": "Fix the reproduction's _setup(data, prop, axis=None) call, then assert label numeric meaning for large/small values and additive offsets. Raw label+offset concatenation is not yet a validated representation.",
+  "necessary_entities": [
+    "seaborn/_core/scales.py:ContinuousBase._setup",
+    "seaborn/_core/scales.py:Continuous._get_formatter",
+    "tests/_core/test_issue_offset_tmp.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full scale setup context informs proper harness, with signature now repeated in recent search.",
+      "source_messages": [
+        3
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "General import list does not diagnose signature failure.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Tick configuration documentation is peripheral to immediate harness repair.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "Default ScalarFormatter and custom/log/unit branches identify cases affected by generic offset concatenation.",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "PseudoAxis setup and normalization explain correct data/property inputs.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Repeated formatter imports.",
+      "source_messages": [
+        29
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Temporal inherits ContinuousBase and may use concise date offsets; generic change affects more than scalar labels.",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Resolved no-op edit.",
+      "source_messages": [
+        38
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Unused offset-attribute approach superseded.",
+      "source_messages": [
+        41
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "Custom formatter/like/unit contract matters for later edge-case checks.",
+      "source_messages": [
+        47
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Intermediate offset attribute superseded by recent current body.",
+      "source_messages": [
+        50
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Current concatenation code repeated in recent body and retained edit.",
+      "source_messages": [
+        53
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Diff duplicates recent current body.",
+      "source_messages": [
+        62
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "useful",
+      "reason": "Older broad scale pass is regression context only; failed reproduction is newer.",
+      "source_messages": [
+        65
+      ]
+    },
+    {
+      "event": "E015",
+      "label": "useful",
+      "reason": "Older legend/formatter selection supplies bounded coverage, not correct offset arithmetic.",
+      "source_messages": [
+        68
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "temporary offset test",
+      "to": "Continuous._setup signature",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        73,
+        80,
+        83
+      ],
+      "reason": "Both cases fail at argument binding before formatting, so no issue behavior was exercised."
+    },
+    {
+      "from": "ContinuousBase._setup",
+      "to": "formatter.format_ticks / get_offset",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        71
+      ],
+      "reason": "Concatenates two strings without distinguishing multiplicative, additive or date offsets; correctness remains unproven."
+    },
+    {
+      "from": "Temporal",
+      "to": "ContinuousBase._setup",
+      "relation": "other",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        14,
+        32
+      ],
+      "reason": "Shared setup means generic formatting edit can affect date legends too; no runtime test shown."
+    }
+  ]
+}

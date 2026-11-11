@@ -1,0 +1,172 @@
+{
+  "point": "P042",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "近期 _separable 源码表明 CompoundModel 子树先递归成 ndarray，再交给 _cstack；因此 issue 路径由 right块复制修复，新增 CompoundModel 特判并非该路径所需。应收窄或单独证明额外分支，再添加 exact issue 和左右嵌套回归并运行。",
+  "necessary_entities": [
+    "astropy/modeling/separable.py:_separable",
+    "astropy/modeling/separable.py:_cstack",
+    "astropy/modeling/tests/test_separable.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "公开矩阵/布尔转换契约背景，后续读取重合。",
+      "source_messages": [
+        5
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "原 _coord_matrix/stack 上下文可分析额外分支是否必要。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "递归与分派已由近期当前版65完整提供。",
+      "source_messages": [
+        11,
+        65
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "useful",
+      "reason": "默认 hook 返回NotImplemented 的契约，非修复下一步必需。",
+      "source_messages": [
+        17
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "现有测试样式与简单Model分支断言可供添加回归。",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "参数化公开 API 测试和 custom hook 相关背景。",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "与更晚入口读取重复。",
+      "source_messages": [
+        29,
+        50
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "旧stack实现与保留编辑及近期diff重合。",
+      "source_messages": [
+        32,
+        46,
+        68
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "递归内容在当前65重复。",
+      "source_messages": [
+        35,
+        65
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "irrelevant",
+      "reason": "重复默认hook。",
+      "source_messages": [
+        41,
+        17
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "useful",
+      "reason": "较完整既有测试可放置nested案例，旧卡23亦有同样部分。",
+      "source_messages": [
+        44
+      ]
+    },
+    {
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "一行 right复制变更在保留动作及近期diff已体现。",
+      "source_messages": [
+        46,
+        47,
+        68
+      ]
+    },
+    {
+      "event": "E013",
+      "label": "useful",
+      "reason": "公开矩阵到递归入口关系，关键 _cstack 修复不依赖此重复页。",
+      "source_messages": [
+        50
+      ]
+    },
+    {
+      "event": "E014",
+      "label": "useful",
+      "reason": "v2的一行修复及Model分支背景，可比较额外改动，当前diff亦可还原。",
+      "source_messages": [
+        53,
+        68
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_separable(CompoundModel)",
+      "to": "_operators['&']/_cstack(ndarray,ndarray)",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        65,
+        68
+      ],
+      "reason": "先递归两子树后按operator组合，不能把该路径描述成直接将CompoundModel作为leaf。"
+    },
+    {
+      "from": "new _cstack CompoundModel branch",
+      "to": "_separable / np.pad",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        55,
+        68
+      ],
+      "reason": "新分支语法确实存在，但公开 issue 执行路径无需它，暂无测试证明必要。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "v3 运行结果",
+    "exact issue nested矩阵回归",
+    "新增私有helper分支的需求与测试"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

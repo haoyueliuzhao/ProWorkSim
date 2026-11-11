@@ -1,0 +1,109 @@
+{
+  "point": "P036",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "自审读到的 test_collect_sub_with_symlinks 实际测试文件链接和坏链接，不能替代测试目录内目录链接的递归收集回归。64 项通过确认这组选定检查，下一步应补或定位目录链接专用用例，避免把文件链接覆盖扩大。",
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit",
+    "testing/test_collection.py:test_collect_sub_with_symlinks",
+    "testing/test_pathlib.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "visit 递归源代码有助设计目录链接用例，关键修改已在保留动作。",
+      "source_messages": [
+        9,
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "变更动作和当前状态已保留。",
+      "source_messages": [
+        11,
+        12,
+        41
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "完整 collection 模块曾通过提供更广历史范围，但不证明特定目录分支。",
+      "source_messages": [
+        17,
+        18
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "固定产物绑定在近期状态/交付中重复。",
+      "source_messages": [
+        21,
+        27,
+        41
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "完整最小 diff 可用于自审核对，但核心修改已保留。",
+      "source_messages": [
+        24,
+        11
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_collect_sub_with_symlinks",
+      "to": "symlink_or_skip / testdir.runpytest",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        37
+      ],
+      "reason": "创建指向 test_file.py 的文件链接及坏链接；未创建指向目录的递归用例。"
+    },
+    {
+      "from": "focused file-symlink plus pathlib selection",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        39,
+        40,
+        41
+      ],
+      "reason": "64 项真实通过，但不能自动构成目录链接覆盖。"
+    },
+    {
+      "from": "test collection",
+      "to": "pathlib.visit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "uncertain",
+      "source_messages": [
+        9,
+        37
+      ],
+      "reason": "测试和 helper 源码各自可见，收集器中间调用尚未读取。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "嵌套目录 symlink 的直接回归",
+    "收集器调用 visit 的真实路径"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

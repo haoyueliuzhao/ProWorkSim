@@ -1,0 +1,118 @@
+{
+  "point": "P036",
+  "decision": "Add or identify a regression for discovering a symlinked directory inside a collected parent; the selected explicit symlink test exercises files and broken links, not directory recursion.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Full traversal context supports designing an indirect-directory case; edit/diff is already retained.",
+      "source_messages": [
+        9
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Exact edit preserved in action text.",
+      "source_messages": [
+        12
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Broader earlier run covers more collection tests than latest subset, with no direct branch proof.",
+      "source_messages": [
+        18
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Current delivery/state retain patch identity.",
+      "source_messages": [
+        21
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Diff includes recursive call context; retained edit and issue already establish intended change.",
+      "source_messages": [
+        24
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit",
+    "testing/test_collection.py:test_collect_sub_with_symlinks"
+  ],
+  "dependencies": [
+    {
+      "from": "test_collect_sub_with_symlinks",
+      "to": "symlink_or_skip / testdir.runpytest",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        37,
+        39,
+        40
+      ],
+      "reason": "Executed parameterized test creates symlinks to files inside a real subdirectory, so it does not test symlink-directory descent."
+    },
+    {
+      "from": "visit",
+      "to": "directory symlink traversal",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        24
+      ],
+      "reason": "is_dir() change supports intended behavior statically, but no matching runtime test is shown."
+    },
+    {
+      "from": "focused file-symlink plus pathlib selection",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        39,
+        40,
+        41
+      ],
+      "reason": "64 项真实通过，但不能自动构成目录链接覆盖。"
+    },
+    {
+      "from": "test collection",
+      "to": "pathlib.visit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "uncertain",
+      "source_messages": [
+        9,
+        37
+      ],
+      "reason": "测试和 helper 源码各自可见，收集器中间调用尚未读取。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No discovered-directory-symlink regression; latest 64 passes should not be described as exact issue reproduction."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Agreed labels stand. Named selected file-symlink tests executed without skips, supporting their concrete test-call behavior. Their source creates file links, so it cannot establish directory-symlink discovery. Preserve v2 binding and explicitly uncertain collector-to-visit linkage; no complete internal execution chain has been shown."
+}

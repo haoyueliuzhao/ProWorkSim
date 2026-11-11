@@ -1,0 +1,97 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Search for one test function name cannot establish lack of equivalent coverage.",
+    "has_fit_parameter body and focused issue assertion have not been read."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P038",
+  "decision": "Find or add a weighted fit-after-dropping-estimator regression; source confirms fitting already excludes None and the added capability-check guard addresses the mismatch.",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/tests/test_voting.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Weight-boosting header is unrelated.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Absent _base.py search was resolved by locating voting.py.",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Current full fit body is reread at 42.",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Exact guard repeated in current diff/body.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "18-test authoritative result provides scoped evidence; current state and delivery already repeat pass.",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Current delivery/state retain fixed candidate identity.",
+      "source_messages": [
+        29
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_BaseVoting.fit",
+      "to": "has_fit_parameter / _parallel_fit_estimator",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        42
+      ],
+      "reason": "Both validation and fitting now omit None; active estimators still checked and all-None validation remains."
+    },
+    {
+      "from": "voting test report",
+      "to": "v2 delivery-1",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        26,
+        32,
+        42
+      ],
+      "reason": "18 tests passed on current code but specific weighted-None coverage is unknown."
+    }
+  ]
+}

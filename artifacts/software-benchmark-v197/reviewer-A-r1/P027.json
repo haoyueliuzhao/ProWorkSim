@@ -1,0 +1,106 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Standalone check_mincnt.py was created but not run.",
+    "No default None or empty-reducer check; count equality alone does not prove identical selected offsets."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P027",
+  "decision": "Retain the four passing explicit-threshold checks, then verify default mincnt and empty-reducer behavior and remove the unused standalone script before publication.",
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_mincnt_issue_check.py",
+    "check_mincnt.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Both-branch code reread in recent message 33.",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Change retained and current body shows inclusive comparison.",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Existing seven hexbin tests add regression context, but no explicit mincnt occurrence was found.",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Old diff duplicates current body/edit.",
+      "source_messages": [
+        17
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Old fixed version superseded by new files.",
+      "source_messages": [
+        20
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Old delivery does not bind current v4.",
+      "source_messages": [
+        23
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "Repeated old diff.",
+      "source_messages": [
+        30
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_mincnt_independent_of_C / test_mincnt_one_keeps_single_point_hexagons",
+      "to": "Axes.hexbin",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        41,
+        44,
+        45
+      ],
+      "reason": "Four tests exercise explicit mincnt 1/2/3 counts and singleton inclusion; do not check default None or bin positions."
+    },
+    {
+      "from": "hexbin mincnt=None",
+      "to": "reduce_C_function([])",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        33
+      ],
+      "reason": "Zero default plus inclusive threshold still invokes reducer on empty bins."
+    }
+  ]
+}

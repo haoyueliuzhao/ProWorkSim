@@ -1,0 +1,65 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No direct symlink-directory collection test body or execution trace is visible."
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P035",
+  "decision": "The minimal traversal fix is delivered with current broad test evidence; finish with scoped coverage or confirm a direct symlink-directory regression if self-review requires it.",
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit",
+    "testing/test_pathlib.py",
+    "testing/test_collection.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Relevant visit body is fully visible in recent diff; surrounding import helpers do not affect completion.",
+      "source_messages": [
+        9
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Exact edit repeated by recent diff and retained action.",
+      "source_messages": [
+        12
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "visit",
+      "to": "entry.is_dir / recursive visit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        24
+      ],
+      "reason": "Literal recursion now follows directory symlinks using default is_dir behavior."
+    },
+    {
+      "from": "140 passing tests and one xfail",
+      "to": "v2 patch-1 / delivery-1",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        18,
+        21,
+        27
+      ],
+      "reason": "All delivery artifacts share tested version; per-branch coverage remains unspecified."
+    }
+  ]
+}

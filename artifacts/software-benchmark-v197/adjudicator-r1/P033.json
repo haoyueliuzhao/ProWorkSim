@@ -1,0 +1,34 @@
+{
+  "point": "P033",
+  "decision": "已找到 visit 中显式禁用符号链接跟随的条件，下一步移除该参数并查找 collection 调用者和已有 symlink 测试，验证目录链接被递归收集且过滤回调仍生效。",
+  "labels": [],
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit"
+  ],
+  "dependencies": [
+    {
+      "from": "visit",
+      "to": "os.DirEntry.is_dir / recurse / visit",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        9
+      ],
+      "reason": "先判断 is_dir(follow_symlinks=False)，再调用回调并递归；这是直接静态阻断点，尚未看到 collection 调用链。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "visit 的测试收集调用者",
+    "符号链接回归测试与执行"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No historical candidates; reviews agree substantively. Source 9 shows directory filtering before recurse callback and recursion. The collection caller and an executed symlink-directory regression remain absent."
+}

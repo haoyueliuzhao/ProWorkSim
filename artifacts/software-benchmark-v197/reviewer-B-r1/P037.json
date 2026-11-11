@@ -1,0 +1,49 @@
+{
+  "point": "P037",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "在 sample_weight 支持检查中先跳过 None estimator，使其与后续拟合过滤一致。随后验证 set_params(...=None) 后带权重拟合、所有 estimator 为 None 的错误，以及真实不支持 sample_weight 的 estimator 仍报错。",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "has_fit_parameter",
+    "sklearn/ensemble/voting.py:_parallel_fit_estimator"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "_BaseVoting.fit support check",
+      "to": "has_fit_parameter(step,'sample_weight')",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        20
+      ],
+      "reason": "当前循环未排除 None，却在真正训练循环中过滤 None，构成可见不一致。"
+    },
+    {
+      "from": "_BaseVoting.fit",
+      "to": "_parallel_fit_estimator",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        17,
+        20
+      ],
+      "reason": "仅 non-None clfs 被 clone 并通过 delayed 拟合；运行链尚未观察。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "has_fit_parameter 实现/导入路径",
+    "classifier/regressor 与 sample_weight 边界测试",
+    "issue 运行复现"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "confidence": "high"
+}

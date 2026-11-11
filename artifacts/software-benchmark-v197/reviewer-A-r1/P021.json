@@ -1,0 +1,118 @@
+{
+  "reviewer": "A",
+  "review_type": "AI_blind",
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No shared-doctree HTML→EPUB execution or regression body yet."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high",
+  "point": "P021",
+  "decision": "Add a regression that supplies cached modules during an EPUB build with the flag disabled, plus enabled/HTML controls; current guard is implemented but untested.",
+  "necessary_entities": [
+    "sphinx/ext/viewcode.py:collect_pages",
+    "sphinx/ext/viewcode.py:doctree_read",
+    "tests/test_ext_viewcode.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Viewcode start is repeated in recent full read.",
+      "source_messages": [
+        6
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Collection and reference code repeated at message 50.",
+      "source_messages": [
+        9
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Page-generation body repeated at messages 50 and 53.",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Doctree link creation repeated in recent reads.",
+      "source_messages": [
+        15
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "HTML builder event emission supplies cross-file causal context for the regression boundary.",
+      "source_messages": [
+        32
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Read returned no source text, so it cannot establish EPUB behavior.",
+      "source_messages": [
+        35
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "Repeated empty read supplies no implementation evidence.",
+      "source_messages": [
+        38
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "sphinx/builders/html/__init__.py:gen_pages_from_extensions",
+      "to": "sphinx/ext/viewcode.py:collect_pages",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        32,
+        53
+      ],
+      "reason": "Literal html-collect-pages emission and registration connect generator to page handling; no runtime invocation yet."
+    },
+    {
+      "from": "doctree_read",
+      "to": "env._viewcode_modules / collect_pages",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        47,
+        50,
+        55
+      ],
+      "reason": "Recording guard alone does not prevent consuming preexisting module cache; new guard is at consumer."
+    },
+    {
+      "from": "EPUB builder",
+      "to": "HTML builder collection event",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "uncertain",
+      "source_messages": [
+        35,
+        38
+      ],
+      "reason": "Empty EPUB reads cannot prove inheritance or execution; issue and author supply hypothesis only."
+    }
+  ]
+}

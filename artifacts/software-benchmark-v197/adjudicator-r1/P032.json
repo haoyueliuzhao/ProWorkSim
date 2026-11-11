@@ -1,0 +1,186 @@
+{
+  "point": "P032",
+  "decision": "Inspect backend boundary-query contract and add a focused None-result test during self-review; current suite establishes ordinary culling but not a concurrent-deletion scenario.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "General backend code is peripheral.",
+      "source_messages": [
+        5
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Write/cull relationship informs end-to-end test design.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Whole cull method distinguishes aggregate count from optional boundary row.",
+      "source_messages": [
+        11
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Superseded wrong edit retained in actions.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Broken v2 implementation superseded.",
+      "source_messages": [
+        17
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "Before-fix test regression demonstrates why deletion must be preserved; current code and pass already show restoration.",
+      "source_messages": [
+        20,
+        23
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "Exact existing cull test shows normal overflow scenario, not simulated absent boundary.",
+      "source_messages": [
+        26
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Duplicate single cull failure adds no evidence beyond E006.",
+      "source_messages": [
+        29
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "Guarded change repeated in current diff.",
+      "source_messages": [
+        32
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "Authoritative 112-pass record supports completion claims; current state repeats pass/version but not detailed scope.",
+      "source_messages": [
+        35
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Same diff repeated at 51.",
+      "source_messages": [
+        38
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "django/db/backends/base/operations.py:cache_key_culling_sql",
+    "tests/cache/tests.py"
+  ],
+  "dependencies": [
+    {
+      "from": "DatabaseCache._cull",
+      "to": "connection.ops.cache_key_culling_sql",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51,
+        54
+      ],
+      "reason": "Boundary query is used before guarded fetch; Oracle preview selects one row after offset. Concrete backend used by tests is unknown."
+    },
+    {
+      "from": "existing _perform_cull_test",
+      "to": "cache set / has_key",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        26,
+        35
+      ],
+      "reason": "Selected cache classes execute normal overflow/count preservation; absent-row branch coverage is not shown."
+    },
+    {
+      "from": "112-test report",
+      "to": "v3 delivery-1",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        35,
+        44,
+        51
+      ],
+      "reason": "Current delivered code shares tested version."
+    },
+    {
+      "from": "executed cache tests",
+      "to": "Oracle backend",
+      "relation": "test",
+      "necessary": false,
+      "certainty": "uncertain",
+      "source_messages": [
+        35,
+        54
+      ],
+      "reason": "找到 Oracle SQL 不表示当前测试使用或覆盖 Oracle。"
+    },
+    {
+      "from": "row=None",
+      "to": "skip boundary DELETE",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "空行不进入 if row；无行具体原因和运行结果仍需专测。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Concurrent deletion is a plausible mechanism, not established by reported trace or test.",
+    "No explicit None-result regression; search preview does not expose full base SQL implementation."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Preserve agreed labels. Normal cull test behavior has source and executed suite support; no evidence identifies its database as Oracle or reproduces a concurrent-deletion race. Keep Oracle test binding explicitly uncertain and the row guard as syntax, alongside the exact v3 delivery binding."
+}

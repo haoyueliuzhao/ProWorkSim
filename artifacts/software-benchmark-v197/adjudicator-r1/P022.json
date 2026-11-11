@@ -1,0 +1,250 @@
+{
+  "point": "P022",
+  "decision": "Retrieve the actual v6 failure traceback before changing code again. Removing the skipped EPUB test did not eliminate the failure, so shared-output interference remains an unsupported hypothesis.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Old viewcode beginning duplicated by later full read.",
+      "source_messages": [
+        6
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Old collector body duplicated later.",
+      "source_messages": [
+        9
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Old generation body duplicated later.",
+      "source_messages": [
+        12
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Old link-creation body duplicated later.",
+      "source_messages": [
+        15
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "Event caller establishes cross-file context, not current failure cause.",
+      "source_messages": [
+        32
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "Empty EPUB source read.",
+      "source_messages": [
+        35
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "Repeated empty EPUB read.",
+      "source_messages": [
+        38
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E008",
+      "label": "useful",
+      "reason": "Original recording guard helps reason about cached environments.",
+      "source_messages": [
+        47
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E009",
+      "label": "useful",
+      "reason": "Collection body establishes cache consumption; current guard retained.",
+      "source_messages": [
+        50
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "Event registration/default configuration defines intended generation scope.",
+      "source_messages": [
+        53
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "Current guard fully repeated by recent diff.",
+      "source_messages": [
+        56
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E012",
+      "label": "useful",
+      "reason": "Original test assertions help interpret eventual traceback; needed failure line has not appeared.",
+      "source_messages": [
+        62
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Temporary placeholder creation was undone.",
+      "source_messages": [
+        65
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E014",
+      "label": "irrelevant",
+      "reason": "Temporary-file removal no longer affects current tree.",
+      "source_messages": [
+        68
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E015",
+      "label": "irrelevant",
+      "reason": "Added test is now removed; full former body is in retained removal action.",
+      "source_messages": [
+        71
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E016",
+      "label": "useful",
+      "reason": "Shows test_viewcode failed and EPUB test skipped in v5; current v6 failure already makes diagnosis necessary.",
+      "source_messages": [
+        74,
+        77,
+        80,
+        83,
+        86,
+        89
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E017",
+      "label": "useful",
+      "reason": "v5 test body may help compare test placement, but retained edits record change.",
+      "source_messages": [
+        95
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E018",
+      "label": "irrelevant",
+      "reason": "Superseded diff includes removed test; current diff is recent.",
+      "source_messages": [
+        101
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E019",
+      "label": "irrelevant",
+      "reason": "Guard source duplicated by recent diff and retained action.",
+      "source_messages": [
+        104
+      ],
+      "resolution": "adjudicated"
+    }
+  ],
+  "necessary_entities": [
+    "tests/test_ext_viewcode.py:test_viewcode",
+    "sphinx/ext/viewcode.py:collect_pages"
+  ],
+  "dependencies": [
+    {
+      "from": "test_viewcode / test_viewcode_epub_default",
+      "to": "v5",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_execution",
+      "source_messages": [
+        77,
+        80
+      ],
+      "reason": "call 阶段分别失败与跳过，不能把 skip 说成失败原因或有效 EPUB 验证。"
+    },
+    {
+      "from": "test_viewcode",
+      "to": "app.builder.build_all / generated HTML assertions",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        95
+      ],
+      "reason": "源码检查生成 HTML/代码片段，实际失败在哪个断言未知。"
+    },
+    {
+      "from": "remaining public failure",
+      "to": "v6",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        113,
+        116,
+        118,
+        119
+      ],
+      "reason": "恢复原测试后当前树仍失败，旧测试干扰假设未被支持。"
+    },
+    {
+      "from": "sphinx/builders/html/__init__.py:gen_pages_from_extensions",
+      "to": "sphinx/ext/viewcode.py:collect_pages",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        32,
+        53
+      ],
+      "reason": "Matching event emit/connect is a static cross-file relationship; not current failure causality."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Exact failing assertion/traceback has not been exposed in read pages.",
+    "No executed cached HTML→EPUB regression or verified interference cause."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. Resolve duplicate-read disagreements by retaining later fuller views E008/E009/E010 as useful and treating E001–E004 as redundant; none is essential for reading the current failure. E019 duplicates current diff/retained guard. Framework records 77/80 prove call-phase failure and skip, without identifying the failing assertion or proving EPUB behavior. Cross-file event syntax at 32/53 remains observed, so coverage is true."
+}

@@ -1,0 +1,58 @@
+{
+  "point": "P001",
+  "decision": "Read the base adapter array conversion and trace preservation of coordinate dtype before choosing a repair; the level branch visibly ignores its stored dtype.",
+  "labels": [],
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/core/indexing.py:PandasIndexingAdapter.__array__",
+    "xarray/core/indexes.py:PandasMultiIndex.create_variables"
+  ],
+  "dependencies": [
+    {
+      "from": "xarray/core/indexes.py:PandasMultiIndex.create_variables",
+      "to": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        12
+      ],
+      "reason": "Constructs adapter with each level's preserved dtype; establishes the cross-file dtype handoff, not runtime execution."
+    },
+    {
+      "from": "PandasMultiIndexingAdapter.__array__",
+      "to": "pandas.MultiIndex.get_level_values",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        18
+      ],
+      "reason": "Level branch returns pandas values directly, unlike the delegated nonlevel branch."
+    },
+    {
+      "from": "xarray/core/indexing.py:PandasMultiIndexingAdapter",
+      "to": "xarray/core/indexing.py:PandasIndexingAdapter",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        18,
+        21
+      ],
+      "reason": "继承及 super 调用可见，但父类 __array__ 主体尚未读到。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "Base adapter __array__ body has not yet been shown; no reproduction or test execution."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted independent adjudication, not human gold. No historical candidates. The two source-supported dependency descriptions are complementary: preserve dtype handoff, level extraction and inheritance/delegation; none is execution evidence."
+}

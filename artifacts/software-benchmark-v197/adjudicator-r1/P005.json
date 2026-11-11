@@ -1,0 +1,96 @@
+{
+  "point": "P005",
+  "decision": "Extend unsupported-operand delegation to Expr ordering methods and test reflected comparisons; separately justify changing the known-but-different SymPy-type equality branch.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "Original equality's identity/Pow exceptions add context beyond the replacement block.",
+      "source_messages": [
+        12
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Expr comparison implementation has been read again in the recent window.",
+      "source_messages": [
+        21
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "Equality and inequality code duplicates the retained edit's before text.",
+      "source_messages": [
+        30
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Repeated partial Basic read adds no needed fact beyond E001 and retained edit.",
+      "source_messages": [
+        33
+      ],
+      "resolution": "adjudicated"
+    }
+  ],
+  "necessary_entities": [
+    "sympy/core/basic.py:Basic.__eq__",
+    "sympy/core/basic.py:Basic.__ne__",
+    "sympy/core/expr.py:Expr rich comparison methods"
+  ],
+  "dependencies": [
+    {
+      "from": "Basic.__ne__",
+      "to": "Basic.__eq__",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        41
+      ],
+      "reason": "Negation must propagate NotImplemented rather than coerce it."
+    },
+    {
+      "from": "Expr.__ge__/__le__/__gt__/__lt__",
+      "to": "_sympify / relational constructors",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "仅转换失败分支决定是否允许反射；复杂数和 NaN 分支另有 TypeError。"
+    },
+    {
+      "from": "sympy/core/expr.py",
+      "to": "sympy/core/numbers.py:Integer,Rational",
+      "relation": "import",
+      "necessary": false,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        39
+      ],
+      "reason": "Explicit relative import is visible; it identifies a cross-file static relation, without establishing that any comparison executes numeric overrides."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "No tests yet for v2.",
+    "Numeric subtype override behavior is not yet established.",
+    "Changing unequal known SymPy types is broader than only unsupported conversion and needs justification."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. E004 repeats Basic context already represented by E001 and retained replacement, so irrelevant to the next comparison repair. Preserve the agreed labels. Cross-file evidence is limited to visible syntax (including Expr imports of Integer/Rational at message 39); numeric override behavior remains uninspected and no runtime dependency is asserted."
+}

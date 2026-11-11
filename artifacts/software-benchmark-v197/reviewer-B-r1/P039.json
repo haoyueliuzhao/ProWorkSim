@@ -1,0 +1,136 @@
+{
+  "point": "P039",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "源码已确认修复位置，继续寻找不存在的 _base.py 或 weight_boosting helper 无助于当前缺口。应在现有权重测试旁增加 None+sample_weight 组合回归；当前已读 test_sample_weight 只覆盖非空 estimator、权重传播和不支持权重的错误。",
+  "necessary_entities": [
+    "sklearn/ensemble/voting.py:_BaseVoting.fit",
+    "sklearn/ensemble/tests/test_voting.py:test_sample_weight"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "无关 weight boosting 文档。",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "同一路径不存在已在近期54再次确认。",
+      "source_messages": [
+        14,
+        54
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "旧 fit 逻辑在当前63完整重现。",
+      "source_messages": [
+        20,
+        63
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "新增 guard 在近期源码63和保留编辑重复。",
+      "source_messages": [
+        22,
+        23,
+        63
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "useful",
+      "reason": "18项通过证明当前整个 voting 模块测试已执行，不能推断 None 组合。",
+      "source_messages": [
+        25,
+        26
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "产物绑定已在当前状态。",
+      "source_messages": [
+        29,
+        67
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "交付绑定已在当前状态。",
+      "source_messages": [
+        32,
+        67
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "diff 关键内容在近期完整源码重复。",
+      "source_messages": [
+        39,
+        63
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "完整读取与近期63相同。",
+      "source_messages": [
+        42,
+        63
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "真实权重测试的断言与缺少 None 组合有助定向扩展，issue 本身也足够构造直接回归。",
+      "source_messages": [
+        51
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_sample_weight",
+      "to": "VotingClassifier.fit/predict/predict_proba",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "测试非空 estimator 的权重等价及 KNN 不支持权重；尚无 None 组合。"
+    },
+    {
+      "from": "_BaseVoting.fit",
+      "to": "_parallel_fit_estimator",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        63
+      ],
+      "reason": "生成器只传非None clf，当前应测试早期校验而无需修改训练 helper。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "None+sample_weight 专用执行",
+    "has_fit_parameter 实现（若继续定位 helper）"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

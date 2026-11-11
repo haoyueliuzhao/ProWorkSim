@@ -1,0 +1,105 @@
+{
+  "point": "P031",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v3 已恢复有行时 DELETE 并 guard 空行，112 项数据库缓存测试通过且 diff 正确。还应补 fetchone=None 的直接回归或明确该分支仅静态验证，再发布当前候选。",
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "tests/cache/tests.py:DBCacheTests / DBCacheWithTimeZoneTests"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "模块前段非当前 guard 核对所需。",
+      "source_messages": [
+        5
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "_base_set 调 _cull 的上下文有助构建直接回归。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "irrelevant",
+      "reason": "原 DELETE 在最终 diff 与保留编辑重现。",
+      "source_messages": [
+        11,
+        38
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "错误中间删除已恢复，相关动作保留。",
+      "source_messages": [
+        14,
+        31
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "错误中间源码被当前 guard diff 取代。",
+      "source_messages": [
+        17,
+        38
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "两种时区配置的历史回归失败对照，最近已提供相同单例失败和两组通过，非必要旧证据。",
+      "source_messages": [
+        20,
+        23,
+        29,
+        35
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "_cull row existence",
+      "to": "boundary DELETE",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        31,
+        38
+      ],
+      "reason": "仅有返回行时索引 row[0] 并删除，None 不被索引。"
+    },
+    {
+      "from": "DBCacheTests / DBCacheWithTimeZoneTests",
+      "to": "v3",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        32,
+        34,
+        35,
+        38
+      ],
+      "reason": "修正后的当前版本112项通过；不能推断 None 分支被执行。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "fetchone=None 专用回归",
+    "实际后端 SQL 无行条件"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

@@ -1,0 +1,157 @@
+{
+  "point": "P032",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "自审应读取 culling SQL 并用确定性无行结果测试 guard，避免把『并发删除竞态』说成报告已证实的根因。112 项通过支持正常缓存行为，尚未展示 None 分支执行；近期 Oracle SQL 只证明一种静态查询形状。",
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "django/db/backends/base/operations.py:cache_key_culling_sql",
+    "django/db/backends/oracle/operations.py:cache_key_culling_sql",
+    "tests/cache/tests.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "模块前段不影响当前 SQL/guard 核查。",
+      "source_messages": [
+        5
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "上层 set 调用条件有助设计无行回归。",
+      "source_messages": [
+        8
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "num//frequency 与完整 _cull 上下文可解释 SQL offset，最终 guard 已近期重现。",
+      "source_messages": [
+        11
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "错误中间删除已经修正。",
+      "source_messages": [
+        14
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "已废弃的无 DELETE 实现。",
+      "source_messages": [
+        17
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "两组正常清理失败的历史对照，但当前修复和通过已被保留。",
+      "source_messages": [
+        20,
+        23
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "现有 test_cull 仅通过插入计数验证正常清理，有助识别无行专测缺口。",
+      "source_messages": [
+        26
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "重复单例失败且后续通过，非当前需要的诊断。",
+      "source_messages": [
+        29
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "guard 改动由近期 diff 与动作重复。",
+      "source_messages": [
+        31,
+        32,
+        51
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "当前112项通过的原始执行证据，可复核版本与测试范围。",
+      "source_messages": [
+        34,
+        35
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "irrelevant",
+      "reason": "最终 diff 已在近期51重复。",
+      "source_messages": [
+        38,
+        51
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "DatabaseCache._cull",
+      "to": "connection.ops.cache_key_culling_sql",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11,
+        51,
+        54
+      ],
+      "reason": "通过后端操作生成边界键查询；搜索给出 base 契约和 Oracle OFFSET 语法。"
+    },
+    {
+      "from": "executed cache tests",
+      "to": "Oracle backend",
+      "relation": "test",
+      "necessary": false,
+      "certainty": "uncertain",
+      "source_messages": [
+        35,
+        54
+      ],
+      "reason": "找到 Oracle SQL 不表示当前测试使用或覆盖 Oracle。"
+    },
+    {
+      "from": "row=None",
+      "to": "skip boundary DELETE",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        51
+      ],
+      "reason": "空行不进入 if row；无行具体原因和运行结果仍需专测。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "确定性 fetchone=None 回归",
+    "实际测试数据库后端",
+    "并发竞态的运行证据"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "confidence": "high"
+}

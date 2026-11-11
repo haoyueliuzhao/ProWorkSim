@@ -1,0 +1,125 @@
+{
+  "point": "P027",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v4 的 4 项回归确实执行了 C/mincnt=1,2,3 并通过。下一步处理默认 None/显式0的空箱语义和文档，清理未执行的根目录脚本；若宣称选中相同网格，测试还应比较 offsets，不能只比较数量。",
+  "necessary_entities": [
+    "lib/matplotlib/axes/_axes.py:Axes.hexbin",
+    "lib/matplotlib/tests/test_mincnt_issue_check.py",
+    "check_mincnt.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "两分支完整逻辑已在近期读取 33 重现。",
+      "source_messages": [
+        8,
+        33
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "旧比较修改在保留动作中。",
+      "source_messages": [
+        10,
+        11
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "原 7 项兼容性检查提供历史背景，但只绑定 v2。",
+      "source_messages": [
+        13,
+        14
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "旧 diff 仅重复保留编辑。",
+      "source_messages": [
+        17,
+        10
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "旧 v2 patch 不代表新增测试后的当前树。",
+      "source_messages": [
+        20,
+        46
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "旧交付不代表 v4 已交付。",
+      "source_messages": [
+        23,
+        46
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "重复旧 diff，当前完整逻辑已读取。",
+      "source_messages": [
+        30,
+        33
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "test_mincnt_independent_of_C / single-point test",
+      "to": "Axes.hexbin",
+      "relation": "test",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        41
+      ],
+      "reason": "回归直接调用 hexbin，比较返回数组数量和单点值，未比较所有位置。"
+    },
+    {
+      "from": "focused regression tests",
+      "to": "v4",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        42,
+        44,
+        45
+      ],
+      "reason": "4 项实际通过绑定新测试版本；根目录脚本未被选中执行。"
+    },
+    {
+      "from": "hexbin mincnt=None",
+      "to": "empty-bin reducer call",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        33
+      ],
+      "reason": "默认0配合>=仍允许空箱；新增测试未覆盖默认或0。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "默认 None/显式0测试",
+    "offsets 的两分支一致性",
+    "mincnt 文档修订"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

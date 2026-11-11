@@ -1,0 +1,57 @@
+{
+  "point": "P029",
+  "decision": "在 _cull 的边界键查询后先保存 fetchone() 并检查是否返回行，再索引并发出 DELETE；保留有行时原行为。应查找数据库缓存测试和后端 SQL，增加无行回归，不应无依据修改 COUNT(*) 聚合读取。",
+  "labels": [],
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "django/core/cache/backends/db.py:DatabaseCache._base_set",
+    "connection.ops.cache_key_culling_sql"
+  ],
+  "dependencies": [
+    {
+      "from": "DatabaseCache._base_set",
+      "to": "DatabaseCache._cull",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        8
+      ],
+      "reason": "计数超过上限时使用同一 cursor 调用清理。"
+    },
+    {
+      "from": "DatabaseCache._cull",
+      "to": "connection.ops.cache_key_culling_sql / cursor.fetchone",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        11
+      ],
+      "reason": "查询返回直接 [0] 索引是可见风险，实际后端与无行原因未知。"
+    },
+    {
+      "from": "reported issue:django/middleware/cache.py:process_response",
+      "to": "django/utils/cache.py:learn_cache_key → django/core/cache/backends/db.py:set/_base_set/_cull",
+      "relation": "call",
+      "necessary": false,
+      "certainty": "observed_execution",
+      "source_messages": [],
+      "reason": "Source: brief.json:issue, supplied historical traceback; not a current observed workspace execution. The no-row cause itself remains a hypothesis supported by the unguarded subscript."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "数据库后端 culling SQL",
+    "可控无行回归和有行行为验证",
+    "实际并发/无行发生原因"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": false
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. No historical candidates. Both static edges are supported; backend SQL remains unknown. The supplied brief.json:issue includes a historical traceback crossing middleware/cache.py, utils/cache.py and cache/backends/db.py, so cross-file coverage exists as user-reported failure context. This unindexed issue source is cited explicitly rather than assigned a fabricated message number; no current reproduction is claimed."
+}

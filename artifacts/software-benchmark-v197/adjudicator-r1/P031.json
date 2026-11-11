@@ -1,0 +1,104 @@
+{
+  "point": "P031",
+  "decision": "Add a targeted no-boundary-row regression, then publish the guarded v3 implementation; normal culling tests now pass after restoration of conditional deletion.",
+  "labels": [
+    {
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "General backend code adds no necessary guard/test information.",
+      "source_messages": [
+        5
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "Normal write-to-cull caller context aids test design.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "Full culling flow distinguishes COUNT from boundary query; core changed lines are recent.",
+      "source_messages": [
+        11
+      ],
+      "resolution": "adjudicated"
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "Superseded deletion-removal edit retained and corrected.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "Broken v2 body is superseded by recent corrected action/diff.",
+      "source_messages": [
+        17
+      ],
+      "resolution": "agreed"
+    },
+    {
+      "event": "E006",
+      "label": "useful",
+      "reason": "Both timezone suites failed before repair; single-case recent failure and new full pass already establish correction.",
+      "source_messages": [
+        20,
+        23
+      ],
+      "resolution": "agreed"
+    }
+  ],
+  "necessary_entities": [
+    "django/core/cache/backends/db.py:DatabaseCache._cull",
+    "tests/cache/tests.py"
+  ],
+  "dependencies": [
+    {
+      "from": "_cull boundary row",
+      "to": "conditional DELETE",
+      "relation": "other",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        31,
+        38
+      ],
+      "reason": "Only nonempty row is subscripted and deletion remains for normal results."
+    },
+    {
+      "from": "DBCacheTests and DBCacheWithTimeZoneTests",
+      "to": "v3",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        34,
+        35,
+        38
+      ],
+      "reason": "112 tests passed on current diff; no evidence specifically exercises None boundary."
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "None-boundary behavior is supported by code inspection, not focused executed regression."
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": true,
+    "version_change": true
+  },
+  "review_type": "AI_blind_adjudication",
+  "unresolved_events": [],
+  "adjudication_notes": "AI-assisted adjudication, not human gold. E003 is useful because its full _cull flow distinguishes COUNT(*) from the boundary-row fetch when designing a None regression; recent diff includes only the changed boundary block. It is not essential because the retained corrective action already identifies the guard. Both dependencies agree substantively: syntax repair and 112-pass v3 binding, without no-row execution proof."
+}

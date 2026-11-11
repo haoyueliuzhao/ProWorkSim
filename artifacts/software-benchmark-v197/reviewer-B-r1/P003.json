@@ -1,0 +1,154 @@
+{
+  "point": "P003",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "应增加直接断言 int32 坐标 stack 后 dtype 不变的回归并运行；现有搜索并未穷尽测试树，不能把无匹配当成不存在测试。去除未经 issue 证实的编号；后续编辑将使 v2 测试不再绑定新版本。",
+  "necessary_entities": [
+    "xarray/core/indexing.py:PandasMultiIndexingAdapter.__array__",
+    "xarray/tests/test_indexing.py",
+    "xarray/tests/test_indexes.py"
+  ],
+  "labels": [
+    {
+      "event": "E001",
+      "label": "useful",
+      "reason": "调用者提供层 dtype 的链路有助审查，但直接编写 issue 回归不依赖旧卡。",
+      "source_messages": [
+        12
+      ]
+    },
+    {
+      "event": "E002",
+      "label": "useful",
+      "reason": "适配器外围语义有助边界分析，核心前后差异在近期 diff 和保留编辑中。",
+      "source_messages": [
+        18,
+        23,
+        55
+      ]
+    },
+    {
+      "event": "E003",
+      "label": "useful",
+      "reason": "标量 dtype 是相关边界，尚无必须改动此旁路的证据。",
+      "source_messages": [
+        21
+      ]
+    },
+    {
+      "event": "E004",
+      "label": "irrelevant",
+      "reason": "变更已由保留编辑和近期 v2 diff 重现。",
+      "source_messages": [
+        23,
+        24,
+        55
+      ]
+    },
+    {
+      "event": "E005",
+      "label": "irrelevant",
+      "reason": "无效测试路径已修正，与当前核查覆盖缺口无直接作用。",
+      "source_messages": [
+        27
+      ]
+    },
+    {
+      "event": "E006",
+      "label": "irrelevant",
+      "reason": "重复的旧路径拒绝，正确路径及调用已保留。",
+      "source_messages": [
+        30,
+        35
+      ]
+    },
+    {
+      "event": "E007",
+      "label": "useful",
+      "reason": "提供 67 项已执行通过的精确范围；最近状态及动作已承认该范围不证明 MVCE。",
+      "source_messages": [
+        35,
+        36,
+        60
+      ]
+    },
+    {
+      "event": "E008",
+      "label": "useful",
+      "reason": "可核对 12 项筛选运行及版本，但不足以确认 dtype 断言。",
+      "source_messages": [
+        38,
+        39,
+        60
+      ]
+    },
+    {
+      "event": "E009",
+      "label": "irrelevant",
+      "reason": "与近期 diff 完全重复。",
+      "source_messages": [
+        42,
+        55
+      ]
+    },
+    {
+      "event": "E010",
+      "label": "useful",
+      "reason": "证明 patch-1 绑定 v2，修改后需重新发布；状态和动作已有相关信息。",
+      "source_messages": [
+        45,
+        47
+      ]
+    },
+    {
+      "event": "E011",
+      "label": "useful",
+      "reason": "交付状态可用于后续再交付；当前需要解决回归证据缺口。",
+      "source_messages": [
+        48,
+        50
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "selected public tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        36,
+        39,
+        55,
+        65
+      ],
+      "reason": "当前变更和既有筛选测试同属 v2；没有测试源码证明 issue 断言。"
+    },
+    {
+      "from": "Dataset.stack",
+      "to": "PandasMultiIndexingAdapter.__array__",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "inferred",
+      "source_messages": [
+        12,
+        18,
+        55
+      ],
+      "reason": "坐标构建与物化链条合理但缺少完整 stack 调用路径及运行跟踪，不能声称执行覆盖。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "MVCE 专用断言和执行",
+    "search 61 未完成的后续结果",
+    "GH #7376 来源"
+  ],
+  "coverage": {
+    "cross_file": true,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}

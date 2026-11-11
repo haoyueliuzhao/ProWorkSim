@@ -1,0 +1,51 @@
+{
+  "point": "P034",
+  "reviewer": "B",
+  "review_type": "AI_blind",
+  "decision": "v2 已移除禁用跟随参数，pathlib/collection 两个测试模块实测140通过、1预期失败。应核对 diff 并确认目录 symlink 专用测试覆盖；未完成的 visit 搜索不能证明没有测试。",
+  "necessary_entities": [
+    "src/_pytest/pathlib.py:visit",
+    "testing/test_pathlib.py",
+    "testing/test_collection.py"
+  ],
+  "labels": [],
+  "dependencies": [
+    {
+      "from": "visit recursion",
+      "to": "os.DirEntry.is_dir()",
+      "relation": "call",
+      "necessary": true,
+      "certainty": "observed_syntax",
+      "source_messages": [
+        9,
+        11
+      ],
+      "reason": "仅恢复默认跟随，回调仍参与递归判断；实际 collection 路径未读到。"
+    },
+    {
+      "from": "pathlib/collection selected tests",
+      "to": "v2",
+      "relation": "version",
+      "necessary": true,
+      "certainty": "version_binding",
+      "source_messages": [
+        12,
+        17,
+        18
+      ],
+      "reason": "140通过、1xfailed绑定当前版，不能写141全部通过或推断特定链接场景。"
+    }
+  ],
+  "must_keep_failure_events": [],
+  "missing_evidence": [
+    "最终 diff",
+    "目录链接专用断言",
+    "visit 到收集器的调用路径"
+  ],
+  "coverage": {
+    "cross_file": false,
+    "failure_and_change": false,
+    "version_change": true
+  },
+  "confidence": "high"
+}
