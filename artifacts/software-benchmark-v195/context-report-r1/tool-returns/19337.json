@@ -1,0 +1,306 @@
+[
+  {
+    "call_id": "call_00_9037OBLnQiLHVrTIK8gl9078",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "django/core/cache/backends/db.py",
+        "text": "    def has_key(self, key, version=None):\n        key = self.make_key(key, version=version)\n        self.validate_key(key)\n\n        db = router.db_for_read(self.cache_model_class)\n        connection = connections[db]\n        quote_name = connection.ops.quote_name\n\n        if settings.USE_TZ:\n            now = datetime.utcnow()\n        else:\n            now = datetime.now()\n        now = now.replace(microsecond=0)\n\n        with connection.cursor() as cursor:\n            cursor.execute(\n                'SELECT %s FROM %s WHERE %s = %%s and expires > %%s' % (\n                    quote_name('cache_key'),\n                    quote_name(self._table),\n                    quote_name('cache_key'),\n                ),\n                [key, connection.ops.adapt_datetimefield_value(now)]\n            )\n            return cursor.fetchone() is not None\n\n    def _cull(self, db, cursor, now):\n        if self._cull_frequency == 0:\n            self.clear()\n        else:\n            connection = connections[db]\n            table = connection.ops.quote_name(self._table)\n            cursor.execute(\"DELETE FROM %s WHERE expires < %%s\" % table,\n                           [connection.ops.adapt_datetimefield_value(now)])\n            cursor.execute(\"SELECT COUNT(*) FROM %s\" % table)\n            num = cursor.fetchone()[0]\n            if num > self._max_entries:\n                cull_num = num // self._cull_frequency\n                cursor.execute(\n                    connection.ops.cache_key_culling_sql() % table,\n                    [cull_num])\n                cursor.execute(\"DELETE FROM %s \"\n                               \"WHERE cache_key < %%s\" % table,\n                               [cursor.fetchone()[0]])\n\n    def clear(self):\n        db = router.db_for_write(self.cache_model_class)\n        connection = connections[db]\n        table = connection.ops.quote_name(self._table)\n        with connection.cursor() as cursor:\n            cursor.execute('DELETE FROM %s' % table)\n",
+        "start_character": 8992,
+        "end_character": 10970,
+        "total_characters": 10970,
+        "text_sha256": "78485fef88b1ae7f64e5bc49c815d66e269ddec0ab816de61f58615c42329581",
+        "next_cursor": null
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0002:attempt1"
+  },
+  {
+    "call_id": "call_00_jIIA0idiV1kIzu1vJVkm5587",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "django/core/cache/backends/db.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "76d8d9fbcc058187673800e98134155336e5ba306b892869b1a3dd502a2356e5",
+        "entry_metadata_sha256": "ee5813737f67c7acba200b8075bd50c4ef0b6837a31cdc50a25914b163a05d7c"
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_ecuCBWf7pEY8kMFPMQHd5468",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-8cd431d2b97c144ebb09bb5a",
+        "report_event": {
+          "sequence": 3,
+          "operation_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-3"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "files_sha256": "76d8d9fbcc058187673800e98134155336e5ba306b892869b1a3dd502a2356e5",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "de226f3b236902a53aa1159135b23013a7fbf506bcc869e3f25dd41a64922ed8",
+        "body_characters": 12261,
+        "total_pages": 5,
+        "page": {
+          "index": 0,
+          "cursor": "0:75f2ff0fbdf0a402",
+          "start": 0,
+          "end": 2705,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": {\n      \"status\": \"passed\",\n      \"executed\": true,\n      \"passed\": true,\n      \"output\": \"Creating test database for alias 'default'...\\n................................................................................................................\\n----------------------------------------------------------------------\\nRan 112 tests in 26.564s\\n\\nOK\\nDestroying test database for alias 'default'...\\nTesting against Django installed in '/testbed/django'\\nSystem check identified no issues (0 silenced).\\n\",\n      \"validation_status\": \"verified\",\n      \"counts\": {\n        \"collected\": 112,\n        \"errors\": 0,\n        \"failed\": 0,\n        \"passed\": 112,\n        \"skipped\": 0,\n        \"xfailed\": 0,\n        \"xpassed\": 0,\n        \"tests_run\": 112\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"django\",\n        \"source\": {\n          \"run_id\": \"6bbe210339fcff067e9cff3c51b26007\",\n          \"parent_run_id\": null,\n          \"pid\": 26,\n          \"process_group\": 26,\n          \"framework\": \"django\",\n          \"delegated_hash_process\": false\n        },\n        \"report_count\": 1,\n        \"journal_record_count\": 2,\n        \"nested_report_count\": 0,\n        \"duplicate_journal_records_ignored\": 0,\n        \"error\": null,\n        \"partial\": false,\n        \"root_counts_only\": true,\n        \"nested_failures_are_diagnostic_not_summed\": true,\n        \"sessions\": [\n          {\n            \"run_id\": \"6bbe210339fcff067e9cff3c51b26007\",\n            \"parent_run_id\": null,\n            \"pid\": 26,\n            \"framework\": \"django\",\n            \"counts\": {\n              \"collected\": 112,\n              \"errors\": 0,\n              \"failed\": 0,\n              \"passed\": 112,\n              \"skipped\": 0,\n              \"xfailed\": 0,\n              \"xpassed\": 0\n            },\n            \"exitstatus\": 0,\n            \"collection_errors\": 0,\n            \"collection_complete\": true,\n            \"partial\": false,\n            \"root\": true,\n            \"test_reports\": [],\n            \"test_reports_sha256\": null,\n            \"duplicate_reports_ignored\": 0\n          }\n        ],\n        \"evidence_sha256\": \"4f63e3bafb8351a377ee08c20c066e90461681b1e839e6263b0c72333cb5e5ef\",\n        \"stdout_used_for_verdict\": false,\n        \"security_scope\": \"framework observation, not a same-UID anti-forgery boundary\",\n        \"public_verification_is_hidden_acceptance\": false,\n        \"observer_sha256\": \"a661e0a2b7ea224dbdb0cff644a173b7e636675fb6ff77ba00706d9a7801b02a\"\n      },\n      \"tests\": [\n        {\n          \"test_id\": \"model-selected-public-entrypoint\",\n          \"passed\": true\n        }\n      ]\n    }",
+          "sha256": "9198439cae90c19a779d8f25c6e32f2aa6ddae235752a783c2eec4b799d61e84",
+          "split_entries": [],
+          "next_cursor": "1:1a870134bd762e2e",
+          "is_last": false,
+          "remaining_pages": 4
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 112,
+          "errors": 0,
+          "failed": 0,
+          "passed": 112,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 112
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "django",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "6bbe210339fcff067e9cff3c51b26007",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 112,
+                "errors": 0,
+                "failed": 0,
+                "passed": 112,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "d54c959dce852b050fbb0a346ba3fd22b54f3ec0ce327ef2ec2969095b9d2a8b",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-8cd431d2b97c144ebb09bb5a",
+            "cursor": "0:75f2ff0fbdf0a402",
+            "body_sha256": "de226f3b236902a53aa1159135b23013a7fbf506bcc869e3f25dd41a64922ed8",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_50ooAelSEWLEIYrKO51k0258",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/django/core/cache/backends/db.py\n+++ b/django/core/cache/backends/db.py\n@@ -267,9 +267,12 @@\n                 cursor.execute(\n                     connection.ops.cache_key_culling_sql() % table,\n                     [cull_num])\n+                row = cursor.fetchone()\n+                if not row:\n+                    return\n                 cursor.execute(\"DELETE FROM %s \"\n                                \"WHERE cache_key < %%s\" % table,\n-                               [cursor.fetchone()[0]])\n+                               [row[0]])\n \n     def clear(self):\n         db = router.db_for_write(self.cache_model_class)\n",
+        "start_character": 0,
+        "end_character": 627,
+        "total_characters": 627,
+        "text_sha256": "2a8764c016237b2eddbbfdaadc5befc59a3e5cea7561144c233ca9731b479274",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        }
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_Yjc9ANtKZBeQxbcyUmAY5781",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "5559aad4eed8ad17ab1d47e3b273dd40e9b5b2e1ac76b3d490101a5c7ea4587a",
+        "files_sha256": "76d8d9fbcc058187673800e98134155336e5ba306b892869b1a3dd502a2356e5",
+        "entry_metadata_sha256": "ee5813737f67c7acba200b8075bd50c4ef0b6837a31cdc50a25914b163a05d7c",
+        "diff_sha256": "2a8764c016237b2eddbbfdaadc5befc59a3e5cea7561144c233ca9731b479274",
+        "changed_paths": [
+          "django/core/cache/backends/db.py"
+        ],
+        "changed_path_count": 1,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_fLXnrWKT1y56nSF1Ei8c9076",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_sha256": "5559aad4eed8ad17ab1d47e3b273dd40e9b5b2e1ac76b3d490101a5c7ea4587a",
+        "files_sha256": "76d8d9fbcc058187673800e98134155336e5ba306b892869b1a3dd502a2356e5",
+        "included_patch_ids": [],
+        "test_sequence": 3,
+        "message": "Fix 'NoneType' object is not subscriptable in DatabaseCache._cull (django/core/cache/backends/db.py). The row returned by connection.ops.cache_key_culling_sql() is now fetched once and checked; if empty, _cull returns early instead of indexing None. Public cache tests (cache.tests.DBCacheTests, cache.tests.DBCacheWithTimeZoneTests) run on this exact version: 112 tests, 0 errors, 0 failures. Fixed candidate: patch-1.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "ee5813737f67c7acba200b8075bd50c4ef0b6837a31cdc50a25914b163a05d7c",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_Enqh9SBY3ps8W4LWz8zp5406",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Issue resolved and delivered. django/core/cache/backends/db.py _cull now fetches the culling row once and returns early when it is empty, avoiding cursor.fetchone()[0] on None. Fix verified on the exact delivered version with public tests cache.tests.DBCacheTests and cache.tests.DBCacheWithTimeZoneTests (112 tests, 0 errors, 0 failures); published as patch-1 and submitted as delivery-1.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_49hQC8sS1zjKVnUdxmsj4948",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "django/core/cache/backends/db.py",
+        "text": "    def _cull(self, db, cursor, now):\n        if self._cull_frequency == 0:\n            self.clear()\n        else:\n            connection = connections[db]\n            table = connection.ops.quote_name(self._table)\n            cursor.execute(\"DELETE FROM %s WHERE expires < %%s\" % table,\n                           [connection.ops.adapt_datetimefield_value(now)])\n            cursor.execute(\"SELECT COUNT(*) FROM %s\" % table)\n            num = cursor.fetchone()[0]\n            if num > self._max_entries:\n                cull_num = num // self._cull_frequency\n                cursor.execute(\n                    connection.ops.cache_key_culling_sql() % table,\n                    [cull_num])\n                row = cursor.fetchone()\n                if not row:\n                    return\n                cursor.execute(\"DELETE FROM %s \"\n                               \"WHERE cache_key < %%s\" % table,\n                               [row[0]])\n\n    def clear(self):\n        db = router.db_for_write(self.cache_model_class)\n        connection = connections[db]\n        table = connection.ops.quote_name(self._table)\n        with connection.cursor() as cursor:\n            cursor.execute('DELETE FROM %s' % table)\n",
+        "start_character": 9842,
+        "end_character": 11051,
+        "total_characters": 11051,
+        "text_sha256": "4b66fdcab8274058d8aba00405cc1ee6172f2f8da188b1133bc265f278ef4d4b",
+        "next_cursor": null
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-792e72ca7f0346db9e9f3d3159ef8c31-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:agent:v193:django__django-13089:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192007:member_001:0009:attempt1"
+  }
+]

@@ -1,0 +1,614 @@
+[
+  {
+    "call_id": "call_00_26veDIjaaMmxR2fCZxdO3222",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "Require a non-empty name for Blueprints\nThings do not work correctly if a Blueprint is given an empty name (e.g. #4944).\r\nIt would be helpful if a `ValueError` was raised when trying to do that.\n",
+        "start_character": 0,
+        "end_character": 195,
+        "total_characters": 195,
+        "text_sha256": "f77d8eab7dd608172aa78b3b50dfa7e0e9b3a6a1c52d14a1cb02417eb5a0ab00",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        }
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_jqztvHBuuxbfgUe2Vpvw3859",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "src/flask/blueprints.py",
+            "line": 32,
+            "character_offset": 1270,
+            "preview": "eVar(\n    \"T_url_value_preprocessor\", bound=ft.URLValuePreprocessorCallable\n)\n\n\nclass BlueprintSetupState:\n    \"\"\"Temporary holder object for registering a blueprint with the\n    application.  An instance of this class is created by the\n    :meth:`~flask.",
+            "preview_start_character": 1190
+          },
+          {
+            "path": "src/flask/blueprints.py",
+            "line": 117,
+            "character_offset": 4371,
+            "preview": "   view_func,\n            defaults=defaults,\n            **options,\n        )\n\n\nclass Blueprint(Scaffold):\n    \"\"\"Represents a blueprint, a collection of routes and other\n    app-related functions that can be registered on a real application\n    later.\n\n ",
+            "preview_start_character": 4291
+          },
+          {
+            "path": "tests/test_async.py",
+            "line": 18,
+            "character_offset": 245,
+            "preview": "rt View\n\npytest.importorskip(\"asgiref\")\n\n\nclass AppError(Exception):\n    pass\n\n\nclass BlueprintError(Exception):\n    pass\n\n\nclass AsyncView(View):\n    methods = [\"GET\", \"POST\"]\n\n    async def dispatch_request(self):\n        await asyncio.sleep(0)\n        ",
+            "preview_start_character": 165
+          }
+        ],
+        "complete": false,
+        "next_cursor": "search-febce53b2c25706a59b363c7a5f1aa2989acd100f5522d5677c1dee277776f9b",
+        "scanned_characters": 1048576,
+        "considered_files": 235,
+        "skipped_nontext_entries": 9,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_Ytu7BB75RkMhK5qd0Egu7305",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "src/flask/blueprints.py",
+        "text": "class Blueprint(Scaffold):\n    \"\"\"Represents a blueprint, a collection of routes and other\n    app-related functions that can be registered on a real application\n    later.\n\n    A blueprint is an object that allows defining application functions\n    without requiring an application object ahead of time. It uses the\n    same decorators as :class:`~flask.Flask`, but defers the need for an\n    application by recording them for later registration.\n\n    Decorating a function with a blueprint creates a deferred function\n    that is called with :class:`~flask.blueprints.BlueprintSetupState`\n    when the blueprint is registered on an application.\n\n    See :doc:`/blueprints` for more information.\n\n    :param name: The name of the blueprint. Will be prepended to each\n        endpoint name.\n    :param import_name: The name of the blueprint package, usually\n        ``__name__``. This helps locate the ``root_path`` for the\n        blueprint.\n    :param static_folder: A folder with static files that should be\n        served by the blueprint's static route. The path is relative to\n        the blueprint's root path. Blueprint static files are disabled\n        by default.\n    :param static_url_path: The url to serve static files from.\n        Defaults to ``static_folder``. If the blueprint does not have\n        a ``url_prefix``, the app's static route will take precedence,\n        and the blueprint's static files won't be accessible.\n    :param template_folder: A folder with templates that should be added\n        to the app's template search path. The path is relative to the\n        blueprint's root path. Blueprint templates are disabled by\n        default. Blueprint templates have a lower precedence than those\n        in the app's templates folder.\n    :param url_prefix: A path to prepend to all of the blueprint's URLs,\n        to make them distinct from the rest of the app's routes.\n    :param subdomain: A subdomain that blueprint routes will match on by\n        default.\n    :param url_defaults: A dict of default values that blueprint routes\n        will receive by default.\n    :param root_path: By default, the blueprint will automatically set\n        this based on ``import_name``. In certain situations this\n        automatic detection can fail, so the path can be specified\n        manually instead.\n\n    .. versionchanged:: 1.1.0\n        Blueprints have a ``cli`` group to register nested CLI commands.\n        The ``cli_group`` parameter controls the name of the group under\n        the ``flask`` command.\n\n    .. versionadded:: 0.7\n    \"\"\"\n\n    _got_registered_once = False\n\n    def __init__(\n        self,\n        name: str,\n        import_name: str,\n        static_folder: t.Optional[t.Union[str, os.PathLike]] = None,\n        static_url_path: t.Optional[str] = None,\n        template_folder: t.Optional[t.Union[str, os.PathLike]] = None,\n        url_prefix: t.Optional[str] = None,\n        subdomain: t.Optional[str] = None,\n        url_defaults: t.Optional[dict] = None,\n        root_path: t.Optional[str] = None,\n        cli_group: t.Optional[str] = _sentinel,  # type: ignore\n    ):\n        super().__init__(\n            import_name=import_name,\n            static_folder=static_folder,\n            static_url_path=static_url_path,\n            template_folder=template_folder,\n            root_path=root_path,\n        )\n\n        if \".\" in name:\n            raise ValueError(\"'name' may not contain a dot '.' character.\")\n\n        self.name = name\n        self.url_prefix = url_prefix\n        self.subdomain = subdomain\n        self.deferred_functions: t.List[DeferredSetupFunction] = []\n\n        if url_defaults is None:\n            url_defaults = {}\n\n        self.url_values_defaults = url_defaults\n        self.cli_group = cli_group\n        self._blueprints: t.List[t.Tuple[\"Blueprint\", dict]] = []\n\n    def _check_setup_finished(self, f_name: str) -> None:\n        if self._got_registered_once:\n            raise AssertionError(\n                f\"The setup method '{f_name}' can no longer be called on the blueprint\"\n                f\" '{self.name}'. It has ",
+        "start_character": 4371,
+        "end_character": 8467,
+        "total_characters": 24356,
+        "text_sha256": "9d296c3a0dffffbafd59ef15290a6d4c2061a470f3ad2b00709388d35d1dddc0",
+        "next_cursor": "8467:f737d91d4ac036eba435396be582b1c4482289334a58606578dd90b4f16f5ca5"
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_ekfOElLAMcdSa9vQzU8K5199",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 211445,
+        "considered_files": 60,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_tU7z1kbMoV36MjG28qmj2839",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 28799,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_NqqNyQ3RNkFXHtDbBMa92498",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "src/flask/blueprints.py",
+            "line": 194,
+            "character_offset": 7788,
+            "preview": "t_path,\n        )\n\n        if \".\" in name:\n            raise ValueError(\"'name' may not contain a dot '.' character.\")\n\n        self.name = name\n        self.url_prefix = url_prefix\n        self.subdomain = subdomain\n        self.deferred_functions: t.List[Defe",
+            "preview_start_character": 7708
+          },
+          {
+            "path": "src/flask/blueprints.py",
+            "line": 420,
+            "character_offset": 17048,
+            "preview": "      if endpoint and \".\" in endpoint:\n            raise ValueError(\"'endpoint' may not contain a dot '.' character.\")\n\n        if view_func and hasattr(view_func, \"__name__\") and \".\" in view_func.__name__:\n            raise ValueError(\"'view_func' name may not",
+            "preview_start_character": 16968
+          },
+          {
+            "path": "src/flask/blueprints.py",
+            "line": 423,
+            "character_offset": 17222,
+            "preview": ") and \".\" in view_func.__name__:\n            raise ValueError(\"'view_func' name may not contain a dot '.' character.\")\n\n        self.record(\n            lambda s: s.add_url_rule(\n                rule,\n                endpoint,\n                view_func,\n       ",
+            "preview_start_character": 17142
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 321579,
+        "considered_files": 23,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_NqmcEmgAVpymO8a0Nx3e2061",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 255,
+            "character_offset": 7620,
+            "preview": "d/index.html\"]\n\n\ndef test_dotted_name_not_allowed(app, client):\n    with pytest.raises(ValueError):\n        flask.Blueprint(\"app.ui\", __name__)\n\n\ndef test_dotted_names_from_app(app, client):\n    test = flask.Blueprint(\"test\", __name__)\n\n    @app.route(\"/\")\n",
+            "preview_start_character": 7540
+          },
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 325,
+            "character_offset": 9339,
+            "preview": "th_dots(app, client):\n    bp = flask.Blueprint(\"bp\", __name__)\n\n    with pytest.raises(ValueError):\n        bp.route(\"/\", endpoint=\"a.b\")(lambda: \"\")\n\n    with pytest.raises(ValueError):\n        bp.add_url_rule(\"/\", endpoint=\"a.b\")\n\n    def view():\n        ",
+            "preview_start_character": 9259
+          },
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 328,
+            "character_offset": 9426,
+            "preview": "ValueError):\n        bp.route(\"/\", endpoint=\"a.b\")(lambda: \"\")\n\n    with pytest.raises(ValueError):\n        bp.add_url_rule(\"/\", endpoint=\"a.b\")\n\n    def view():\n        return \"\"\n\n    view.__name__ = \"a.b\"\n\n    with pytest.raises(ValueError):\n        bp.ad",
+            "preview_start_character": 9346
+          },
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 336,
+            "character_offset": 9570,
+            "preview": "\n\n    def view():\n        return \"\"\n\n    view.__name__ = \"a.b\"\n\n    with pytest.raises(ValueError):\n        bp.add_url_rule(\"/\", view_func=view)\n\n\ndef test_endpoint_decorator(app, client):\n    from werkzeug.routing import Rule\n\n    app.url_map.add(Rule(\"/fo",
+            "preview_start_character": 9490
+          },
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 1002,
+            "character_offset": 27367,
+            "preview": "lask.Blueprint(\"bp\", __name__)\n\n    app.register_blueprint(bp)\n\n    with pytest.raises(ValueError):\n        app.register_blueprint(bp)  # same bp, same name, error\n\n    app.register_blueprint(bp, name=\"again\")  # same bp, different name, ok\n\n    with pytest",
+            "preview_start_character": 27287
+          },
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 1007,
+            "character_offset": 27545,
+            "preview": "ter_blueprint(bp, name=\"again\")  # same bp, different name, ok\n\n    with pytest.raises(ValueError):\n        app.register_blueprint(bp2)  # different bp, same name, error\n\n    app.register_blueprint(bp2, name=\"alt\")  # different bp, different name, ok\n\n\ndef ",
+            "preview_start_character": 27465
+          },
+          {
+            "path": "tests/test_blueprints.py",
+            "line": 1015,
+            "character_offset": 27824,
+            "preview": "(app, client) -> None:\n    bp = flask.Blueprint(\"bp\", __name__)\n    with pytest.raises(ValueError):\n        bp.register_blueprint(bp)\n\n\ndef test_blueprint_renaming(app, client) -> None:\n    bp = flask.Blueprint(\"bp\", __name__)\n    bp2 = flask.Blueprint(\"bp2",
+            "preview_start_character": 27744
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 28799,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_WrcDGu7zX5fOS9a8UOVX7141",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "src/flask/blueprints.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "1158049e6437f9650b3b75766412eaffd280f15ece67a2e2fc662eb828ed3d3c",
+        "entry_metadata_sha256": "d7571697ded7641837f960bfd2e998dea9780fc006f831157f490f7e68e53abe"
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_Mt7ZkQOUzXQDL9EX4qDr8785",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "tests/test_blueprints.py",
+        "text": "    templates = sorted(app.jinja_env.list_templates())\n    assert templates == [\"admin/index.html\", \"frontend/index.html\"]\n\n\ndef test_dotted_name_not_allowed(app, client):\n    with pytest.raises(ValueError):\n        flask.Blueprint(\"app.ui\", __name__)\n\n\ndef test_dotted_names_from_app(app, client):\n    test = flask.Blueprint(\"test\", __name__)\n\n    @app.route(\"/\")\n    def app_index():\n        return flask.url_for(\"test.index\")\n",
+        "start_character": 7432,
+        "end_character": 7861,
+        "total_characters": 28799,
+        "text_sha256": "804b98bbb71ccce566ab78a15cb141793ebbaee3c1b3bb591d9dab04c9940f4a",
+        "next_cursor": "7861:effc8c4ac036ccad5b6a2478760a64127002d1ffdd8605fef4c53d5ced573ae9"
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_PvnLBb46bSoEfkWSpeTN2470",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "tests/test_blueprints.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "e157db86b2925bc9843672054ec7658c0f1a29584c0b4b169942359e89045805",
+        "entry_metadata_sha256": "d7571697ded7641837f960bfd2e998dea9780fc006f831157f490f7e68e53abe"
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_fczLzJZjRVu3OGZncF958874",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/src/flask/blueprints.py\n+++ b/src/flask/blueprints.py\n@@ -190,6 +190,9 @@\n             root_path=root_path,\n         )\n \n+        if not name:\n+            raise ValueError(\"'name' may not be empty.\")\n+\n         if \".\" in name:\n             raise ValueError(\"'name' may not contain a dot '.' character.\")\n \n--- a/tests/test_blueprints.py\n+++ b/tests/test_blueprints.py\n@@ -249,6 +249,11 @@\n \n     templates = sorted(app.jinja_env.list_templates())\n     assert templates == [\"admin/index.html\", \"frontend/index.html\"]\n+\n+\n+def test_empty_name_not_allowed(app, client):\n+    with pytest.raises(ValueError):\n+        flask.Blueprint(\"\", __name__)\n \n \n def test_dotted_name_not_allowed(app, client):\n",
+        "start_character": 0,
+        "end_character": 702,
+        "total_characters": 702,
+        "text_sha256": "0fee61fc6e49f6dfacd3fe8d65adcdf6977a85e8fbfa6ca6bea6ebe4d2588acc",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        }
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_ztbkaF5obKjghbWVPDmI1545",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-62880628ee3c93947bc30197",
+        "report_event": {
+          "sequence": 10,
+          "operation_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-12"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "files_sha256": "e157db86b2925bc9843672054ec7658c0f1a29584c0b4b169942359e89045805",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "f466576c9b0dc87c3074d5b050b671e3b8cdcf2b83439e2c894f220b7c5d7c90",
+        "body_characters": 200644,
+        "total_pages": 68,
+        "page": {
+          "index": 0,
+          "cursor": "0:dc9e1638d918e339",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:d04574a794b7fc12",
+          "is_last": false,
+          "remaining_pages": 67
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 60,
+          "errors": 0,
+          "failed": 0,
+          "passed": 60,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 60
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "4a4e90c27a5e791efdb5cb2eb3474287",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 60,
+                "errors": 0,
+                "failed": 0,
+                "passed": 60,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "6d80bf08bfd5a0ea06338245d5e8effbc8c2fcf568bf3d6a891a34f7d6c7f8f1",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-62880628ee3c93947bc30197",
+            "cursor": "1:d04574a794b7fc12",
+            "body_sha256": "f466576c9b0dc87c3074d5b050b671e3b8cdcf2b83439e2c894f220b7c5d7c90",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_NHbC1uS9gDtnQIZ8ltLl7632",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "4a325b67a881be07449af6814632a352a08ce21982427cd9b3ba3a3a78b68cf5",
+        "files_sha256": "e157db86b2925bc9843672054ec7658c0f1a29584c0b4b169942359e89045805",
+        "entry_metadata_sha256": "d7571697ded7641837f960bfd2e998dea9780fc006f831157f490f7e68e53abe",
+        "diff_sha256": "0fee61fc6e49f6dfacd3fe8d65adcdf6977a85e8fbfa6ca6bea6ebe4d2588acc",
+        "changed_paths": [
+          "src/flask/blueprints.py",
+          "tests/test_blueprints.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0015:attempt1"
+  },
+  {
+    "call_id": "call_00_YYILY9to3CBPtiJvPiOv5665",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "source_sha256": "4a325b67a881be07449af6814632a352a08ce21982427cd9b3ba3a3a78b68cf5",
+        "files_sha256": "e157db86b2925bc9843672054ec7658c0f1a29584c0b4b169942359e89045805",
+        "included_patch_ids": [],
+        "test_sequence": 10,
+        "message": "Blueprint now requires a non-empty name.\n\nChange (src/flask/blueprints.py): in Blueprint.__init__, an empty name (\"\" or\nNone) immediately raises ValueError(\"'name' may not be empty.\"), placed before\nthe existing dot-character check. Previously an empty name was accepted and\nproduced broken blueprint registration/endpoint behavior (flask issue #4944).\n\nRegression test (tests/test_blueprints.py): test_empty_name_not_allowed asserts\nflask.Blueprint(\"\", __name__) raises ValueError.\n\nEvidence on this exact version (v3, patch-1): pytest tests/test_blueprints.py\n-> 60 passed, 0 failed, 0 errors, validation_status \"verified\". Submission is\nnot hidden acceptance.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "d7571697ded7641837f960bfd2e998dea9780fc006f831157f490f7e68e53abe",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v3"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-15",
+      "logical_time": 15,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-14",
+      "command_committed": true,
+      "committed_revision": 15
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0016:attempt1"
+  },
+  {
+    "call_id": "call_00_Pr1vsL9VOTMY2mjHBZEJ3144",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Blueprint empty-name fix complete: ValueError added in Blueprint.__init__ (src/flask/blueprints.py), regression test test_empty_name_not_allowed added (tests/test_blueprints.py), focused public tests passed on the delivered version v3 (60 passed, 0 failed, validation_status verified), published as patch-1 and saved as delivery-1; work_stage is current_version_legally_delivered.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0017:attempt1"
+  },
+  {
+    "call_id": "call_00_jxDkuuDr75351cBeuB199357",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/src/flask/blueprints.py\n+++ b/src/flask/blueprints.py\n@@ -190,6 +190,9 @@\n             root_path=root_path,\n         )\n \n+        if not name:\n+            raise ValueError(\"'name' may not be empty.\")\n+\n         if \".\" in name:\n             raise ValueError(\"'name' may not contain a dot '.' character.\")\n \n--- a/tests/test_blueprints.py\n+++ b/tests/test_blueprints.py\n@@ -249,6 +249,11 @@\n \n     templates = sorted(app.jinja_env.list_templates())\n     assert templates == [\"admin/index.html\", \"frontend/index.html\"]\n+\n+\n+def test_empty_name_not_allowed(app, client):\n+    with pytest.raises(ValueError):\n+        flask.Blueprint(\"\", __name__)\n \n \n def test_dotted_name_not_allowed(app, client):\n",
+        "start_character": 0,
+        "end_character": 702,
+        "total_characters": 702,
+        "text_sha256": "0fee61fc6e49f6dfacd3fe8d65adcdf6977a85e8fbfa6ca6bea6ebe4d2588acc",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        }
+      },
+      "action_id": "action-16",
+      "logical_time": 16,
+      "command_id": "command:member_001:staff-a29fd139e17245cca8e3064e58b6e0e9-15",
+      "command_committed": true,
+      "committed_revision": 16
+    },
+    "request_id": "v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:agent:v193:pallets__flask-5014:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192103:member_001:0018:attempt1"
+  }
+]

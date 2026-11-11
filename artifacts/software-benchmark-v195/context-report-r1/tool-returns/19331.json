@@ -1,0 +1,542 @@
+[
+  {
+    "call_id": "call_00_TQFvPy6k51XBW5tzcZxE8787",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 4779,
+            "character_offset": 188759,
+            "preview": ",\n               alpha=None, linewidths=None, edgecolors='face',\n               reduce_C_function=np.mean, mincnt=None, marginals=False,\n               **kwargs):\n        \"\"\"\n        Make a 2D hexagonal binning plot of points *x*, *y*.\n\n        If *C* is *N",
+            "preview_start_character": 188679
+          },
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 4787,
+            "character_offset": 189159,
+            "preview": "rdinate (x[i], y[i]). For each hexagon, these values are reduced\n        using *reduce_C_function*.\n\n        Parameters\n        ----------\n        x, y : array-like\n            The data positions. *x* and *y* must be of the same length.\n\n        C : array-l",
+            "preview_start_character": 189079
+          },
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 4906,
+            "character_offset": 193913,
+            "preview": ": Draw outlines in the default color.\n            - An explicit color.\n\n        reduce_C_function : callable, default: `numpy.mean`\n            The function to aggregate *C* within the bins. It is ignored if\n            *C* is not given. This must have the ",
+            "preview_start_character": 193833
+          },
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 4910,
+            "character_offset": 194123,
+            "preview": "          *C* is not given. This must have the signature::\n\n                def reduce_C_function(C: array) -> float\n\n            Commonly used functions are:\n\n            - `numpy.mean`: average of the points\n            - `numpy.sum`: integral of the poin",
+            "preview_start_character": 194043
+          },
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 5017,
+            "character_offset": 198129,
+            "preview": "None:\n                mincnt = 0\n            accum = np.array(\n                [reduce_C_function(acc) if len(acc) > mincnt else np.nan\n                 for Cs_at_i in [Cs_at_i1, Cs_at_i2]\n                 for acc in Cs_at_i[1:]],  # [1:] drops out-of-range",
+            "preview_start_character": 198049
+          },
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 5134,
+            "character_offset": 202631,
+            "preview": "      # Get C-values for each bin, and compute bin value with\n                # reduce_C_function.\n                ci = C[bin_idxs == i]\n                values[i] = reduce_C_function(ci) if len(ci) > 0 else np.nan\n\n            mask = ~np.isnan(values)\n     ",
+            "preview_start_character": 202551
+          },
+          {
+            "path": "lib/matplotlib/axes/_axes.py",
+            "line": 5136,
+            "character_offset": 202716,
+            "preview": "e_C_function.\n                ci = C[bin_idxs == i]\n                values[i] = reduce_C_function(ci) if len(ci) > 0 else np.nan\n\n            mask = ~np.isnan(values)\n            verts = verts[mask]\n            values = values[mask]\n\n            trans = get",
+            "preview_start_character": 202636
+          }
+        ],
+        "complete": false,
+        "next_cursor": "search-c01e5ab1ac9309a5a860fd7df32fa50aabfe2b6f869e6f47e971149e5cd3808f",
+        "scanned_characters": 1048576,
+        "considered_files": 46,
+        "skipped_nontext_entries": 6,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0002:attempt1"
+  },
+  {
+    "call_id": "call_00_zULdJLpUgJOHoU7j6LxY3697",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "lib/matplotlib/axes/_axes.py",
+        "text": "        else:\n            xmin, xmax = (tx.min(), tx.max()) if len(x) else (0, 1)\n            ymin, ymax = (ty.min(), ty.max()) if len(y) else (0, 1)\n\n            # to avoid issues with singular data, expand the min/max pairs\n            xmin, xmax = mtransforms.nonsingular(xmin, xmax, expander=0.1)\n            ymin, ymax = mtransforms.nonsingular(ymin, ymax, expander=0.1)\n\n        nx1 = nx + 1\n        ny1 = ny + 1\n        nx2 = nx\n        ny2 = ny\n        n = nx1 * ny1 + nx2 * ny2\n\n        # In the x-direction, the hexagons exactly cover the region from\n        # xmin to xmax. Need some padding to avoid roundoff errors.\n        padding = 1.e-9 * (xmax - xmin)\n        xmin -= padding\n        xmax += padding\n        sx = (xmax - xmin) / nx\n        sy = (ymax - ymin) / ny\n        # Positions in hexagon index coordinates.\n        ix = (tx - xmin) / sx\n        iy = (ty - ymin) / sy\n        ix1 = np.round(ix).astype(int)\n        iy1 = np.round(iy).astype(int)\n        ix2 = np.floor(ix).astype(int)\n        iy2 = np.floor(iy).astype(int)\n        # flat indices, plus one so that out-of-range points go to position 0.\n        i1 = np.where((0 <= ix1) & (ix1 < nx1) & (0 <= iy1) & (iy1 < ny1),\n                      ix1 * ny1 + iy1 + 1, 0)\n        i2 = np.where((0 <= ix2) & (ix2 < nx2) & (0 <= iy2) & (iy2 < ny2),\n                      ix2 * ny2 + iy2 + 1, 0)\n\n        d1 = (ix - ix1) ** 2 + 3.0 * (iy - iy1) ** 2\n        d2 = (ix - ix2 - 0.5) ** 2 + 3.0 * (iy - iy2 - 0.5) ** 2\n        bdist = (d1 < d2)\n\n        if C is None:  # [1:] drops out-of-range points.\n            counts1 = np.bincount(i1[bdist], minlength=1 + nx1 * ny1)[1:]\n            counts2 = np.bincount(i2[~bdist], minlength=1 + nx2 * ny2)[1:]\n            accum = np.concatenate([counts1, counts2]).astype(float)\n            if mincnt is not None:\n                accum[accum < mincnt] = np.nan\n            C = np.ones(len(x))\n        else:\n            # store the C values in a list per hexagon index\n            Cs_at_i1 = [[] for _ in range(1 + nx1 * ny1)]\n            Cs_at_i2 = [[] for _ in range(1 + nx2 * ny2)]\n            for i in range(len(x)):\n                if bdist[i]:\n                    Cs_at_i1[i1[i]].append(C[i])\n                else:\n                    Cs_at_i2[i2[i]].append(C[i])\n            if mincnt is None:\n                mincnt = 0\n            accum = np.array(\n                [reduce_C_function(acc) if len(acc) > mincnt else np.nan\n                 for Cs_at_i in [Cs_at_i1, Cs_at_i2]\n                 for acc in Cs_at_i[1:]],  # [1:] drops out-of-range points.\n                float)\n\n        good_idxs = ~np.isnan(accum)\n\n        offsets = np.zeros((n, 2), float)\n        offsets[:nx1 * ny1, 0] = np.repeat(np.arange(nx1), ny1)\n        offsets[:nx1 * ny1, 1] = np.tile(np.arange(ny1), nx1)\n        offsets[nx1 * ny1:, 0] = np.repeat(np.arange(nx2) + 0.5, ny2)\n        offsets[nx1 * ny1:, 1] = np.tile(np.arange(ny2), nx2) + 0.5\n        offsets[:, 0] *= sx\n        offsets[:, 1] *= sy\n        offsets[:, 0] += xmin\n        offsets[:, 1] += ymin\n        # remove accumulation bins with no data\n        offsets = offsets[good_idxs, :]\n        accum = accum[good_idxs]\n\n        polygon = [sx, sy / 3] * np.array(\n            [[.5, -.5], [.5, .5], [0., 1.], [-.5, .5], [-.5, -.5], [0., -1.]])\n\n        if linewidths is None:\n            linewidths = [mpl.rcParams['patch.linewidth']]\n\n        if xscale == 'log' or yscale == 'log':\n            polygons = np.expand_dims(polygon, 0) + np.expand_dims(offsets, 1)\n            if xscale == 'log':\n                polygons[:, :, 0] = 10.0 ** polygons[:, :, 0]\n                xmin = 10.0 ** xmin\n                xmax = 10.0 ** xmax\n                self.set_xscale(xscale)\n            if yscale == 'log':\n                polygons[:, :, 1] = 10.0 ** polygons[:, :, 1]\n                ymin = 10.0 ** ymin\n                ymax = 10.0 ** ymax\n                self.set_yscale(yscale)\n            collection = mcoll.PolyCollection(\n                polygons,\n                edgecolors=edgecolors,\n                linewidths=linewidths,\n                )",
+        "start_character": 195745,
+        "end_character": 199841,
+        "total_characters": 332236,
+        "text_sha256": "92511816c99289026ab52f7d55ec8ede43b3cd9088632d2efac00cccda9fc942",
+        "next_cursor": "199841:50d4c655dd8b2e78ab319e483ed3e1f74dc17cf142dcacdcd5b09865b74d83c9"
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_XheuqrV3gkVqFEmGrS221362",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "lib/matplotlib/axes/_axes.py",
+        "text": "               fig, ax = plt.subplots(figsize=(4, 4))\n               h = ax.hexbin(x, y, gridsize=(5, 3))\n               hx, hy = h.get_offsets().T\n               ax.plot(hx[24::3], hy[24::3], 'ro-')\n               ax.plot(hx[-3:], hy[-3:], 'ro-')\n               ax.set_title('gridsize=(5, 3)')\n               ax.axis('off')\n\n            To get approximately regular hexagons, choose\n            :math:`n_x = \\\\sqrt{3}\\\\,n_y`.\n\n        bins : 'log' or int or sequence, default: None\n            Discretization of the hexagon values.\n\n            - If *None*, no binning is applied; the color of each hexagon\n              directly corresponds to its count value.\n            - If 'log', use a logarithmic scale for the colormap.\n              Internally, :math:`log_{10}(i+1)` is used to determine the\n              hexagon color. This is equivalent to ``norm=LogNorm()``.\n            - If an integer, divide the counts in the specified number\n              of bins, and color the hexagons accordingly.\n            - If a sequence of values, the values of the lower bound of\n              the bins to be used.\n\n        xscale : {'linear', 'log'}, default: 'linear'\n            Use a linear or log10 scale on the horizontal axis.\n\n        yscale : {'linear', 'log'}, default: 'linear'\n            Use a linear or log10 scale on the vertical axis.\n\n",
+        "start_character": 190351,
+        "end_character": 191698,
+        "total_characters": 332236,
+        "text_sha256": "92511816c99289026ab52f7d55ec8ede43b3cd9088632d2efac00cccda9fc942",
+        "next_cursor": "191698:50d4c655dd8b2e78ab319e483ed3e1f74dc17cf142dcacdcd5b09865b74d83c9"
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_8whWsjVAve8ei6bzniNH4545",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "lib/matplotlib/axes/_axes.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "cc84bfd2b1b9b623e00d2c39af1f5f29e0e3699fe3a6f4c44430dafb70bf3f5f",
+        "entry_metadata_sha256": "52a3320800646e7f88610119675c5b09e023c367ca906363d8f043469b86264d"
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_Vxr0wutPKYMaNiEB8Xyg7889",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "lib/matplotlib/axes/_axes.py",
+        "text": "            If *xscale* or *yscale* is set to 'log', the limits are\n            expected to be the exponent for a power of 10. E.g. for\n            x-limits of 1 and 50 in 'linear' scale and y-limits\n            of 10 and 1000 in 'log' scale, enter (1, 50, 1, 3).\n\n        Returns\n        -------\n        `~matplotlib.collections.PolyCollection`\n            A `.PolyCollection` defining the hexagonal bins.\n\n            - `.PolyCollection.get_offsets` contains a Mx2 array containing\n              the x, y positions of the M hexagon centers.\n            - `.PolyCollection.get_array` contains the values of the M\n              hexagons.\n\n            If *marginals* is *True*, horizontal\n            bar and vertical bar (both PolyCollections) will be attached\n            to the return collection as attributes *hbar* and *vbar*.\n\n        Other Parameters\n        ----------------\n        %(cmap_doc)s\n\n        %(norm_doc)s\n\n        %(vmin_vmax_doc)s\n\n        alpha : float between 0 and 1, optional\n            The alpha blending value, between 0 (transparent) and 1 (opaque).\n\n        linewidths : float, default: *None*\n            If *None*, defaults to :rc:`patch.linewidth`.\n\n        edgecolors : {'face', 'none', *None*} or color, default: 'face'\n            The color of the hexagon edges. Possible values are:\n\n            - 'face': Draw the edges in the same color as the fill color.\n            - 'none': No edges are drawn. This can sometimes lead to unsightly\n              unpainted pixels between the hexagons.\n            - *None*: Draw outlines in the default color.\n            - An explicit color.\n\n        reduce_C_function : callable, default: `numpy.mean`\n            The function to aggregate *C* within the bins. It is ignored if\n            *C* is not given. This must have the signature::\n",
+        "start_character": 192286,
+        "end_character": 194102,
+        "total_characters": 332237,
+        "text_sha256": "b5ae669219060f320dd28f71e5758acd5244f9834f77eed3ece445ba62bebed2",
+        "next_cursor": "194102:ccf3fe183d012c84f7baa277d2f6ee6aaaf4939ec0f8c161c2efa0a9443fdef9"
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_ty89zqy5wCe5rJNXNggr2247",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "matches": [
+          {
+            "line": 927,
+            "text": "def test_hexbin_extent():",
+            "start_character_in_line": 0,
+            "full_line_characters": 25
+          },
+          {
+            "line": 943,
+            "text": "def test_hexbin_empty():",
+            "start_character_in_line": 0,
+            "full_line_characters": 24
+          },
+          {
+            "line": 953,
+            "text": "def test_hexbin_pickable():",
+            "start_character_in_line": 0,
+            "full_line_characters": 27
+          },
+          {
+            "line": 964,
+            "text": "def test_hexbin_log():",
+            "start_character_in_line": 0,
+            "full_line_characters": 22
+          },
+          {
+            "line": 983,
+            "text": "def test_hexbin_linear():",
+            "start_character_in_line": 0,
+            "full_line_characters": 25
+          },
+          {
+            "line": 995,
+            "text": "def test_hexbin_log_clim():",
+            "start_character_in_line": 0,
+            "full_line_characters": 27
+          }
+        ],
+        "total_matches": 6,
+        "next_cursor": null
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_caLlmmiSoK70Lr3ZyRez7882",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "lib/matplotlib/tests/test_axes.py",
+        "text": "\n    ax = plt.gca()\n    ax.axhspan(t0, tf, facecolor=\"blue\", alpha=0.25)\n    ax.set_ylim(t0 - 5.0*dt, tf + 5.0*dt)\n\n\n@image_comparison(['hexbin_extent.png', 'hexbin_extent.png'], remove_text=True)\ndef test_hexbin_extent():\n    # this test exposes sf bug 2856228\n    fig, ax = plt.subplots()\n    data = (np.arange(2000) / 2000).reshape((2, 1000))\n    x, y = data\n\n    ax.hexbin(x, y, extent=[.1, .3, .6, .7])\n\n    # Reuse testcase from above for a labeled data test\n    data = {\"x\": x, \"y\": y}\n\n    fig, ax = plt.subplots()\n    ax.hexbin(\"x\", \"y\", extent=[.1, .3, .6, .7], data=data)\n\n\n@image_comparison(['hexbin_empty.png', 'hexbin_empty.png'], remove_text=True)\ndef test_hexbin_empty():\n    # From #3886: creating hexbin from empty dataset raises ValueError\n    fig, ax = plt.subplots()\n    ax.hexbin([], [])\n    fig, ax = plt.subplots()\n    # From #23922: creating hexbin with log scaling from empty\n    # dataset raises ValueError\n    ax.hexbin([], [], bins='log')\n\n\ndef test_hexbin_pickable():\n    # From #1973: Test that picking a hexbin collection works\n    fig, ax = plt.subplots()\n    data = (np.arange(200) / 200).reshape((2, 100))\n    x, y = data\n    hb = ax.hexbin(x, y, extent=[.1, .3, .6, .7], picker=-1)\n    mouse_event = SimpleNamespace(x=400, y=300)\n    assert hb.contains(mouse_event)[0]\n\n\n@image_comparison(['hexbin_log.png'], style='mpl20')\ndef test_hexbin_log():\n    # Issue #1636 (and also test log scaled colorbar)\n\n    # Remove this line when this test image is regenerated.\n    plt.rcParams['pcolormesh.snap'] = False\n\n",
+        "start_character": 28984,
+        "end_character": 30527,
+        "total_characters": 292746,
+        "text_sha256": "3b613bbba431ccd2d7b15a09f2651a6b65f69e738e61e944761f84ba6750ba88",
+        "next_cursor": "30527:8eabab0cb2a0f40d064006d5e94f438105529947f1e3a8eb90120aec0fe97c7a"
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_olIdsfg3ahoyKEusElnk7271",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "lib/matplotlib/tests/test_axes.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "768f92bcfe7b807283dcc5be1fd3cdea6a4a79d8c0f0c2d1a7300a79fddc6314",
+        "entry_metadata_sha256": "52a3320800646e7f88610119675c5b09e023c367ca906363d8f043469b86264d"
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_LbYzU3NfpffErPaaiPNZ5770",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-e4f17e08c4af42a9e4c3d080",
+        "report_event": {
+          "sequence": 9,
+          "operation_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-9"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "files_sha256": "768f92bcfe7b807283dcc5be1fd3cdea6a4a79d8c0f0c2d1a7300a79fddc6314",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "5d08deeed3ac3829629f77f836c2ec2c70b9f18a1c820a94a00c86ed87a5d5bd",
+        "body_characters": 37424,
+        "total_pages": 14,
+        "page": {
+          "index": 0,
+          "cursor": "0:f7160e881eeab670",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:1c9c2b0e54c1b215",
+          "is_last": false,
+          "remaining_pages": 13
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 8,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 8
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "fea91905412cdec8778a3e5e15d62a02",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 8,
+                "errors": 0,
+                "failed": 0,
+                "passed": 8,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "735fa497fa7c7497cc3953822e54a40155c0a4be459444957aa2c65437af518c",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-e4f17e08c4af42a9e4c3d080",
+            "cursor": "1:1c9c2b0e54c1b215",
+            "body_sha256": "5d08deeed3ac3829629f77f836c2ec2c70b9f18a1c820a94a00c86ed87a5d5bd",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_t1v1iwLBBM2oMUDPnQ7Z7966",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/lib/matplotlib/axes/_axes.py\n+++ b/lib/matplotlib/axes/_axes.py\n@@ -5014,7 +5014,7 @@\n             if mincnt is None:\n                 mincnt = 0\n             accum = np.array(\n-                [reduce_C_function(acc) if len(acc) > mincnt else np.nan\n+                [reduce_C_function(acc) if len(acc) >= mincnt else np.nan\n                  for Cs_at_i in [Cs_at_i1, Cs_at_i2]\n                  for acc in Cs_at_i[1:]],  # [1:] drops out-of-range points.\n                 float)\n--- a/lib/matplotlib/tests/test_axes.py\n+++ b/lib/matplotlib/tests/test_axes.py\n@@ -958,6 +958,28 @@\n     hb = ax.hexbin(x, y, extent=[.1, .3, .6, .7], picker=-1)\n     mouse_event = SimpleNamespace(x=400, y=300)\n     assert hb.contains(mouse_event)[0]\n+\n+\n+def test_hexbin_mincnt_behavior():\n+    # From #17991: mincnt should behave the same way whether or not C is\n+    # supplied, i.e. a bin is only dropped when it contains *fewer* than\n+    # mincnt points.\n+    fig, ax = plt.subplots()\n+    data = (np.arange(200) / 200).reshape((2, 100))\n+    x, y = data\n+    C = np.ones_like(x)\n+    extent = [.1, .3, .6, .7]\n+    gridsize = 5\n+    mincnt = 2\n+\n+    hb_counts = ax.hexbin(x, y, extent=extent, gridsize=gridsize,\n+                          mincnt=mincnt)\n+    ax.cla()\n+    hb_cvalues = ax.hexbin(x, y, C=C, reduce_C_function=np.sum,\n+                           extent=extent, gridsize=gridsize, mincnt=mincnt)\n+\n+    assert (hb_counts.get_array() == 1).sum() == 0\n+    assert (hb_cvalues.get_array() == 1).sum() == 0\n \n \n @image_comparison(['hexbin_log.png'], style='mpl20')\n",
+        "start_character": 0,
+        "end_character": 1572,
+        "total_characters": 1572,
+        "text_sha256": "fc127306723e6095cf0782b48384fb5aad4ea31da3a4650472b985336a06e0de",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        }
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_OfrY6ZT4sUiqAvs4Rd8F1323",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "cadd7f97eea57b6ee978005dc8ddaecf686cc2e559e705c2788946c094c41c0e",
+        "files_sha256": "768f92bcfe7b807283dcc5be1fd3cdea6a4a79d8c0f0c2d1a7300a79fddc6314",
+        "entry_metadata_sha256": "52a3320800646e7f88610119675c5b09e023c367ca906363d8f043469b86264d",
+        "diff_sha256": "fc127306723e6095cf0782b48384fb5aad4ea31da3a4650472b985336a06e0de",
+        "changed_paths": [
+          "lib/matplotlib/axes/_axes.py",
+          "lib/matplotlib/tests/test_axes.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_vtnsCznGVSagA0B2KCoD4268",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "source_sha256": "cadd7f97eea57b6ee978005dc8ddaecf686cc2e559e705c2788946c094c41c0e",
+        "files_sha256": "768f92bcfe7b807283dcc5be1fd3cdea6a4a79d8c0f0c2d1a7300a79fddc6314",
+        "included_patch_ids": [],
+        "test_sequence": 9,
+        "message": "Fix hexbin mincnt inconsistency when C is supplied (issue: \"Inconsistent behavior of hexbins mincnt parameter, depending on C parameter\").\n\nRoot cause: in Axes.hexbin, the C-is-None branch keeps a bin when it holds at least mincnt points (accum < mincnt -> NaN drops it), while the C-supplied branch used `len(acc) > mincnt`, dropping bins holding exactly mincnt points.\n\nChange: lib/matplotlib/axes/_axes.py — in the C-supplied accumulation, `reduce_C_function(acc) if len(acc) > mincnt else np.nan` becomes `len(acc) >= mincnt`, matching the requested resolution and making mincnt consistent in both paths (a bin is dropped only when it contains fewer than mincnt points).\n\nRegression test: lib/matplotlib/tests/test_axes.py — test_hexbin_mincnt_behavior asserts that with mincnt=2 no single-count bin survives, both without C (counts path) and with C + reduce_C_function=np.sum.\n\nVerification (current version v3, fixed candidate patch-1): public pytest on lib/matplotlib/tests/test_axes.py -k hexbin -> 8 collected, 8 passed, 0 failed, 0 errors. Same-version public evidence only; not official acceptance.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "52a3320800646e7f88610119675c5b09e023c367ca906363d8f043469b86264d",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v3"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_l8A4SllKRjlJUdbFxize5028",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Resolved the issue and delivered: hexbin's C-supplied branch now uses `len(acc) >= mincnt` (was `>`), matching the C-is-None branch and the issue's stated resolution, plus a regression test (test_hexbin_mincnt_behavior). Public pytest hexbin scope on the delivered v3: 8 passed. patch-1 published; delivery-1 submitted.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_o6odfgWIfFhkxnMEiJIQ1620",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/lib/matplotlib/axes/_axes.py\n+++ b/lib/matplotlib/axes/_axes.py\n@@ -5014,7 +5014,7 @@\n             if mincnt is None:\n                 mincnt = 0\n             accum = np.array(\n-                [reduce_C_function(acc) if len(acc) > mincnt else np.nan\n+                [reduce_C_function(acc) if len(acc) >= mincnt else np.nan\n                  for Cs_at_i in [Cs_at_i1, Cs_at_i2]\n                  for acc in Cs_at_i[1:]],  # [1:] drops out-of-range points.\n                 float)\n--- a/lib/matplotlib/tests/test_axes.py\n+++ b/lib/matplotlib/tests/test_axes.py\n@@ -958,6 +958,28 @@\n     hb = ax.hexbin(x, y, extent=[.1, .3, .6, .7], picker=-1)\n     mouse_event = SimpleNamespace(x=400, y=300)\n     assert hb.contains(mouse_event)[0]\n+\n+\n+def test_hexbin_mincnt_behavior():\n+    # From #17991: mincnt should behave the same way whether or not C is\n+    # supplied, i.e. a bin is only dropped when it contains *fewer* than\n+    # mincnt points.\n+    fig, ax = plt.subplots()\n+    data = (np.arange(200) / 200).reshape((2, 100))\n+    x, y = data\n+    C = np.ones_like(x)\n+    extent = [.1, .3, .6, .7]\n+    gridsize = 5\n+    mincnt = 2\n+\n+    hb_counts = ax.hexbin(x, y, extent=extent, gridsize=gridsize,\n+                          mincnt=mincnt)\n+    ax.cla()\n+    hb_cvalues = ax.hexbin(x, y, C=C, reduce_C_function=np.sum,\n+                           extent=extent, gridsize=gridsize, mincnt=mincnt)\n+\n+    assert (hb_counts.get_array() == 1).sum() == 0\n+    assert (hb_cvalues.get_array() == 1).sum() == 0\n \n \n @image_comparison(['hexbin_log.png'], style='mpl20')\n",
+        "start_character": 0,
+        "end_character": 1572,
+        "total_characters": 1572,
+        "text_sha256": "fc127306723e6095cf0782b48384fb5aad4ea31da3a4650472b985336a06e0de",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        }
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-b2c448ee4eb74f50bda52c07a72a1a7b-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:agent:v193:matplotlib__matplotlib-26113:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192006:member_001:0015:attempt1"
+  }
+]

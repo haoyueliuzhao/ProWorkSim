@@ -1,0 +1,1582 @@
+[
+  {
+    "call_id": "call_00_YTI0sDLUFZPHk1XORaUj1475",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\n\"\"\"\nFunctions to determine if a model is separable, i.e.\nif the model outputs are independent.\n\nIt analyzes ``n_inputs``, ``n_outputs`` and the operators\nin a compound model by stepping through the transforms\nand creating a ``coord_matrix`` of shape (``n_outputs``, ``n_inputs``).\n\n\nEach modeling operator is represented by a function which\ntakes two simple models (or two ``coord_matrix`` arrays) and\nreturns an array of shape (``n_outputs``, ``n_inputs``).\n\n\"\"\"\n\nimport numpy as np\n\nfrom .core import Model, ModelDefinitionError, CompoundModel\nfrom .mappings import Mapping\n\n\n__all__ = [\"is_separable\", \"separability_matrix\"]\n\n\ndef is_separable(transform):\n    \"\"\"\n    A separability test for the outputs of a transform.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    is_separable : ndarray\n        A boolean array with size ``transform.n_outputs`` where\n        each element indicates whether the output is independent\n        and the result of a separable transform.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> is_separable(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([ True,  True]...)\n    >>> is_separable(Shift(1) & Shift(2) | Rotation2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([ True,  True,  True,  True]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        is_separable = np.array([False] * transform.n_outputs).T\n        return is_separable\n    separable_matrix = _separable(transform)\n    is_separable = separable_matrix.sum(1)\n    is_separable = np.where(is_separable != 1, False, True)\n    return is_separable\n\n\ndef separability_matrix(transform):\n    \"\"\"\n    Compute the correlation between outputs and inputs.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    separable_matrix : ndarray\n        A boolean correlation matrix of shape (n_outputs, n_inputs).\n        Indicates the dependence of outputs on inputs. For completely\n        independent outputs, the diagonal elements are True and\n        off-diagonal elements are False.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> separability_matrix(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([[ True, False], [False,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Rotation2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([[ True, False], [False,  True], [ True, False], [False,  True]]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        return np.ones((transform.n_outputs, transform.n_inputs),\n                       dtype=np.bool_)\n    separable_matrix = _separable(transform)\n    separable_matrix = np.where(separable_matrix != 0, True, False)\n    return separable_matrix\n\n\ndef _compute_n_outputs(left, right):\n    \"\"\"\n    Compute the number of outputs of two models.\n\n    The two models are the left and right model to an operation in\n    the expression tree of a compound model.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    \"\"\"\n    if isinstance(left, Model):\n        lnout = left.n_outputs\n    else:\n        lnout = left.shape[0]\n    if isinstance(right, Model):\n        rnout = right.n_outputs\n    else:\n        rnout = right.shape[0]\n    ",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": "4096:720f4b1509c35be0e9713a085b17a342a27d6d451463c27b4f7c9a5e715a28bc"
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_6KiDoeSOK5Ef1svtoX397133",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "noutp = lnout + rnout\n    return noutp\n\n\ndef _arith_oper(left, right):\n    \"\"\"\n    Function corresponding to one of the arithmetic operators\n    ['+', '-'. '*', '/', '**'].\n\n    This always returns a nonseparable output.\n\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n    # models have the same number of inputs and outputs\n    def _n_inputs_outputs(input):\n        if isinstance(input, Model):\n            n_outputs, n_inputs = input.n_outputs, input.n_inputs\n        else:\n            n_outputs, n_inputs = input.shape\n        return n_inputs, n_outputs\n\n    left_inputs, left_outputs = _n_inputs_outputs(left)\n    right_inputs, right_outputs = _n_inputs_outputs(right)\n\n    if left_inputs != right_inputs or left_outputs != right_outputs:\n        raise ModelDefinitionError(\n            \"Unsupported operands for arithmetic operator: left (n_inputs={}, \"\n            \"n_outputs={}) and right (n_inputs={}, n_outputs={}); \"\n            \"models must have the same n_inputs and the same \"\n            \"n_outputs for this operator.\".format(\n                left_inputs, left_outputs, right_inputs, right_outputs))\n\n    result = np.ones((left_outputs, left_inputs))\n    return result\n\n\ndef _coord_matrix(model, pos, noutp):\n    \"\"\"\n    Create an array representing inputs and outputs of a simple model.\n\n    The array has a shape (noutp, model.n_inputs).\n\n    Parameters\n    ----------\n    model : `astropy.modeling.Model`\n        model\n    pos : str\n        Position of this model in the expression tree.\n        One of ['left', 'right'].\n    noutp : int\n        Number of outputs of the compound model of which the input model\n        is a left or right child.\n\n    \"\"\"\n    if isinstance(model, Mapping):\n        axes = []\n        for i in model.mapping:\n            axis = np.zeros((model.n_inputs,))\n            axis[i] = 1\n            axes.append(axis)\n        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n    Function corresponding to '&' operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n\n    \"\"\"\n    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n    if isinstance(right, Model):\n        cright = _coord_matrix(right, 'right', noutp)\n    else:\n        cright = np.zeros((noutp, right.shape[1]))\n        cright[-right.shape[0]:, -right.shape[1]:] = 1\n\n    return np.hstack([cleft, cright])\n\n\ndef _cdot(left, right):\n    \"\"\"\n    Function corresponding to \"|\" operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n\n    left, right = right, left\n\n    def _n_inputs_outputs(input, position):\n        \"\"\"\n        Return ``n_inputs``, ``n_outputs`` for a model or coor",
+        "start_character": 4096,
+        "end_character": 8192,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": "8192:720f4b1509c35be0e9713a085b17a342a27d6d451463c27b4f7c9a5e715a28bc"
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_X1K9G1MRmEAkJCSnp34m4280",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "d_matrix.\n        \"\"\"\n        if isinstance(input, Model):\n            coords = _coord_matrix(input, position, input.n_outputs)\n        else:\n            coords = input\n        return coords\n\n    cleft = _n_inputs_outputs(left, 'left')\n    cright = _n_inputs_outputs(right, 'right')\n\n    try:\n        result = np.dot(cleft, cright)\n    except ValueError:\n        raise ModelDefinitionError(\n            'Models cannot be combined with the \"|\" operator; '\n            'left coord_matrix is {}, right coord_matrix is {}'.format(\n                cright, cleft))\n    return result\n\n\ndef _separable(transform):\n    \"\"\"\n    Calculate the separability of outputs.\n\n    Parameters\n    ----------\n    transform : `astropy.modeling.Model`\n        A transform (usually a compound model).\n\n    Returns :\n    is_separable : ndarray of dtype np.bool\n        An array of shape (transform.n_outputs,) of boolean type\n        Each element represents the separablity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        sepright = _separable(transform.right)\n        return _operators[transform.op](sepleft, sepright)\n    elif isinstance(transform, Model):\n        return _coord_matrix(transform, 'left', transform.n_outputs)\n\n\n# Maps modeling operators to a function computing and represents the\n# relationship of axes as an array of 0-es and 1-s\n_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,\n              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}\n",
+        "start_character": 8192,
+        "end_character": 9878,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": null
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_A5snAwvyXwLUGmkUICZI6173",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [],
+        "complete": false,
+        "next_cursor": "search-b8534249a111596bb6d8e431d2697ade141431ae1af6ded0c811022b8ca4b727",
+        "scanned_characters": 1048576,
+        "considered_files": 89,
+        "skipped_nontext_entries": 3,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_341AcHx53riQ3aXbUofU7969",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "astropy/modeling/core.py",
+            "line": 808,
+            "character_offset": 31050,
+            "preview": "\n                    return 0\n\n        return self.__class__.n_outputs\n\n    def _calculate_separability_matrix(self):\n        \"\"\"\n        This is a hook which customises the behavior of modeling.separable.\n\n        This allows complex subclasses to customise the separab",
+            "preview_start_character": 30970
+          },
+          {
+            "path": "astropy/modeling/separable.py",
+            "line": 304,
+            "character_offset": 9216,
+            "preview": "lity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        s",
+            "preview_start_character": 9136
+          }
+        ],
+        "complete": false,
+        "next_cursor": "search-9f5239ec1bac619782621dffcf63c7f7c7521c293b8025ca532294e0b19a69e8",
+        "scanned_characters": 1048576,
+        "considered_files": 39,
+        "skipped_nontext_entries": 2,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_WyaT1d1HFoozOaDhG0aN1433",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/core.py",
+        "text": "        return self._outputs\n\n    @outputs.setter\n    def outputs(self, val):\n        if len(val) != self.n_outputs:\n            raise ValueError(f\"Expected {self.n_outputs} number of outputs, got {len(val)}.\")\n        self._outputs = val\n\n    @property\n    def n_inputs(self):\n        # TODO: remove the code in the ``if`` block when support\n        # for models with ``inputs`` as class variables is removed.\n        if hasattr(self.__class__, 'n_inputs') and isinstance(self.__class__.n_inputs, property):\n            try:\n                return len(self.__class__.inputs)\n            except TypeError:\n                try:\n                    return len(self.inputs)\n                except AttributeError:\n                    return 0\n\n        return self.__class__.n_inputs\n\n    @property\n    def n_outputs(self):\n        # TODO: remove the code in the ``if`` block when support\n        # for models with ``outputs`` as class variables is removed.\n        if hasattr(self.__class__, 'n_outputs') and isinstance(self.__class__.n_outputs, property):\n            try:\n                return len(self.__class__.outputs)\n            except TypeError:\n                try:\n                    return len(self.outputs)\n                except AttributeError:\n                    return 0\n\n        return self.__class__.n_outputs\n\n    def _calculate_separability_matrix(self):\n        \"\"\"\n        This is a hook which customises the behavior of modeling.separable.\n\n        This allows complex subclasses to customise the separability matrix.\n        If it returns `NotImplemented` the default behavior is used.\n        \"\"\"\n        return NotImplemented\n\n    def _initialize_unit_support(self):\n        \"\"\"\n        Convert self._input_units_strict and\n        self.input_units_allow_dimensionless to dictionaries\n        mapping input name to a boolean value.\n        \"\"\"\n        if isinstance(self._input_units_strict, bool):\n            self._input_units_strict = {key: self._input_units_strict for\n                                        key in self.inputs}\n\n        if isinstance(self._input_units_allow_dimensionless, bool):\n            self._input_units_allow_dimensionless = {key: self._input_units_allow_dimensionless\n                                                     for key in self.inputs}\n\n    @property\n    def input_units_strict(self):\n        \"\"\"\n        Enforce strict units on inputs to evaluate. If this is set to True,\n        input values to evaluate will be in the exact units specified by\n        input_units. If the input quantities are convertible to input_units,\n        they are converted. If this is a dictionary then it should map input\n        name to a bool to set strict input units for that parameter.\n        \"\"\"\n        val = self._input_units_strict\n        if isinstance(val, bool):\n            return {key: val for key in self.inputs}\n        return dict(zip(self.inputs, val.values()))\n\n    @property\n    def input_units_allow_dimensionless(self):\n        \"\"\"\n        Allow dimensionless input (and corresponding output). If this is True,\n        input values to evaluate will gain the units specified in input_units. If\n        this is a dictionary then it should map input name to a bool to allow\n        dimensionless numbers for that input.\n        Only has an effect if input_units is defined.\n        \"\"\"\n\n        val = self._input_units_allow_dimensionless\n        if isinstance(val, bool):\n            return {key: val for key in self.inputs}\n        return dict(zip(self.inputs, val.values()))\n\n    @property\n    def uses_quantity(self):\n        \"\"\"\n        True if this model has been created with `~astropy.units.Quantity`\n        objects or if there are no parameters.\n\n        This can be used to determine if this model should be evaluated with\n        `~astropy.units.Quantity` or regular floats.\n        \"\"\"\n        pisq = [isinstance(p, Quantity) for p in self._param_sets(units=True)]\n        return (len(pisq) == 0) or any(pisq)\n\n    def __repr__(self):\n        return self._format_repr()\n\n    def __str__(self):\n        return self._format_",
+        "start_character": 29715,
+        "end_character": 33811,
+        "total_characters": 175823,
+        "text_sha256": "13615f0d5a58344aa0054b03669f5badc519443b3578ecd78868f3fef9f7cb1e",
+        "next_cursor": "33811:bfbad957c80733b600ecb39f0db6ee1f051f911e1cba50fb372394d6c556a4ce"
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_kAo4rIXJdCsivEsrqCwm3755",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\"\"\"\nTest separability of models.\n\n\"\"\"\n# pylint: disable=invalid-name\nimport pytest\nimport numpy as np\nfrom numpy.testing import assert_allclose\n\nfrom astropy.modeling import custom_model, models\nfrom astropy.modeling.models import Mapping\nfrom astropy.modeling.separable import (_coord_matrix, is_separable, _cdot,\n                                        _cstack, _arith_oper, separability_matrix)\nfrom astropy.modeling.core import ModelDefinitionError\n\n\nsh1 = models.Shift(1, name='shift1')\nsh2 = models.Shift(2, name='sh2')\nscl1 = models.Scale(1, name='scl1')\nscl2 = models.Scale(2, name='scl2')\nmap1 = Mapping((0, 1, 0, 1), name='map1')\nmap2 = Mapping((0, 0, 1), name='map2')\nmap3 = Mapping((0, 0), name='map3')\nrot = models.Rotation2D(2, name='rotation')\np2 = models.Polynomial2D(1, name='p2')\np22 = models.Polynomial2D(2, name='p22')\np1 = models.Polynomial1D(1, name='p1')\n\n\ncompound_models = {\n    'cm1': (map3 & sh1 | rot & sh1 | sh1 & sh2 & sh1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm2': (sh1 & sh2 | rot | map1 | p2 & p22,\n            (np.array([False, False]),\n             np.array([[True, True], [True, True]]))\n            ),\n    'cm3': (map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm4': (sh1 & sh2 | map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm5': (map3 | sh1 & sh2 | scl1 & scl2,\n            (np.array([False, False]),\n             np.array([[True], [True]]))\n            ),\n    'cm7': (map2 | p2 & sh1,\n            (np.array([False, True]),\n             np.array([[True, False], [False, True]]))\n            )\n}\n\n\ndef test_coord_matrix():\n    c = _coord_matrix(p2, 'left', 2)\n    assert_allclose(np.array([[1, 1], [0, 0]]), c)\n    c = _coord_matrix(p2, 'right', 2)\n    assert_allclose(np.array([[0, 0], [1, 1]]), c)\n    c = _coord_matrix(p1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(p1, 'left', 1)\n    assert_allclose(np.array([[1]]), c)\n    c = _coord_matrix(sh1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(sh1, 'right', 2)\n    assert_allclose(np.array([[0], [1]]), c)\n    c = _coord_matrix(sh1, 'right', 3)\n    assert_allclose(np.array([[0], [0], [1]]), c)\n    c = _coord_matrix(map3, 'left', 2)\n    assert_allclose(np.array([[1], [1]]), c)\n    c = _coord_matrix(map3, 'left', 3)\n    assert_allclose(np.array([[1], [1], [0]]), c)\n\n\ndef test_cdot():\n    result = _cdot(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n\n    result = _cdot(rot, p2)\n    assert_allclose(result, np.array([[2, 2]]))\n\n    result = _cdot(rot, rot)\n    assert_allclose(result, np.array([[2, 2], [2, 2]]))\n\n    result = _cdot(Mapping((0, 0)), rot)\n    assert_allclose(result, np.array([[2], [2]]))\n\n    with pytest.raises(ModelDefinitionError,\n                       match=r\"Models cannot be combined with the \\\"|\\\" operator; .*\"):\n        _cdot(sh1, map1)\n\n\ndef test_cstack():\n    result = _cstack(sh1, scl1)\n    assert_allclose(result, np.array([[1, 0], [0, 1]]))\n\n    result = _cstack(sh1, rot)\n    assert_allclose(result,\n                    np.array([[1, 0, 0],\n                              [0, 1, 1],\n                              [0, 1, 1]])\n                    )\n    result = _cstack(rot, sh1)\n    assert_allclose(result,\n                    np.array([[1, 1, 0],\n                              [1, 1, 0],\n                              [0, 0, 1]])\n                    )\n\n\ndef test_arith_oper():\n    # Models as inputs\n    result = _arith_oper(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n    result = _arith_oper(rot, rot)\n    assert_allclose(result, np.array([[1, 1], [1, 1]]))\n\n    # ndarray\n    result = _arith_oper(np.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]]))\n    assert_allclose(result, np.array([[1, 1], [",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": "4096:0ee3c75236a29fc6c308f1b6d8bb79cd6230effdc1425d71bf18a53d253218f9"
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_CapdmY51LKTFA2IrQhlx9325",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "1, 1]]))\n\n    # Error\n    with pytest.raises(ModelDefinitionError, match=r\"Unsupported operands for arithmetic operator: .*\"):\n        _arith_oper(sh1, map1)\n\n\n@pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\ndef test_separable(compound_model, result):\n    assert_allclose(is_separable(compound_model), result[0])\n    assert_allclose(separability_matrix(compound_model), result[1])\n\n\ndef test_custom_model_separable():\n    @custom_model\n    def model_a(x):\n        return x\n\n    assert model_a().separable\n\n    @custom_model\n    def model_c(x, y):\n        return x + y\n\n    assert not model_c().separable\n    assert np.all(separability_matrix(model_c()) == [True, True])\n",
+        "start_character": 4096,
+        "end_character": 4799,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": null
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_Uv22VOR4OByLqEQicOEp7310",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "line": 130,
+            "text": "def _arith_oper(left, right):",
+            "start_character_in_line": 0,
+            "full_line_characters": 29
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_vqivWm8aSxW8IDzSnk6C4493",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "f27277c27c975c06cc522e013e5501eace7c80473c1448031f3111a01ec41033",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_VKvoJO0j4wLzH3OiA0Ny3301",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+        "report_event": {
+          "sequence": 11,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-11"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "files_sha256": "f27277c27c975c06cc522e013e5501eace7c80473c1448031f3111a01ec41033",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+        "body_characters": 64738,
+        "total_pages": 23,
+        "page": {
+          "index": 0,
+          "cursor": "0:6d57ce16b3e5c551",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:a1fd37b4c520d731",
+          "is_last": false,
+          "remaining_pages": 22
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 11,
+          "errors": 0,
+          "failed": 5,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "20680ea394222b321257b3d901a2b082",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 11,
+                "errors": 0,
+                "failed": 5,
+                "passed": 6,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "35cbf54935d12e544fb5ac928cf181d067a9c9ae176b05215e812d9881962153",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+            "cursor": "3:cbbf6daf2ec544cd",
+            "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_daWnK30T04GTlQLz1wj24241",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+        "report_event": {
+          "sequence": 11,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-11"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "files_sha256": "f27277c27c975c06cc522e013e5501eace7c80473c1448031f3111a01ec41033",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+        "body_characters": 64738,
+        "total_pages": 23,
+        "page": {
+          "index": 1,
+          "cursor": "1:a1fd37b4c520d731",
+          "start": 47,
+          "end": 3119,
+          "text": "{\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"<frozen importlib._bootstrap>:228: RuntimeWarning: numpy.ndarray size changed, may indicate binary incompatibility. Expected 80 from C header, got 96 from PyObject\\n============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-7.4.0, pluggy-1.3.0\\n\\nRunning tests with Astropy version 5.1.dev623+gd16bfe05a.d20260815.\\nRunning tests in astropy/modeling/tests/test_separable.py.\\n\\nDate: 2026-11-10T19:28:11\\n\\nPlatform: Linux-5.15.0-186-generic-x86_64-with-glibc2.35\\n\\nExecutable: /opt/miniconda3/envs/testbed/bin/python\\n\\nFull Python Version: \\n3.9.20 (main, Oct  3 2024, 07:27:41) \\n[GCC 11.2.0]\\n\\nencodings: sys: utf-8, locale: UTF-8, filesystem: utf-8\\nbyteorder: little\\nfloat info: dig: 15, mant_dig: 15\\n\\nPackage versions: \\nNumpy: 1.25.2\\nScipy: not available\\nMatplotlib: not available\\nh5py: not available\\nPandas: not available\\nPyERFA: 2.0.0.3\\nCython: not available\\nScikit-image: not available\\nasdf: not available\\npyarrow: not available\\n\\nUsing Astropy options: remote_data: none.\\n\\nARCH_ON_CI: undefined\\nIS_CRON: undefined\\n\\nrootdir: /testbed\\nconfigfile: setup.cfg\\nplugins: doctestplus-1.0.0, hypothesis-6.82.6, filter-subpackage-0.1.2, astropy-header-0.2.2, cov-4.1.0, openfiles-0.5.0, xdist-3.3.1, remotedata-0.4.0, mock-3.11.1, arraydiff-0.5.0, astropy-0.10.0\\ncollected 11 items\\n\\nastropy/modeling/tests/test_separable.py .F..F.FF.F.                     [100%]\\n\\n=================================== FAILURES ===================================\\n__________________________________ test_cdot ___________________________________\\n\\n    def test_cdot():\\n        result = _cdot(sh1, scl1)\\n        assert_allclose(result, np.array([[1]]))\\n    \\n        result = _cdot(rot, p2)\\n>       assert_allclose(result, np.array([[2, 2]]))\\n\\nastropy/modeling/tests/test_separable.py:85: \\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \\n\\nargs = (<function assert_allclose.<locals>.compare at 0x7f5aa670cf70>, array([[1, 1]]), array([[2, 2]]))\\nkwds = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=1e-07, atol=0', 'verbose': True}\\n\\n    @wraps(func)\\n    def inner(*args, **kwds):\\n        with self._recreate_cm():\\n>           return func(*args, **kwds)\\nE           AssertionError: \\nE           Not equal to tolerance rtol=1e-07, atol=0\\nE           \\nE           Mismatched elements: 2 / 2 (100%)\\nE           Max absolute difference: 1\\nE           Max relative difference: 0.5\\nE            x: array([[1, 1]])\\nE            y: array([[2, 2]])\\n\\n/opt/miniconda3/envs/testbed/lib/python3.9/contextlib.py:79: AssertionError\\n___________________ test_separable[compound_model0-result0] ____________________\\n\\ncompound_model = <CompoundModel(offset_1=1., angle_2=2., offset_3=1., offset_4=1., offset_5=2., offset_6=1.)>\\nresult = (array([False, False,  True]), array([[ True, False],\\n       [ True, False],\\n       [False,  True]])",
+          "sha256": "9fa78a86266b3f40cfaa4bd18dadf165ccf107d30a5529f2139cf5fcb6a5a15d",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 19789,
+              "continued_from_previous": false,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "2:0b7534f5acb6f362",
+          "is_last": false,
+          "remaining_pages": 21
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 11,
+          "errors": 0,
+          "failed": 5,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "20680ea394222b321257b3d901a2b082",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 11,
+                "errors": 0,
+                "failed": 5,
+                "passed": 6,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "35cbf54935d12e544fb5ac928cf181d067a9c9ae176b05215e812d9881962153",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+            "cursor": "3:cbbf6daf2ec544cd",
+            "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_ZzoyWTc4uIDcu2rDjrGq1585",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+        "report_event": {
+          "sequence": 11,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-11"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "files_sha256": "f27277c27c975c06cc522e013e5501eace7c80473c1448031f3111a01ec41033",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+        "body_characters": 64738,
+        "total_pages": 23,
+        "page": {
+          "index": 2,
+          "cursor": "2:0b7534f5acb6f362",
+          "start": 3119,
+          "end": 6191,
+          "text": ")\\n\\n    @pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\\n    def test_separable(compound_model, result):\\n>       assert_allclose(is_separable(compound_model), result[0])\\n\\nastropy/modeling/tests/test_separable.py:134: \\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \\n\\nargs = (<function assert_allclose.<locals>.compare at 0x7f5aa3d71940>, array([ True,  True,  True]), array([False, False,  True]))\\nkwds = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=1e-07, atol=0', 'verbose': True}\\n\\n    @wraps(func)\\n    def inner(*args, **kwds):\\n        with self._recreate_cm():\\n>           return func(*args, **kwds)\\nE           AssertionError: \\nE           Not equal to tolerance rtol=1e-07, atol=0\\nE           \\nE           Mismatched elements: 2 / 3 (66.7%)\\nE            x: array([ True,  True,  True])\\nE            y: array([False, False,  True])\\n\\n/opt/miniconda3/envs/testbed/lib/python3.9/contextlib.py:79: AssertionError\\n___________________ test_separable[compound_model2-result2] ____________________\\n\\ncompound_model = <CompoundModel(angle_1=2., factor_2=1.)>\\nresult = (array([False, False,  True]), array([[ True, False],\\n       [ True, False],\\n       [False,  True]]))\\n\\n    @pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\\n    def test_separable(compound_model, result):\\n>       assert_allclose(is_separable(compound_model), result[0])\\n\\nastropy/modeling/tests/test_separable.py:134: \\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \\n\\nargs = (<function assert_allclose.<locals>.compare at 0x7f5aa3d71d30>, array([ True,  True,  True]), array([False, False,  True]))\\nkwds = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=1e-07, atol=0', 'verbose': True}\\n\\n    @wraps(func)\\n    def inner(*args, **kwds):\\n        with self._recreate_cm():\\n>           return func(*args, **kwds)\\nE           AssertionError: \\nE           Not equal to tolerance rtol=1e-07, atol=0\\nE           \\nE           Mismatched elements: 2 / 3 (66.7%)\\nE            x: array([ True,  True,  True])\\nE            y: array([False, False,  True])\\n\\n/opt/miniconda3/envs/testbed/lib/python3.9/contextlib.py:79: AssertionError\\n___________________ test_separable[compound_model3-result3] ____________________\\n\\ncompound_model = <CompoundModel(offset_0=1., offset_1=2., angle_3=2., factor_4=1.)>\\nresult = (array([False, False,  True]), array([[ True, False],\\n       [ True, False],\\n       [False,  True]]))\\n\\n    @pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\\n    def test_separable(compound_model, result):\\n>       assert_allclose(is_separable(compound_model), result[0])\\n\\nastropy/modeling/tests/test_separable.py:134: \\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \\n\\nargs = (<function assert_allclose.<locals>.compare at 0x7f5aa3d1b3a0>, array([ True,  True,  True]), array([False, False,  True]))\\nkwds",
+          "sha256": "f6791a50ec79347c4e94dd87ec5d42a99d2c0f6383496843e2c2f875c22da89b",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 19789,
+              "continued_from_previous": true,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "3:cbbf6daf2ec544cd",
+          "is_last": false,
+          "remaining_pages": 20
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 11,
+          "errors": 0,
+          "failed": 5,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "20680ea394222b321257b3d901a2b082",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 11,
+                "errors": 0,
+                "failed": 5,
+                "passed": 6,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "35cbf54935d12e544fb5ac928cf181d067a9c9ae176b05215e812d9881962153",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+            "cursor": "3:cbbf6daf2ec544cd",
+            "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0015:attempt1"
+  },
+  {
+    "call_id": "call_00_mHSlEeTkMUXXimEW5U8E6657",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+        "report_event": {
+          "sequence": 11,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-11"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "files_sha256": "f27277c27c975c06cc522e013e5501eace7c80473c1448031f3111a01ec41033",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+        "body_characters": 64738,
+        "total_pages": 23,
+        "page": {
+          "index": 3,
+          "cursor": "3:cbbf6daf2ec544cd",
+          "start": 6191,
+          "end": 9263,
+          "text": " = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=1e-07, atol=0', 'verbose': True}\\n\\n    @wraps(func)\\n    def inner(*args, **kwds):\\n        with self._recreate_cm():\\n>           return func(*args, **kwds)\\nE           AssertionError: \\nE           Not equal to tolerance rtol=1e-07, atol=0\\nE           \\nE           Mismatched elements: 2 / 3 (66.7%)\\nE            x: array([ True,  True,  True])\\nE            y: array([False, False,  True])\\n\\n/opt/miniconda3/envs/testbed/lib/python3.9/contextlib.py:79: AssertionError\\n___________________ test_separable[compound_model5-result5] ____________________\\n\\ncompound_model = <CompoundModel(c0_0_1=0., c1_0_1=0., c0_1_1=0., offset_2=1.)>\\nresult = (array([False,  True]), array([[ True, False],\\n       [False,  True]]))\\n\\n    @pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\\n    def test_separable(compound_model, result):\\n>       assert_allclose(is_separable(compound_model), result[0])\\n\\nastropy/modeling/tests/test_separable.py:134: \\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \\n\\nargs = (<function assert_allclose.<locals>.compare at 0x7f5aa3d71d30>, array([ True,  True]), array([False,  True]))\\nkwds = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=1e-07, atol=0', 'verbose': True}\\n\\n    @wraps(func)\\n    def inner(*args, **kwds):\\n        with self._recreate_cm():\\n>           return func(*args, **kwds)\\nE           AssertionError: \\nE           Not equal to tolerance rtol=1e-07, atol=0\\nE           \\nE           Mismatched elements: 1 / 2 (50%)\\nE            x: array([ True,  True])\\nE            y: array([False,  True])\\n\\n/opt/miniconda3/envs/testbed/lib/python3.9/contextlib.py:79: AssertionError\\n=========================== short test summary info ============================\\nFAILED astropy/modeling/tests/test_separable.py::test_cdot - AssertionError: \\nFAILED astropy/modeling/tests/test_separable.py::test_separable[compound_model0-result0]\\nFAILED astropy/modeling/tests/test_separable.py::test_separable[compound_model2-result2]\\nFAILED astropy/modeling/tests/test_separable.py::test_separable[compound_model3-result3]\\nFAILED astropy/modeling/tests/test_separable.py::test_separable[compound_model5-result5]\\n========================= 5 failed, 6 passed in 0.43s ==========================\\n\",\n      \"validation_status\": \"failed\",\n      \"counts\": {\n        \"collected\": 11,\n        \"errors\": 0,\n        \"failed\": 5,\n        \"passed\": 6,\n        \"skipped\": 0,\n        \"xfailed\": 0,\n        \"xpassed\": 0,\n        \"tests_run\": 11\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"pytest\",\n        \"source\": {\n          \"run_id\": \"20680ea394222b321257b3d901a2b082\",\n          \"parent_run_id\": null,\n          \"pid\": 17,\n          \"process_group\": 17,\n          \"framework\": \"pytest\",\n          \"delegated_hash_process\": false\n        },\n        \"report_count\": 1,\n        \"journal_record_coun",
+          "sha256": "df0a30b8803f045c57884f6561b18baa2f21e274536aa3f015474867159bc073",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 19789,
+              "continued_from_previous": true,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "4:d1a5859609cbbd13",
+          "is_last": false,
+          "remaining_pages": 19
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 11,
+          "errors": 0,
+          "failed": 5,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "20680ea394222b321257b3d901a2b082",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 11,
+                "errors": 0,
+                "failed": 5,
+                "passed": 6,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "35cbf54935d12e544fb5ac928cf181d067a9c9ae176b05215e812d9881962153",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-6c2a67da0fdc2e8f9d1bdc91",
+            "cursor": "3:cbbf6daf2ec544cd",
+            "body_sha256": "11b6ea70cda682e845336b8bb90688f52638e0a71267d383847b909bef3ec914",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-15",
+      "logical_time": 15,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-14",
+      "command_committed": true,
+      "committed_revision": 15
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0016:attempt1"
+  },
+  {
+    "call_id": "call_00_mRcsRvYhzUdumrF8YFV56654",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "11b3ba567a2f3fd1f84c8880b509450336d72da12ee38a91e7f088138c6ed37f",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-16",
+      "logical_time": 16,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-15",
+      "command_committed": true,
+      "committed_revision": 16
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0017:attempt1"
+  },
+  {
+    "call_id": "call_00_nW4A4A3KnW545pYYUvhg7087",
+    "body": {
+      "ok": false,
+      "error": {
+        "type": "ValueError",
+        "message": "The operation would not change the current version",
+        "rejection": {
+          "version": "tool-rejection-v0.9",
+          "code": "unclassified_exception",
+          "category": "unknown",
+          "context": {
+            "actor_id": "member_001",
+            "action": "project_action",
+            "project_id": "SOFTWARE27",
+            "tool": "replace_file",
+            "arguments_type": "dict"
+          }
+        }
+      },
+      "action_id": "action-17",
+      "logical_time": 17,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-16",
+      "command_committed": true,
+      "committed_revision": 17
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0018:attempt1"
+  },
+  {
+    "call_id": "call_00_5SfzPciNLNmKxn5EOPWt0205",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/tests/test_separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-18",
+      "logical_time": 18,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-17",
+      "command_committed": true,
+      "committed_revision": 18
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0019:attempt1"
+  },
+  {
+    "call_id": "call_00_XLEnwg0GbTsJKWTTdWoU3035",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-187308f94c57b7d232e12647",
+        "report_event": {
+          "sequence": 18,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-18"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "b2c1fada32ff3af9e43ae50af6477a19d62ed1c93603eb0713eaf91af98addd0",
+        "body_characters": 53989,
+        "total_pages": 20,
+        "page": {
+          "index": 0,
+          "cursor": "0:c4ddf7aa05ac04f7",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:1474069d30a68c6c",
+          "is_last": false,
+          "remaining_pages": 19
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 12,
+          "errors": 0,
+          "failed": 0,
+          "passed": 12,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 12
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "d82642e41a6477306ae66db218f404d7",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 12,
+                "errors": 0,
+                "failed": 0,
+                "passed": 12,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "ba4fbce7c072cc25ca45f425d6d67c164781d8ec9cc13512ef44c397a07e5521",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-187308f94c57b7d232e12647",
+            "cursor": "1:1474069d30a68c6c",
+            "body_sha256": "b2c1fada32ff3af9e43ae50af6477a19d62ed1c93603eb0713eaf91af98addd0",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-19",
+      "logical_time": 19,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-18",
+      "command_committed": true,
+      "committed_revision": 19
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0020:attempt1"
+  },
+  {
+    "call_id": "call_00_D6BLx3Js4U2rwMOxKAFO1224",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-41023df006296d5d5174aed5",
+        "report_event": {
+          "sequence": 20,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-19"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "3687f5494aec5ced4820beda7452ead891e616679b39ebe8c4c22d27ca54a97c",
+        "body_characters": 501686,
+        "total_pages": 165,
+        "page": {
+          "index": 0,
+          "cursor": "0:fc86fe5293847f3a",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:c219056029179b91",
+          "is_last": false,
+          "remaining_pages": 164
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 140,
+          "errors": 0,
+          "failed": 7,
+          "passed": 125,
+          "skipped": 8,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 132
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "46d50b80a928145f73fb8cf01ea996fc",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 140,
+                "errors": 0,
+                "failed": 7,
+                "passed": 125,
+                "skipped": 8,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "24d893ad2553763ad6c955878f0536a9da0df63372afab4b0ae1b49542185e91",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-41023df006296d5d5174aed5",
+            "cursor": "7:c17f6766aa3fe638",
+            "body_sha256": "3687f5494aec5ced4820beda7452ead891e616679b39ebe8c4c22d27ca54a97c",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-20",
+      "logical_time": 20,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-19",
+      "command_committed": true,
+      "committed_revision": 20
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0021:attempt1"
+  },
+  {
+    "call_id": "call_00_xl3An44b68kVQtX7XaU95802",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-41023df006296d5d5174aed5",
+        "report_event": {
+          "sequence": 20,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-19"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "3687f5494aec5ced4820beda7452ead891e616679b39ebe8c4c22d27ca54a97c",
+        "body_characters": 501686,
+        "total_pages": 165,
+        "page": {
+          "index": 7,
+          "cursor": "7:c17f6766aa3fe638",
+          "start": 18479,
+          "end": 21551,
+          "text": "y::test_mapping_basic_permutations\\nFAILED astropy/modeling/tests/test_compound.py::test_mapping_inverse - Deprec...\\nFAILED astropy/modeling/tests/test_compound.py::test_identity_input - Depreca...\\nFAILED astropy/modeling/tests/test_compound.py::test_replace_submodel - Depre...\\n=================== 7 failed, 125 passed, 8 skipped in 3.15s ===================\\n\",\n      \"validation_status\": \"failed\",\n      \"counts\": {\n        \"collected\": 140,\n        \"errors\": 0,\n        \"failed\": 7,\n        \"passed\": 125,\n        \"skipped\": 8,\n        \"xfailed\": 0,\n        \"xpassed\": 0,\n        \"tests_run\": 132\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"pytest\",\n        \"source\": {\n          \"run_id\": \"46d50b80a928145f73fb8cf01ea996fc\",\n          \"parent_run_id\": null,\n          \"pid\": 31,\n          \"process_group\": 31,\n          \"framework\": \"pytest\",\n          \"delegated_hash_process\": false\n        },\n        \"report_count\": 1,\n        \"journal_record_count\": 2,\n        \"nested_report_count\": 0,\n        \"duplicate_journal_records_ignored\": 0,\n        \"error\": null,\n        \"partial\": false,\n        \"root_counts_only\": true,\n        \"nested_failures_are_diagnostic_not_summed\": true,\n        \"sessions\": [\n          {\n            \"run_id\": \"46d50b80a928145f73fb8cf01ea996fc\",\n            \"parent_run_id\": null,\n            \"pid\": 31,\n            \"framework\": \"pytest\",\n            \"counts\": {\n              \"collected\": 140,\n              \"errors\": 0,\n              \"failed\": 7,\n              \"passed\": 125,\n              \"skipped\": 8,\n              \"xfailed\": 0,\n              \"xpassed\": 0\n            },\n            \"exitstatus\": 1,\n            \"collection_errors\": 0,\n            \"collection_complete\": true,\n            \"partial\": false,\n            \"root\": true,\n            \"test_reports\": [\n              {\n                \"invocation\": 1,\n                \"nodeid\": \"astropy/modeling/tests/test_core.py::test_Model_instance_repr_and_str\",\n                \"outcome\": \"passed\",\n                \"phase\": \"setup\",\n                \"wasxfail\": false\n              },\n              {\n                \"invocation\": 1,\n                \"nodeid\": \"astropy/modeling/tests/test_core.py::test_Model_instance_repr_and_str\",\n                \"outcome\": \"passed\",\n                \"phase\": \"call\",\n                \"wasxfail\": false\n              },\n              {\n                \"invocation\": 1,\n                \"nodeid\": \"astropy/modeling/tests/test_core.py::test_Model_instance_repr_and_str\",\n                \"outcome\": \"passed\",\n                \"phase\": \"teardown\",\n                \"wasxfail\": false\n              },\n              {\n                \"invocation\": 1,\n                \"nodeid\": \"astropy/modeling/tests/test_core.py::test_Model_array_parameter\",\n                \"outcome\": \"passed\",\n                \"phase\": \"setup\",\n                \"wasxfail\": false\n              },\n              {\n                \"invocation\": 1,\n                \"nodeid\": \"astropy/modeling/tests/test_core.py::t",
+          "sha256": "c64b58ff8eba177f6a371e6d0c6449024c19bf474640a1d7c8ff6cf28141971c",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 134041,
+              "continued_from_previous": true,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "8:5360105cb957ae4a",
+          "is_last": false,
+          "remaining_pages": 157
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 140,
+          "errors": 0,
+          "failed": 7,
+          "passed": 125,
+          "skipped": 8,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 132
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "46d50b80a928145f73fb8cf01ea996fc",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 140,
+                "errors": 0,
+                "failed": 7,
+                "passed": 125,
+                "skipped": 8,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "24d893ad2553763ad6c955878f0536a9da0df63372afab4b0ae1b49542185e91",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-41023df006296d5d5174aed5",
+            "cursor": "7:c17f6766aa3fe638",
+            "body_sha256": "3687f5494aec5ced4820beda7452ead891e616679b39ebe8c4c22d27ca54a97c",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-21",
+      "logical_time": 21,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-20",
+      "command_committed": true,
+      "committed_revision": 21
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0022:attempt1"
+  },
+  {
+    "call_id": "call_00_xw8KXJQVQxDSsRE8kAxD6353",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "matches": [
+          {
+            "line": 242,
+            "text": "def test_mapping_inverse():",
+            "start_character_in_line": 0,
+            "full_line_characters": 27
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-22",
+      "logical_time": 22,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-21",
+      "command_committed": true,
+      "committed_revision": 22
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0023:attempt1"
+  },
+  {
+    "call_id": "call_00_D7kkCARLXrWb95JQYjNq9081",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "path": "astropy/modeling/tests/test_compound.py",
+        "text": "def test_mapping_inverse():\n    \"\"\"Tests inverting a compound model that includes a `Mapping`.\"\"\"\n\n    rs1 = Rotation2D(12.1) & Scale(13.2)\n    rs2 = Rotation2D(14.3) & Scale(15.4)\n\n    # Rotates 2 of the coordinates and scales the third--then rotates on a\n    # different axis and scales on the axis of rotation.  No physical meaning\n    # here just a simple test\n    m = rs1 | Mapping([2, 0, 1]) | rs2\n\n    assert_allclose((0, 1, 2), m.inverse(*m(0, 1, 2)), atol=1e-08)\n\n\ndef test_identity_input():\n    \"\"\"\n    Test a case where an Identity (or Mapping) model is the first in a chain\n    of composite models and thus is responsible for handling input broadcasting\n    properly.\n\n",
+        "start_character": 7356,
+        "end_character": 8037,
+        "total_characters": 31697,
+        "text_sha256": "9eb0cc5cb549463a6eb57a5a3b6fb63fd9a385ae9667687b100be79bae80e362",
+        "next_cursor": "8037:cc4fb882d78cfd6ed02d92926d61f668be7c784731b67bdfc861736c356eb0f0"
+      },
+      "action_id": "action-23",
+      "logical_time": 23,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-22",
+      "command_committed": true,
+      "committed_revision": 23
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0024:attempt1"
+  },
+  {
+    "call_id": "call_00_8JGEIBSfaABHP8Mu6S8o6917",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-75549678bb82006b717bf7c2",
+        "report_event": {
+          "sequence": 25,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-23"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "06745f5936fc033de41b34ab9f63ccb3d1e04e25e6b97c080ab193610713308a",
+        "body_characters": 25150,
+        "total_pages": 10,
+        "page": {
+          "index": 0,
+          "cursor": "0:a4abb7c1b690097d",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:02ad418967248d79",
+          "is_last": false,
+          "remaining_pages": 9
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 1,
+          "errors": 0,
+          "failed": 1,
+          "passed": 0,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 1
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "3ddc7ae55e7dbe19a55c7bc8ea37df03",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "691834fb4d2b8175d71a928d896bafda1d750a8b858497208e545327d8ec486c",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-75549678bb82006b717bf7c2",
+            "cursor": "2:d6dc7dfb5ee34442",
+            "body_sha256": "06745f5936fc033de41b34ab9f63ccb3d1e04e25e6b97c080ab193610713308a",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-24",
+      "logical_time": 24,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-23",
+      "command_committed": true,
+      "committed_revision": 24
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0025:attempt1"
+  },
+  {
+    "call_id": "call_00_JDSuQiEnNrKM1tfVZdUI8304",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/astropy/modeling/separable.py\n+++ b/astropy/modeling/separable.py\n@@ -199,6 +199,7 @@\n         else:\n             mat[-model.n_outputs:, -model.n_inputs:] = m\n         return mat\n+\n     if not model.separable:\n         # this does not work for more than 2 coordinates\n         mat = np.zeros((noutp, model.n_inputs))\n@@ -242,7 +243,7 @@\n         cright = _coord_matrix(right, 'right', noutp)\n     else:\n         cright = np.zeros((noutp, right.shape[1]))\n-        cright[-right.shape[0]:, -right.shape[1]:] = 1\n+        cright[-right.shape[0]:, -right.shape[1]:] = right\n \n     return np.hstack([cleft, cright])\n \n--- a/astropy/modeling/tests/test_separable.py\n+++ b/astropy/modeling/tests/test_separable.py\n@@ -26,6 +26,8 @@\n p2 = models.Polynomial2D(1, name='p2')\n p22 = models.Polynomial2D(2, name='p22')\n p1 = models.Polynomial1D(1, name='p1')\n+lin1 = models.Linear1D(10, name='lin1')\n+lin2 = models.Linear1D(5, name='lin2')\n \n \n compound_models = {\n@@ -148,3 +150,26 @@\n \n     assert not model_c().separable\n     assert np.all(separability_matrix(model_c()) == [True, True])\n+\n+\n+def test_nested_compound_model_separable():\n+    \"\"\"Regression test for #12319.\n+\n+    Nesting a separable compound model inside another compound model must\n+    not make its outputs depend on additional inputs.\n+    \"\"\"\n+    cm = lin1 & lin2\n+    expected = np.array([[True, False], [False, True]])\n+    assert_allclose(separability_matrix(cm), expected)\n+    assert_allclose(is_separable(cm), [True, True])\n+\n+    flat = models.Pix2Sky_TAN() & lin1 & lin2\n+    flat_expected = np.array([[True, True, False, False],\n+                              [True, True, False, False],\n+                              [False, False, True, False],\n+                              [False, False, False, True]])\n+    assert_allclose(separability_matrix(flat), flat_expected)\n+\n+    nested = models.Pix2Sky_TAN() & cm\n+    assert_allclose(separability_matrix(nested), flat_expected)\n+    assert_allclose(is_separable(nested), is_separable(flat))\n",
+        "start_character": 0,
+        "end_character": 2021,
+        "total_characters": 2021,
+        "text_sha256": "a241a9566d58981525613ce21b021153ab1354fafb7080cd7415b9e5ed574d04",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        }
+      },
+      "action_id": "action-25",
+      "logical_time": 25,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-24",
+      "command_committed": true,
+      "committed_revision": 25
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0026:attempt1"
+  },
+  {
+    "call_id": "call_00_GzOH3BSnaAcb5weWkAU48572",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "00b0aeac8e1c2bcc51d1317c9049640a096992c9c6b5cd7bdabd775e9724897a",
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f",
+        "diff_sha256": "a241a9566d58981525613ce21b021153ab1354fafb7080cd7415b9e5ed574d04",
+        "changed_paths": [
+          "astropy/modeling/separable.py",
+          "astropy/modeling/tests/test_separable.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-26",
+      "logical_time": 26,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-25",
+      "command_committed": true,
+      "committed_revision": 26
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0027:attempt1"
+  },
+  {
+    "call_id": "call_00_nloA0Vg58Cs6frRsCdff2239",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "source_sha256": "00b0aeac8e1c2bcc51d1317c9049640a096992c9c6b5cd7bdabd775e9724897a",
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "included_patch_ids": [],
+        "test_sequence": 25,
+        "message": "Deliver patch-1 (source version v4) — fix for separability_matrix on nested CompoundModels.\n\nThe unchanged issue: a nested compound model is reported as inseparable when it is actually separable. `separability_matrix(m.Pix2Sky_TAN() & (Linear1D(10) & Linear1D(5)))` returned an all-True lower-right block instead of the diagonal that the equivalent flat form produces.\n\nRoot cause and fix (astropy/modeling/separable.py, `_cstack`, the `&` operator): when a child is a compound model, its already-computed coord matrix arrives as an ndarray, and the block was filled with the scalar `1`:\n\n    cright[-right.shape[0]:, -right.shape[1]:] = 1      # destroys nested structure\n\nso every nested compound model degraded to an all-ones block. The fix copies the child's actual matrix:\n\n    cright[-right.shape[0]:, -right.shape[1]:] = right\n\nThe nested form now agrees with the flat form:\n[[T,T,F,F],[T,T,F,F],[F,F,T,F],[F,F,F,T]]\n\nTests (astropy/modeling/tests/test_separable.py): added `test_nested_compound_model_separable`, asserting (a) `Linear1D(10) & Linear1D(5)` has the diagonal matrix, and (b) the nested `Pix2Sky_TAN() & cm` matrix and is_separable equals the flat `Pix2Sky_TAN() & lin1 & lin2` result — the exact issue scenario. Also added the lin1/lin2 models used.\n\nCurrent-version evidence: astropy/modeling/tests/test_separable.py executed on v4 -> 12 collected, 12 passed, 0 failed (report test-report-187308f94c57b7d232e12647).\n\nHonest scope note: test_core.py + test_compound.py + test_separable.py together show 7 failures, but they are pre-existing `DeprecationWarning` failures unrelated to separability; e.g. test_compound.py::test_mapping_inverse fails in isolation and exercises model inversion, not the separability code. I did not claim those as passing.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v4"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-27",
+      "logical_time": 27,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-26",
+      "command_committed": true,
+      "committed_revision": 27
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0028:attempt1"
+  },
+  {
+    "call_id": "call_00_gXz95PpHYnqjU5nHd6f89786",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Issue resolved and legally delivered as delivery-1 (patch-1, source v4). Root cause in astropy/modeling/separable.py `_cstack`: a nested compound model's precomputed matrix was overwritten with the scalar `1` (`cright[...] = 1`), collapsing nested structure so `separability_matrix(m.Pix2Sky_TAN() & (Linear1D(10) & Linear1D(5)))` showed a fully-correlated block. Fixed by copying the child matrix (`= right`), making nested and flat forms agree on the diagonal [[T,T,F,F],[T,T,F,F],[F,F,T,F],[F,F,F,T]]. Added regression test test_nested_compound_model_separable. Current-version evidence: astropy/modeling/tests/test_separable.py ran on v4 with 12 passed / 0 failed. The 7 failures in the wider modeling set are pre-existing DeprecationWarning failures unrelated to separability (test_mapping_inverse fails in isolation too); not claimed as passing.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0029:attempt1"
+  },
+  {
+    "call_id": "call_00_2xnImN2hBVUhTOfzDyjg1153",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/astropy/modeling/separable.py\n+++ b/astropy/modeling/separable.py\n@@ -199,6 +199,7 @@\n         else:\n             mat[-model.n_outputs:, -model.n_inputs:] = m\n         return mat\n+\n     if not model.separable:\n         # this does not work for more than 2 coordinates\n         mat = np.zeros((noutp, model.n_inputs))\n@@ -242,7 +243,7 @@\n         cright = _coord_matrix(right, 'right', noutp)\n     else:\n         cright = np.zeros((noutp, right.shape[1]))\n-        cright[-right.shape[0]:, -right.shape[1]:] = 1\n+        cright[-right.shape[0]:, -right.shape[1]:] = right\n \n     return np.hstack([cleft, cright])\n \n--- a/astropy/modeling/tests/test_separable.py\n+++ b/astropy/modeling/tests/test_separable.py\n@@ -26,6 +26,8 @@\n p2 = models.Polynomial2D(1, name='p2')\n p22 = models.Polynomial2D(2, name='p22')\n p1 = models.Polynomial1D(1, name='p1')\n+lin1 = models.Linear1D(10, name='lin1')\n+lin2 = models.Linear1D(5, name='lin2')\n \n \n compound_models = {\n@@ -148,3 +150,26 @@\n \n     assert not model_c().separable\n     assert np.all(separability_matrix(model_c()) == [True, True])\n+\n+\n+def test_nested_compound_model_separable():\n+    \"\"\"Regression test for #12319.\n+\n+    Nesting a separable compound model inside another compound model must\n+    not make its outputs depend on additional inputs.\n+    \"\"\"\n+    cm = lin1 & lin2\n+    expected = np.array([[True, False], [False, True]])\n+    assert_allclose(separability_matrix(cm), expected)\n+    assert_allclose(is_separable(cm), [True, True])\n+\n+    flat = models.Pix2Sky_TAN() & lin1 & lin2\n+    flat_expected = np.array([[True, True, False, False],\n+                              [True, True, False, False],\n+                              [False, False, True, False],\n+                              [False, False, False, True]])\n+    assert_allclose(separability_matrix(flat), flat_expected)\n+\n+    nested = models.Pix2Sky_TAN() & cm\n+    assert_allclose(separability_matrix(nested), flat_expected)\n+    assert_allclose(is_separable(nested), is_separable(flat))\n",
+        "start_character": 0,
+        "end_character": 2021,
+        "total_characters": 2021,
+        "text_sha256": "a241a9566d58981525613ce21b021153ab1354fafb7080cd7415b9e5ed574d04",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        }
+      },
+      "action_id": "action-28",
+      "logical_time": 28,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-27",
+      "command_committed": true,
+      "committed_revision": 28
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0030:attempt1"
+  },
+  {
+    "call_id": "call_00_PJjUPHbf2Par9WRwULQy1235",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "matches": [
+          {
+            "line": 246,
+            "text": "        cright[-right.shape[0]:, -right.shape[1]:] = right",
+            "start_character_in_line": 0,
+            "full_line_characters": 58
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-29",
+      "logical_time": 29,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-28",
+      "command_committed": true,
+      "committed_revision": 29
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0031:attempt1"
+  },
+  {
+    "call_id": "call_00_U1ijkBaTk2hyag3MmePm9767",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "        Position of this model in the expression tree.\n        One of ['left', 'right'].\n    noutp : int\n        Number of outputs of the compound model of which the input model\n        is a left or right child.\n\n    \"\"\"\n    if isinstance(model, Mapping):\n        axes = []\n        for i in model.mapping:\n            axis = np.zeros((model.n_inputs,))\n            axis[i] = 1\n            axes.append(axis)\n        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n",
+        "start_character": 5743,
+        "end_character": 6946,
+        "total_characters": 9883,
+        "text_sha256": "39e349ed3276479ed7b112e80ef22dc86863878270fa23846de9aa36eb3b5e27",
+        "next_cursor": "6946:f0c9feea9205a65f1e713ad60fbd78c734cfeaf364df60239e3d704c82b05a6f"
+      },
+      "action_id": "action-30",
+      "logical_time": 30,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-29",
+      "command_committed": true,
+      "committed_revision": 30
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0032:attempt1"
+  },
+  {
+    "call_id": "call_00_McWY1bXoAbRACZjfaKcf2113",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-3961b26f86a69d6f33789764",
+        "report_event": {
+          "sequence": 31,
+          "operation_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-30"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "7d49f263c2f6c892fa310e0575eea400ab94b1fd5620009aaf9fc91b919bef85",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "8ed1700425c04fa158929e403eba9300d8a683287cb3ca4b8849cd3846c5d3dc",
+        "body_characters": 18445,
+        "total_pages": 8,
+        "page": {
+          "index": 0,
+          "cursor": "0:2202fd6057af09e1",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:9b062a9f9fcf88f8",
+          "is_last": false,
+          "remaining_pages": 7
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 1,
+          "errors": 0,
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 1
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "cf60c52231ed22371cbaabf73797890e",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "c747f15b3cfa31ec9eaef0e29aea675df0c803368ecfa7b004f4aca0e493b4fc",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-3961b26f86a69d6f33789764",
+            "cursor": "1:9b062a9f9fcf88f8",
+            "body_sha256": "8ed1700425c04fa158929e403eba9300d8a683287cb3ca4b8849cd3846c5d3dc",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-31",
+      "logical_time": 31,
+      "command_id": "command:member_001:staff-8998824db6944237bbfd783524449aec-30",
+      "command_committed": true,
+      "committed_revision": 31
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192110:member_001:0033:attempt1"
+  }
+]

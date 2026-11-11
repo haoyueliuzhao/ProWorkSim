@@ -1,0 +1,1703 @@
+[
+  {
+    "call_id": "call_00_TIu7QBw0KPZ8q7y9sb3z5809",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\n\"\"\"\nFunctions to determine if a model is separable, i.e.\nif the model outputs are independent.\n\nIt analyzes ``n_inputs``, ``n_outputs`` and the operators\nin a compound model by stepping through the transforms\nand creating a ``coord_matrix`` of shape (``n_outputs``, ``n_inputs``).\n\n\nEach modeling operator is represented by a function which\ntakes two simple models (or two ``coord_matrix`` arrays) and\nreturns an array of shape (``n_outputs``, ``n_inputs``).\n\n\"\"\"\n\nimport numpy as np\n\nfrom .core import Model, ModelDefinitionError, CompoundModel\nfrom .mappings import Mapping\n\n\n__all__ = [\"is_separable\", \"separability_matrix\"]\n\n\ndef is_separable(transform):\n    \"\"\"\n    A separability test for the outputs of a transform.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    is_separable : ndarray\n        A boolean array with size ``transform.n_outputs`` where\n        each element indicates whether the output is independent\n        and the result of a separable transform.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> is_separable(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([ True,  True]...)\n    >>> is_separable(Shift(1) & Shift(2) | Rotation2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([ True,  True,  True,  True]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        is_separable = np.array([False] * transform.n_outputs).T\n        return is_separable\n    separable_matrix = _separable(transform)\n    is_separable = separable_matrix.sum(1)\n    is_separable = np.where(is_separable != 1, False, True)\n    return is_separable\n\n\ndef separability_matrix(transform):\n    \"\"\"\n    Compute the correlation between outputs and inputs.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    separable_matrix : ndarray\n        A boolean correlation matrix of shape (n_outputs, n_inputs).\n        Indicates the dependence of outputs on inputs. For completely\n        independent outputs, the diagonal elements are True and\n        off-diagonal elements are False.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> separability_matrix(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([[ True, False], [False,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Rotation2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([[ True, False], [False,  True], [ True, False], [False,  True]]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        return np.ones((transform.n_outputs, transform.n_inputs),\n                       dtype=np.bool_)\n    separable_matrix = _separable(transform)\n    separable_matrix = np.where(separable_matrix != 0, True, False)\n    return separable_matrix\n\n\ndef _compute_n_outputs(left, right):\n    \"\"\"\n    Compute the number of outputs of two models.\n\n    The two models are the left and right model to an operation in\n    the expression tree of a compound model.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    \"\"\"\n    if isinstance(left, Model):\n        lnout = left.n_outputs\n    else:\n        lnout = left.shape[0]\n    if isinstance(right, Model):\n        rnout = right.n_outputs\n    else:\n        rnout = right.shape[0]\n    ",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": "4096:720f4b1509c35be0e9713a085b17a342a27d6d451463c27b4f7c9a5e715a28bc"
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_zA89eZAUYpIYPgkPBdPR8913",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "noutp = lnout + rnout\n    return noutp\n\n\ndef _arith_oper(left, right):\n    \"\"\"\n    Function corresponding to one of the arithmetic operators\n    ['+', '-'. '*', '/', '**'].\n\n    This always returns a nonseparable output.\n\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n    # models have the same number of inputs and outputs\n    def _n_inputs_outputs(input):\n        if isinstance(input, Model):\n            n_outputs, n_inputs = input.n_outputs, input.n_inputs\n        else:\n            n_outputs, n_inputs = input.shape\n        return n_inputs, n_outputs\n\n    left_inputs, left_outputs = _n_inputs_outputs(left)\n    right_inputs, right_outputs = _n_inputs_outputs(right)\n\n    if left_inputs != right_inputs or left_outputs != right_outputs:\n        raise ModelDefinitionError(\n            \"Unsupported operands for arithmetic operator: left (n_inputs={}, \"\n            \"n_outputs={}) and right (n_inputs={}, n_outputs={}); \"\n            \"models must have the same n_inputs and the same \"\n            \"n_outputs for this operator.\".format(\n                left_inputs, left_outputs, right_inputs, right_outputs))\n\n    result = np.ones((left_outputs, left_inputs))\n    return result\n\n\ndef _coord_matrix(model, pos, noutp):\n    \"\"\"\n    Create an array representing inputs and outputs of a simple model.\n\n    The array has a shape (noutp, model.n_inputs).\n\n    Parameters\n    ----------\n    model : `astropy.modeling.Model`\n        model\n    pos : str\n        Position of this model in the expression tree.\n        One of ['left', 'right'].\n    noutp : int\n        Number of outputs of the compound model of which the input model\n        is a left or right child.\n\n    \"\"\"\n    if isinstance(model, Mapping):\n        axes = []\n        for i in model.mapping:\n            axis = np.zeros((model.n_inputs,))\n            axis[i] = 1\n            axes.append(axis)\n        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n    Function corresponding to '&' operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n\n    \"\"\"\n    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n    if isinstance(right, Model):\n        cright = _coord_matrix(right, 'right', noutp)\n    else:\n        cright = np.zeros((noutp, right.shape[1]))\n        cright[-right.shape[0]:, -right.shape[1]:] = 1\n\n    return np.hstack([cleft, cright])\n\n\ndef _cdot(left, right):\n    \"\"\"\n    Function corresponding to \"|\" operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n\n    left, right = right, left\n\n    def _n_inputs_outputs(input, position):\n        \"\"\"\n        Return ``n_inputs``, ``n_outputs`` for a model or coor",
+        "start_character": 4096,
+        "end_character": 8192,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": "8192:720f4b1509c35be0e9713a085b17a342a27d6d451463c27b4f7c9a5e715a28bc"
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_PS2r9aqzEbR7GAdSGedT5844",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "d_matrix.\n        \"\"\"\n        if isinstance(input, Model):\n            coords = _coord_matrix(input, position, input.n_outputs)\n        else:\n            coords = input\n        return coords\n\n    cleft = _n_inputs_outputs(left, 'left')\n    cright = _n_inputs_outputs(right, 'right')\n\n    try:\n        result = np.dot(cleft, cright)\n    except ValueError:\n        raise ModelDefinitionError(\n            'Models cannot be combined with the \"|\" operator; '\n            'left coord_matrix is {}, right coord_matrix is {}'.format(\n                cright, cleft))\n    return result\n\n\ndef _separable(transform):\n    \"\"\"\n    Calculate the separability of outputs.\n\n    Parameters\n    ----------\n    transform : `astropy.modeling.Model`\n        A transform (usually a compound model).\n\n    Returns :\n    is_separable : ndarray of dtype np.bool\n        An array of shape (transform.n_outputs,) of boolean type\n        Each element represents the separablity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        sepright = _separable(transform.right)\n        return _operators[transform.op](sepleft, sepright)\n    elif isinstance(transform, Model):\n        return _coord_matrix(transform, 'left', transform.n_outputs)\n\n\n# Maps modeling operators to a function computing and represents the\n# relationship of axes as an array of 0-es and 1-s\n_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,\n              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}\n",
+        "start_character": 8192,
+        "end_character": 9878,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": null
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_cIjT2oEhnv1kMX2b6OJq9731",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "astropy/modeling/core.py",
+            "line": 808,
+            "character_offset": 31050,
+            "preview": "\n                    return 0\n\n        return self.__class__.n_outputs\n\n    def _calculate_separability_matrix(self):\n        \"\"\"\n        This is a hook which customises the behavior of modeling.separable.\n\n        This allows complex subclasses to customise the separab",
+            "preview_start_character": 30970
+          },
+          {
+            "path": "astropy/modeling/separable.py",
+            "line": 304,
+            "character_offset": 9216,
+            "preview": "lity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        s",
+            "preview_start_character": 9136
+          }
+        ],
+        "complete": false,
+        "next_cursor": "search-9f5239ec1bac619782621dffcf63c7f7c7521c293b8025ca532294e0b19a69e8",
+        "scanned_characters": 1048576,
+        "considered_files": 39,
+        "skipped_nontext_entries": 2,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_L7AYjQg94DE1ElG7e6Nf4407",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/core.py",
+        "text": "            except TypeError:\n                try:\n                    return len(self.outputs)\n                except AttributeError:\n                    return 0\n\n        return self.__class__.n_outputs\n\n    def _calculate_separability_matrix(self):\n        \"\"\"\n        This is a hook which customises the behavior of modeling.separable.\n\n        This allows complex subclasses to customise the separability matrix.\n        If it returns `NotImplemented` the default behavior is used.\n        \"\"\"\n        return NotImplemented\n\n    def _initialize_unit_support(self):\n        \"\"\"\n        Convert self._input_units_strict and\n        self.input_units_allow_dimensionless to dictionaries\n        mapping input name to a boolean value.\n        \"\"\"\n        if isinstance(self._input_units_strict, bool):\n            self._input_units_strict = {key: self._input_units_strict for\n                                        key in self.inputs}\n\n        if isinstance(self._input_units_allow_dimensionless, bool):\n            self._input_units_allow_dimensionless = {key: self._input_units_allow_dimensionless\n                                                     for key in self.inputs}\n\n    @property\n    def input_units_strict(self):\n        \"\"\"\n        Enforce strict units on inputs to evaluate. If this is set to True,\n        input values to evaluate will be in the exact units specified by\n        input_units. If the input quantities are convertible to input_units,\n        they are converted. If this is a dictionary then it should map input\n        name to a bool to set strict input units for that parameter.\n        \"\"\"\n",
+        "start_character": 30836,
+        "end_character": 32459,
+        "total_characters": 175823,
+        "text_sha256": "13615f0d5a58344aa0054b03669f5badc519443b3578ecd78868f3fef9f7cb1e",
+        "next_cursor": "32459:bfbad957c80733b600ecb39f0db6ee1f051f911e1cba50fb372394d6c556a4ce"
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_vEzMQnz5mDUGJd8EY0aD5154",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "line": 59,
+            "text": "def test_coord_matrix():",
+            "start_character_in_line": 0,
+            "full_line_characters": 24
+          },
+          {
+            "line": 80,
+            "text": "def test_cdot():",
+            "start_character_in_line": 0,
+            "full_line_characters": 16
+          },
+          {
+            "line": 98,
+            "text": "def test_cstack():",
+            "start_character_in_line": 0,
+            "full_line_characters": 18
+          },
+          {
+            "line": 116,
+            "text": "def test_arith_oper():",
+            "start_character_in_line": 0,
+            "full_line_characters": 22
+          },
+          {
+            "line": 133,
+            "text": "def test_separable(compound_model, result):",
+            "start_character_in_line": 0,
+            "full_line_characters": 43
+          },
+          {
+            "line": 138,
+            "text": "def test_custom_model_separable():",
+            "start_character_in_line": 0,
+            "full_line_characters": 34
+          }
+        ],
+        "total_matches": 6,
+        "next_cursor": null
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_OmR0DyztEBQkwm2PWDcb0763",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\"\"\"\nTest separability of models.\n\n\"\"\"\n# pylint: disable=invalid-name\nimport pytest\nimport numpy as np\nfrom numpy.testing import assert_allclose\n\nfrom astropy.modeling import custom_model, models\nfrom astropy.modeling.models import Mapping\nfrom astropy.modeling.separable import (_coord_matrix, is_separable, _cdot,\n                                        _cstack, _arith_oper, separability_matrix)\nfrom astropy.modeling.core import ModelDefinitionError\n\n\nsh1 = models.Shift(1, name='shift1')\nsh2 = models.Shift(2, name='sh2')\nscl1 = models.Scale(1, name='scl1')\nscl2 = models.Scale(2, name='scl2')\nmap1 = Mapping((0, 1, 0, 1), name='map1')\nmap2 = Mapping((0, 0, 1), name='map2')\nmap3 = Mapping((0, 0), name='map3')\nrot = models.Rotation2D(2, name='rotation')\np2 = models.Polynomial2D(1, name='p2')\np22 = models.Polynomial2D(2, name='p22')\np1 = models.Polynomial1D(1, name='p1')\n\n\ncompound_models = {\n    'cm1': (map3 & sh1 | rot & sh1 | sh1 & sh2 & sh1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm2': (sh1 & sh2 | rot | map1 | p2 & p22,\n            (np.array([False, False]),\n             np.array([[True, True], [True, True]]))\n            ),\n    'cm3': (map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm4': (sh1 & sh2 | map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm5': (map3 | sh1 & sh2 | scl1 & scl2,\n            (np.array([False, False]),\n             np.array([[True], [True]]))\n            ),\n    'cm7': (map2 | p2 & sh1,\n            (np.array([False, True]),\n             np.array([[True, False], [False, True]]))\n            )\n}\n\n\ndef test_coord_matrix():\n    c = _coord_matrix(p2, 'left', 2)\n    assert_allclose(np.array([[1, 1], [0, 0]]), c)\n    c = _coord_matrix(p2, 'right', 2)\n    assert_allclose(np.array([[0, 0], [1, 1]]), c)\n    c = _coord_matrix(p1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(p1, 'left', 1)\n    assert_allclose(np.array([[1]]), c)\n    c = _coord_matrix(sh1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(sh1, 'right', 2)\n    assert_allclose(np.array([[0], [1]]), c)\n    c = _coord_matrix(sh1, 'right', 3)\n    assert_allclose(np.array([[0], [0], [1]]), c)\n    c = _coord_matrix(map3, 'left', 2)\n    assert_allclose(np.array([[1], [1]]), c)\n    c = _coord_matrix(map3, 'left', 3)\n    assert_allclose(np.array([[1], [1], [0]]), c)\n\n\ndef test_cdot():\n    result = _cdot(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n\n    result = _cdot(rot, p2)\n    assert_allclose(result, np.array([[2, 2]]))\n\n    result = _cdot(rot, rot)\n    assert_allclose(result, np.array([[2, 2], [2, 2]]))\n\n    result = _cdot(Mapping((0, 0)), rot)\n    assert_allclose(result, np.array([[2], [2]]))\n\n    with pytest.raises(ModelDefinitionError,\n                       match=r\"Models cannot be combined with the \\\"|\\\" operator; .*\"):\n        _cdot(sh1, map1)\n\n\ndef test_cstack():\n    result = _cstack(sh1, scl1)\n    assert_allclose(result, np.array([[1, 0], [0, 1]]))\n\n    result = _cstack(sh1, rot)\n    assert_allclose(result,\n                    np.array([[1, 0, 0],\n                              [0, 1, 1],\n                              [0, 1, 1]])\n                    )\n    result = _cstack(rot, sh1)\n    assert_allclose(result,\n                    np.array([[1, 1, 0],\n                              [1, 1, 0],\n                              [0, 0, 1]])\n                    )\n\n\ndef test_arith_oper():\n    # Models as inputs\n    result = _arith_oper(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n    result = _arith_oper(rot, rot)\n    assert_allclose(result, np.array([[1, 1], [1, 1]]))\n\n    # ndarray\n    result = _arith_oper(np.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]]))\n    assert_allclose(result, np.array([[1, 1], [",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": "4096:0ee3c75236a29fc6c308f1b6d8bb79cd6230effdc1425d71bf18a53d253218f9"
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_cI7LbU4cmeMfLzt2Rt3c9643",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "1, 1]]))\n\n    # Error\n    with pytest.raises(ModelDefinitionError, match=r\"Unsupported operands for arithmetic operator: .*\"):\n        _arith_oper(sh1, map1)\n\n\n@pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\ndef test_separable(compound_model, result):\n    assert_allclose(is_separable(compound_model), result[0])\n    assert_allclose(separability_matrix(compound_model), result[1])\n\n\ndef test_custom_model_separable():\n    @custom_model\n    def model_a(x):\n        return x\n\n    assert model_a().separable\n\n    @custom_model\n    def model_c(x, y):\n        return x + y\n\n    assert not model_c().separable\n    assert np.all(separability_matrix(model_c()) == [True, True])\n",
+        "start_character": 4096,
+        "end_character": 4799,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": null
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_9P0ox0jIoOfXAp6w1Ag03944",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\n\"\"\"\nFunctions to determine if a model is separable, i.e.\nif the model outputs are independent.\n\nIt analyzes ``n_inputs``, ``n_outputs`` and the operators\nin a compound model by stepping through the transforms\nand creating a ``coord_matrix`` of shape (``n_outputs``, ``n_inputs``).\n\n\nEach modeling operator is represented by a function which\ntakes two simple models (or two ``coord_matrix`` arrays) and\nreturns an array of shape (``n_outputs``, ``n_inputs``).\n\n\"\"\"\n\nimport numpy as np\n\nfrom .core import Model, ModelDefinitionError, CompoundModel\nfrom .mappings import Mapping\n\n\n__all__ = [\"is_separable\", \"separability_matrix\"]\n\n\ndef is_separable(transform):\n    \"\"\"\n    A separability test for the outputs of a transform.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    is_separable : ndarray\n        A boolean array with size ``transform.n_outputs`` where\n        each element indicates whether the output is independent\n        and the result of a separable transform.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> is_separable(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([ True,  True]...)\n    >>> is_separable(Shift(1) & Shift(2) | Rotation2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([ True,  True,  True,  True]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        is_separable = np.array([False] * transform.n_outputs).T\n        return is_separable\n    separable_matrix = _separable(transform)\n    is_separable = separable_matrix.sum(1)\n    is_separable = np.where(is_separable != 1, False, True)\n    return is_separable\n\n\ndef separability_matrix(transform):\n    \"\"\"\n    Compute the correlation between outputs and inputs.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    separable_matrix : ndarray\n        A boolean correlation matrix of shape (n_outputs, n_inputs).\n        Indicates the dependence of outputs on inputs. For completely\n        independent outputs, the diagonal elements are True and\n        off-diagonal elements are False.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> separability_matrix(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([[ True, False], [False,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Rotation2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([[ True, False], [False,  True], [ True, False], [False,  True]]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        return np.ones((transform.n_outputs, transform.n_inputs),\n                       dtype=np.bool_)\n    separable_matrix = _separable(transform)\n    separable_matrix = np.where(separable_matrix != 0, True, False)\n    return separable_matrix\n\n\ndef _compute_n_outputs(left, right):\n    \"\"\"\n    Compute the number of outputs of two models.\n\n    The two models are the left and right model to an operation in\n    the expression tree of a compound model.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    \"\"\"\n    if isinstance(left, Model):\n        lnout = left.n_outputs\n    else:\n        lnout = left.shape[0]\n    if isinstance(right, Model):\n        rnout = right.n_outputs\n    else:\n        rnout = right.shape[0]\n    ",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": "4096:720f4b1509c35be0e9713a085b17a342a27d6d451463c27b4f7c9a5e715a28bc"
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_7cnqwn4bOuSoCdMXCTLa1205",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "noutp = lnout + rnout\n    return noutp\n\n\ndef _arith_oper(left, right):\n    \"\"\"\n    Function corresponding to one of the arithmetic operators\n    ['+', '-'. '*', '/', '**'].\n\n    This always returns a nonseparable output.\n\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n    # models have the same number of inputs and outputs\n    def _n_inputs_outputs(input):\n        if isinstance(input, Model):\n            n_outputs, n_inputs = input.n_outputs, input.n_inputs\n        else:\n            n_outputs, n_inputs = input.shape\n        return n_inputs, n_outputs\n\n    left_inputs, left_outputs = _n_inputs_outputs(left)\n    right_inputs, right_outputs = _n_inputs_outputs(right)\n\n    if left_inputs != right_inputs or left_outputs != right_outputs:\n        raise ModelDefinitionError(\n            \"Unsupported operands for arithmetic operator: left (n_inputs={}, \"\n            \"n_outputs={}) and right (n_inputs={}, n_outputs={}); \"\n            \"models must have the same n_inputs and the same \"\n            \"n_outputs for this operator.\".format(\n                left_inputs, left_outputs, right_inputs, right_outputs))\n\n    result = np.ones((left_outputs, left_inputs))\n    return result\n\n\ndef _coord_matrix(model, pos, noutp):\n    \"\"\"\n    Create an array representing inputs and outputs of a simple model.\n\n    The array has a shape (noutp, model.n_inputs).\n\n    Parameters\n    ----------\n    model : `astropy.modeling.Model`\n        model\n    pos : str\n        Position of this model in the expression tree.\n        One of ['left', 'right'].\n    noutp : int\n        Number of outputs of the compound model of which the input model\n        is a left or right child.\n\n    \"\"\"\n    if isinstance(model, Mapping):\n        axes = []\n        for i in model.mapping:\n            axis = np.zeros((model.n_inputs,))\n            axis[i] = 1\n            axes.append(axis)\n        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n    Function corresponding to '&' operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n\n    \"\"\"\n    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n    if isinstance(right, Model):\n        cright = _coord_matrix(right, 'right', noutp)\n    else:\n        cright = np.zeros((noutp, right.shape[1]))\n        cright[-right.shape[0]:, -right.shape[1]:] = 1\n\n    return np.hstack([cleft, cright])\n\n\ndef _cdot(left, right):\n    \"\"\"\n    Function corresponding to \"|\" operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n\n    left, right = right, left\n\n    def _n_inputs_outputs(input, position):\n        \"\"\"\n        Return ``n_inputs``, ``n_outputs`` for a model or coor",
+        "start_character": 4096,
+        "end_character": 8192,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": "8192:720f4b1509c35be0e9713a085b17a342a27d6d451463c27b4f7c9a5e715a28bc"
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_w4JPwhlRFsq1X0y40wOO2751",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "d_matrix.\n        \"\"\"\n        if isinstance(input, Model):\n            coords = _coord_matrix(input, position, input.n_outputs)\n        else:\n            coords = input\n        return coords\n\n    cleft = _n_inputs_outputs(left, 'left')\n    cright = _n_inputs_outputs(right, 'right')\n\n    try:\n        result = np.dot(cleft, cright)\n    except ValueError:\n        raise ModelDefinitionError(\n            'Models cannot be combined with the \"|\" operator; '\n            'left coord_matrix is {}, right coord_matrix is {}'.format(\n                cright, cleft))\n    return result\n\n\ndef _separable(transform):\n    \"\"\"\n    Calculate the separability of outputs.\n\n    Parameters\n    ----------\n    transform : `astropy.modeling.Model`\n        A transform (usually a compound model).\n\n    Returns :\n    is_separable : ndarray of dtype np.bool\n        An array of shape (transform.n_outputs,) of boolean type\n        Each element represents the separablity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        sepright = _separable(transform.right)\n        return _operators[transform.op](sepleft, sepright)\n    elif isinstance(transform, Model):\n        return _coord_matrix(transform, 'left', transform.n_outputs)\n\n\n# Maps modeling operators to a function computing and represents the\n# relationship of axes as an array of 0-es and 1-s\n_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,\n              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}\n",
+        "start_character": 8192,
+        "end_character": 9878,
+        "total_characters": 9878,
+        "text_sha256": "cac38fe9744203c720d50d6c88dcdcb0d93a7b2326fe89911e83640ad5676b0f",
+        "next_cursor": null
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_RlSwszrRT0JnXznqg4mS5346",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "line": 808,
+            "text": "    def _calculate_separability_matrix(self):",
+            "start_character_in_line": 0,
+            "full_line_characters": 45
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_S26IAPly8Cee8dNcONJt1875",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/core.py",
+        "text": "        # TODO: remove the code in the ``if`` block when support\n        # for models with ``outputs`` as class variables is removed.\n        if hasattr(self.__class__, 'n_outputs') and isinstance(self.__class__.n_outputs, property):\n            try:\n                return len(self.__class__.outputs)\n            except TypeError:\n                try:\n                    return len(self.outputs)\n                except AttributeError:\n                    return 0\n\n        return self.__class__.n_outputs\n\n    def _calculate_separability_matrix(self):\n        \"\"\"\n        This is a hook which customises the behavior of modeling.separable.\n\n        This allows complex subclasses to customise the separability matrix.\n        If it returns `NotImplemented` the default behavior is used.\n        \"\"\"\n        return NotImplemented\n\n    def _initialize_unit_support(self):\n        \"\"\"\n        Convert self._input_units_strict and\n        self.input_units_allow_dimensionless to dictionaries\n        mapping input name to a boolean value.\n        \"\"\"\n        if isinstance(self._input_units_strict, bool):\n            self._input_units_strict = {key: self._input_units_strict for\n",
+        "start_character": 30534,
+        "end_character": 31712,
+        "total_characters": 175823,
+        "text_sha256": "13615f0d5a58344aa0054b03669f5badc519443b3578ecd78868f3fef9f7cb1e",
+        "next_cursor": "31712:bfbad957c80733b600ecb39f0db6ee1f051f911e1cba50fb372394d6c556a4ce"
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0015:attempt1"
+  },
+  {
+    "call_id": "call_00_f0mOPBByBORZ2VDVfTFU0615",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\"\"\"\nTest separability of models.\n\n\"\"\"\n# pylint: disable=invalid-name\nimport pytest\nimport numpy as np\nfrom numpy.testing import assert_allclose\n\nfrom astropy.modeling import custom_model, models\nfrom astropy.modeling.models import Mapping\nfrom astropy.modeling.separable import (_coord_matrix, is_separable, _cdot,\n                                        _cstack, _arith_oper, separability_matrix)\nfrom astropy.modeling.core import ModelDefinitionError\n\n\nsh1 = models.Shift(1, name='shift1')\nsh2 = models.Shift(2, name='sh2')\nscl1 = models.Scale(1, name='scl1')\nscl2 = models.Scale(2, name='scl2')\nmap1 = Mapping((0, 1, 0, 1), name='map1')\nmap2 = Mapping((0, 0, 1), name='map2')\nmap3 = Mapping((0, 0), name='map3')\nrot = models.Rotation2D(2, name='rotation')\np2 = models.Polynomial2D(1, name='p2')\np22 = models.Polynomial2D(2, name='p22')\np1 = models.Polynomial1D(1, name='p1')\n\n\ncompound_models = {\n    'cm1': (map3 & sh1 | rot & sh1 | sh1 & sh2 & sh1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm2': (sh1 & sh2 | rot | map1 | p2 & p22,\n            (np.array([False, False]),\n             np.array([[True, True], [True, True]]))\n            ),\n    'cm3': (map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm4': (sh1 & sh2 | map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm5': (map3 | sh1 & sh2 | scl1 & scl2,\n            (np.array([False, False]),\n             np.array([[True], [True]]))\n            ),\n    'cm7': (map2 | p2 & sh1,\n            (np.array([False, True]),\n             np.array([[True, False], [False, True]]))\n            )\n}\n\n\ndef test_coord_matrix():\n    c = _coord_matrix(p2, 'left', 2)\n    assert_allclose(np.array([[1, 1], [0, 0]]), c)\n    c = _coord_matrix(p2, 'right', 2)\n    assert_allclose(np.array([[0, 0], [1, 1]]), c)\n    c = _coord_matrix(p1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(p1, 'left', 1)\n    assert_allclose(np.array([[1]]), c)\n    c = _coord_matrix(sh1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(sh1, 'right', 2)\n    assert_allclose(np.array([[0], [1]]), c)\n    c = _coord_matrix(sh1, 'right', 3)\n    assert_allclose(np.array([[0], [0], [1]]), c)\n    c = _coord_matrix(map3, 'left', 2)\n    assert_allclose(np.array([[1], [1]]), c)\n    c = _coord_matrix(map3, 'left', 3)\n    assert_allclose(np.array([[1], [1], [0]]), c)\n\n\ndef test_cdot():\n    result = _cdot(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n\n    result = _cdot(rot, p2)\n    assert_allclose(result, np.array([[2, 2]]))\n\n    result = _cdot(rot, rot)\n    assert_allclose(result, np.array([[2, 2], [2, 2]]))\n\n    result = _cdot(Mapping((0, 0)), rot)\n    assert_allclose(result, np.array([[2], [2]]))\n\n    with pytest.raises(ModelDefinitionError,\n                       match=r\"Models cannot be combined with the \\\"|\\\" operator; .*\"):\n        _cdot(sh1, map1)\n\n\ndef test_cstack():\n    result = _cstack(sh1, scl1)\n    assert_allclose(result, np.array([[1, 0], [0, 1]]))\n\n    result = _cstack(sh1, rot)\n    assert_allclose(result,\n                    np.array([[1, 0, 0],\n                              [0, 1, 1],\n                              [0, 1, 1]])\n                    )\n    result = _cstack(rot, sh1)\n    assert_allclose(result,\n                    np.array([[1, 1, 0],\n                              [1, 1, 0],\n                              [0, 0, 1]])\n                    )\n\n\ndef test_arith_oper():\n    # Models as inputs\n    result = _arith_oper(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n    result = _arith_oper(rot, rot)\n",
+        "start_character": 0,
+        "end_character": 3897,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": "3897:0ee3c75236a29fc6c308f1b6d8bb79cd6230effdc1425d71bf18a53d253218f9"
+      },
+      "action_id": "action-15",
+      "logical_time": 15,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-14",
+      "command_committed": true,
+      "committed_revision": 15
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0016:attempt1"
+  },
+  {
+    "call_id": "call_00_fMipTm9B4mRqPoDqjIGo1820",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "f7c63b7338655cf52e6ac307821f8fb3e37eb8a3bc76a6e0636b9e065fd08122",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-16",
+      "logical_time": 16,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-15",
+      "command_committed": true,
+      "committed_revision": 16
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0017:attempt1"
+  },
+  {
+    "call_id": "call_00_4FTgIOhjyHonrZIQP27t1755",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\n\"\"\"\nFunctions to determine if a model is separable, i.e.\nif the model outputs are independent.\n\nIt analyzes ``n_inputs``, ``n_outputs`` and the operators\nin a compound model by stepping through the transforms\nand creating a ``coord_matrix`` of shape (``n_outputs``, ``n_inputs``).\n\n\nEach modeling operator is represented by a function which\ntakes two simple models (or two ``coord_matrix`` arrays) and\nreturns an array of shape (``n_outputs``, ``n_inputs``).\n\n\"\"\"\n\nimport numpy as np\n\nfrom .core import Model, ModelDefinitionError, CompoundModel\nfrom .mappings import Mapping\n\n\n__all__ = [\"is_separable\", \"separability_matrix\"]\n\n\ndef is_separable(transform):\n    \"\"\"\n    A separability test for the outputs of a transform.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    is_separable : ndarray\n        A boolean array with size ``transform.n_outputs`` where\n        each element indicates whether the output is independent\n        and the result of a separable transform.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> is_separable(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([ True,  True]...)\n    >>> is_separable(Shift(1) & Shift(2) | Rotation2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([False, False]...)\n    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([ True,  True,  True,  True]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        is_separable = np.array([False] * transform.n_outputs).T\n        return is_separable\n    separable_matrix = _separable(transform)\n    is_separable = separable_matrix.sum(1)\n    is_separable = np.where(is_separable != 1, False, True)\n    return is_separable\n\n\ndef separability_matrix(transform):\n    \"\"\"\n    Compute the correlation between outputs and inputs.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    separable_matrix : ndarray\n        A boolean correlation matrix of shape (n_outputs, n_inputs).\n        Indicates the dependence of outputs on inputs. For completely\n        independent outputs, the diagonal elements are True and\n        off-diagonal elements are False.\n\n    Examples\n    --------\n    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D\n    >>> separability_matrix(Shift(1) & Shift(2) | Scale(1) & Scale(2))\n        array([[ True, False], [False,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Rotation2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \\\n        Polynomial2D(1) & Polynomial2D(2))\n        array([[ True,  True], [ True,  True]]...)\n    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))\n        array([[ True, False], [False,  True], [ True, False], [False,  True]]...)\n\n    \"\"\"\n    if transform.n_inputs == 1 and transform.n_outputs > 1:\n        return np.ones((transform.n_outputs, transform.n_inputs),\n                       dtype=np.bool_)\n    separable_matrix = _separable(transform)\n    separable_matrix = np.where(separable_matrix != 0, True, False)\n    return separable_matrix\n\n\ndef _compute_n_outputs(left, right):\n    \"\"\"\n    Compute the number of outputs of two models.\n\n    The two models are the left and right model to an operation in\n    the expression tree of a compound model.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    \"\"\"\n    if isinstance(left, Model):\n        lnout = left.n_outputs\n    else:\n        lnout = left.shape[0]\n    if isinstance(right, Model):\n        rnout = right.n_outputs\n    else:\n        rnout = right.shape[0]\n    ",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 9882,
+        "text_sha256": "ff914a3d61fbd86b8aa5e0fc87eb96433d2ad1d81f10ae0cc77a55ea77e0ea93",
+        "next_cursor": "4096:741315558d5360481e322a602eb6b7ecf676b009715f4797bc85ea26f06bdf11"
+      },
+      "action_id": "action-17",
+      "logical_time": 17,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-16",
+      "command_committed": true,
+      "committed_revision": 17
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0018:attempt1"
+  },
+  {
+    "call_id": "call_00_SkZoYa49WVtb6PfYbr9q0864",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "noutp = lnout + rnout\n    return noutp\n\n\ndef _arith_oper(left, right):\n    \"\"\"\n    Function corresponding to one of the arithmetic operators\n    ['+', '-'. '*', '/', '**'].\n\n    This always returns a nonseparable output.\n\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n    # models have the same number of inputs and outputs\n    def _n_inputs_outputs(input):\n        if isinstance(input, Model):\n            n_outputs, n_inputs = input.n_outputs, input.n_inputs\n        else:\n            n_outputs, n_inputs = input.shape\n        return n_inputs, n_outputs\n\n    left_inputs, left_outputs = _n_inputs_outputs(left)\n    right_inputs, right_outputs = _n_inputs_outputs(right)\n\n    if left_inputs != right_inputs or left_outputs != right_outputs:\n        raise ModelDefinitionError(\n            \"Unsupported operands for arithmetic operator: left (n_inputs={}, \"\n            \"n_outputs={}) and right (n_inputs={}, n_outputs={}); \"\n            \"models must have the same n_inputs and the same \"\n            \"n_outputs for this operator.\".format(\n                left_inputs, left_outputs, right_inputs, right_outputs))\n\n    result = np.ones((left_outputs, left_inputs))\n    return result\n\n\ndef _coord_matrix(model, pos, noutp):\n    \"\"\"\n    Create an array representing inputs and outputs of a simple model.\n\n    The array has a shape (noutp, model.n_inputs).\n\n    Parameters\n    ----------\n    model : `astropy.modeling.Model`\n        model\n    pos : str\n        Position of this model in the expression tree.\n        One of ['left', 'right'].\n    noutp : int\n        Number of outputs of the compound model of which the input model\n        is a left or right child.\n\n    \"\"\"\n    if isinstance(model, Mapping):\n        axes = []\n        for i in model.mapping:\n            axis = np.zeros((model.n_inputs,))\n            axis[i] = 1\n            axes.append(axis)\n        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n    Function corresponding to '&' operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n\n    \"\"\"\n    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n    if isinstance(right, Model):\n        cright = _coord_matrix(right, 'right', noutp)\n    else:\n        cright = np.zeros((noutp, right.shape[1]))\n        cright[-right.shape[0]:, -right.shape[1]:] = right\n\n    return np.hstack([cleft, cright])\n\n\ndef _cdot(left, right):\n    \"\"\"\n    Function corresponding to \"|\" operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n\n    left, right = right, left\n\n    def _n_inputs_outputs(input, position):\n        \"\"\"\n        Return ``n_inputs``, ``n_outputs`` for a model or ",
+        "start_character": 4096,
+        "end_character": 8192,
+        "total_characters": 9882,
+        "text_sha256": "ff914a3d61fbd86b8aa5e0fc87eb96433d2ad1d81f10ae0cc77a55ea77e0ea93",
+        "next_cursor": "8192:741315558d5360481e322a602eb6b7ecf676b009715f4797bc85ea26f06bdf11"
+      },
+      "action_id": "action-18",
+      "logical_time": 18,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-17",
+      "command_committed": true,
+      "committed_revision": 18
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0019:attempt1"
+  },
+  {
+    "call_id": "call_00_jA7cJGz6xaT2pDqtBOYy4290",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "b123a6ca1c23d7b9d45bdc52d9ef3935c8408fc311989457191fd30f26d39aa7",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-19",
+      "logical_time": 19,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-18",
+      "command_committed": true,
+      "committed_revision": 19
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0020:attempt1"
+  },
+  {
+    "call_id": "call_00_Gw7HrpAnXmqgqzAgjRdb9104",
+    "body": {
+      "ok": false,
+      "error": {
+        "type": "ToolRejection",
+        "message": "Cursor belongs to another operation or source version. Restart this same tool without cursor, then copy its returned next_cursor exactly. Keep source and query unchanged between pages.",
+        "rejection": {
+          "version": "tool-rejection-v0.9",
+          "code": "source_cursor_invalid",
+          "category": "business_constraint",
+          "context": {
+            "actor_id": "member_001",
+            "action": "project_action",
+            "project_id": "SOFTWARE27",
+            "tool": "read_file",
+            "arguments_type": "dict",
+            "tooling_revision": "v117-managed-source-navigation-recovery-r1",
+            "automatic_retry": false,
+            "recovery": {
+              "tool": "read_file",
+              "arguments": {
+                "path": "astropy/modeling/separable.py"
+              }
+            }
+          }
+        }
+      },
+      "action_id": "action-20",
+      "logical_time": 20,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-19",
+      "command_committed": true,
+      "committed_revision": 20
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0021:attempt1"
+  },
+  {
+    "call_id": "call_00_YZECjmIXwFowD8yuumrm1594",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "matches": [
+          {
+            "line": 303,
+            "text": "def _separable(transform):",
+            "start_character_in_line": 0,
+            "full_line_characters": 26
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-21",
+      "logical_time": 21,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-20",
+      "command_committed": true,
+      "committed_revision": 21
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0022:attempt1"
+  },
+  {
+    "call_id": "call_00_KL9yX3mMWLYdRGYIxe7j8484",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "    return result\n\n\ndef _separable(transform):\n    \"\"\"\n    Calculate the separability of outputs.\n\n    Parameters\n    ----------\n    transform : `astropy.modeling.Model`\n        A transform (usually a compound model).\n\n    Returns :\n    is_separable : ndarray of dtype np.bool\n        An array of shape (transform.n_outputs,) of boolean type\n        Each element represents the separablity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        sepright = _separable(transform.right)\n        return _operators[transform.op](sepleft, sepright)\n    elif isinstance(transform, Model):\n        return _coord_matrix(transform, 'left', transform.n_outputs)\n\n\n# Maps modeling operators to a function computing and represents the\n# relationship of axes as an array of 0-es and 1-s\n_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,\n              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}\n",
+        "start_character": 9250,
+        "end_character": 10377,
+        "total_characters": 10377,
+        "text_sha256": "435f86ee08fd38e7d9598bd2bda924f7aee26f42d45ddb7b1f0afd1408994238",
+        "next_cursor": null
+      },
+      "action_id": "action-22",
+      "logical_time": 22,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-21",
+      "command_committed": true,
+      "committed_revision": 22
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0023:attempt1"
+  },
+  {
+    "call_id": "call_00_Ku9FRKx4vZs4axeNJ6mT4038",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/astropy/modeling/separable.py\n+++ b/astropy/modeling/separable.py\n@@ -234,15 +234,28 @@\n     noutp = _compute_n_outputs(left, right)\n \n     if isinstance(left, Model):\n-        cleft = _coord_matrix(left, 'left', noutp)\n+        if isinstance(left, CompoundModel):\n+            cleft = _separable(left)\n+            cleft = np.pad(cleft,\n+                           ((0, noutp - cleft.shape[0]), (0, 0)),\n+                           mode='constant')\n+        else:\n+            cleft = _coord_matrix(left, 'left', noutp)\n     else:\n         cleft = np.zeros((noutp, left.shape[1]))\n         cleft[: left.shape[0], : left.shape[1]] = left\n+\n     if isinstance(right, Model):\n-        cright = _coord_matrix(right, 'right', noutp)\n+        if isinstance(right, CompoundModel):\n+            cright = _separable(right)\n+            cright = np.pad(cright,\n+                            ((noutp - cright.shape[0], 0), (0, 0)),\n+                            mode='constant')\n+        else:\n+            cright = _coord_matrix(right, 'right', noutp)\n     else:\n         cright = np.zeros((noutp, right.shape[1]))\n-        cright[-right.shape[0]:, -right.shape[1]:] = 1\n+        cright[-right.shape[0]:, -right.shape[1]:] = right\n \n     return np.hstack([cleft, cright])\n \n",
+        "start_character": 0,
+        "end_character": 1269,
+        "total_characters": 1269,
+        "text_sha256": "2fb8caca6ba70268f00390d1f7f331540ffa8d210c343ba9b152a8d638cd05a8",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        }
+      },
+      "action_id": "action-23",
+      "logical_time": 23,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-22",
+      "command_committed": true,
+      "committed_revision": 23
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0024:attempt1"
+  },
+  {
+    "call_id": "call_00_uZtuqNdgQq8l4GplMkgQ8378",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-c06272839515baa7ad8d6090",
+        "report_event": {
+          "sequence": 21,
+          "operation_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-23"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "files_sha256": "b123a6ca1c23d7b9d45bdc52d9ef3935c8408fc311989457191fd30f26d39aa7",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "92d4334534d78363583c6a11dee265f0ea300814cc03a5c94c88e3cfc4f2413e",
+        "body_characters": 50563,
+        "total_pages": 19,
+        "page": {
+          "index": 0,
+          "cursor": "0:48959275b8721c72",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:3d5c1e6239c346c8",
+          "is_last": false,
+          "remaining_pages": 18
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 11,
+          "errors": 0,
+          "failed": 0,
+          "passed": 11,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "b4980e06803a81a18f37e37cf7efdf77",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 11,
+                "errors": 0,
+                "failed": 0,
+                "passed": 11,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "ecec98ceb99d5cf87ef805fc0df1b3eac28b8e377a33b78d7261038cce06ffeb",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-c06272839515baa7ad8d6090",
+            "cursor": "1:3d5c1e6239c346c8",
+            "body_sha256": "92d4334534d78363583c6a11dee265f0ea300814cc03a5c94c88e3cfc4f2413e",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-24",
+      "logical_time": 24,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-23",
+      "command_committed": true,
+      "committed_revision": 24
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0025:attempt1"
+  },
+  {
+    "call_id": "call_00_bbkuoYiNy7CZ4oEelVJd7641",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\"\"\"\nTest separability of models.\n\n\"\"\"\n# pylint: disable=invalid-name\nimport pytest\nimport numpy as np\nfrom numpy.testing import assert_allclose\n\nfrom astropy.modeling import custom_model, models\nfrom astropy.modeling.models import Mapping\nfrom astropy.modeling.separable import (_coord_matrix, is_separable, _cdot,\n                                        _cstack, _arith_oper, separability_matrix)\nfrom astropy.modeling.core import ModelDefinitionError\n\n\nsh1 = models.Shift(1, name='shift1')\nsh2 = models.Shift(2, name='sh2')\nscl1 = models.Scale(1, name='scl1')\nscl2 = models.Scale(2, name='scl2')\nmap1 = Mapping((0, 1, 0, 1), name='map1')\nmap2 = Mapping((0, 0, 1), name='map2')\nmap3 = Mapping((0, 0), name='map3')\nrot = models.Rotation2D(2, name='rotation')\np2 = models.Polynomial2D(1, name='p2')\np22 = models.Polynomial2D(2, name='p22')\np1 = models.Polynomial1D(1, name='p1')\n\n\ncompound_models = {\n    'cm1': (map3 & sh1 | rot & sh1 | sh1 & sh2 & sh1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm2': (sh1 & sh2 | rot | map1 | p2 & p22,\n            (np.array([False, False]),\n             np.array([[True, True], [True, True]]))\n            ),\n    'cm3': (map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm4': (sh1 & sh2 | map2 | rot & scl1,\n            (np.array([False, False, True]),\n             np.array([[True, False], [True, False], [False, True]]))\n            ),\n    'cm5': (map3 | sh1 & sh2 | scl1 & scl2,\n            (np.array([False, False]),\n             np.array([[True], [True]]))\n            ),\n    'cm7': (map2 | p2 & sh1,\n            (np.array([False, True]),\n             np.array([[True, False], [False, True]]))\n            )\n}\n\n\ndef test_coord_matrix():\n    c = _coord_matrix(p2, 'left', 2)\n    assert_allclose(np.array([[1, 1], [0, 0]]), c)\n    c = _coord_matrix(p2, 'right', 2)\n    assert_allclose(np.array([[0, 0], [1, 1]]), c)\n    c = _coord_matrix(p1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(p1, 'left', 1)\n    assert_allclose(np.array([[1]]), c)\n    c = _coord_matrix(sh1, 'left', 2)\n    assert_allclose(np.array([[1], [0]]), c)\n    c = _coord_matrix(sh1, 'right', 2)\n    assert_allclose(np.array([[0], [1]]), c)\n    c = _coord_matrix(sh1, 'right', 3)\n    assert_allclose(np.array([[0], [0], [1]]), c)\n    c = _coord_matrix(map3, 'left', 2)\n    assert_allclose(np.array([[1], [1]]), c)\n    c = _coord_matrix(map3, 'left', 3)\n    assert_allclose(np.array([[1], [1], [0]]), c)\n\n\ndef test_cdot():\n    result = _cdot(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n\n    result = _cdot(rot, p2)\n    assert_allclose(result, np.array([[2, 2]]))\n\n    result = _cdot(rot, rot)\n    assert_allclose(result, np.array([[2, 2], [2, 2]]))\n\n    result = _cdot(Mapping((0, 0)), rot)\n    assert_allclose(result, np.array([[2], [2]]))\n\n    with pytest.raises(ModelDefinitionError,\n                       match=r\"Models cannot be combined with the \\\"|\\\" operator; .*\"):\n        _cdot(sh1, map1)\n\n\ndef test_cstack():\n    result = _cstack(sh1, scl1)\n    assert_allclose(result, np.array([[1, 0], [0, 1]]))\n\n    result = _cstack(sh1, rot)\n    assert_allclose(result,\n                    np.array([[1, 0, 0],\n                              [0, 1, 1],\n                              [0, 1, 1]])\n                    )\n    result = _cstack(rot, sh1)\n    assert_allclose(result,\n                    np.array([[1, 1, 0],\n                              [1, 1, 0],\n                              [0, 0, 1]])\n                    )\n\n\ndef test_arith_oper():\n    # Models as inputs\n    result = _arith_oper(sh1, scl1)\n    assert_allclose(result, np.array([[1]]))\n    result = _arith_oper(rot, rot)\n    assert_allclose(result, np.array([[1, 1], [1, 1]]))\n\n    # ndarray\n    result = _arith_oper(np.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]]))\n    assert_allclose(result, np.array([[1, 1], [",
+        "start_character": 0,
+        "end_character": 4096,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": "4096:905f0dbe698d0fa55393708bca954e0d53b958c61ba6a912755f6dd805281204"
+      },
+      "action_id": "action-25",
+      "logical_time": 25,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-24",
+      "command_committed": true,
+      "committed_revision": 25
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0026:attempt1"
+  },
+  {
+    "call_id": "call_00_MxkFwiBnYH7h556ZCUif6927",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "path": "astropy/modeling/tests/test_separable.py",
+        "text": "1, 1]]))\n\n    # Error\n    with pytest.raises(ModelDefinitionError, match=r\"Unsupported operands for arithmetic operator: .*\"):\n        _arith_oper(sh1, map1)\n\n\n@pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\ndef test_separable(compound_model, result):\n    assert_allclose(is_separable(compound_model), result[0])\n    assert_allclose(separability_matrix(compound_model), result[1])\n\n\ndef test_custom_model_separable():\n    @custom_model\n    def model_a(x):\n        return x\n\n    assert model_a().separable\n\n    @custom_model\n    def model_c(x, y):\n        return x + y\n\n    assert not model_c().separable\n    assert np.all(separability_matrix(model_c()) == [True, True])\n",
+        "start_character": 4096,
+        "end_character": 4799,
+        "total_characters": 4799,
+        "text_sha256": "25e72c604c7c28afbb71afd4b5c65f8ab1f762e5f16fc96bab06b56a8cde83db",
+        "next_cursor": null
+      },
+      "action_id": "action-26",
+      "logical_time": 26,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-25",
+      "command_committed": true,
+      "committed_revision": 26
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0027:attempt1"
+  },
+  {
+    "call_id": "call_00_vkzTAx9u8Y5zCVWyusRo6063",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/tests/test_separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "a8f35bbbfec5fd97c2685aaeeb9c0134f12c59c7fba3fc973d9b6da2724ce80f",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-27",
+      "logical_time": 27,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-26",
+      "command_committed": true,
+      "committed_revision": 27
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0028:attempt1"
+  },
+  {
+    "call_id": "call_00_PEQuVyxwfI5MmpaNnoBY9840",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-92ca52ec353831465ae27d4c",
+        "report_event": {
+          "sequence": 26,
+          "operation_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-27"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "a8f35bbbfec5fd97c2685aaeeb9c0134f12c59c7fba3fc973d9b6da2724ce80f",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "750aad64debc0b97b456a351dab93cb402fc33cb2e4fd73fc1ff09548b2271ed",
+        "body_characters": 53917,
+        "total_pages": 20,
+        "page": {
+          "index": 0,
+          "cursor": "0:e942ad8dfa965e52",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:a5685864bf23e10c",
+          "is_last": false,
+          "remaining_pages": 19
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 12,
+          "errors": 0,
+          "failed": 0,
+          "passed": 12,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 12
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "0643234e9c7d7aae2b98ad534f1361f6",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 12,
+                "errors": 0,
+                "failed": 0,
+                "passed": 12,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "0167c246c7c674ee70d8584490ec090c2ca5b00c7a083f12da3537d0b66f4cc3",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-92ca52ec353831465ae27d4c",
+            "cursor": "1:a5685864bf23e10c",
+            "body_sha256": "750aad64debc0b97b456a351dab93cb402fc33cb2e4fd73fc1ff09548b2271ed",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-28",
+      "logical_time": 28,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-27",
+      "command_committed": true,
+      "committed_revision": 28
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0029:attempt1"
+  },
+  {
+    "call_id": "call_00_zQ16P17V9chasPAiyecu7753",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/astropy/modeling/separable.py\n+++ b/astropy/modeling/separable.py\n@@ -234,15 +234,28 @@\n     noutp = _compute_n_outputs(left, right)\n \n     if isinstance(left, Model):\n-        cleft = _coord_matrix(left, 'left', noutp)\n+        if isinstance(left, CompoundModel):\n+            cleft = _separable(left)\n+            cleft = np.pad(cleft,\n+                           ((0, noutp - cleft.shape[0]), (0, 0)),\n+                           mode='constant')\n+        else:\n+            cleft = _coord_matrix(left, 'left', noutp)\n     else:\n         cleft = np.zeros((noutp, left.shape[1]))\n         cleft[: left.shape[0], : left.shape[1]] = left\n+\n     if isinstance(right, Model):\n-        cright = _coord_matrix(right, 'right', noutp)\n+        if isinstance(right, CompoundModel):\n+            cright = _separable(right)\n+            cright = np.pad(cright,\n+                            ((noutp - cright.shape[0], 0), (0, 0)),\n+                            mode='constant')\n+        else:\n+            cright = _coord_matrix(right, 'right', noutp)\n     else:\n         cright = np.zeros((noutp, right.shape[1]))\n-        cright[-right.shape[0]:, -right.shape[1]:] = 1\n+        cright[-right.shape[0]:, -right.shape[1]:] = right\n \n     return np.hstack([cleft, cright])\n \n--- a/astropy/modeling/tests/test_separable.py\n+++ b/astropy/modeling/tests/test_separable.py\n@@ -135,6 +135,29 @@\n     assert_allclose(separability_matrix(compound_model), result[1])\n \n \n+def test_nested_compound_separable():\n+    # Regression test for separability of nested compound models.\n+    cm = models.Linear1D(10) & models.Linear1D(5)\n+    assert_allclose(separability_matrix(cm),\n+                    np.array([[True, False], [False, True]]))\n+\n+    # A non-nested combination is separable.\n+    flat = models.Pix2Sky_TAN() & models.Linear1D(10) & models.Linear1D(5)\n+    assert_allclose(separability_matrix(flat),\n+                    np.array([[True, True, False, False],\n+                              [True, True, False, False],\n+                              [False, False, True, False],\n+                              [False, False, False, True]]))\n+\n+    # A nested compound model keeps the same separability structure.\n+    nested = models.Pix2Sky_TAN() & cm\n+    assert_allclose(separability_matrix(nested),\n+                    np.array([[True, True, False, False],\n+                              [True, True, False, False],\n+                              [False, False, True, False],\n+                              [False, False, False, True]]))\n+\n+\n def test_custom_model_separable():\n     @custom_model\n     def model_a(x):\n",
+        "start_character": 0,
+        "end_character": 2617,
+        "total_characters": 2617,
+        "text_sha256": "51003059b69160bbe7ba0b84cf9d81e732b888449783abdd4af87af13d144c77",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        }
+      },
+      "action_id": "action-29",
+      "logical_time": 29,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-28",
+      "command_committed": true,
+      "committed_revision": 29
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0030:attempt1"
+  },
+  {
+    "call_id": "call_00_R0uJsiv8S53BqEVexL9r8215",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "1749d2b3dbb9fe642b1860ff7de329bf12725c2c680d04b4567141ca8dd16dba",
+        "files_sha256": "a8f35bbbfec5fd97c2685aaeeb9c0134f12c59c7fba3fc973d9b6da2724ce80f",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f",
+        "diff_sha256": "51003059b69160bbe7ba0b84cf9d81e732b888449783abdd4af87af13d144c77",
+        "changed_paths": [
+          "astropy/modeling/separable.py",
+          "astropy/modeling/tests/test_separable.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-30",
+      "logical_time": 30,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-29",
+      "command_committed": true,
+      "committed_revision": 30
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0031:attempt1"
+  },
+  {
+    "call_id": "call_00_uf3VwYPr7I1GFwrNbo8W0216",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "source_sha256": "1749d2b3dbb9fe642b1860ff7de329bf12725c2c680d04b4567141ca8dd16dba",
+        "files_sha256": "a8f35bbbfec5fd97c2685aaeeb9c0134f12c59c7fba3fc973d9b6da2724ce80f",
+        "included_patch_ids": [],
+        "test_sequence": 26,
+        "message": "Deliver patch-1: fix separability_matrix for nested CompoundModels.\n\n`_cstack` in astropy/modeling/separable.py now recurses via `_separable()` when an operand is a CompoundModel and embeds that subtree's matrix in the correct output block, instead of treating the subtree as an opaque single Model. Result: `separability_matrix(m.Pix2Sky_TAN() & (m.Linear1D(10) & m.Linear1D(5)))` yields [[T,T,F,F],[T,T,F,F],[F,F,T,F],[F,F,F,T]] as expected, matching the un-nested form from the issue and restoring separability of the nested linear models.\n\nAdded regression test `test_nested_compound_separable` in astropy/modeling/tests/test_separable.py (diagonal L&L, flat Pix2Sky&L&L, nested Pix2Sky & (L&L)).\n\nVerified on this exact version: astropy/modeling/tests/test_separable.py -> 12 passed, 0 failed. Submission is not hidden acceptance.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v4"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-31",
+      "logical_time": 31,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-30",
+      "command_committed": true,
+      "committed_revision": 31
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0032:attempt1"
+  },
+  {
+    "call_id": "call_00_ghEBH0gWlJhrjNQPuVti3504",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Issue resolved and delivered on current version v4. `_cstack` in astropy/modeling/separable.py now recurses via `_separable()` for CompoundModel operands and embeds the subtree's matrix into the correct output block, so `separability_matrix(m.Pix2Sky_TAN() & (m.Linear1D(10) & m.Linear1D(5)))` returns [[T,T,F,F],[T,T,F,F],[F,F,T,F],[F,F,F,T]] as the issue expects. Added regression test `test_nested_compound_separable` covering diagonal L&L, flat Pix2Sky&L&L, and nested Pix2Sky&(L&L). Verified with run_tests on this exact version: astropy/modeling/tests/test_separable.py -> 12 passed, 0 failed. Published patch-1 and submitted delivery-1 (pending independent acceptance, not hidden acceptance).",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0033:attempt1"
+  },
+  {
+    "call_id": "call_00_n5cMYopF17CTPZpoytX56151",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "def _arith_oper(left, right):\n    \"\"\"\n    Function corresponding to one of the arithmetic operators\n    ['+', '-'. '*', '/', '**'].\n\n    This always returns a nonseparable output.\n\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n    # models have the same number of inputs and outputs\n    def _n_inputs_outputs(input):\n        if isinstance(input, Model):\n            n_outputs, n_inputs = input.n_outputs, input.n_inputs\n        else:\n            n_outputs, n_inputs = input.shape\n        return n_inputs, n_outputs\n\n    left_inputs, left_outputs = _n_inputs_outputs(left)\n    right_inputs, right_outputs = _n_inputs_outputs(right)\n\n    if left_inputs != right_inputs or left_outputs != right_outputs:\n        raise ModelDefinitionError(\n            \"Unsupported operands for arithmetic operator: left (n_inputs={}, \"\n            \"n_outputs={}) and right (n_inputs={}, n_outputs={}); \"\n            \"models must have the same n_inputs and the same \"\n            \"n_outputs for this operator.\".format(\n                left_inputs, left_outputs, right_inputs, right_outputs))\n\n    result = np.ones((left_outputs, left_inputs))\n    return result\n\n\ndef _coord_matrix(model, pos, noutp):\n    \"\"\"\n    Create an array representing inputs and outputs of a simple model.\n\n    The array has a shape (noutp, model.n_inputs).\n\n    Parameters\n    ----------\n    model : `astropy.modeling.Model`\n        model\n    pos : str\n        Position of this model in the expression tree.\n        One of ['left', 'right'].\n    noutp : int\n        Number of outputs of the compound model of which the input model\n        is a left or right child.\n\n    \"\"\"\n    if isinstance(model, Mapping):\n        axes = []\n        for i in model.mapping:\n            axis = np.zeros((model.n_inputs,))\n            axis[i] = 1\n            axes.append(axis)\n        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n    Function corresponding to '&' operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n\n    \"\"\"\n    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        if isinstance(left, CompoundModel):\n            cleft = _separable(left)\n            cleft = np.pad(cleft,\n                           ((0, noutp - cleft.shape[0]), (0, 0)),\n                           mode='constant')\n        else:\n            cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n\n    if isinstance(right, Model):\n        if isinstance(right, CompoundModel):\n            cright = _separable(right)\n            cright = np.pad(cright,\n                            ((noutp - cright.shape[0], 0), (0, 0)),\n                            mode='constant')\n        else:\n            cright = _coord_matrix(right, 'right', noutp)\n    else:\n        cright = np.zeros((noutp, right.shape[1]))\n        cright[-right.shape[0]:, -right.shape[1]:] = right\n\n    return np.hstack([cleft, cright])\n\n\ndef _cdot(lef",
+        "start_character": 4137,
+        "end_character": 8233,
+        "total_characters": 10377,
+        "text_sha256": "435f86ee08fd38e7d9598bd2bda924f7aee26f42d45ddb7b1f0afd1408994238",
+        "next_cursor": "8233:f0c9feea9205a65f1e713ad60fbd78c734cfeaf364df60239e3d704c82b05a6f"
+      },
+      "action_id": "action-32",
+      "logical_time": 32,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-31",
+      "command_committed": true,
+      "committed_revision": 32
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0034:attempt1"
+  },
+  {
+    "call_id": "call_00_VSqLpcumDqa1ilmqwADD5612",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "    Function corresponding to \"|\" operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n\n    left, right = right, left\n\n    def _n_inputs_outputs(input, position):\n        \"\"\"\n        Return ``n_inputs``, ``n_outputs`` for a model or coord_matrix.\n        \"\"\"\n        if isinstance(input, Model):\n            coords = _coord_matrix(input, position, input.n_outputs)\n        else:\n            coords = input\n        return coords\n\n    cleft = _n_inputs_outputs(left, 'left')\n    cright = _n_inputs_outputs(right, 'right')\n\n    try:\n        result = np.dot(cleft, cright)\n    except ValueError:\n        raise ModelDefinitionError(\n            'Models cannot be combined with the \"|\" operator; '\n            'left coord_matrix is {}, right coord_matrix is {}'.format(\n                cright, cleft))\n    return result\n\n\ndef _separable(transform):\n    \"\"\"\n    Calculate the separability of outputs.\n\n    Parameters\n    ----------\n    transform : `astropy.modeling.Model`\n        A transform (usually a compound model).\n\n    Returns :\n    is_separable : ndarray of dtype np.bool\n        An array of shape (transform.n_outputs,) of boolean type\n        Each element represents the separablity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        sepright = _separable(transform.right)\n        return _operators[transform.op](sepleft, sepright)\n    elif isinstance(transform, Model):\n        return _coord_matrix(transform, 'left', transform.n_outputs)\n\n\n# Maps modeling operators to a function computing and represents the\n# relationship of axes as an array of 0-es and 1-s\n_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,\n              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}\n",
+        "start_character": 8252,
+        "end_character": 10377,
+        "total_characters": 10377,
+        "text_sha256": "435f86ee08fd38e7d9598bd2bda924f7aee26f42d45ddb7b1f0afd1408994238",
+        "next_cursor": null
+      },
+      "action_id": "action-33",
+      "logical_time": 33,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-32",
+      "command_committed": true,
+      "committed_revision": 33
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0035:attempt1"
+  },
+  {
+    "call_id": "call_00_NityzkY8IL8BPTRMc1Qq0208",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "                       dtype=np.bool_)\n    separable_matrix = _separable(transform)\n    separable_matrix = np.where(separable_matrix != 0, True, False)\n    return separable_matrix\n\n\ndef _compute_n_outputs(left, right):\n    \"\"\"\n    Compute the number of outputs of two models.\n\n    The two models are the left and right model to an operation in\n    the expression tree of a compound model.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    \"\"\"\n    if isinstance(left, Model):\n        lnout = left.n_outputs\n    else:\n        lnout = left.shape[0]\n    if isinstance(right, Model):\n        rnout = right.n_outputs\n    else:\n        rnout = right.shape[0]\n    noutp = lnout + rnout\n    return noutp\n\n\ndef _arith_oper(left, right):\n",
+        "start_character": 3331,
+        "end_character": 4167,
+        "total_characters": 10377,
+        "text_sha256": "435f86ee08fd38e7d9598bd2bda924f7aee26f42d45ddb7b1f0afd1408994238",
+        "next_cursor": "4167:f0c9feea9205a65f1e713ad60fbd78c734cfeaf364df60239e3d704c82b05a6f"
+      },
+      "action_id": "action-34",
+      "logical_time": 34,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-33",
+      "command_committed": true,
+      "committed_revision": 34
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0036:attempt1"
+  },
+  {
+    "call_id": "call_00_EUnzQe4d1dtv7hU3QF1I9620",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "matches": [
+          {
+            "path": "astropy/modeling/core.py",
+            "line": 808,
+            "character_offset": 31050,
+            "preview": "\n                    return 0\n\n        return self.__class__.n_outputs\n\n    def _calculate_separability_matrix(self):\n        \"\"\"\n        This is a hook which customises the behavior of modeling.separable.\n\n        This allows complex subclasses to customise the separab",
+            "preview_start_character": 30970
+          },
+          {
+            "path": "astropy/modeling/separable.py",
+            "line": 317,
+            "character_offset": 9715,
+            "preview": "lity of the corresponding output.\n    \"\"\"\n    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:\n        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        s",
+            "preview_start_character": 9635
+          }
+        ],
+        "complete": false,
+        "next_cursor": "search-b3966f71a23f1794b5f931d5e65a36085e3d91e7a3eda417dbdd3930353b3be0",
+        "scanned_characters": 1048576,
+        "considered_files": 39,
+        "skipped_nontext_entries": 2,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-35",
+      "logical_time": 35,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-34",
+      "command_committed": true,
+      "committed_revision": 35
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0037:attempt1"
+  },
+  {
+    "call_id": "call_00_vmccNoHg0uioHQMeU8r53289",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "operation": "create",
+        "paths": [
+          "check_sep.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "240d6f9c1f5c3d48b29bdc97e51413ecbac25c84079469a472dc1e03b47a83d9",
+        "entry_metadata_sha256": "5f95c9e5b99f17afb5afdfd274e614b43e2340aab19f8266fc1e97761114faca"
+      },
+      "action_id": "action-36",
+      "logical_time": 36,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-35",
+      "command_committed": true,
+      "committed_revision": 36
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0038:attempt1"
+  },
+  {
+    "call_id": "call_00_atKhTmziTZ9riWHivI6e9791",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-deac585194236100b9cce5a0",
+        "report_event": {
+          "sequence": 35,
+          "operation_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-36"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "files_sha256": "240d6f9c1f5c3d48b29bdc97e51413ecbac25c84079469a472dc1e03b47a83d9",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "197e13e5c381a9c0dd3a3b53d71e1e89b2d4e1d4a89cd54e579a6919dc076a48",
+        "body_characters": 53986,
+        "total_pages": 20,
+        "page": {
+          "index": 0,
+          "cursor": "0:e608ac97a4374287",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:8951a1bd3107ef10",
+          "is_last": false,
+          "remaining_pages": 19
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 12,
+          "errors": 0,
+          "failed": 0,
+          "passed": 12,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 12
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "30169de6ae51c4d2d9933baf6cc959ec",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 12,
+                "errors": 0,
+                "failed": 0,
+                "passed": 12,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "675e81e6c7a029f31c33033911af4369926f91a52e7706d8563eaf8cafcfff31",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-deac585194236100b9cce5a0",
+            "cursor": "1:8951a1bd3107ef10",
+            "body_sha256": "197e13e5c381a9c0dd3a3b53d71e1e89b2d4e1d4a89cd54e579a6919dc076a48",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-37",
+      "logical_time": 37,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-36",
+      "command_committed": true,
+      "committed_revision": 37
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0039:attempt1"
+  },
+  {
+    "call_id": "call_00_fAJvX9f9gMT3Hvk2B3cA9121",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-75051e66b1b872adc69d6374",
+        "report_event": {
+          "sequence": 37,
+          "operation_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-37"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "files_sha256": "240d6f9c1f5c3d48b29bdc97e51413ecbac25c84079469a472dc1e03b47a83d9",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "664ba779494bba983d8384f55861bd782616c5e9b86f711aed6e032dc003442f",
+        "body_characters": 18288,
+        "total_pages": 8,
+        "page": {
+          "index": 0,
+          "cursor": "0:3fc38e02b8d83018",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:1377e5dea01479eb",
+          "is_last": false,
+          "remaining_pages": 7
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 1,
+          "errors": 0,
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 1
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "7b96b5bc67183a075a54378be81ec0a9",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "08961f2308a8d390dfe97483b799cc7770467cdf91bc2d0a3a9ee09fb3414695",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-75051e66b1b872adc69d6374",
+            "cursor": "1:1377e5dea01479eb",
+            "body_sha256": "664ba779494bba983d8384f55861bd782616c5e9b86f711aed6e032dc003442f",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-38",
+      "logical_time": 38,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-37",
+      "command_committed": true,
+      "committed_revision": 38
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0040:attempt1"
+  },
+  {
+    "call_id": "call_00_bY7wG7sSEUoQcyrnznvc3383",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "operation": "delete",
+        "paths": [
+          "check_sep.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "a8f35bbbfec5fd97c2685aaeeb9c0134f12c59c7fba3fc973d9b6da2724ce80f",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-39",
+      "logical_time": 39,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-38",
+      "command_committed": true,
+      "committed_revision": 39
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0041:attempt1"
+  },
+  {
+    "call_id": "call_00_95DUGGhFZzPltIqJjzR19246",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "        m = np.vstack(axes)\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[: model.n_outputs, :model.n_inputs] = m\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = m\n        return mat\n    if not model.separable:\n        # this does not work for more than 2 coordinates\n        mat = np.zeros((noutp, model.n_inputs))\n        if pos == 'left':\n            mat[:model.n_outputs, : model.n_inputs] = 1\n        else:\n            mat[-model.n_outputs:, -model.n_inputs:] = 1\n    else:\n        mat = np.zeros((noutp, model.n_inputs))\n\n        for i in range(model.n_inputs):\n            mat[i, i] = 1\n        if pos == 'right':\n            mat = np.roll(mat, (noutp - model.n_outputs))\n    return mat\n\n\ndef _cstack(left, right):\n    \"\"\"\n    Function corresponding to '&' operation.\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n\n    \"\"\"\n    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        if isinstance(left, CompoundModel):\n            cleft = _separable(left)\n            cleft = np.pad(cleft,\n                           ((0, noutp - cleft.shape[0]), (0, 0)),\n                           mode='constant')\n        else:\n            cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n\n    if isinstance(right, Model):\n        if isinstance(right, CompoundModel):\n            cright = _separable(right)\n            cright = np.pad(cright,\n                            ((noutp - cright.shape[0], 0), (0, 0)),\n                            mode='constant')\n        else:\n            cright = _coord_matrix(right, 'right', noutp)\n    else:\n        cright = np.zeros((noutp, right.shape[1]))\n        cright[-right.shape[0]:, -right.shape[1]:] = right\n\n    return np.hstack([cleft, cright])\n\n\ndef _cdot(left, right):\n    \"\"\"\n",
+        "start_character": 6150,
+        "end_character": 8252,
+        "total_characters": 10377,
+        "text_sha256": "435f86ee08fd38e7d9598bd2bda924f7aee26f42d45ddb7b1f0afd1408994238",
+        "next_cursor": "8252:5453741426d595d7db8518ed7d03788598eae902504c5264aab69275452cbb0e"
+      },
+      "action_id": "action-40",
+      "logical_time": 40,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-39",
+      "command_committed": true,
+      "committed_revision": 40
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0042:attempt1"
+  },
+  {
+    "call_id": "call_00_nvNPKPSL2xyfNofd33Da0305",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "path": "astropy/modeling/separable.py",
+        "text": "        return transform_matrix\n    elif isinstance(transform, CompoundModel):\n        sepleft = _separable(transform.left)\n        sepright = _separable(transform.right)\n        return _operators[transform.op](sepleft, sepright)\n    elif isinstance(transform, Model):\n        return _coord_matrix(transform, 'left', transform.n_outputs)\n\n\n# Maps modeling operators to a function computing and represents the\n# relationship of axes as an array of 0-es and 1-s\n_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,\n              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}\n",
+        "start_character": 9772,
+        "end_character": 10377,
+        "total_characters": 10377,
+        "text_sha256": "435f86ee08fd38e7d9598bd2bda924f7aee26f42d45ddb7b1f0afd1408994238",
+        "next_cursor": null
+      },
+      "action_id": "action-41",
+      "logical_time": 41,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-40",
+      "command_committed": true,
+      "committed_revision": 41
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0043:attempt1"
+  },
+  {
+    "call_id": "call_00_3l67cvCdMQdBADYf5HS04067",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "operation": "write",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "fc81e2cfbfd829c703dd4b89a2ac5e4e4c3171e4a25356bfb42c38dcbdfb40c9",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f"
+      },
+      "action_id": "action-42",
+      "logical_time": 42,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-41",
+      "command_committed": true,
+      "committed_revision": 42
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0044:attempt1"
+  },
+  {
+    "call_id": "call_00_IYyNw9LtSydoTbtizyAq1245",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-57df1a1b1816784ca0329488",
+        "report_event": {
+          "sequence": 43,
+          "operation_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-42"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "files_sha256": "fc81e2cfbfd829c703dd4b89a2ac5e4e4c3171e4a25356bfb42c38dcbdfb40c9",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "c5f7409b09b4ef27c0e669b8b50212653d754256458dc34647a0048cdc376b41",
+        "body_characters": 54127,
+        "total_pages": 20,
+        "page": {
+          "index": 0,
+          "cursor": "0:a8cbd3c4a081602a",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:735239455f8295f4",
+          "is_last": false,
+          "remaining_pages": 19
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 12,
+          "errors": 0,
+          "failed": 0,
+          "passed": 12,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 12
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "3b031ba9ef52e6f9537e27507b700e77",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 12,
+                "errors": 0,
+                "failed": 0,
+                "passed": 12,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "0b53b3370e734371d3a131a2e9ac6acc7e049d8f9f140eea6ec77e81425d283b",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-57df1a1b1816784ca0329488",
+            "cursor": "1:735239455f8295f4",
+            "body_sha256": "c5f7409b09b4ef27c0e669b8b50212653d754256458dc34647a0048cdc376b41",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-43",
+      "logical_time": 43,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-42",
+      "command_committed": true,
+      "committed_revision": 43
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0045:attempt1"
+  },
+  {
+    "call_id": "call_00_ZCrLYd5p2k93P3nbCY8E6411",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-2",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "f398c603ac1d3780f812b4a1b1737c34d52fcc7bc5986ceadf7372ed7cc95922",
+        "files_sha256": "fc81e2cfbfd829c703dd4b89a2ac5e4e4c3171e4a25356bfb42c38dcbdfb40c9",
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f",
+        "diff_sha256": "27bd35012082799c74f8c9f3a546c49b860e2931e27fff94a72f7cdf3067acc1",
+        "changed_paths": [
+          "astropy/modeling/separable.py",
+          "astropy/modeling/tests/test_separable.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-44",
+      "logical_time": 44,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-43",
+      "command_committed": true,
+      "committed_revision": 44
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0046:attempt1"
+  },
+  {
+    "call_id": "call_00_Bf3mFoXIlT3fvJZzUeT84397",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-2",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "source_sha256": "f398c603ac1d3780f812b4a1b1737c34d52fcc7bc5986ceadf7372ed7cc95922",
+        "files_sha256": "fc81e2cfbfd829c703dd4b89a2ac5e4e4c3171e4a25356bfb42c38dcbdfb40c9",
+        "included_patch_ids": [],
+        "test_sequence": 43,
+        "message": "Deliver patch-2 (v7): fix separability_matrix for nested CompoundModels.\n\nRoot cause (traced through `_separable`, which passes ndarrays to `_cstack`): the right ndarray branch of `_cstack` did `cright[...] = 1`, marking the whole right subtree block fully coupled and discarding a nested subtree's real separability. Fix copies the actual sub-matrix `= right`, so nested structure is preserved.\n\nBehavior now: `separability_matrix(m.Pix2Sky_TAN() & (m.Linear1D(10) & m.Linear1D(5)))` returns [[T,T,F,F],[T,T,F,F],[F,F,T,F],[F,F,F,T]] (matching the issue's expected, un-nested form); `separability_matrix(m.Linear1D(10) & m.Linear1D(5))` stays diagonal.\n\nRegression test `test_nested_compound_separable` added in astropy/modeling/tests/test_separable.py (diagonal L&L, flat Pix2Sky&L&L, nested Pix2Sky&(L&L)).\n\nVerified on this exact version: astropy/modeling/tests/test_separable.py -> collected 12, passed 12, failed 0, errors 0, validation_status verified. This is a simplification of patch-1 with identical effective behavior (patch-1 had redundant/dead CompoundModel branches). Submission is not hidden acceptance.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "9d183a209ccee16ddb50fd64f54decfc1a580ea97669b8522ebb7e208e9e221f",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-2",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v7"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-45",
+      "logical_time": 45,
+      "command_id": "command:member_001:staff-212292ebbe21456f90af57cab31d07fe-44",
+      "command_committed": true,
+      "committed_revision": 45
+    },
+    "request_id": "v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:agent:v193:astropy__astropy-12907:DEEPSEEK_NT_S1_M1_5_V193_B5000K:20261110192010:member_001:0047:attempt1"
+  }
+]

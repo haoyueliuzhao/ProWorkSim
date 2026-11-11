@@ -1,0 +1,3373 @@
+[
+  {
+    "call_id": "call_00_KPoRAG9Lx1XKtvAIX2fD7895",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 25,
+            "character_offset": 560,
+            "preview": "eLocator,\n    EngFormatter,\n    FuncFormatter,\n    LogFormatterSciNotation,\n    ScalarFormatter,\n    StrMethodFormatter,\n)\nfrom matplotlib.dates import (\n    AutoDateLocator,\n    AutoDateFormatter,\n    ConciseDateFormatter,\n)\nfrom matplotlib.axis import A",
+            "preview_start_character": 480
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 650,
+            "character_offset": 20890,
+            "preview": " formatter = EngFormatter(unit, sep=sep)\n\n        else:\n            formatter = ScalarFormatter()\n\n        return formatter\n\n\n@dataclass\nclass Temporal(ContinuousBase):\n    \"\"\"\n    A scale for date/time data.\n    \"\"\"\n    # TODO date: bool?\n    # For when ",
+            "preview_start_character": 20810
+          },
+          {
+            "path": "seaborn/utils.py",
+            "line": 701,
+            "character_offset": 22690,
+            "preview": " formatter = mpl.ticker.LogFormatter()\n    else:\n        formatter = mpl.ticker.ScalarFormatter()\n    formatter.axis = dummy_axis()\n\n    # TODO: The following two lines should be replaced\n    # once pinned matplotlib>=3.1.0 with:\n    # formatted_levels = ",
+            "preview_start_character": 22610
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 1020770,
+        "considered_files": 54,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_hm9xkc7ykD7APSqdwFxj0008",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "            new = new.label()\n\n        forward, inverse = new._get_transform()\n\n        mpl_scale = new._get_scale(str(data.name), forward, inverse)\n\n        if axis is None:\n            axis = PseudoAxis(mpl_scale)\n            axis.update_units(data)\n\n        mpl_scale.set_default_locators_and_formatters(axis)\n        new._matplotlib_scale = mpl_scale\n\n        normalize: Optional[Callable[[ArrayLike], ArrayLike]]\n        if prop.normed:\n            if new.norm is None:\n                vmin, vmax = data.min(), data.max()\n            else:\n                vmin, vmax = new.norm\n            vmin, vmax = axis.convert_units((vmin, vmax))\n            a = forward(vmin)\n            b = forward(vmax) - forward(vmin)\n\n            def normalize(x):\n                return (x - a) / b\n\n        else:\n            normalize = vmin = vmax = None\n\n        new._pipeline = [\n            axis.convert_units,\n            forward,\n            normalize,\n            prop.get_mapping(new, data)\n        ]\n\n        def spacer(x):\n            x = x.dropna().unique()\n            if len(x) < 2:\n                return np.nan\n            return np.min(np.diff(np.sort(x)))\n        new._spacer = spacer\n\n        # TODO How to allow disabling of legend for all uses of property?\n        # Could add a Scale parameter, or perhaps Scale.suppress()?\n        # Are there other useful parameters that would be in Scale.legend()\n        # besides allowing Scale.legend(False)?\n        if prop.legend:\n            axis.set_view_interval(vmin, vmax)\n            locs = axis.major.locator()\n            locs = locs[(vmin <= locs) & (locs <= vmax)]\n            labels = axis.major.formatter.format_ticks(locs)\n            new._legend = list(locs), list(labels)\n\n        return new\n\n    def _get_transform(self):\n\n        arg = self.trans\n\n        def get_param(method, default):\n            if arg == method:\n                return default\n            return float(arg[len(method):])\n\n        if arg is None:\n            return _make_identity_transforms()\n        elif isinstance(arg, tuple):\n            return arg\n        elif isinstance(arg, str):\n            if arg == \"ln\":\n                return _make_log_transforms()\n            elif arg == \"logit\":\n                base = get_param(\"logit\", 10)\n                return _make_logit_transforms(base)\n            elif arg.startswith(\"log\"):\n                base = get_param(\"log\", 10)\n                return _make_log_transforms(base)\n            elif arg.startswith(\"symlog\"):\n                c = get_param(\"symlog\", 1)\n                return _make_symlog_transforms(c)\n            elif arg.startswith(\"pow\"):\n                exp = get_param(\"pow\", 2)\n                return _make_power_transforms(exp)\n            elif arg == \"sqrt\":\n                return _make_sqrt_transforms()\n            else:\n                raise ValueError(f\"Unknown value provided for trans: {arg!r}\")\n\n\n@dataclass\nclass Continuous(ContinuousBase):\n    \"\"\"\n    A numeric scale supporting norms and functional transforms.\n    \"\"\"\n    values: tuple | str | None = None\n    trans: str | TransFuncs | None = None\n\n    # TODO Add this to deal with outliers?\n    # outside: Literal[\"keep\", \"drop\", \"clip\"] = \"keep\"\n\n    _priority: ClassVar[int] = 1\n\n    def tick(\n        self,\n        locator: Locator | None = None, *,\n        at: Sequence[float] | None = None,\n        upto: int | None = None,\n        count: int | None = None,\n        every: float | None = None,\n        between: tuple[float, float] | None = None,\n        minor: int | None = None,\n    ) -> Continuous:\n        \"\"\"\n        Configure the selection of ticks for the scale's axis or legend.\n\n        Parameters\n        ----------\n        locator : :class:`matplotlib.ticker.Locator` subclass\n            Pre-configured matplotlib locator; other parameters will not be used.\n        at : sequence of floats\n            Place ticks at these specific locations (in data units).\n        upto : int\n            Choose \"nice\" locations for ticks, but do not exceed this number.\n        count : int\n            Choose exactly this numb",
+        "start_character": 9860,
+        "end_character": 13956,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "13956:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_3JZUa2RjQ6YtRyuI6BF76178",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "\n        log_base, symlog_thresh = self._parse_for_log_params(self.trans)\n\n        if locator is not None:\n            major_locator = locator\n\n        elif upto is not None:\n            if log_base:\n                major_locator = LogLocator(base=log_base, numticks=upto)\n            else:\n                major_locator = MaxNLocator(upto, steps=[1, 1.5, 2, 2.5, 3, 5, 10])\n\n        elif count is not None:\n            if between is None:\n                # This is rarely useful (unless you are setting limits)\n                major_locator = LinearLocator(count)\n            else:\n                if log_base or symlog_thresh:\n                    forward, inverse = self._get_transform()\n                    lo, hi = forward(between)\n                    ticks = inverse(np.linspace(lo, hi, num=count))\n                else:\n                    ticks = np.linspace(*between, num=count)\n                major_locator = FixedLocator(ticks)\n\n        elif every is not None:\n            if between is None:\n                major_locator = MultipleLocator(every)\n            else:\n                lo, hi = between\n                ticks = np.arange(lo, hi + every, every)\n                major_locator = FixedLocator(ticks)\n\n        elif at is not None:\n            major_locator = FixedLocator(at)\n\n        else:\n            if log_base:\n                major_locator = LogLocator(log_base)\n            elif symlog_thresh:\n                major_locator = SymmetricalLogLocator(linthresh=symlog_thresh, base=10)\n            else:\n                major_locator = AutoLocator()\n\n        if minor is None:\n            minor_locator = LogLocator(log_base, subs=None) if log_base else None\n        else:\n            if log_base:\n                subs = np.linspace(0, log_base, minor + 2)[1:-1]\n                minor_locator = LogLocator(log_base, subs=subs)\n            else:\n                minor_locator = AutoMinorLocator(minor + 1)\n\n        return major_locator, minor_locator\n\n    def _get_formatter(self, locator, formatter, like, base, unit):\n\n        log_base, symlog_thresh = self._parse_for_log_params(self.trans)\n        if base is default:\n            if symlog_thresh:\n                log_base = 10\n            base = log_base\n\n        if formatter is not None:\n            return formatter\n\n        if like is not None:\n            if isinstance(like, str):\n                if \"{x\" in like or \"{pos\" in like:\n                    fmt = like\n                else:\n                    fmt = f\"{{x:{like}}}\"\n                formatter = StrMethodFormatter(fmt)\n            else:\n                formatter = FuncFormatter(like)\n\n        elif base is not None:\n            # We could add other log options if necessary\n            formatter = LogFormatterSciNotation(base)\n\n        elif unit is not None:\n            if isinstance(unit, tuple):\n                sep, unit = unit\n            elif not unit:\n                sep = \"\"\n            else:\n                sep = \" \"\n            formatter = EngFormatter(unit, sep=sep)\n\n        else:\n            formatter = ScalarFormatter()\n\n        return formatter\n\n\n@dataclass\nclass Temporal(ContinuousBase):\n    \"\"\"\n    A scale for date/time data.\n    \"\"\"\n",
+        "start_character": 17828,
+        "end_character": 21027,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "21027:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_1ZcLAj9Ze6RE4gapBUtJ5876",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "        new._label_params = {\n            \"formatter\": formatter,\n        }\n        return new\n\n    def _get_locators(self, locator):\n\n        if locator is not None:\n            return locator, None\n\n        locator = mpl.category.StrCategoryLocator({})\n\n        return locator, None\n\n    def _get_formatter(self, locator, formatter):\n\n        if formatter is not None:\n            return formatter\n\n        formatter = mpl.category.StrCategoryFormatter({})\n\n        return formatter\n\n\n@dataclass\nclass Ordinal(Scale):\n    # Categorical (convert to strings), sortable, can skip ticklabels\n    ...\n\n\n@dataclass\nclass Discrete(Scale):\n    # Numeric, integral, can skip ticks/ticklabels\n    ...\n\n\n@dataclass\nclass ContinuousBase(Scale):\n\n    values: tuple | str | None = None\n    norm: tuple | None = None\n\n    def _setup(\n        self, data: Series, prop: Property, axis: Axis | None = None,\n    ) -> Scale:\n\n        new = copy(self)\n        if new._tick_params is None:\n            new = new.tick()\n        if new._label_params is None:\n            new = new.label()\n\n        forward, inverse = new._get_transform()\n\n        mpl_scale = new._get_scale(str(data.name), forward, inverse)\n\n        if axis is None:\n            axis = PseudoAxis(mpl_scale)\n            axis.update_units(data)\n\n",
+        "start_character": 8823,
+        "end_character": 10113,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "10113:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_tGUYAEJfLAGJ2r2wX8cE4056",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "seaborn/axisgrid.py",
+            "line": 2331,
+            "character_offset": 85492,
+            "preview": "plot_joint(residplot, **joint_kws)\n\n        x, y = grid.ax_joint.collections[0].get_offsets().T\n        marginal_kws.setdefault(\"color\", color)\n        histplot(x=x, hue=hue, ax=grid.ax_marg_x, **marginal_kws)\n        histplot(y=y, hue=hue, ax=grid.a",
+            "preview_start_character": 85412
+          },
+          {
+            "path": "seaborn/categorical.py",
+            "line": 373,
+            "character_offset": 14865,
+            "preview": "   for (ax, center), points in point_collections.items():\n            if points.get_offsets().shape[0] > 1:\n\n                def draw(points, renderer, *, center=center):\n\n                    beeswarm(points, center)\n\n                    if self.orie",
+            "preview_start_character": 14785
+          },
+          {
+            "path": "seaborn/categorical.py",
+            "line": 3370,
+            "character_offset": 123350,
+            "preview": "       # Get the original positions of the points\n        orig_xy_data = points.get_offsets()\n\n        # Reset the categorical positions to the center line\n        cat_idx = 1 if self.orient == \"h\" else 0\n        orig_xy_data[:, cat_idx] = center\n\n  ",
+            "preview_start_character": 123270
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 1020770,
+        "considered_files": 54,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_0nbQNxkivM8NkkcpUxCV3112",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 28272,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_fV7JDWXfnpGcvg3AzXsw3922",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/utils.py",
+        "text": "    elif name == \"dowjones\":\n        df[\"Date\"] = pd.to_datetime(df[\"Date\"])\n\n    return df\n\n\ndef axis_ticklabels_overlap(labels):\n    \"\"\"Return a boolean for whether the list of ticklabels have overlaps.\n\n    Parameters\n    ----------\n    labels : list of matplotlib ticklabels\n\n    Returns\n    -------\n    overlap : boolean\n        True if any of the labels overlap.\n\n    \"\"\"\n    if not labels:\n        return False\n    try:\n        bboxes = [l.get_window_extent() for l in labels]\n        overlaps = [b.count_overlaps(bboxes) for b in bboxes]\n        return max(overlaps) > 1\n    except RuntimeError:\n        # Issue on macos backend raises an error in the above code\n        return False\n\n\ndef axes_ticklabels_overlap(ax):\n    \"\"\"Return booleans for whether the x and y ticklabels on an Axes overlap.\n\n    Parameters\n    ----------\n    ax : matplotlib Axes\n\n    Returns\n    -------\n    x_overlap, y_overlap : booleans\n        True when the labels on that axis overlap.\n\n    \"\"\"\n    return (axis_ticklabels_overlap(ax.get_xticklabels()),\n            axis_ticklabels_overlap(ax.get_yticklabels()))\n\n\ndef locator_to_legend_entries(locator, limits, dtype):\n    \"\"\"Return levels and formatted levels for brief numeric legends.\"\"\"\n    raw_levels = locator.tick_values(*limits).astype(dtype)\n\n    # The locator can return ticks outside the limits, clip them here\n    raw_levels = [l for l in raw_levels if l >= limits[0] and l <= limits[1]]\n\n    class dummy_axis:\n        def get_view_interval(self):\n            return limits\n\n    if isinstance(locator, mpl.ticker.LogLocator):\n        formatter = mpl.ticker.LogFormatter()\n    else:\n        formatter = mpl.ticker.ScalarFormatter()\n    formatter.axis = dummy_axis()\n\n    # TODO: The following two lines should be replaced\n    # once pinned matplotlib>=3.1.0 with:\n    # formatted_levels = formatter.format_ticks(raw_levels)\n    formatter.set_locs(raw_levels)\n    formatted_levels = [formatter(x) for x in raw_levels]\n\n    return raw_levels, formatted_levels\n\n\ndef relative_luminance(color):\n    \"\"\"Calculate the relative luminance of a color according to W3C standards\n\n    Parameters\n    ----------\n    color : matplotlib color or sequence of matplotlib colors\n        Hex code, rgb-tuple, or html color name.\n\n    Returns\n    -------\n    luminance : float(s) between 0 and 1\n\n    \"\"\"\n    rgb = mpl.colors.colorConverter.to_rgba_array(color)[:, :3]\n    rgb = np.where(rgb <= .03928, rgb / 12.92, ((rgb + .055) / 1.055) ** 2.4)\n    lum = rgb.dot([.2126, .7152, .0722])\n    try:\n        return lum.item()\n    except ValueError:\n        return lum\n\n\ndef to_utf8(obj):\n    \"\"\"Return a string representing a Python object.\n\n    Strings (i.e. type ``str``) are returned unchanged.\n\n    Byte strings (i.e. type ``bytes``) are returned as UTF-8-decoded strings.\n\n    For other objects, the method ``__str__()`` is called, and the result is\n    returned as a string.\n\n    Parameters\n    ----------\n    obj : object\n        Any Python object\n\n    Returns\n    -------\n    s : str\n        UTF-8-decoded string representation of ``obj``\n\n    \"\"\"\n    if isinstance(obj, str):\n        return obj\n    try:\n        return obj.decode(encoding=\"utf-8\")\n",
+        "start_character": 21027,
+        "end_character": 24211,
+        "total_characters": 28272,
+        "text_sha256": "98ab6b2b0bfd91f2ed8158ef8b4b673f993373b4dc832662e1bcb017ed81a625",
+        "next_cursor": "24211:9361065e039f21906bd7856b20649fca23b62f686feae33b3203ad7bd17c661e"
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_nfPykQNVBedfdNLdxojo8383",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "\n        if prop.legend:\n            new._legend = units_seed, list(stringify(units_seed))\n\n        return new\n\n    def tick(self, locator: Locator | None = None):\n        \"\"\"\n        Configure the selection of ticks for the scale's axis or legend.\n\n        .. note::\n            This API is under construction and will be enhanced over time.\n            At the moment, it is probably not very useful.\n\n        Parameters\n        ----------\n        locator : :class:`matplotlib.ticker.Locator` subclass\n            Pre-configured matplotlib locator; other parameters will not be used.\n\n        Returns\n        -------\n        Copy of self with new tick configuration.\n\n        \"\"\"\n        new = copy(self)\n        new._tick_params = {\n            \"locator\": locator,\n        }\n        return new\n\n    def label(self, formatter: Formatter | None = None):\n        \"\"\"\n        Configure the selection of labels for the scale's axis or legend.\n\n        .. note::\n            This API is under construction and will be enhanced over time.\n            At the moment, it is probably not very useful.\n\n        Parameters\n        ----------\n        formatter : :class:`matplotlib.ticker.Formatter` subclass\n            Pre-configured matplotlib formatter; other parameters will not be used.\n\n        Returns\n        -------\n        scale\n            Copy of self with new tick configuration.\n\n        \"\"\"\n        new = copy(self)\n        new._label_params = {\n            \"formatter\": formatter,\n        }\n        return new\n\n    def _get_locators(self, locator):\n\n        if locator is not None:\n            return locator, None\n\n        locator = mpl.category.StrCategoryLocator({})\n\n        return locator, None\n\n    def _get_formatter(self, locator, formatter):\n\n        if formatter is not None:\n            return formatter\n\n        formatter = mpl.category.StrCategoryFormatter({})\n",
+        "start_character": 7402,
+        "end_character": 9282,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "9282:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_Iwv7clmGHaws21ID0m5b5582",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 80,
+            "character_offset": 1976,
+            "preview": "or()\n\n    def _get_locators(self):\n        raise NotImplementedError()\n\n    def _get_formatter(self, locator: Locator | None = None):\n        raise NotImplementedError()\n\n    def _get_scale(self, name: str, forward: Callable, inverse: Callable):\n\n       ",
+            "preview_start_character": 1896
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 86,
+            "character_offset": 2253,
+            "preview": "ocator = self._get_locators(**self._tick_params)\n        major_formatter = self._get_formatter(major_locator, **self._label_params)\n\n        class InternalScale(mpl.scale.FuncScale):\n            def set_default_locators_and_formatters(self, axis):\n      ",
+            "preview_start_character": 2173
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 180,
+            "character_offset": 5397,
+            "preview": "locator = new._get_locators(**new._tick_params)\n        # major_formatter = new._get_formatter(major_locator, **new._label_params)\n\n        class CatScale(mpl.scale.LinearScale):\n            name = None  # To work around mpl<3.4 compat issues\n\n          ",
+            "preview_start_character": 5317
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 294,
+            "character_offset": 9117,
+            "preview": "or = mpl.category.StrCategoryLocator({})\n\n        return locator, None\n\n    def _get_formatter(self, locator, formatter):\n\n        if formatter is not None:\n            return formatter\n\n        formatter = mpl.category.StrCategoryFormatter({})\n\n        ",
+            "preview_start_character": 9037
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 615,
+            "character_offset": 19808,
+            "preview": "toMinorLocator(minor + 1)\n\n        return major_locator, minor_locator\n\n    def _get_formatter(self, locator, formatter, like, base, unit):\n\n        log_base, symlog_thresh = self._parse_for_log_params(self.trans)\n        if base is default:\n            ",
+            "preview_start_character": 19728
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 750,
+            "character_offset": 23925,
+            "preview": "     minor_locator = None\n\n        return major_locator, minor_locator\n\n    def _get_formatter(self, locator, formatter, concise):\n\n        if formatter is not None:\n            return formatter\n\n        if concise:\n            # TODO ideally we would ha",
+            "preview_start_character": 23845
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 1020770,
+        "considered_files": 54,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_UKTPg8LbeQ8BWsHuAFpO3997",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [],
+        "complete": false,
+        "next_cursor": "search-1333114a3120c9bd00c6f0c341b64508854d379fb5c449acc2954bb2f5805403",
+        "scanned_characters": 1048576,
+        "considered_files": 104,
+        "skipped_nontext_entries": 6,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_qOKGylNP0PdM4AVxLUFk5614",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "    _pipeline: Pipeline\n    _matplotlib_scale: ScaleBase\n    _spacer: staticmethod\n    _legend: tuple[list[str], list[Any]] | None\n\n    def __post_init__(self):\n\n        self._tick_params = None\n        self._label_params = None\n        self._legend = None\n\n    def tick(self):\n        raise NotImplementedError()\n\n    def label(self):\n        raise NotImplementedError()\n\n    def _get_locators(self):\n        raise NotImplementedError()\n\n    def _get_formatter(self, locator: Locator | None = None):\n        raise NotImplementedError()\n\n    def _get_scale(self, name: str, forward: Callable, inverse: Callable):\n\n        major_locator, minor_locator = self._get_locators(**self._tick_params)\n        major_formatter = self._get_formatter(major_locator, **self._label_params)\n\n        class InternalScale(mpl.scale.FuncScale):\n            def set_default_locators_and_formatters(self, axis):\n                axis.set_major_locator(major_locator)\n                if minor_locator is not None:\n                    axis.set_minor_locator(minor_locator)\n                axis.set_major_formatter(major_formatter)\n\n        return InternalScale(name, (forward, inverse))\n\n    def _spacing(self, x: Series) -> float:\n        space = self._spacer(x)\n        if np.isnan(space):\n            # This happens when there is no variance in the orient coordinate data\n            # Not exactly clear what the right default is, but 1 seems reasonable?\n            return 1\n        return space\n\n    def _setup(\n        self, data: Series, prop: Property, axis: Axis | None = None,\n    ) -> Scale:\n        raise NotImplementedError()\n\n",
+        "start_character": 1529,
+        "end_character": 3146,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "3146:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_2r9ih4jqVNlrAo7ShPCv6650",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "from __future__ import annotations\nimport re\nfrom copy import copy\nfrom collections.abc import Sequence\nfrom dataclasses import dataclass\nfrom functools import partial\nfrom typing import Any, Callable, Tuple, Optional, ClassVar\n\nimport numpy as np\nimport matplotlib as mpl\nfrom matplotlib.ticker import (\n    Locator,\n    Formatter,\n    AutoLocator,\n    AutoMinorLocator,\n    FixedLocator,\n    LinearLocator,\n    LogLocator,\n    SymmetricalLogLocator,\n    MaxNLocator,\n    MultipleLocator,\n    EngFormatter,\n    FuncFormatter,\n    LogFormatterSciNotation,\n    ScalarFormatter,\n    StrMethodFormatter,\n)\nfrom matplotlib.dates import (\n    AutoDateLocator,\n    AutoDateFormatter,\n    ConciseDateFormatter,\n)\nfrom matplotlib.axis import Axis\nfrom matplotlib.scale import ScaleBase\nfrom pandas import Series\n\nfrom seaborn._core.rules import categorical_order\nfrom seaborn._core.typing import Default, default\n\nfrom typing import TYPE_CHECKING\n",
+        "start_character": 0,
+        "end_character": 939,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "939:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_6hOFpjFl7VLqWPVU76oj4212",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "seaborn/relational.py",
+            "line": 246,
+            "character_offset": 9084,
+            "preview": "vels), max(self._hue_map.levels)\n            hue_levels, hue_formatted_levels = locator_to_legend_entries(\n                locator, limits, self.plot_data[\"hue\"].infer_objects().dtype\n            )\n        elif self._hue_map.levels is None:\n            hue_levels = ",
+            "preview_start_character": 9004
+          },
+          {
+            "path": "seaborn/relational.py",
+            "line": 278,
+            "character_offset": 10608,
+            "preview": "s), max(self._size_map.levels)\n            size_levels, size_formatted_levels = locator_to_legend_entries(\n                locator, limits, self.plot_data[\"size\"].infer_objects().dtype\n            )\n        elif self._size_map.levels is None:\n            size_levels",
+            "preview_start_character": 10528
+          },
+          {
+            "path": "seaborn/utils.py",
+            "line": 687,
+            "character_offset": 22133,
+            "preview": "ticklabels()),\n            axis_ticklabels_overlap(ax.get_yticklabels()))\n\n\ndef locator_to_legend_entries(locator, limits, dtype):\n    \"\"\"Return levels and formatted levels for brief numeric legends.\"\"\"\n    raw_levels = locator.tick_values(*limits).astype(dtype)\n\n  ",
+            "preview_start_character": 22053
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 1020770,
+        "considered_files": 54,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0015:attempt1"
+  },
+  {
+    "call_id": "call_00_rEHrvz9kbI76VFCis0XB9507",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/relational.py",
+        "text": "            verbosity = \"auto\"\n\n        legend_kwargs = {}\n        keys = []\n\n        # Assign a legend title if there is only going to be one sub-legend,\n        # otherwise, subtitles will be inserted into the texts list with an\n        # invisible handle (which is a hack)\n        titles = {\n            title for title in\n            (self.variables.get(v, None) for v in [\"hue\", \"size\", \"style\"])\n            if title is not None\n        }\n        if len(titles) == 1:\n            legend_title = titles.pop()\n        else:\n            legend_title = \"\"\n\n        title_kws = dict(\n            visible=False, color=\"w\", s=0, linewidth=0, marker=\"\", dashes=\"\"\n        )\n\n        def update(var_name, val_name, **kws):\n\n            key = var_name, val_name\n            if key in legend_kwargs:\n                legend_kwargs[key].update(**kws)\n            else:\n                keys.append(key)\n\n                legend_kwargs[key] = dict(**kws)\n\n        # Define the maximum number of ticks to use for \"brief\" legends\n        brief_ticks = 6\n\n        # -- Add a legend for hue semantics\n        brief_hue = self._hue_map.map_type == \"numeric\" and (\n            verbosity == \"brief\"\n            or (verbosity == \"auto\" and len(self._hue_map.levels) > brief_ticks)\n        )\n        if brief_hue:\n            if isinstance(self._hue_map.norm, mpl.colors.LogNorm):\n                locator = mpl.ticker.LogLocator(numticks=brief_ticks)\n            else:\n                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)\n            limits = min(self._hue_map.levels), max(self._hue_map.levels)\n            hue_levels, hue_formatted_levels = locator_to_legend_entries(\n                locator, limits, self.plot_data[\"hue\"].infer_objects().dtype\n            )\n        elif self._hue_map.levels is None:\n            hue_levels = hue_formatted_levels = []\n        else:\n            hue_levels = hue_formatted_levels = self._hue_map.levels\n\n        # Add the hue semantic subtitle\n        if not legend_title and self.variables.get(\"hue\", None) is not None:\n            update((self.variables[\"hue\"], \"title\"),\n                   self.variables[\"hue\"], **title_kws)\n\n        # Add the hue semantic labels\n        for level, formatted_level in zip(hue_levels, hue_formatted_levels):\n            if level is not None:\n                color = self._hue_map(level)\n                update(self.variables[\"hue\"], formatted_level, color=color)\n\n        # -- Add a legend for size semantics\n        brief_size = self._size_map.map_type == \"numeric\" and (\n            verbosity == \"brief\"\n            or (verbosity == \"auto\" and len(self._size_map.levels) > brief_ticks)\n        )\n        if brief_size:\n            # Define how ticks will interpolate between the min/max data values\n            if isinstance(self._size_map.norm, mpl.colors.LogNorm):\n                locator = mpl.ticker.LogLocator(numticks=brief_ticks)\n            else:\n                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)\n            # Define the min/max data values\n            limits = min(self._size_map.levels), max(self._size_map.levels)\n            size_levels, size_formatted_levels = locator_to_legend_entries(\n                locator, limits, self.plot_data[\"size\"].infer_objects().dtype\n            )\n        elif self._size_map.levels is None:\n            size_levels = size_formatted_levels = []\n        else:\n            size_levels = size_formatted_levels = self._size_map.levels\n\n        # Add the size semantic subtitle\n        if not legend_title and self.variables.get(\"size\", None) is not None:\n            update((self.variables[\"size\"], \"title\"),\n                   self.variables[\"size\"], **title_kws)\n\n        # Add the size semantic labels\n        for level, formatted_level in zip(size_levels, size_formatted_levels):\n            if level is not None:\n                size = self._size_map(level)\n                update(\n                    self.variables[\"size\"],\n                    formatted_level,\n                    linewidth=size,\n                    s=size,\n                )\n\n        # -- Ad",
+        "start_character": 7445,
+        "end_character": 11541,
+        "total_characters": 37520,
+        "text_sha256": "15af1cb8b57b0bb677363d404e9ee801b8cbcd3bed90b830a69014bf2cf33926",
+        "next_cursor": "11541:430d19011aac0e04a63abe429d8346c363ed0dcb9290d7365f72570c4ac76436"
+      },
+      "action_id": "action-15",
+      "logical_time": 15,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-14",
+      "command_committed": true,
+      "committed_revision": 15
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0016:attempt1"
+  },
+  {
+    "call_id": "call_00_ZcA9QMwsXyWzl9oenOza9377",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "tests/test_utils.py",
+            "line": 306,
+            "character_offset": 8138,
+            "preview": "axes_ticklabels_overlap(ax)\n    assert x\n    assert not y\n\n\ndef test_locator_to_legend_entries():\n\n    locator = mpl.ticker.MaxNLocator(nbins=3)\n    limits = (0.09, 0.4)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, f",
+            "preview_start_character": 8058
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 310,
+            "character_offset": 8270,
+            "preview": "tor(nbins=3)\n    limits = (0.09, 0.4)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.15\", \"0.30\"]\n\n    limits = (0.8, 0.9)\n    levels, str_levels = utils.locator_to_legend_entri",
+            "preview_start_character": 8190
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 316,
+            "character_offset": 8432,
+            "preview": "15\", \"0.30\"]\n\n    limits = (0.8, 0.9)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.80\", \"0.84\", \"0.88\"]\n\n    limits = (1, 6)\n    levels, str_levels = utils.locator_to_legend_e",
+            "preview_start_character": 8352
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 322,
+            "character_offset": 8598,
+            "preview": " \"0.84\", \"0.88\"]\n\n    limits = (1, 6)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    assert str_levels == [\"2\", \"4\", \"6\"]\n\n    locator = mpl.ticker.LogLocator(numticks=5)\n    limits = (5, 1425)\n    levels, str_levels =",
+            "preview_start_character": 8518
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 327,
+            "character_offset": 8790,
+            "preview": "or(numticks=5)\n    limits = (5, 1425)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    if Version(mpl.__version__) >= Version(\"3.1\"):\n        assert str_levels == ['10', '100', '1000']\n\n    limits = (0.00003, 0.02)\n    _",
+            "preview_start_character": 8710
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 332,
+            "character_offset": 8996,
+            "preview": "00', '1000']\n\n    limits = (0.00003, 0.02)\n    _, str_levels = utils.locator_to_legend_entries(locator, limits, float)\n    for i, exp in enumerate([4, 3, 2]):\n        # Use regex as mpl switched to minus sign, not hyphen, in 3.6\n        assert re.match(f",
+            "preview_start_character": 8916
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 733507,
+        "considered_files": 40,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-16",
+      "logical_time": 16,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-15",
+      "command_committed": true,
+      "committed_revision": 16
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0017:attempt1"
+  },
+  {
+    "call_id": "call_00_kwJJb49ykTUyb6teeRM38053",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "tests/test_utils.py",
+        "text": "\n    x, y = utils.axes_ticklabels_overlap(ax)\n    assert x\n    assert not y\n\n\ndef test_locator_to_legend_entries():\n\n    locator = mpl.ticker.MaxNLocator(nbins=3)\n    limits = (0.09, 0.4)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.15\", \"0.30\"]\n\n    limits = (0.8, 0.9)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.80\", \"0.84\", \"0.88\"]\n\n    limits = (1, 6)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    assert str_levels == [\"2\", \"4\", \"6\"]\n\n    locator = mpl.ticker.LogLocator(numticks=5)\n    limits = (5, 1425)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    if Version(mpl.__version__) >= Version(\"3.1\"):\n        assert str_levels == ['10', '100', '1000']\n\n    limits = (0.00003, 0.02)\n    _, str_levels = utils.locator_to_legend_entries(locator, limits, float)\n    for i, exp in enumerate([4, 3, 2]):\n        # Use regex as mpl switched to minus sign, not hyphen, in 3.6\n        assert re.match(f\"1e.0{exp}\", str_levels[i])\n\n\ndef test_move_legend_matplotlib_objects():\n\n    fig, ax = plt.subplots()\n\n    colors = \"C2\", \"C5\"\n    labels = \"first label\", \"second label\"\n    title = \"the legend\"\n",
+        "start_character": 8040,
+        "end_character": 9366,
+        "total_characters": 15972,
+        "text_sha256": "2ce1a73d3a477fb4639af3f3a634b4af6a014821452f03f2f93f28ff6c867d0f",
+        "next_cursor": "9366:921dec25f4baba9f2f1004aa530e5246fc3d393e814ded9bffbcd356329d28eb"
+      },
+      "action_id": "action-17",
+      "logical_time": 17,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-16",
+      "command_committed": true,
+      "committed_revision": 17
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0018:attempt1"
+  },
+  {
+    "call_id": "call_00_lnBr2MiBTnPhBPolkLHl6236",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    from seaborn._core.properties import Property\n    from numpy.typing import ArrayLike, NDArray\n\n    TransFuncs = Tuple[\n        Callable[[ArrayLike], ArrayLike], Callable[[ArrayLike], ArrayLike]\n    ]\n\n    # TODO Reverting typing to Any as it was proving too complicated to\n    # work out the right way to communicate the types to mypy. Revisit!\n    Pipeline = Sequence[Optional[Callable[[Any], Any]]]\n\n\nclass Scale:\n    \"\"\"Base class for objects that map data values to visual properties.\"\"\"\n\n    values: tuple | str | list | dict | None\n\n    _priority: ClassVar[int]\n    _pipeline: Pipeline\n    _matplotlib_scale: ScaleBase\n    _spacer: staticmethod\n    _legend: tuple[list[str], list[Any]] | None\n\n    def __post_init__(self):\n\n        self._tick_params = None\n        self._label_params = None\n        self._legend = None\n\n    def tick(self):\n        raise NotImplementedError()\n\n    def label(self):\n        raise NotImplementedError()\n\n    def _get_locators(self):\n        raise NotImplementedError()\n\n    def _get_formatter(self, locator: Locator | None = None):\n        raise NotImplementedError()\n\n    def _get_scale(self, name: str, forward: Callable, inverse: Callable):\n\n",
+        "start_character": 906,
+        "end_character": 2143,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "2143:38c60306b920aca5e56d5c4dd4d59f05a10f28770d834736adca6e8764c00bb5"
+      },
+      "action_id": "action-18",
+      "logical_time": 18,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-17",
+      "command_committed": true,
+      "committed_revision": 18
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0019:attempt1"
+  },
+  {
+    "call_id": "call_00_3iVZldJJLz9Ugp1FPl6s4983",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/utils.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "46364e09a7e880c79dc111ed6487642e683ccfae49954410cbd0d03e7b6d0634",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-19",
+      "logical_time": 19,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-18",
+      "command_committed": true,
+      "committed_revision": 19
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0020:attempt1"
+  },
+  {
+    "call_id": "call_00_QJy8nYHVKxv3PWuCR9IJ5064",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "68bf34c8f02e94f10f9067bd74e52337812d7e4c5d2b5d883947c7ab236fb1ed",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-20",
+      "logical_time": 20,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-19",
+      "command_committed": true,
+      "committed_revision": 20
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0021:attempt1"
+  },
+  {
+    "call_id": "call_00_IJqnFBYPVWTvQdgv1qtU2802",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "        elif unit is not None:\n            if isinstance(unit, tuple):\n                sep, unit = unit\n            elif not unit:\n                sep = \"\"\n            else:\n                sep = \" \"\n            formatter = EngFormatter(unit, sep=sep)\n\n        else:\n            formatter = ScalarFormatter()\n\n        return formatter\n\n\n@dataclass\nclass Temporal(ContinuousBase):\n\n\n@dataclass\nclass Temporal(ContinuousBase):\n    \"\"\"\n    A scale for date/time data.\n    \"\"\"\n    # TODO date: bool?\n    # For when we only care about the time component, would affect\n    # default formatter and norm conversion. Should also happen in\n    # Property.default_scale. The alternative was having distinct\n    # Calendric / Temporal scales, but that feels a bit fussy, and it\n    # would get in the way of using first-letter shorthands because\n",
+        "start_character": 20599,
+        "end_character": 21433,
+        "total_characters": 31031,
+        "text_sha256": "1c64783271731920d7c6cad46d4361846398249eb29c48040d9818a41d2ec653",
+        "next_cursor": "21433:db4a36ce0e6f16c1f86617cb3b2c94c818ecb89ed0423a88c491c48cf7bbbbf8"
+      },
+      "action_id": "action-21",
+      "logical_time": 21,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-20",
+      "command_committed": true,
+      "committed_revision": 21
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0022:attempt1"
+  },
+  {
+    "call_id": "call_00_eGQCWx8clGlLPO8BWzoZ1597",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "46364e09a7e880c79dc111ed6487642e683ccfae49954410cbd0d03e7b6d0634",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-22",
+      "logical_time": 22,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-21",
+      "command_committed": true,
+      "committed_revision": 22
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0024:attempt1"
+  },
+  {
+    "call_id": "call_00_Nf5T1ZqxGhzfu2vw6PFh6896",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/seaborn/utils.py\n+++ b/seaborn/utils.py\n@@ -708,6 +708,13 @@\n     formatted_levels = [formatter(x) for x in raw_levels]\n \n     return raw_levels, formatted_levels\n+\n+\n+def _get_transform_functions(ax, axis):\n+    \"\"\"Return the forward and inverse transforms for a given axis\"\"\"\n+    axis_obj = getattr(ax, f\"{axis}axis\")\n+    transform = axis_obj.get_transform()\n+    return transform.transform, transform.inverted().transform\n \n \n def relative_luminance(color):\n",
+        "start_character": 0,
+        "end_character": 469,
+        "total_characters": 469,
+        "text_sha256": "e5216c4c8e1110eb6f8c9dd6b39fec9189ac0b37b3f7667fb46422b65b361646",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        }
+      },
+      "action_id": "action-23",
+      "logical_time": 23,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-22",
+      "command_committed": true,
+      "committed_revision": 23
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0025:attempt1"
+  },
+  {
+    "call_id": "call_00_ZjABb3YzQEhCKwkcAvkc6476",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/utils.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "af591e3095cc10178bc0c39bfa47641abd9ce9b88306e10892cd96781446f704",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-24",
+      "logical_time": 24,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-23",
+      "command_committed": true,
+      "committed_revision": 24
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0026:attempt1"
+  },
+  {
+    "call_id": "call_00_51Y32Qh7HiIcLBufswUl3161",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "        mpl_scale.set_default_locators_and_formatters(axis)\n        new._matplotlib_scale = mpl_scale\n\n        normalize: Optional[Callable[[ArrayLike], ArrayLike]]\n        if prop.normed:\n            if new.norm is None:\n                vmin, vmax = data.min(), data.max()\n            else:\n                vmin, vmax = new.norm\n            vmin, vmax = axis.convert_units((vmin, vmax))\n            a = forward(vmin)\n            b = forward(vmax) - forward(vmin)\n\n            def normalize(x):\n                return (x - a) / b\n\n        else:\n            normalize = vmin = vmax = None\n\n        new._pipeline = [\n            axis.convert_units,\n            forward,\n            normalize,\n            prop.get_mapping(new, data)\n        ]\n\n        def spacer(x):\n            x = x.dropna().unique()\n            if len(x) < 2:\n                return np.nan\n            return np.min(np.diff(np.sort(x)))\n        new._spacer = spacer\n\n        # TODO How to allow disabling of legend for all uses of property?\n        # Could add a Scale parameter, or perhaps Scale.suppress()?\n        # Are there other useful parameters that would be in Scale.legend()\n        # besides allowing Scale.legend(False)?\n        if prop.legend:\n            axis.set_view_interval(vmin, vmax)\n            locs = axis.major.locator()\n            locs = locs[(vmin <= locs) & (locs <= vmax)]\n            labels = axis.major.formatter.format_ticks(locs)\n            new._legend = list(locs), list(labels)\n\n        return new\n\n    def _get_transform(self):\n\n        arg = self.trans\n\n        def get_param(method, default):\n            if arg == method:\n                return default\n            return float(arg[len(method):])\n\n        if arg is None:\n            return _make_identity_transforms()\n        elif isinstance(arg, tuple):\n            return arg\n        elif isinstance(arg, str):\n",
+        "start_character": 10113,
+        "end_character": 11984,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "11984:b7c9bc0a6ad881f40c947a521c679b0ac9ea443376bed72b923093c9c9b9de19"
+      },
+      "action_id": "action-25",
+      "logical_time": 25,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-24",
+      "command_committed": true,
+      "committed_revision": 25
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0027:attempt1"
+  },
+  {
+    "call_id": "call_00_QPTC3ycP9uXnuPBJ1XNM1494",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "\n        log_base, symlog_thresh = self._parse_for_log_params(self.trans)\n\n        if locator is not None:\n            major_locator = locator\n\n        elif upto is not None:\n            if log_base:\n                major_locator = LogLocator(base=log_base, numticks=upto)\n            else:\n                major_locator = MaxNLocator(upto, steps=[1, 1.5, 2, 2.5, 3, 5, 10])\n\n        elif count is not None:\n            if between is None:\n                # This is rarely useful (unless you are setting limits)\n                major_locator = LinearLocator(count)\n            else:\n                if log_base or symlog_thresh:\n                    forward, inverse = self._get_transform()\n                    lo, hi = forward(between)\n                    ticks = inverse(np.linspace(lo, hi, num=count))\n                else:\n                    ticks = np.linspace(*between, num=count)\n                major_locator = FixedLocator(ticks)\n\n        elif every is not None:\n            if between is None:\n                major_locator = MultipleLocator(every)\n            else:\n                lo, hi = between\n                ticks = np.arange(lo, hi + every, every)\n                major_locator = FixedLocator(ticks)\n\n        elif at is not None:\n            major_locator = FixedLocator(at)\n\n        else:\n            if log_base:\n                major_locator = LogLocator(log_base)\n            elif symlog_thresh:\n                major_locator = SymmetricalLogLocator(linthresh=symlog_thresh, base=10)\n            else:\n                major_locator = AutoLocator()\n\n        if minor is None:\n            minor_locator = LogLocator(log_base, subs=None) if log_base else None\n        else:\n            if log_base:\n                subs = np.linspace(0, log_base, minor + 2)[1:-1]\n                minor_locator = LogLocator(log_base, subs=subs)\n            else:\n                minor_locator = AutoMinorLocator(minor + 1)\n\n        return major_locator, minor_locator\n\n    def _get_formatter(self, locator, formatter, like, base, unit):\n\n        log_base, symlog_thresh = self._parse_for_log_params(self.trans)\n        if base is default:\n            if symlog_thresh:\n                log_base = 10\n            base = log_base\n\n        if formatter is not None:\n            return formatter\n\n        if like is not None:\n            if isinstance(like, str):\n                if \"{x\" in like or \"{pos\" in like:\n                    fmt = like\n                else:\n                    fmt = f\"{{x:{like}}}\"\n                formatter = StrMethodFormatter(fmt)\n            else:\n                formatter = FuncFormatter(like)\n\n        elif base is not None:\n            # We could add other log options if necessary\n            formatter = LogFormatterSciNotation(base)\n\n",
+        "start_character": 17828,
+        "end_character": 20599,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "20599:b7c9bc0a6ad881f40c947a521c679b0ac9ea443376bed72b923093c9c9b9de19"
+      },
+      "action_id": "action-26",
+      "logical_time": 26,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-25",
+      "command_committed": true,
+      "committed_revision": 26
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0028:attempt1"
+  },
+  {
+    "call_id": "call_00_hBoFqa9zMIxushZDdn1W8808",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "from __future__ import annotations\nimport re\nfrom copy import copy\nfrom collections.abc import Sequence\nfrom dataclasses import dataclass\nfrom functools import partial\nfrom typing import Any, Callable, Tuple, Optional, ClassVar\n\nimport numpy as np\nimport matplotlib as mpl\nfrom matplotlib.ticker import (\n    Locator,\n    Formatter,\n    AutoLocator,\n    AutoMinorLocator,\n    FixedLocator,\n    LinearLocator,\n    LogLocator,\n    SymmetricalLogLocator,\n    MaxNLocator,\n    MultipleLocator,\n    EngFormatter,\n    FuncFormatter,\n    LogFormatterSciNotation,\n    ScalarFormatter,\n    StrMethodFormatter,\n)\nfrom matplotlib.dates import (\n    AutoDateLocator,\n    AutoDateFormatter,\n    ConciseDateFormatter,\n)\nfrom matplotlib.axis import Axis\nfrom matplotlib.scale import ScaleBase\nfrom pandas import Series\n\nfrom seaborn._core.rules import categorical_order\nfrom seaborn._core.typing import Default, default\n\nfrom typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    from seaborn._core.properties import Property\n    from numpy.typing import ArrayLike, NDArray\n\n    TransFuncs = Tuple[\n",
+        "start_character": 0,
+        "end_character": 1080,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "1080:b7c9bc0a6ad881f40c947a521c679b0ac9ea443376bed72b923093c9c9b9de19"
+      },
+      "action_id": "action-27",
+      "logical_time": 27,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-26",
+      "command_committed": true,
+      "committed_revision": 27
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0029:attempt1"
+  },
+  {
+    "call_id": "call_00_pcK30UJRcv5fqjXGDSGc5173",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "db8edb5938de621e132320f77f092a71e6331604bf9c13ad2bc6bfa9c4f24c87",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-28",
+      "logical_time": 28,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-27",
+      "command_committed": true,
+      "committed_revision": 28
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0030:attempt1"
+  },
+  {
+    "call_id": "call_00_TdBdyrEiiN0VMe4yRGWS4871",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "matches": [
+          {
+            "line": 687,
+            "text": "def locator_to_legend_entries(locator, limits, dtype):",
+            "start_character_in_line": 0,
+            "full_line_characters": 54
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-29",
+      "logical_time": 29,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-28",
+      "command_committed": true,
+      "committed_revision": 29
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0031:attempt1"
+  },
+  {
+    "call_id": "call_00_1SM6167PakXapSjvjwY88633",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "path": "seaborn/utils.py",
+        "text": "\n\ndef locator_to_legend_entries(locator, limits, dtype):\n    \"\"\"Return levels and formatted levels for brief numeric legends.\"\"\"\n    raw_levels = locator.tick_values(*limits).astype(dtype)\n\n    # The locator can return ticks outside the limits, clip them here\n    raw_levels = [l for l in raw_levels if l >= limits[0] and l <= limits[1]]\n\n    class dummy_axis:\n        def get_view_interval(self):\n            return limits\n\n    if isinstance(locator, mpl.ticker.LogLocator):\n        formatter = mpl.ticker.LogFormatter()\n    else:\n        formatter = mpl.ticker.ScalarFormatter()\n    formatter.axis = dummy_axis()\n\n    # TODO: The following two lines should be replaced\n    # once pinned matplotlib>=3.1.0 with:\n    # formatted_levels = formatter.format_ticks(raw_levels)\n    formatter.set_locs(raw_levels)\n    formatted_levels = [formatter(x) for x in raw_levels]\n\n    return raw_levels, formatted_levels\n\n\ndef relative_luminance(color):\n    \"\"\"Calculate the relative luminance of a color according to W3C standards\n",
+        "start_character": 22127,
+        "end_character": 23145,
+        "total_characters": 28272,
+        "text_sha256": "98ab6b2b0bfd91f2ed8158ef8b4b673f993373b4dc832662e1bcb017ed81a625",
+        "next_cursor": "23145:6a026ffc205a40418c8339c264c57406195413f4dee9d5130312649eb4351da8"
+      },
+      "action_id": "action-30",
+      "logical_time": 30,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-29",
+      "command_committed": true,
+      "committed_revision": 30
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0032:attempt1"
+  },
+  {
+    "call_id": "call_00_dBFwYq6h0pB3kvsZY1Io6184",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "matches": [
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 381,
+            "character_offset": 11524,
+            "preview": "locs[(vmin <= locs) & (locs <= vmax)]\n            labels = axis.major.formatter.format_ticks(locs)\n            new._legend = list(locs), list(labels)\n\n        return new\n\n    def _get_transform(self):\n\n        arg = self.trans\n\n        def get_param(me",
+            "preview_start_character": 11444
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 658,
+            "character_offset": 21074,
+            "preview": "A ScalarFormatter that includes its offset in the formatted labels.\"\"\"\n\n    def format_ticks(self, values):\n        labels = super().format_ticks(values)\n        offset = self.get_offset()\n        if offset:\n            labels = [f\"{label} {offset}\" fo",
+            "preview_start_character": 20994
+          },
+          {
+            "path": "seaborn/_core/scales.py",
+            "line": 659,
+            "character_offset": 21127,
+            "preview": "matted labels.\"\"\"\n\n    def format_ticks(self, values):\n        labels = super().format_ticks(values)\n        offset = self.get_offset()\n        if offset:\n            labels = [f\"{label} {offset}\" for label in labels]\n        return labels\n\n\n@dataclass",
+            "preview_start_character": 21047
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 31339,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-31",
+      "logical_time": 31,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-30",
+      "command_committed": true,
+      "committed_revision": 31
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0033:attempt1"
+  },
+  {
+    "call_id": "call_00_24dev5CRHOdAuSdomzeq6545",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "53ba8672fc138b305953fc5b63b8f3f6fad3ee4f204c20a9b0e35b0e1987aa27",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-32",
+      "logical_time": 32,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-31",
+      "command_committed": true,
+      "committed_revision": 32
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0034:attempt1"
+  },
+  {
+    "call_id": "call_00_HyFop5ayh1aMl3bbn8sT8093",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "matches": [
+          {
+            "path": "tests/test_utils.py",
+            "line": 306,
+            "character_offset": 8127,
+            "preview": " y = utils.axes_ticklabels_overlap(ax)\n    assert x\n    assert not y\n\n\ndef test_locator_to_legend_entries():\n\n    locator = mpl.ticker.MaxNLocator(nbins=3)\n    limits = (0.09, 0.4)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, f",
+            "preview_start_character": 8047
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 310,
+            "character_offset": 8259,
+            "preview": "er.MaxNLocator(nbins=3)\n    limits = (0.09, 0.4)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.15\", \"0.30\"]\n\n    limits = (0.8, 0.9)\n    levels, str_levels = utils.locator_to_legend_entri",
+            "preview_start_character": 8179
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 316,
+            "character_offset": 8421,
+            "preview": "els == [\"0.15\", \"0.30\"]\n\n    limits = (0.8, 0.9)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.80\", \"0.84\", \"0.88\"]\n\n    limits = (1, 6)\n    levels, str_levels = utils.locator_to_legend_e",
+            "preview_start_character": 8341
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 322,
+            "character_offset": 8587,
+            "preview": "== [\"0.80\", \"0.84\", \"0.88\"]\n\n    limits = (1, 6)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    assert str_levels == [\"2\", \"4\", \"6\"]\n\n    locator = mpl.ticker.LogLocator(numticks=5)\n    limits = (5, 1425)\n    levels, str_levels =",
+            "preview_start_character": 8507
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 327,
+            "character_offset": 8779,
+            "preview": "er.LogLocator(numticks=5)\n    limits = (5, 1425)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    if Version(mpl.__version__) >= Version(\"3.1\"):\n        assert str_levels == ['10', '100', '1000']\n\n    limits = (0.00003, 0.02)\n    _",
+            "preview_start_character": 8699
+          },
+          {
+            "path": "tests/test_utils.py",
+            "line": 332,
+            "character_offset": 8985,
+            "preview": "= ['10', '100', '1000']\n\n    limits = (0.00003, 0.02)\n    _, str_levels = utils.locator_to_legend_entries(locator, limits, float)\n    for i, exp in enumerate([4, 3, 2]):\n        # Use regex as mpl switched to minus sign, not hyphen, in 3.6\n        assert re.match(f",
+            "preview_start_character": 8905
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 733507,
+        "considered_files": 40,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-33",
+      "logical_time": 33,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-32",
+      "command_committed": true,
+      "committed_revision": 33
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0035:attempt1"
+  },
+  {
+    "call_id": "call_00_DPkNleCbLjKHPyOTTe3K0525",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "path": "tests/test_utils.py",
+        "text": "\n    x, y = utils.axes_ticklabels_overlap(ax)\n    assert x\n    assert not y\n\n\ndef test_locator_to_legend_entries():\n\n    locator = mpl.ticker.MaxNLocator(nbins=3)\n    limits = (0.09, 0.4)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.15\", \"0.30\"]\n\n    limits = (0.8, 0.9)\n    levels, str_levels = utils.locator_to_legend_entries(\n        locator, limits, float\n    )\n    assert str_levels == [\"0.80\", \"0.84\", \"0.88\"]\n\n    limits = (1, 6)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    assert str_levels == [\"2\", \"4\", \"6\"]\n\n    locator = mpl.ticker.LogLocator(numticks=5)\n    limits = (5, 1425)\n    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)\n    if Version(mpl.__version__) >= Version(\"3.1\"):\n        assert str_levels == ['10', '100', '1000']\n\n    limits = (0.00003, 0.02)\n    _, str_levels = utils.locator_to_legend_entries(locator, limits, float)\n    for i, exp in enumerate([4, 3, 2]):\n        # Use regex as mpl switched to minus sign, not hyphen, in 3.6\n        assert re.match(f\"1e.0{exp}\", str_levels[i])\n\n\ndef test_move_legend_matplotlib_objects():\n\n    fig, ax = plt.subplots()\n\n    colors = \"C2\", \"C5\"\n    labels = \"first label\", \"second label\"\n    title = \"the legend\"\n",
+        "start_character": 8040,
+        "end_character": 9366,
+        "total_characters": 15972,
+        "text_sha256": "2ce1a73d3a477fb4639af3f3a634b4af6a014821452f03f2f93f28ff6c867d0f",
+        "next_cursor": "9366:0a62c5b51630bad1aac22bd168f5445f92a36f4781481476332dc9dc8655b43d"
+      },
+      "action_id": "action-34",
+      "logical_time": 34,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-33",
+      "command_committed": true,
+      "committed_revision": 34
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0036:attempt1"
+  },
+  {
+    "call_id": "call_00_5wbzdKCppDfe7NWBXcNP0829",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "                sep = \" \"\n            formatter = EngFormatter(unit, sep=sep)\n\n        else:\n            formatter = ScalarFormatterOffsetAware()\n\n        return formatter\n\n\nclass ScalarFormatterOffsetAware(ScalarFormatter):\n    \"\"\"A ScalarFormatter that includes its offset in the formatted labels.\"\"\"\n\n    def format_ticks(self, values):\n        labels = super().format_ticks(values)\n        offset = self.get_offset()\n        if offset:\n            labels = [f\"{label} {offset}\" for label in labels]\n        return labels\n\n\n",
+        "start_character": 20773,
+        "end_character": 21300,
+        "total_characters": 31350,
+        "text_sha256": "bc7a5670e3caad6972b94a109b0d7aaaaca877d5843e575a692c87772975bb71",
+        "next_cursor": "21300:178705cbd08f851febd44471b79314eda20d52982370986ba34f2ed984888040"
+      },
+      "action_id": "action-35",
+      "logical_time": 35,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-34",
+      "command_committed": true,
+      "committed_revision": 35
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0037:attempt1"
+  },
+  {
+    "call_id": "call_00_ZnShzU0L7dI7Z49VpluQ3066",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v8"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "2ec965b427c6b03c5b7945eb7f490360bbcb60c1369d358263edafd5685616ab",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-36",
+      "logical_time": 36,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-35",
+      "command_committed": true,
+      "committed_revision": 36
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0038:attempt1"
+  },
+  {
+    "call_id": "call_00_1sjy6p81OfwZLX37sstH3220",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v9"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "4016aba3de15613f6c6c518fa570cdb76a80ae57e532e974d34e7c215411f03f",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-37",
+      "logical_time": 37,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-36",
+      "command_committed": true,
+      "committed_revision": 37
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0039:attempt1"
+  },
+  {
+    "call_id": "call_00_YJFznONa2ttjReYbvUQV9795",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v9"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "        elif unit is not None:\n            if isinstance(unit, tuple):\n                sep, unit = unit\n            elif not unit:\n                sep = \"\"\n            else:\n                sep = \" \"\n            formatter = EngFormatter(unit, sep=sep)\n\n        else:\n            formatter = ScalarFormatterOffsetAware()\n\n        return formatter\n\n\nANCHOR_REMOVED_PLACEHOLDER = None\n\n\n@dataclass\nclass Temporal(ContinuousBase):\n    \"\"\"\n    A scale for date/time data.\n    \"\"\"\n    # TODO date: bool?\n    # For when we only care about the time component, would affect\n    # default formatter and norm conversion. Should also happen in\n    # Property.default_scale. The alternative was having distinct\n    # Calendric / Temporal scales, but that feels a bit fussy, and it\n    # would get in the way of using first-letter shorthands because\n    # Calendric and Continuous would collide. Still, we haven't implemented\n",
+        "start_character": 20599,
+        "end_character": 21511,
+        "total_characters": 31033,
+        "text_sha256": "c85ab8160a6328490c2fb807fdf3a721c6028361b0dbccdc5ac9d594e739d4f4",
+        "next_cursor": "21511:f47e63cb2e14ab06ed0f53c2a141e99d1f91d0a92ae73bd15621ff45ac6f7909"
+      },
+      "action_id": "action-38",
+      "logical_time": 38,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-37",
+      "command_committed": true,
+      "committed_revision": 38
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0040:attempt1"
+  },
+  {
+    "call_id": "call_00_OmRl3CJVqOX4IhldDmIo5208",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "af591e3095cc10178bc0c39bfa47641abd9ce9b88306e10892cd96781446f704",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-39",
+      "logical_time": 39,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-38",
+      "command_committed": true,
+      "committed_revision": 39
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0041:attempt1"
+  },
+  {
+    "call_id": "call_00_3TlM1TTiRVX8puPzdrkg6425",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "        # besides allowing Scale.legend(False)?\n        if prop.legend:\n            axis.set_view_interval(vmin, vmax)\n            locs = axis.major.locator()\n            locs = locs[(vmin <= locs) & (locs <= vmax)]\n            labels = axis.major.formatter.format_ticks(locs)\n            new._legend = list(locs), list(labels)\n\n        return new\n\n",
+        "start_character": 11266,
+        "end_character": 11615,
+        "total_characters": 30986,
+        "text_sha256": "108f49e750681e5ec49a519a343f202b3c0d22267f0cf0591445e4ca51735d70",
+        "next_cursor": "11615:8f349d48e3064945c4cac15f9f7b93fa825f406ebf3317b3e5c00b129feb4ccb"
+      },
+      "action_id": "action-40",
+      "logical_time": 40,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-39",
+      "command_committed": true,
+      "committed_revision": 40
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0042:attempt1"
+  },
+  {
+    "call_id": "call_00_G7DVFbBVZGuNNnGTDKkS5075",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v11"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "69276dba5db64856819b4e55ff7824836bc35c46ab026124d35f91bb072d38b5",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-41",
+      "logical_time": 41,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-40",
+      "command_committed": true,
+      "committed_revision": 41
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0044:attempt1"
+  },
+  {
+    "call_id": "call_00_pCM8PGzMjC5yutlpchUR4701",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v11"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "from __future__ import annotations\nimport re\nfrom copy import copy\nfrom collections.abc import Sequence\nfrom dataclasses import dataclass\nfrom functools import partial\nfrom typing import Any, Callable, Tuple, Optional, ClassVar\n\nimport numpy as np\nimport matplotlib as mpl\nfrom matplotlib.ticker import (\n    Locator,\n    Formatter,\n    AutoLocator,\n    ScalarFormatter as _MplScalarFormatter,\n",
+        "start_character": 0,
+        "end_character": 394,
+        "total_characters": 31030,
+        "text_sha256": "b0657b63bfc21728513b0da36cb25da6424724abc0a1ff13157975b977c966f8",
+        "next_cursor": "394:12112519f6d3dd5172590d453408c4a6ac72165de9d7c349443b2c373c314fa5"
+      },
+      "action_id": "action-42",
+      "logical_time": 42,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-41",
+      "command_committed": true,
+      "committed_revision": 42
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0045:attempt1"
+  },
+  {
+    "call_id": "call_00_3XXvt86r38jmedFZislj1694",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "af591e3095cc10178bc0c39bfa47641abd9ce9b88306e10892cd96781446f704",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-43",
+      "logical_time": 43,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-42",
+      "command_committed": true,
+      "committed_revision": 43
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0046:attempt1"
+  },
+  {
+    "call_id": "call_00_FNXoQbsMn21ekF3CBGx68076",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "path": "seaborn/utils.py",
+        "text": "        True when the labels on that axis overlap.\n\n    \"\"\"\n    return (axis_ticklabels_overlap(ax.get_xticklabels()),\n            axis_ticklabels_overlap(ax.get_yticklabels()))\n\n\ndef locator_to_legend_entries(locator, limits, dtype):\n    \"\"\"Return levels and formatted levels for brief numeric legends.\"\"\"\n    raw_levels = locator.tick_values(*limits).astype(dtype)\n\n    # The locator can return ticks outside the limits, clip them here\n    raw_levels = [l for l in raw_levels if l >= limits[0] and l <= limits[1]]\n\n    class dummy_axis:\n        def get_view_interval(self):\n            return limits\n\n    if isinstance(locator, mpl.ticker.LogLocator):\n        formatter = mpl.ticker.LogFormatter()\n    else:\n        formatter = mpl.ticker.ScalarFormatter()\n    formatter.axis = dummy_axis()\n\n    # TODO: The following two lines should be replaced\n    # once pinned matplotlib>=3.1.0 with:\n    # formatted_levels = formatter.format_ticks(raw_levels)\n    formatter.set_locs(raw_levels)\n    formatted_levels = [formatter(x) for x in raw_levels]\n\n    return raw_levels, formatted_levels\n\n\ndef relative_luminance(color):\n    \"\"\"Calculate the relative luminance of a color according to W3C standards\n\n    Parameters\n    ----------\n    color : matplotlib color or sequence of matplotlib colors\n        Hex code, rgb-tuple, or html color name.\n\n    Returns\n    -------\n    luminance : float(s) between 0 and 1\n\n",
+        "start_character": 21949,
+        "end_character": 23354,
+        "total_characters": 28272,
+        "text_sha256": "98ab6b2b0bfd91f2ed8158ef8b4b673f993373b4dc832662e1bcb017ed81a625",
+        "next_cursor": "23354:13c72fbca44971baac2ddecd39d0008acebfe69a6e2627fe68d0dc936547b5bc"
+      },
+      "action_id": "action-44",
+      "logical_time": 44,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-43",
+      "command_committed": true,
+      "committed_revision": 44
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0047:attempt1"
+  },
+  {
+    "call_id": "call_00_pvO2T8HOEIxYkAWltILU9430",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v13"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/utils.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "ee733b45234101807a8f4f1f3825a63adcc50ca1abb8513a10cd99d783642d69",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-45",
+      "logical_time": 45,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-44",
+      "command_committed": true,
+      "committed_revision": 45
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0048:attempt1"
+  },
+  {
+    "call_id": "call_00_Q16ndURlSdfvCDWCm6f57554",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-46",
+      "logical_time": 46,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-45",
+      "command_committed": true,
+      "committed_revision": 46
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0049:attempt1"
+  },
+  {
+    "call_id": "call_00_AfFIoTtvUbyWPXivN9u41600",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -379,6 +379,10 @@\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n             labels = axis.major.formatter.format_ticks(locs)\n+            offset = getattr(axis.major.formatter, \"get_offset\", None)\n+            offset = offset() if offset is not None else \"\"\n+            if offset:\n+                labels = [f\"{label} {offset}\" for label in labels]\n             new._legend = list(locs), list(labels)\n \n         return new\n--- a/seaborn/utils.py\n+++ b/seaborn/utils.py\n@@ -706,6 +706,13 @@\n     # formatted_levels = formatter.format_ticks(raw_levels)\n     formatter.set_locs(raw_levels)\n     formatted_levels = [formatter(x) for x in raw_levels]\n+\n+    # Formatting as a function of the data limits allows a multiplicative\n+    # offset (e.g. \"x1e6\") to be computed; include it in the labels so that\n+    # legends are not misleadingly rescaled.\n+    offset = formatter.get_offset() if hasattr(formatter, \"get_offset\") else \"\"\n+    if offset:\n+        formatted_levels = [f\"{level} {offset}\" for level in formatted_levels]\n \n     return raw_levels, formatted_levels\n \n",
+        "start_character": 0,
+        "end_character": 1186,
+        "total_characters": 1186,
+        "text_sha256": "6671ec790e85c695761696bed878244b5b5135639f65a1824a758c7a96866d1a",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        }
+      },
+      "action_id": "action-47",
+      "logical_time": 47,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-46",
+      "command_committed": true,
+      "committed_revision": 47
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0050:attempt1"
+  },
+  {
+    "call_id": "call_00_IhjVNeUJFAMjuJWTakHm0639",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-0501fb5d59844c4f8ead2f59",
+        "report_event": {
+          "sequence": 45,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-47"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "469ffb33831c5ed881efa3b9b8679ab1b4f0f2691976b5fb15f2227fbea88877",
+        "body_characters": 15514,
+        "total_pages": 7,
+        "page": {
+          "index": 0,
+          "cursor": "0:6a9bfe9ebbfa16f9",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:81c18c02c4685477",
+          "is_last": false,
+          "remaining_pages": 6
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 1,
+          "errors": 0,
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 1
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "615e2c50afe559806a53b00dfe539ea7",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "c9040aeb0ece1bd40cb57632f88bcdfd0c486c3bc398c07b032d1f3ac980ecde",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-0501fb5d59844c4f8ead2f59",
+            "cursor": "1:81c18c02c4685477",
+            "body_sha256": "469ffb33831c5ed881efa3b9b8679ab1b4f0f2691976b5fb15f2227fbea88877",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-48",
+      "logical_time": 48,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-47",
+      "command_committed": true,
+      "committed_revision": 48
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0051:attempt1"
+  },
+  {
+    "call_id": "call_00_PY0l64I5jECZvM7vcI7o4399",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "matches": [],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 21511,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-49",
+      "logical_time": 49,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-48",
+      "command_committed": true,
+      "committed_revision": 49
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0052:attempt1"
+  },
+  {
+    "call_id": "call_00_0jm097gkX1osD9BBthDB6134",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-22706721ebb5a353f86e34ab",
+        "report_event": {
+          "sequence": 48,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-49"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "8e3730ffc60468216e11ebaeaca9844f9ac95dc3511a8743914c4a7348c5f6d2",
+        "body_characters": 141483,
+        "total_pages": 48,
+        "page": {
+          "index": 0,
+          "cursor": "0:9fc63ac45f1fc3f9",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:0b5adbc5043bbca9",
+          "is_last": false,
+          "remaining_pages": 47
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 40,
+          "errors": 0,
+          "failed": 0,
+          "passed": 40,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 40
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "814ab9b1c363e34b9bafe49e79f80b3c",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 40,
+                "errors": 0,
+                "failed": 0,
+                "passed": 40,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "dd7c31cd020988e73d46e4c68721e122b0a6aa603f335306b554b8e0efd62d05",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-22706721ebb5a353f86e34ab",
+            "cursor": "1:0b5adbc5043bbca9",
+            "body_sha256": "8e3730ffc60468216e11ebaeaca9844f9ac95dc3511a8743914c4a7348c5f6d2",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-50",
+      "logical_time": 50,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-49",
+      "command_committed": true,
+      "committed_revision": 50
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0053:attempt1"
+  },
+  {
+    "call_id": "call_00_TMxrYmiv9OcnMTcsCoQu6508",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "matches": [],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 21511,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-51",
+      "logical_time": 51,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-50",
+      "command_committed": true,
+      "committed_revision": 51
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0054:attempt1"
+  },
+  {
+    "call_id": "call_00_6u6WBEdTGuGN4f1UDF2E1143",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "path": "tests/test_utils.py",
+        "text": "\"\"\"Tests for seaborn utility functions.\"\"\"\nimport re\nimport tempfile\nfrom urllib.request import urlopen\nfrom http.client import HTTPException\n\nimport numpy as np\nimport pandas as pd\nimport matplotlib as mpl\nimport matplotlib.pyplot as plt\nfrom cycler import cycler\n\nimport pytest\nfrom numpy.testing import (\n    assert_array_equal,\n)\nfrom pandas.testing import (\n    assert_series_equal,\n    assert_frame_equal,\n)\n",
+        "start_character": 0,
+        "end_character": 414,
+        "total_characters": 15972,
+        "text_sha256": "2ce1a73d3a477fb4639af3f3a634b4af6a014821452f03f2f93f28ff6c867d0f",
+        "next_cursor": "414:1a9a733f9fd7285ccb652f2fae7406b351604f03b64a50cc0fab1f4d6c3032e7"
+      },
+      "action_id": "action-52",
+      "logical_time": 52,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-51",
+      "command_committed": true,
+      "committed_revision": 52
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0055:attempt1"
+  },
+  {
+    "call_id": "call_00_7bE7UkmzTGQKdD8kSdjC2915",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "path": "tests/test_utils.py",
+        "text": "    for i, exp in enumerate([4, 3, 2]):\n        # Use regex as mpl switched to minus sign, not hyphen, in 3.6\n        assert re.match(f\"1e.0{exp}\", str_levels[i])\n\n\ndef test_move_legend_matplotlib_objects():\n\n    fig, ax = plt.subplots()\n\n    colors = \"C2\", \"C5\"\n    labels = \"first label\", \"second label\"\n    title = \"the legend\"\n",
+        "start_character": 9035,
+        "end_character": 9366,
+        "total_characters": 15972,
+        "text_sha256": "2ce1a73d3a477fb4639af3f3a634b4af6a014821452f03f2f93f28ff6c867d0f",
+        "next_cursor": "9366:1a9a733f9fd7285ccb652f2fae7406b351604f03b64a50cc0fab1f4d6c3032e7"
+      },
+      "action_id": "action-53",
+      "logical_time": 53,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-52",
+      "command_committed": true,
+      "committed_revision": 53
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0056:attempt1"
+  },
+  {
+    "call_id": "call_00_L13volpntc2mxr1BcJZb8018",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-0a69afcb736d51d48647a10c",
+        "report_event": {
+          "sequence": 53,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-53"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "6a4b4ff1fc83d857fce2a0b3c4048b73b1a370d1660947992f92e1ed9847748c",
+        "body_characters": 6194866,
+        "total_pages": 2018,
+        "page": {
+          "index": 0,
+          "cursor": "0:de93951a14feed7b",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:d843c87490f6be54",
+          "is_last": false,
+          "remaining_pages": 2017
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 1918,
+          "errors": 0,
+          "failed": 6,
+          "passed": 1876,
+          "skipped": 30,
+          "xfailed": 6,
+          "xpassed": 0,
+          "tests_run": 1882
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "c8ea8c58871bcf5f1bb90847a24a797f",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 1918,
+                "errors": 0,
+                "failed": 6,
+                "passed": 1876,
+                "skipped": 30,
+                "xfailed": 6,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "0632cba67eea4fae078b39c6f959de2358f9848a35781e00398c38f1fec2310d",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-0a69afcb736d51d48647a10c",
+            "cursor": "9:4007ea9250d53467",
+            "body_sha256": "6a4b4ff1fc83d857fce2a0b3c4048b73b1a370d1660947992f92e1ed9847748c",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-54",
+      "logical_time": 54,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-53",
+      "command_committed": true,
+      "committed_revision": 54
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0057:attempt1"
+  },
+  {
+    "call_id": "call_00_nqyU3Uba5ld2wyju8rGI3769",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-593cd55060b232d12fcee5a4",
+        "report_event": {
+          "sequence": 55,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-54"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "8035d633d4268d3b54d351c6853f4c094e6d2422a2a70e606c626b87fe228841",
+        "body_characters": 283354,
+        "total_pages": 95,
+        "page": {
+          "index": 0,
+          "cursor": "0:6c601cc9308fc3b9",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:b3dd3d1381282f57",
+          "is_last": false,
+          "remaining_pages": 94
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 84,
+          "errors": 0,
+          "failed": 0,
+          "passed": 83,
+          "skipped": 0,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 83
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "12fbe5d1e15f284ffea5519be3508e5e",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 84,
+                "errors": 0,
+                "failed": 0,
+                "passed": 83,
+                "skipped": 0,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "eeff5efd59a60ab5d5fb586c61b9843177d265d2ccac836a35e2aacb01dd60f5",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-593cd55060b232d12fcee5a4",
+            "cursor": "1:b3dd3d1381282f57",
+            "body_sha256": "8035d633d4268d3b54d351c6853f4c094e6d2422a2a70e606c626b87fe228841",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-55",
+      "logical_time": 55,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-54",
+      "command_committed": true,
+      "committed_revision": 55
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0058:attempt1"
+  },
+  {
+    "call_id": "call_00_JUwbmHUZ9nOwyZWaqvzN9194",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "operation": "create",
+        "paths": [
+          "repro_offset.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "7ac174364a10bb7a58b4353d2df63c2bca18edf1d4177c7214ebe29e3116a4c5",
+        "entry_metadata_sha256": "2a43b69b99b6e3ab6c3139425ac2140b733517b1a94cd1359d32aa9b6409068c"
+      },
+      "action_id": "action-56",
+      "logical_time": 56,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-55",
+      "command_committed": true,
+      "committed_revision": 56
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0060:attempt1"
+  },
+  {
+    "call_id": "call_00_ptJW8TJfu0qInkJaiM5f8665",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-352e1838230a6bea04102f15",
+        "report_event": {
+          "sequence": 58,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-56"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "7ac174364a10bb7a58b4353d2df63c2bca18edf1d4177c7214ebe29e3116a4c5",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "30124978fdbd95d728eac95fd003baadb6da905461d58725fd131ba5b6aaaa29",
+        "body_characters": 152280,
+        "total_pages": 51,
+        "page": {
+          "index": 0,
+          "cursor": "0:c757a9e36ccc21b8",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:f90652efa4c0f591",
+          "is_last": false,
+          "remaining_pages": 50
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 45,
+          "errors": 0,
+          "failed": 0,
+          "passed": 41,
+          "skipped": 4,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 41
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "0aee163f9d8b7a8f498b547aa93533b6",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 45,
+                "errors": 0,
+                "failed": 0,
+                "passed": 41,
+                "skipped": 4,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "723ed5a4c13a0cf4afe34cadca57d4822f814915756836e724282c5c9a8610ee",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-352e1838230a6bea04102f15",
+            "cursor": "1:f90652efa4c0f591",
+            "body_sha256": "30124978fdbd95d728eac95fd003baadb6da905461d58725fd131ba5b6aaaa29",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-57",
+      "logical_time": 57,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-56",
+      "command_committed": true,
+      "committed_revision": 57
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0061:attempt1"
+  },
+  {
+    "call_id": "call_00_K7edvJWyPxFP5zqsVjEB7834",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v16"
+        },
+        "operation": "delete",
+        "paths": [
+          "repro_offset.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-58",
+      "logical_time": 58,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-57",
+      "command_committed": true,
+      "committed_revision": 58
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0062:attempt1"
+  },
+  {
+    "call_id": "call_00_EHej2BXvEprqsM1llVNc4263",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -379,6 +379,10 @@\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n             labels = axis.major.formatter.format_ticks(locs)\n+            offset = getattr(axis.major.formatter, \"get_offset\", None)\n+            offset = offset() if offset is not None else \"\"\n+            if offset:\n+                labels = [f\"{label} {offset}\" for label in labels]\n             new._legend = list(locs), list(labels)\n \n         return new\n--- a/seaborn/utils.py\n+++ b/seaborn/utils.py\n@@ -706,6 +706,13 @@\n     # formatted_levels = formatter.format_ticks(raw_levels)\n     formatter.set_locs(raw_levels)\n     formatted_levels = [formatter(x) for x in raw_levels]\n+\n+    # Formatting as a function of the data limits allows a multiplicative\n+    # offset (e.g. \"x1e6\") to be computed; include it in the labels so that\n+    # legends are not misleadingly rescaled.\n+    offset = formatter.get_offset() if hasattr(formatter, \"get_offset\") else \"\"\n+    if offset:\n+        formatted_levels = [f\"{level} {offset}\" for level in formatted_levels]\n \n     return raw_levels, formatted_levels\n \n",
+        "start_character": 0,
+        "end_character": 1186,
+        "total_characters": 1186,
+        "text_sha256": "6671ec790e85c695761696bed878244b5b5135639f65a1824a758c7a96866d1a",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v16"
+        }
+      },
+      "action_id": "action-59",
+      "logical_time": 59,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-58",
+      "command_committed": true,
+      "committed_revision": 59
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0063:attempt1"
+  },
+  {
+    "call_id": "call_00_gzPlZCoZ45HCTALBjIsO7703",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v17"
+        },
+        "operation": "create",
+        "paths": [
+          "repro_offset.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "1b98bb28f16b841e6474698d355f30d809d4dcc55c2ad6f62bd955c2c94ef507",
+        "entry_metadata_sha256": "2a43b69b99b6e3ab6c3139425ac2140b733517b1a94cd1359d32aa9b6409068c"
+      },
+      "action_id": "action-60",
+      "logical_time": 60,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-59",
+      "command_committed": true,
+      "committed_revision": 60
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0064:attempt1"
+  },
+  {
+    "call_id": "call_00_GYIKoe8zanNp7EaCJWto0301",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-78a0b8db4b55115b15401de0",
+        "report_event": {
+          "sequence": 62,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-60"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v17"
+        },
+        "files_sha256": "1b98bb28f16b841e6474698d355f30d809d4dcc55c2ad6f62bd955c2c94ef507",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "305b0f0a8d13674b9712f2831735e5a41fb5f40fce5122a1cce6cba5bae5b767",
+        "body_characters": 152250,
+        "total_pages": 51,
+        "page": {
+          "index": 0,
+          "cursor": "0:09e5e5c736e6effe",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:1408557cb8165a93",
+          "is_last": false,
+          "remaining_pages": 50
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 45,
+          "errors": 0,
+          "failed": 0,
+          "passed": 41,
+          "skipped": 4,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 41
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "e0432fda237440805413458c17bbff03",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 45,
+                "errors": 0,
+                "failed": 0,
+                "passed": 41,
+                "skipped": 4,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "198021135f0386f3733c97af76ead67f6bfcd23f58ae6546d8d5dc768c025d43",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-78a0b8db4b55115b15401de0",
+            "cursor": "1:1408557cb8165a93",
+            "body_sha256": "305b0f0a8d13674b9712f2831735e5a41fb5f40fce5122a1cce6cba5bae5b767",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-61",
+      "logical_time": 61,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-60",
+      "command_committed": true,
+      "committed_revision": 61
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0065:attempt1"
+  },
+  {
+    "call_id": "call_00_Hztb1KjI5PJvFO2IrQeC4462",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-3914d634c7b7be1418a32e43",
+        "report_event": {
+          "sequence": 64,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-61"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v17"
+        },
+        "files_sha256": "1b98bb28f16b841e6474698d355f30d809d4dcc55c2ad6f62bd955c2c94ef507",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "26ed06f826a829d94ee0bac28318fafe10c2aceac15a22efffbc166e32e32116",
+        "body_characters": 29272,
+        "total_pages": 12,
+        "page": {
+          "index": 0,
+          "cursor": "0:f0e2ea68f83e4aa7",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:4074e8e09d0b57e3",
+          "is_last": false,
+          "remaining_pages": 11
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 5,
+          "errors": 0,
+          "failed": 0,
+          "passed": 5,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 5
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "044d594dea3143a7a2b098cd1bf96639",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 5,
+                "errors": 0,
+                "failed": 0,
+                "passed": 5,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "db4c43157d04192000366e3094dc37976ac5c5210f94549ad2b1655d1eb66e5f",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-3914d634c7b7be1418a32e43",
+            "cursor": "1:4074e8e09d0b57e3",
+            "body_sha256": "26ed06f826a829d94ee0bac28318fafe10c2aceac15a22efffbc166e32e32116",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-62",
+      "logical_time": 62,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-61",
+      "command_committed": true,
+      "committed_revision": 62
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0066:attempt1"
+  },
+  {
+    "call_id": "call_00_Xs9A0DPxxTIs34GViYnJ8933",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-d78bf500d0c3be1778220de0",
+        "report_event": {
+          "sequence": 66,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-62"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v17"
+        },
+        "files_sha256": "1b98bb28f16b841e6474698d355f30d809d4dcc55c2ad6f62bd955c2c94ef507",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "bba0dfc7a05d718e00b08e41c04dc5e8b1bf6d1be73e4cc8c23f2dec634eaca7",
+        "body_characters": 677500,
+        "total_pages": 222,
+        "page": {
+          "index": 0,
+          "cursor": "0:00ae6179e2de7d9a",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:ae5812744c8cf23b",
+          "is_last": false,
+          "remaining_pages": 221
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 205,
+          "errors": 0,
+          "failed": 0,
+          "passed": 200,
+          "skipped": 4,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 200
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "f851d2cf9b15908008a9e8632a3b7c47",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 205,
+                "errors": 0,
+                "failed": 0,
+                "passed": 200,
+                "skipped": 4,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "47ab6a0b3cf781bc0dadf0e880a82afc5186772f4c8db98d882384bfc16ce4aa",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-d78bf500d0c3be1778220de0",
+            "cursor": "2:2311b8fc2d6ff5ec",
+            "body_sha256": "bba0dfc7a05d718e00b08e41c04dc5e8b1bf6d1be73e4cc8c23f2dec634eaca7",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-63",
+      "logical_time": 63,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-62",
+      "command_committed": true,
+      "committed_revision": 63
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0067:attempt1"
+  },
+  {
+    "call_id": "call_00_3oVp9AcBmx1cleCSIkty8291",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-357c4d3768baa0351015a266",
+        "report_event": {
+          "sequence": 68,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-63"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v17"
+        },
+        "files_sha256": "1b98bb28f16b841e6474698d355f30d809d4dcc55c2ad6f62bd955c2c94ef507",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "a851c879db7a14c61d2b127dffc65676c28c8ebca2521e290bbb9fc48ac15896",
+        "body_characters": 16000,
+        "total_pages": 8,
+        "page": {
+          "index": 0,
+          "cursor": "0:322b6d4b1bdee7bc",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:e4ec50f7538a2abd",
+          "is_last": false,
+          "remaining_pages": 7
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 1,
+          "errors": 0,
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 1
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "e6c41e75a0661026b36ad5359a7e1e5c",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "300c67c105e2e76ae31cb7f909cc7b5ca2698904fe7cf863b80c31bc70ef0cf9",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-357c4d3768baa0351015a266",
+            "cursor": "1:e4ec50f7538a2abd",
+            "body_sha256": "a851c879db7a14c61d2b127dffc65676c28c8ebca2521e290bbb9fc48ac15896",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-64",
+      "logical_time": 64,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-63",
+      "command_committed": true,
+      "committed_revision": 64
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0068:attempt1"
+  },
+  {
+    "call_id": "call_00_Wa32A98XYGTvMfLEIKKx0755",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v17"
+        },
+        "path": "seaborn/utils.py",
+        "text": "    ax : matplotlib Axes\n\n    Returns\n    -------\n    x_overlap, y_overlap : booleans\n        True when the labels on that axis overlap.\n\n    \"\"\"\n    return (axis_ticklabels_overlap(ax.get_xticklabels()),\n            axis_ticklabels_overlap(ax.get_yticklabels()))\n\n\ndef locator_to_legend_entries(locator, limits, dtype):\n    \"\"\"Return levels and formatted levels for brief numeric legends.\"\"\"\n    raw_levels = locator.tick_values(*limits).astype(dtype)\n\n    # The locator can return ticks outside the limits, clip them here\n    raw_levels = [l for l in raw_levels if l >= limits[0] and l <= limits[1]]\n\n    class dummy_axis:\n        def get_view_interval(self):\n            return limits\n\n    if isinstance(locator, mpl.ticker.LogLocator):\n        formatter = mpl.ticker.LogFormatter()\n    else:\n        formatter = mpl.ticker.ScalarFormatter()\n    formatter.axis = dummy_axis()\n\n    # TODO: The following two lines should be replaced\n    # once pinned matplotlib>=3.1.0 with:\n    # formatted_levels = formatter.format_ticks(raw_levels)\n    formatter.set_locs(raw_levels)\n    formatted_levels = [formatter(x) for x in raw_levels]\n\n    # Formatting as a function of the data limits allows a multiplicative\n    # offset (e.g. \"x1e6\") to be computed; include it in the labels so that\n    # legends are not misleadingly rescaled.\n    offset = formatter.get_offset() if hasattr(formatter, \"get_offset\") else \"\"\n    if offset:\n        formatted_levels = [f\"{level} {offset}\" for level in formatted_levels]\n\n    return raw_levels, formatted_levels\n\n\ndef relative_luminance(color):\n    \"\"\"Calculate the relative luminance of a color according to W3C standards\n\n    Parameters\n    ----------\n",
+        "start_character": 21863,
+        "end_character": 23546,
+        "total_characters": 28642,
+        "text_sha256": "9895814102561f43156ba47d427fc2f190f5133852b57bab1b783e1781ed008b",
+        "next_cursor": "23546:34b47cf760539352d2138790f1c265c603ecb3fa587f5a8ed386441868f2dbe6"
+      },
+      "action_id": "action-65",
+      "logical_time": 65,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-64",
+      "command_committed": true,
+      "committed_revision": 65
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0069:attempt1"
+  },
+  {
+    "call_id": "call_00_rjKukwxlMfDL3fUt3jQ14969",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v18"
+        },
+        "operation": "delete",
+        "paths": [
+          "repro_offset.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "c0940393c43e8808849471af6e6a221d3379eadfe5a6a7362ed05dc7b949f847",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-66",
+      "logical_time": 66,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-65",
+      "command_committed": true,
+      "committed_revision": 66
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0070:attempt1"
+  },
+  {
+    "call_id": "call_00_OsSMdpWigXxJgvfWO0SG4182",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/utils.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "9ea44060db97f53d50a174a6dcd0ba3477138a23f3e8da663cf154ade622782a",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-67",
+      "logical_time": 67,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-66",
+      "command_committed": true,
+      "committed_revision": 67
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0071:attempt1"
+  },
+  {
+    "call_id": "call_00_bxUELNJ4TcUEMtIG5deQ6263",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-9c48fad5b8cea3cd26e44bba",
+        "report_event": {
+          "sequence": 73,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-67"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "files_sha256": "9ea44060db97f53d50a174a6dcd0ba3477138a23f3e8da663cf154ade622782a",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "51d59d7cb823b9a47fac76d9981394a859dd58240194bbc1e1c2ee8f9b91aba8",
+        "body_characters": 423135,
+        "total_pages": 140,
+        "page": {
+          "index": 0,
+          "cursor": "0:83d6fe4bf837b3d4",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:5d2f3151b9254941",
+          "is_last": false,
+          "remaining_pages": 139
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 129,
+          "errors": 0,
+          "failed": 0,
+          "passed": 124,
+          "skipped": 4,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 124
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "1d5c408ea257c4b2062acfb42539d01c",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 129,
+                "errors": 0,
+                "failed": 0,
+                "passed": 124,
+                "skipped": 4,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "353b0086ba717efa1c01ccfc9272e68f432f316f65240634ed594256f132ecf9",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-9c48fad5b8cea3cd26e44bba",
+            "cursor": "2:269c71d594adbb14",
+            "body_sha256": "51d59d7cb823b9a47fac76d9981394a859dd58240194bbc1e1c2ee8f9b91aba8",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-68",
+      "logical_time": 68,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-67",
+      "command_committed": true,
+      "committed_revision": 68
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0072:attempt1"
+  },
+  {
+    "call_id": "call_00_3BEPjrDaxMpg6alXjrBM3261",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "7179899a9572a5586d128a084f0169f9e20c272f31c4a521f3f119e1a53f69d8",
+        "files_sha256": "9ea44060db97f53d50a174a6dcd0ba3477138a23f3e8da663cf154ade622782a",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712",
+        "diff_sha256": "926f198dee9d18df9aa9ac0b10f253a1d5b6bfb94556a38e2195dce26e469c5d",
+        "changed_paths": [
+          "seaborn/_core/scales.py",
+          "seaborn/utils.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-69",
+      "logical_time": 69,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-68",
+      "command_committed": true,
+      "committed_revision": 69
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0074:attempt1"
+  },
+  {
+    "call_id": "call_00_bIiHM6e2xNsmgHHSiV2M7579",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -379,6 +379,10 @@\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n             labels = axis.major.formatter.format_ticks(locs)\n+            offset = getattr(axis.major.formatter, \"get_offset\", None)\n+            offset = offset() if offset is not None else \"\"\n+            if offset:\n+                labels = [f\"{label} {offset}\" for label in labels]\n             new._legend = list(locs), list(labels)\n \n         return new\n--- a/seaborn/utils.py\n+++ b/seaborn/utils.py\n@@ -695,6 +695,9 @@\n         def get_view_interval(self):\n             return limits\n \n+        def get_data_interval(self):\n+            return limits\n+\n     if isinstance(locator, mpl.ticker.LogLocator):\n         formatter = mpl.ticker.LogFormatter()\n     else:\n@@ -706,6 +709,13 @@\n     # formatted_levels = formatter.format_ticks(raw_levels)\n     formatter.set_locs(raw_levels)\n     formatted_levels = [formatter(x) for x in raw_levels]\n+\n+    # Formatting as a function of the data limits allows a multiplicative\n+    # offset (e.g. \"x1e6\") to be computed; include it in the labels so that\n+    # legends are not misleadingly rescaled.\n+    offset = formatter.get_offset() if hasattr(formatter, \"get_offset\") else \"\"\n+    if offset:\n+        formatted_levels = [f\"{level} {offset}\" for level in formatted_levels]\n \n     return raw_levels, formatted_levels\n \n",
+        "start_character": 0,
+        "end_character": 1450,
+        "total_characters": 1450,
+        "text_sha256": "926f198dee9d18df9aa9ac0b10f253a1d5b6bfb94556a38e2195dce26e469c5d",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        }
+      },
+      "action_id": "action-70",
+      "logical_time": 70,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-69",
+      "command_committed": true,
+      "committed_revision": 70
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0075:attempt1"
+  },
+  {
+    "call_id": "call_00_y3zjkhUfU2RQ6i7NYsQe1834",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "source_sha256": "7179899a9572a5586d128a084f0169f9e20c272f31c4a521f3f119e1a53f69d8",
+        "files_sha256": "9ea44060db97f53d50a174a6dcd0ba3477138a23f3e8da663cf154ade622782a",
+        "included_patch_ids": [],
+        "test_sequence": 73,
+        "message": "Fix: include ScalarFormatter multiplicative offset in numeric legend labels so legends of large ranges are not misleadingly rescaled (issue: \"Wrong legend values of large ranges\").\n\npatch-1 @ v19, changed paths: seaborn/_core/scales.py, seaborn/utils.py.\n\n1) seaborn/_core/scales.py (Continuous._setup legend construction, the exact lines cited in the issue): after `labels = axis.major.formatter.format_ticks(locs)`, retrieve the formatter's offset via `getattr(axis.major.formatter, \"get_offset\", None)` and, when non-empty, append it to every legend label. This covers the seaborn.objects path from the report (so.Plot with pointsize/size legend).\n2) seaborn/utils.py (`locator_to_legend_entries`, used by scatterplot/relational legends — the issue notes scatterplot also reproduces): after computing `formatted_levels`, use `formatter.get_offset()` when the formatter provides it and append it to each label. Also extended the local `dummy_axis` with `get_data_interval()` returning `limits`, so `ScalarFormatter._compute_offset` can derive the offset from the data interval instead of raising AttributeError.\n\nSafety/compat: both sites use hasattr/getattr guards, so formatters lacking `get_offset` (e.g. LogFormatter) are untouched, and an empty offset leaves labels byte-identical to before — no existing expectations change.\n\nVerification on this exact version (v19): run_tests tests/test_utils.py tests/_core/test_scales.py -> 129 collected, 124 passed, 4 skipped, 1 xfailed, 0 failed, validation_status verified. Also ran tests/test_utils.py + tests/_core/test_scales.py + tests/test_relational.py earlier at v17 -> 205 collected, 0 failed. Public tests were also green on the whole-suite entrypoint.\n\nCaveat, stated honestly: arbitrary_commands is false, so I could not execute a standalone reproduction script through the tool; verification rests on the public test suites above plus reading the final diff, which confirms the offset is fetched from the formatter and appended. I did not modify any test file.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v19"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-71",
+      "logical_time": 71,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-70",
+      "command_committed": true,
+      "committed_revision": 71
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0076:attempt1"
+  },
+  {
+    "call_id": "call_00_HvC0dEfTVFXpklhmk4NV8594",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Issue resolved and legally delivered. Root cause: numeric legend labels were built from formatter tick strings that omit ScalarFormatter's multiplicative offset, so a variable in the 1e6 range was labelled as if it ranged 0-60.\n\nFix in patch-1 (v19), two files:\n- seaborn/_core/scales.py (Continuous._setup, the exact lines cited in the issue): after format_ticks, retrieve axis.major.formatter.get_offset() via getattr guard and append it to each legend label. Fixes the reported seaborn.objects path.\n- seaborn/utils.py (locator_to_legend_entries, the scatterplot path the issue also mentions): append formatter.get_offset() when available, and add get_data_interval() to the local dummy_axis so ScalarFormatter._compute_offset can derive the offset from the limits instead of raising.\n\nGuards keep formatters without get_offset (e.g. LogFormatter on log scales) and empty offsets byte-identical to before.\n\nVerification on the delivered version v19: run_tests on tests/test_utils.py and tests/_core/test_scales.py -> 129 collected, 124 passed, 4 skipped, 1 xfailed, 0 failed, validation_status verified; an earlier v17 run including tests/test_relational.py was also fully green. Final diff inspected and matches the intended behavior change. No test files were added or modified.\n\nHonest limitation: arbitrary_commands is false, so no standalone reproduction script could execute through the tool; evidence is the public suites plus diff inspection, not a captured before/after label string. Public pass is not hidden acceptance.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0077:attempt1"
+  },
+  {
+    "call_id": "call_00_1iy9om9k3PWNrVxwtKsw4869",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "            a = forward(vmin)\n            b = forward(vmax) - forward(vmin)\n\n            def normalize(x):\n                return (x - a) / b\n\n        else:\n            normalize = vmin = vmax = None\n\n        new._pipeline = [\n            axis.convert_units,\n            forward,\n            normalize,\n            prop.get_mapping(new, data)\n        ]\n\n        def spacer(x):\n            x = x.dropna().unique()\n            if len(x) < 2:\n                return np.nan\n            return np.min(np.diff(np.sort(x)))\n        new._spacer = spacer\n\n        # TODO How to allow disabling of legend for all uses of property?\n        # Could add a Scale parameter, or perhaps Scale.suppress()?\n        # Are there other useful parameters that would be in Scale.legend()\n        # besides allowing Scale.legend(False)?\n        if prop.legend:\n            axis.set_view_interval(vmin, vmax)\n            locs = axis.major.locator()\n            locs = locs[(vmin <= locs) & (locs <= vmax)]\n            labels = axis.major.formatter.format_ticks(locs)\n            offset = getattr(axis.major.formatter, \"get_offset\", None)\n            offset = offset() if offset is not None else \"\"\n            if offset:\n                labels = [f\"{label} {offset}\" for label in labels]\n            new._legend = list(locs), list(labels)\n\n        return new\n\n    def _get_transform(self):\n\n        arg = self.trans\n\n        def get_param(method, default):\n",
+        "start_character": 10501,
+        "end_character": 11933,
+        "total_characters": 31207,
+        "text_sha256": "8f4d0ad0a2a6228cd6d2142d60c37043c221b912d66017589a0919c65b3d61f1",
+        "next_cursor": "11933:7291a24025ee55f6954077ab88bc25bcb6da78aa19f0f42de28ca0b2df2cd926"
+      },
+      "action_id": "action-72",
+      "logical_time": 72,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-71",
+      "command_committed": true,
+      "committed_revision": 72
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0078:attempt1"
+  },
+  {
+    "call_id": "call_00_OjCWnwvIsfK9zlMWixJG5868",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "matches": [
+          {
+            "line": 199,
+            "text": "            axis.set_view_interval(0, len(units_seed) - 1)",
+            "start_character_in_line": 0,
+            "full_line_characters": 58
+          },
+          {
+            "line": 378,
+            "text": "            axis.set_view_interval(vmin, vmax)",
+            "start_character_in_line": 0,
+            "full_line_characters": 46
+          },
+          {
+            "line": 814,
+            "text": "    def set_view_interval(self, vmin, vmax):",
+            "start_character_in_line": 0,
+            "full_line_characters": 44
+          }
+        ],
+        "total_matches": 3,
+        "next_cursor": null
+      },
+      "action_id": "action-73",
+      "logical_time": 73,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-72",
+      "command_committed": true,
+      "committed_revision": 73
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0079:attempt1"
+  },
+  {
+    "call_id": "call_00_sZFRzABq6XaQ4Wzn3ZJP7248",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "path": "seaborn/_core/scales.py",
+        "text": "\n    \"\"\"\n    axis_name = \"\"  # Matplotlib requirement but not actually used\n\n    def __init__(self, scale):\n\n        self.converter = None\n        self.units = None\n        self.scale = scale\n        self.major = mpl.axis.Ticker()\n        self.minor = mpl.axis.Ticker()\n\n        # It appears that this needs to be initialized this way on matplotlib 3.1,\n        # but not later versions. It is unclear whether there are any issues with it.\n        self._data_interval = None, None\n\n        scale.set_default_locators_and_formatters(self)\n        # self.set_default_intervals()  Is this ever needed?\n\n    def set_view_interval(self, vmin, vmax):\n        self._view_interval = vmin, vmax\n\n    def get_view_interval(self):\n        return self._view_interval\n\n    # TODO do we want to distinguish view/data intervals? e.g. for a legend\n    # we probably want to represent the full range of the data values, but\n    # still norm the colormap. If so, we'll need to track data range separately\n    # from the norm, which we currently don't do.\n\n    def set_data_interval(self, vmin, vmax):\n        self._data_interval = vmin, vmax\n\n    def get_data_interval(self):\n        return self._data_interval\n\n    def get_tick_space(self):\n        # TODO how to do this in a configurable / auto way?\n        # Would be cool to have legend density adapt to figure size, etc.\n        return 5\n\n    def set_major_locator(self, locator):\n        self.major.locator = locator\n        locator.set_axis(self)\n\n    def set_major_formatter(self, formatter):\n        self.major.formatter = formatter\n        formatter.set_axis(self)\n\n    def set_minor_locator(self, locator):\n",
+        "start_character": 25507,
+        "end_character": 27157,
+        "total_characters": 31207,
+        "text_sha256": "8f4d0ad0a2a6228cd6d2142d60c37043c221b912d66017589a0919c65b3d61f1",
+        "next_cursor": "27157:7291a24025ee55f6954077ab88bc25bcb6da78aa19f0f42de28ca0b2df2cd926"
+      },
+      "action_id": "action-74",
+      "logical_time": 74,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-73",
+      "command_committed": true,
+      "committed_revision": 74
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0080:attempt1"
+  },
+  {
+    "call_id": "call_00_7PybFRF7gPkAPaYs5fHU8371",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "matches": [
+          {
+            "line": 825,
+            "text": "    def set_data_interval(self, vmin, vmax):",
+            "start_character_in_line": 0,
+            "full_line_characters": 44
+          }
+        ],
+        "total_matches": 1,
+        "next_cursor": null
+      },
+      "action_id": "action-75",
+      "logical_time": 75,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-74",
+      "command_committed": true,
+      "committed_revision": 75
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0081:attempt1"
+  },
+  {
+    "call_id": "call_00_u7EA1C6SrRjf8nq2Zpnp1962",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-83005877cdbbca2889239202",
+        "report_event": {
+          "sequence": 81,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-75"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v19"
+        },
+        "files_sha256": "9ea44060db97f53d50a174a6dcd0ba3477138a23f3e8da663cf154ade622782a",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "53aba18a901b2db19f8d34ca8f4a7258a3fa42d551437a1f920d2640d3a9c4b8",
+        "body_characters": 13402,
+        "total_pages": 5,
+        "page": {
+          "index": 0,
+          "cursor": "0:eeb23d961384ee1f",
+          "start": 0,
+          "end": 2700,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": {\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-8.3.3, pluggy-1.5.0\\nrootdir: /testbed\\nconfigfile: pyproject.toml\\nplugins: cov-5.0.0, xdist-3.6.1\\ncollected 84 items / 84 deselected / 0 selected\\n\\n============================ 84 deselected in 0.82s ============================\\n\",\n      \"validation_status\": \"no_tests\",\n      \"counts\": {\n        \"collected\": 0,\n        \"errors\": 0,\n        \"failed\": 0,\n        \"passed\": 0,\n        \"skipped\": 0,\n        \"xfailed\": 0,\n        \"xpassed\": 0,\n        \"tests_run\": 0\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"pytest\",\n        \"source\": {\n          \"run_id\": \"bd8a902c45c073e9ed4f875a7845b113\",\n          \"parent_run_id\": null,\n          \"pid\": 121,\n          \"process_group\": 121,\n          \"framework\": \"pytest\",\n          \"delegated_hash_process\": false\n        },\n        \"report_count\": 1,\n        \"journal_record_count\": 2,\n        \"nested_report_count\": 0,\n        \"duplicate_journal_records_ignored\": 0,\n        \"error\": null,\n        \"partial\": false,\n        \"root_counts_only\": true,\n        \"nested_failures_are_diagnostic_not_summed\": true,\n        \"sessions\": [\n          {\n            \"run_id\": \"bd8a902c45c073e9ed4f875a7845b113\",\n            \"parent_run_id\": null,\n            \"pid\": 121,\n            \"framework\": \"pytest\",\n            \"counts\": {\n              \"collected\": 0,\n              \"errors\": 0,\n              \"failed\": 0,\n              \"passed\": 0,\n              \"skipped\": 0,\n              \"xfailed\": 0,\n              \"xpassed\": 0\n            },\n            \"exitstatus\": 5,\n            \"collection_errors\": 0,\n            \"collection_complete\": true,\n            \"partial\": false,\n            \"root\": true,\n            \"test_reports\": [],\n            \"test_reports_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n            \"duplicate_reports_ignored\": 0\n          }\n        ],\n        \"evidence_sha256\": \"0b5f5c8b50b4ce22c0e2f8fc57ea1613e49156c4cb9d2f924114570773089dec\",\n        \"stdout_used_for_verdict\": false,\n        \"security_scope\": \"framework observation, not a same-UID anti-forgery boundary\",\n        \"public_verification_is_hidden_acceptance\": false,\n        \"observer_sha256\": \"a661e0a2b7ea224dbdb0cff644a173b7e636675fb6ff77ba00706d9a7801b02a\"\n      },\n      \"tests\": [\n        {\n          \"test_id\": \"model-selected-public-entrypoint\",\n          \"passed\": false\n        }\n      ]\n    }",
+          "sha256": "4c588313bed74446e5054d0382628e1c45905a166d64e086af7868d97af25a18",
+          "split_entries": [],
+          "next_cursor": "1:e7c8553d6f862d38",
+          "is_last": false,
+          "remaining_pages": 4
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "no_tests",
+        "counts": {
+          "collected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 0,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 0
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "bd8a902c45c073e9ed4f875a7845b113",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 5,
+              "counts": {
+                "collected": 0,
+                "errors": 0,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "2c67614e723bfc29e88088aae59c1ae82c18ae7914d545e8284f74a51b843586",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-83005877cdbbca2889239202",
+            "cursor": "0:eeb23d961384ee1f",
+            "body_sha256": "53aba18a901b2db19f8d34ca8f4a7258a3fa42d551437a1f920d2640d3a9c4b8",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-76",
+      "logical_time": 76,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-75",
+      "command_committed": true,
+      "committed_revision": 76
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0082:attempt1"
+  },
+  {
+    "call_id": "call_00_DmD3ipLGngiGJqmty3Y23192",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v20"
+        },
+        "operation": "write",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "131a69a55143ea345c19395c2193dac019aa6a9c141efba809d6aca0ad96fb1b",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712"
+      },
+      "action_id": "action-77",
+      "logical_time": 77,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-76",
+      "command_committed": true,
+      "committed_revision": 77
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0083:attempt1"
+  },
+  {
+    "call_id": "call_00_7H4D8MWAvto8M0OmGgU18390",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-b77f1c8e0bb61e0165ade872",
+        "report_event": {
+          "sequence": 84,
+          "operation_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-77"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v20"
+        },
+        "files_sha256": "131a69a55143ea345c19395c2193dac019aa6a9c141efba809d6aca0ad96fb1b",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "d812c2c2b18a697566a459be00f95c0b12699a300498427ebd091fb4345b92d5",
+        "body_characters": 423278,
+        "total_pages": 140,
+        "page": {
+          "index": 0,
+          "cursor": "0:bfe4f09742214e3f",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:a85843e7cce34dda",
+          "is_last": false,
+          "remaining_pages": 139
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 129,
+          "errors": 0,
+          "failed": 0,
+          "passed": 124,
+          "skipped": 4,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 124
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "289e12f099b27e62ecd0dc65d405b28d",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 129,
+                "errors": 0,
+                "failed": 0,
+                "passed": 124,
+                "skipped": 4,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "2e677622f7f50512a8bc7c3db2b5e716bcf2018acfc1db436b984301d755b096",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-b77f1c8e0bb61e0165ade872",
+            "cursor": "2:692e3d94497f4404",
+            "body_sha256": "d812c2c2b18a697566a459be00f95c0b12699a300498427ebd091fb4345b92d5",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-78",
+      "logical_time": 78,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-77",
+      "command_committed": true,
+      "committed_revision": 78
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0085:attempt1"
+  },
+  {
+    "call_id": "call_00_QnAPrbHWnlD2XyBXoUPn7907",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -376,9 +376,18 @@\n         # besides allowing Scale.legend(False)?\n         if prop.legend:\n             axis.set_view_interval(vmin, vmax)\n+            # ScalarFormatter computes its multiplicative offset from the\n+            # data interval, which is otherwise unset on this axis shim.\n+            axis.set_data_interval(vmin, vmax)\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n             labels = axis.major.formatter.format_ticks(locs)\n+            # Include the formatter's multiplicative offset (e.g. \"1e6\") in\n+            # the legend labels so that large ranges are not misrepresented.\n+            get_offset = getattr(axis.major.formatter, \"get_offset\", None)\n+            offset = get_offset() if get_offset is not None else \"\"\n+            if offset:\n+                labels = [f\"{label} {offset}\" for label in labels]\n             new._legend = list(locs), list(labels)\n \n         return new\n--- a/seaborn/utils.py\n+++ b/seaborn/utils.py\n@@ -695,6 +695,9 @@\n         def get_view_interval(self):\n             return limits\n \n+        def get_data_interval(self):\n+            return limits\n+\n     if isinstance(locator, mpl.ticker.LogLocator):\n         formatter = mpl.ticker.LogFormatter()\n     else:\n@@ -706,6 +709,13 @@\n     # formatted_levels = formatter.format_ticks(raw_levels)\n     formatter.set_locs(raw_levels)\n     formatted_levels = [formatter(x) for x in raw_levels]\n+\n+    # Formatting as a function of the data limits allows a multiplicative\n+    # offset (e.g. \"x1e6\") to be computed; include it in the labels so that\n+    # legends are not misleadingly rescaled.\n+    offset = formatter.get_offset() if hasattr(formatter, \"get_offset\") else \"\"\n+    if offset:\n+        formatted_levels = [f\"{level} {offset}\" for level in formatted_levels]\n \n     return raw_levels, formatted_levels\n \n",
+        "start_character": 0,
+        "end_character": 1936,
+        "total_characters": 1936,
+        "text_sha256": "d9df59faa1bdb89e68172c8ddf9223684b63926399d18184857559e396c87029",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v20"
+        }
+      },
+      "action_id": "action-79",
+      "logical_time": 79,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-78",
+      "command_committed": true,
+      "committed_revision": 79
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0086:attempt1"
+  },
+  {
+    "call_id": "call_00_sPDZ15zY8RJNZMIaHnH75589",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-2",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v20"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "2280f6413ca0f3458f18aad4b5da6d11dab7d7edc29c4dcb37469f68dc86dcf5",
+        "files_sha256": "131a69a55143ea345c19395c2193dac019aa6a9c141efba809d6aca0ad96fb1b",
+        "entry_metadata_sha256": "152707d57c7d191e27e176e3024154ad17ebb5cf4641f5cccb0b22e1421ff712",
+        "diff_sha256": "d9df59faa1bdb89e68172c8ddf9223684b63926399d18184857559e396c87029",
+        "changed_paths": [
+          "seaborn/_core/scales.py",
+          "seaborn/utils.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-80",
+      "logical_time": 80,
+      "command_id": "command:member_001:staff-871a33cf460b4be29dce7b1c2289d9fe-79",
+      "command_committed": true,
+      "committed_revision": 80
+    },
+    "request_id": "v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:agent:v193:mwaskom__seaborn-3187:DEEPSEEK_NT_S1_M0_V193_B5000K:20261110192011:member_001:0087:attempt1"
+  }
+]

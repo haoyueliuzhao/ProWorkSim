@@ -1,0 +1,2620 @@
+[
+  {
+    "call_id": "call_00_oDI668VqKhD7BWLtucWN1625",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "requests/models.py",
+        "text": "            return\n\n        # Support for unicode domain names and paths.\n        try:\n            scheme, auth, host, port, path, query, fragment = parse_url(url)\n        except LocationParseError as e:\n            raise InvalidURL(*e.args)\n\n        if not scheme:\n            error = (\"Invalid URL {0!r}: No schema supplied. Perhaps you meant http://{0}?\")\n            error = error.format(to_native_string(url, 'utf8'))\n\n            raise MissingSchema(error)\n\n        if not host:\n            raise InvalidURL(\"Invalid URL %r: No host supplied\" % url)\n\n        # In general, we want to try IDNA encoding the hostname if the string contains\n        # non-ASCII characters. This allows users to automatically get the correct IDNA\n        # behaviour. For strings containing only ASCII characters, we need to also verify\n        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.\n        if not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Carefully reconstruct the network location\n        netloc = auth or ''\n        if netloc:\n            netloc += '@'\n        netloc += host\n        if port:\n            netloc += ':' + str(port)\n\n        # Bare domains aren't valid URLs.\n        if not path:\n            path = '/'\n\n        if is_py2:\n            if isinstance(scheme, str):\n                scheme = scheme.encode('utf-8')\n            if isinstance(netloc, str):\n                netloc = netloc.encode('utf-8')\n            if isinstance(path, str):\n                path = path.encode('utf-8')\n            if isinstance(query, str):\n                query = query.encode('utf-8')\n            if isinstance(fragment, str):\n                fragment = fragment.encode('utf-8')\n\n        if isinstance(params, (str, bytes)):\n            params = to_native_string(params)\n\n        enc_params = self._encode_params(params)\n        if enc_params:\n            if query:\n                query = '%s&%s' % (query, enc_params)\n",
+        "start_character": 12801,
+        "end_character": 15003,
+        "total_characters": 35043,
+        "text_sha256": "c51202c76971a02910dd004688a4586ee1973ae3c354bf856a2c4575ebd1a888",
+        "next_cursor": "15003:9ef8e1327d682350cc32b5323e72e6495a8e86a1d3d59dd0ff1a35227c31e18b"
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_5zQEtQGx8pUWERYSmNFe3039",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "line": 351,
+            "text": "    def _get_idna_encoded_host(host):",
+            "start_character_in_line": 0,
+            "full_line_characters": 37
+          },
+          {
+            "line": 403,
+            "text": "                host = self._get_idna_encoded_host(host)",
+            "start_character_in_line": 0,
+            "full_line_characters": 56
+          }
+        ],
+        "total_matches": 2,
+        "next_cursor": null
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_oBuc5ROqLZRv6nz8tE2W5829",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "requests/models.py",
+        "text": "    def __repr__(self):\n        return '<PreparedRequest [%s]>' % (self.method)\n\n    def copy(self):\n        p = PreparedRequest()\n        p.method = self.method\n        p.url = self.url\n        p.headers = self.headers.copy() if self.headers is not None else None\n        p._cookies = _copy_cookie_jar(self._cookies)\n        p.body = self.body\n        p.hooks = self.hooks\n        p._body_position = self._body_position\n        return p\n\n    def prepare_method(self, method):\n        \"\"\"Prepares the given HTTP method.\"\"\"\n        self.method = method\n        if self.method is not None:\n            self.method = to_native_string(self.method.upper())\n\n    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except idna.IDNAError:\n            raise UnicodeError\n        return host\n\n",
+        "start_character": 11079,
+        "end_character": 11970,
+        "total_characters": 35043,
+        "text_sha256": "c51202c76971a02910dd004688a4586ee1973ae3c354bf856a2c4575ebd1a888",
+        "next_cursor": "11970:9ef8e1327d682350cc32b5323e72e6495a8e86a1d3d59dd0ff1a35227c31e18b"
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_wkJIWmE4iQFuhsCxq9cc1493",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [],
+        "total_matches": 0,
+        "next_cursor": null
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_hPt9cg1po3hxlXuZ8Hgv9531",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "0374fb92f58fd72f8c0802c9c978ef8f8ac65f46a1c3e33db25a7b1143cc2b79",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_rfPu69GeJVlAu89fqsiO8733",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "18c1e3bd17a7af14c6936d8c6fc34f370b08260733a3d07d7c0bf4903de1877b",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_hRXxkYvtpjmqU0ugpzuG2508",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "a98f2c50f2ac8e64ba1f4bceb4c7d572f39fb7824ff0567c201a0f121bba54bb",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_u0V8VEnY1MEkBJS4lMc92389",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "path": "requests/models.py",
+        "text": "        if not scheme:\n            error = (\"Invalid URL {0!r}: No schema supplied. Perhaps you meant http://{0}?\")\n            error = error.format(to_native_string(url, 'utf8'))\n\n            raise MissingSchema(error)\n\n        if not host:\n            raise InvalidURL(\"Invalid URL %r: No host supplied\" % url)\n\n        # In general, we want to try IDNA encoding the hostname if the string contains\n        # non-ASCII characters. This allows users to automatically get the correct IDNA\n        # behaviour. For strings containing only ASCII characters, we need to also verify\n        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.\n        if not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Empty labels (e.g. a host beginning with a dot) are invalid, even\n        # though the ASCII fast path above bypasses the idna codec entirely.\n        if not host or host.startswith('.') or host.endswith('.'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Carefully reconstruct the network location\n        netloc = auth or ''\n        if netloc:\n            netloc += '@'\n",
+        "start_character": 13044,
+        "end_character": 14419,
+        "total_characters": 35322,
+        "text_sha256": "40d10b4fe495f4cc70cd0b2d412800dfe39d06d875764bd92f8a070bda88c4a0",
+        "next_cursor": "14419:1ab8b080c4aa9853fa47ae8c8ad5965c66b01aabc5afcd8c7b9dd20af76cc98c"
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_oSAiaQ2Vvwyz0IHRhok89999",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "18c1e3bd17a7af14c6936d8c6fc34f370b08260733a3d07d7c0bf4903de1877b",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_2h7uimjxU4I6w3tGbVJf6794",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "ffa7f797a2b203bf39a86c0f2c3b926b9f7ef1fd2019f9c619e4909d53cb6957",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_5VXPnuAtSMIvqC3Strby3128",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "path": "requests/models.py",
+        "text": "    def prepare_method(self, method):\n        \"\"\"Prepares the given HTTP method.\"\"\"\n        self.method = method\n        if self.method is not None:\n            self.method = to_native_string(self.method.upper())\n\n    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except idna.IDNAError:\n            raise UnicodeError\n        except UnicodeError:\n            raise InvalidURL('URL has an invalid label.')\n        return host\n\n    def prepare_url(self, url, params):\n        \"\"\"Prepares the given HTTP URL.\"\"\"\n",
+        "start_character": 11518,
+        "end_character": 12140,
+        "total_characters": 35130,
+        "text_sha256": "506adbbd308c224b3fb36db9e0e7cbffbb33bb6d5286735167b7fa1b5c0a3ec5",
+        "next_cursor": "12140:b1bb650e2d155a706613042a91c38d7101fd01a21f74c215f2c2f1211357efd9"
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_OAfZ8aCsMpTFw1al9KjT2942",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "18c1e3bd17a7af14c6936d8c6fc34f370b08260733a3d07d7c0bf4903de1877b",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_qVZzFNnFfGllyFk8rfSb9110",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "matches": [
+          {
+            "line": 35,
+            "text": "from ._internal_utils import to_native_string, unicode_is_ascii",
+            "start_character_in_line": 0,
+            "full_line_characters": 63
+          },
+          {
+            "line": 401,
+            "text": "        if not unicode_is_ascii(host):",
+            "start_character_in_line": 0,
+            "full_line_characters": 38
+          }
+        ],
+        "total_matches": 2,
+        "next_cursor": null
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0015:attempt1"
+  },
+  {
+    "call_id": "call_00_ms89oXS144EcNGCVIBDK1843",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "path": "requests/models.py",
+        "text": "            raise InvalidURL(\"Invalid URL %r: No host supplied\" % url)\n\n        # In general, we want to try IDNA encoding the hostname if the string contains\n        # non-ASCII characters. This allows users to automatically get the correct IDNA\n        # behaviour. For strings containing only ASCII characters, we need to also verify\n        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.\n        if not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Carefully reconstruct the network location\n        netloc = auth or ''\n        if netloc:\n            netloc += '@'\n        netloc += host\n        if port:\n",
+        "start_character": 13286,
+        "end_character": 14180,
+        "total_characters": 35043,
+        "text_sha256": "c51202c76971a02910dd004688a4586ee1973ae3c354bf856a2c4575ebd1a888",
+        "next_cursor": "14180:84421e5ee75883624fd9fcdf60b7720072f9ad6ae622511b6cfabdfe5eb633ce"
+      },
+      "action_id": "action-15",
+      "logical_time": 15,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-14",
+      "command_committed": true,
+      "committed_revision": 15
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0016:attempt1"
+  },
+  {
+    "call_id": "call_00_B17FmHGnXAYqi65MUzGp9243",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v8"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "57848cf8d9ce37208856c86c593b4dcaa351e4c9de3f632a7c21cf745fd130a0",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-16",
+      "logical_time": 16,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-15",
+      "command_committed": true,
+      "committed_revision": 16
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0017:attempt1"
+  },
+  {
+    "call_id": "call_00_nYf8Fi7jP23TRlMMTRDo9816",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v8"
+        },
+        "path": "requests/models.py",
+        "text": "    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except (idna.IDNAError, UnicodeError):\n            raise UnicodeError\n        return host\n\n    def prepare_url(self, url, params):\n        \"\"\"Prepares the given HTTP URL.\"\"\"\n        #: Accept objects that have string representations.\n        #: We're unable to blindly call unicode/str functions\n        #: as this will include the bytestring indicator (b'')\n        #: on python 3.x.\n        #: https://github.com/psf/requests/pull/2238\n        if isinstance(url, bytes):\n            url = url.decode('utf8')\n        else:\n            url = unicode(url) if is_py2 else str(url)\n\n        # Remove leading whitespaces from url\n        url = url.lstrip()\n\n        # Don't do any URL preparation for non-HTTP schemes like `mailto`,\n        # `data` etc to work around exceptions from `url_parse`, which\n        # handles RFC 3986 only.\n        if ':' in url and not url.lower().startswith('http'):\n            self.url = url\n            return\n\n        # Support for unicode domain names and paths.\n        try:\n            scheme, auth, host, port, path, query, fragment = parse_url(url)\n        except LocationParseError as e:\n            raise InvalidURL(*e.args)\n\n        if not scheme:\n            error = (\"Invalid URL {0!r}: No schema supplied. Perhaps you meant http://{0}?\")\n            error = error.format(to_native_string(url, 'utf8'))\n\n            raise MissingSchema(error)\n\n        if not host:\n            raise InvalidURL(\"Invalid URL %r: No host supplied\" % url)\n\n        # In general, we want to try IDNA encoding the hostname if the string contains\n        # non-ASCII characters. This allows users to automatically get the correct IDNA\n        # behaviour. For strings containing only ASCII characters, we need to also verify\n        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.\n        if not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Carefully reconstruct the network location\n",
+        "start_character": 11732,
+        "end_character": 14083,
+        "total_characters": 35059,
+        "text_sha256": "4cb33931b6b1ee025c2ebc051ce45fc4f3b1e8fd30ad9ba2c88c3f111c4a98ea",
+        "next_cursor": "14083:7a455fe36ce9f5b6ac9c7b46d8a378bfc0b32211a88be950eab70da38ac04400"
+      },
+      "action_id": "action-17",
+      "logical_time": 17,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-16",
+      "command_committed": true,
+      "committed_revision": 17
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0018:attempt1"
+  },
+  {
+    "call_id": "call_00_2CkJOAdOQFZnggJNC91S8644",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v9"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "b23a8a09fc8d9dea5092ab8fb8bc19bb14edea768c288a59926c35236140ef4f",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-18",
+      "logical_time": 18,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-17",
+      "command_committed": true,
+      "committed_revision": 18
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0019:attempt1"
+  },
+  {
+    "call_id": "call_00_vC92ipBOZTLy3B5ybACE4833",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "57848cf8d9ce37208856c86c593b4dcaa351e4c9de3f632a7c21cf745fd130a0",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-19",
+      "logical_time": 19,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-18",
+      "command_committed": true,
+      "committed_revision": 19
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0020:attempt1"
+  },
+  {
+    "call_id": "call_00_QLVAlbpThCc49AUEljza3172",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        },
+        "path": "requests/models.py",
+        "text": "            self.method = to_native_string(self.method.upper())\n\n    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except (idna.IDNAError, UnicodeError):\n            raise UnicodeError\n        return host\n\n    def prepare_url(self, url, params):\n        \"\"\"Prepares the given HTTP URL.\"\"\"\n",
+        "start_character": 11667,
+        "end_character": 12069,
+        "total_characters": 35059,
+        "text_sha256": "4cb33931b6b1ee025c2ebc051ce45fc4f3b1e8fd30ad9ba2c88c3f111c4a98ea",
+        "next_cursor": "12069:a5c6a8d981890c416bb988c9949d8c474ee70c66c81a52813776f3ae9d5786ee"
+      },
+      "action_id": "action-20",
+      "logical_time": 20,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-19",
+      "command_committed": true,
+      "committed_revision": 20
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0021:attempt1"
+  },
+  {
+    "call_id": "call_00_MgvErDU4JiFi1NfOl8qM0308",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        },
+        "path": "requests/models.py",
+        "text": "        if ':' in url and not url.lower().startswith('http'):\n            self.url = url\n            return\n\n        # Support for unicode domain names and paths.\n        try:\n            scheme, auth, host, port, path, query, fragment = parse_url(url)\n        except LocationParseError as e:\n            raise InvalidURL(*e.args)\n\n        if not scheme:\n            error = (\"Invalid URL {0!r}: No schema supplied. Perhaps you meant http://{0}?\")\n            error = error.format(to_native_string(url, 'utf8'))\n\n            raise MissingSchema(error)\n\n        if not host:\n            raise InvalidURL(\"Invalid URL %r: No host supplied\" % url)\n\n        # In general, we want to try IDNA encoding the hostname if the string contains\n        # non-ASCII characters. This allows users to automatically get the correct IDNA\n        # behaviour. For strings containing only ASCII characters, we need to also verify\n        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.\n        if not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Carefully reconstruct the network location\n        netloc = auth or ''\n        if netloc:\n            netloc += '@'\n        netloc += host\n        if port:\n            netloc += ':' + str(port)\n\n        # Bare domains aren't valid URLs.\n        if not path:\n            path = '/'\n\n        if is_py2:\n            if isinstance(scheme, str):\n",
+        "start_character": 12728,
+        "end_character": 14381,
+        "total_characters": 35059,
+        "text_sha256": "4cb33931b6b1ee025c2ebc051ce45fc4f3b1e8fd30ad9ba2c88c3f111c4a98ea",
+        "next_cursor": "14381:a5c6a8d981890c416bb988c9949d8c474ee70c66c81a52813776f3ae9d5786ee"
+      },
+      "action_id": "action-21",
+      "logical_time": 21,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-20",
+      "command_committed": true,
+      "committed_revision": 21
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0022:attempt1"
+  },
+  {
+    "call_id": "call_00_IaJVoOnGY8dzgMJfBgls9295",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        },
+        "matches": [
+          {
+            "path": "requests/help.py",
+            "line": 9,
+            "character_offset": 143,
+            "preview": "mport print_function\n\nimport json\nimport platform\nimport sys\nimport ssl\n\nimport idna\nimport urllib3\n\nfrom . import __version__ as requests_version\n\ntry:\n    import charset_normalizer\nexcept ImportError:\n    charset_normalizer = None\n\ntry:\n    i",
+            "preview_start_character": 63
+          },
+          {
+            "path": "requests/help.py",
+            "line": 102,
+            "character_offset": 3041,
+            "preview": "info = {\n        'version': getattr(cryptography, '__version__', ''),\n    }\n    idna_info = {\n        'version': getattr(idna, '__version__', ''),\n    }\n\n    system_ssl = ssl.OPENSSL_VERSION_NUMBER\n    system_ssl_info = {\n        'version': '%x",
+            "preview_start_character": 2961
+          },
+          {
+            "path": "requests/help.py",
+            "line": 103,
+            "character_offset": 3082,
+            "preview": "ography, '__version__', ''),\n    }\n    idna_info = {\n        'version': getattr(idna, '__version__', ''),\n    }\n\n    system_ssl = ssl.OPENSSL_VERSION_NUMBER\n    system_ssl_info = {\n        'version': '%x' % system_ssl if system_ssl is not None ",
+            "preview_start_character": 3002
+          },
+          {
+            "path": "requests/help.py",
+            "line": 122,
+            "character_offset": 3708,
+            "preview": "': charset_normalizer_info,\n        'cryptography': cryptography_info,\n        'idna': idna_info,\n        'requests': {\n            'version': requests_version,\n        },\n    }\n\n\ndef main():\n    \"\"\"Pretty-print the bug information as JSON.\"\"\"\n",
+            "preview_start_character": 3628
+          },
+          {
+            "path": "requests/help.py",
+            "line": 122,
+            "character_offset": 3715,
+            "preview": "set_normalizer_info,\n        'cryptography': cryptography_info,\n        'idna': idna_info,\n        'requests': {\n            'version': requests_version,\n        },\n    }\n\n\ndef main():\n    \"\"\"Pretty-print the bug information as JSON.\"\"\"\n    pri",
+            "preview_start_character": 3635
+          },
+          {
+            "path": "requests/models.py",
+            "line": 16,
+            "character_offset": 398,
+            "preview": "edded Python. See https://github.com/psf/requests/issues/3578.\nimport encodings.idna\n\nfrom urllib3.fields import RequestField\nfrom urllib3.filepost import encode_multipart_formdata\nfrom urllib3.util import parse_url\nfrom urllib3.exceptions impo",
+            "preview_start_character": 318
+          },
+          {
+            "path": "requests/models.py",
+            "line": 351,
+            "character_offset": 11763,
+            "preview": ".method = to_native_string(self.method.upper())\n\n    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except (idna.IDNAError, UnicodeE",
+            "preview_start_character": 11683
+          },
+          {
+            "path": "requests/models.py",
+            "line": 352,
+            "character_offset": 11803,
+            "preview": "pper())\n\n    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except (idna.IDNAError, UnicodeError):\n            raise UnicodeError\n  ",
+            "preview_start_character": 11723
+          },
+          {
+            "path": "requests/models.py",
+            "line": 355,
+            "character_offset": 11841,
+            "preview": "t_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except (idna.IDNAError, UnicodeError):\n            raise UnicodeError\n        return host\n\n    def prepare_url",
+            "preview_start_character": 11761
+          },
+          {
+            "path": "requests/models.py",
+            "line": 356,
+            "character_offset": 11903,
+            "preview": "           host = idna.encode(host, uts46=True).decode('utf-8')\n        except (idna.IDNAError, UnicodeError):\n            raise UnicodeError\n        return host\n\n    def prepare_url(self, url, params):\n        \"\"\"Prepares the given HTTP URL.\"\"",
+            "preview_start_character": 11823
+          },
+          {
+            "path": "requests/models.py",
+            "line": 403,
+            "character_offset": 13816,
+            "preview": "f not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n         ",
+            "preview_start_character": 13736
+          },
+          {
+            "path": "requests/packages.py",
+            "line": 14,
+            "character_offset": 345,
+            "preview": " don't like it either. Just look the other way. :)\n\nfor package in ('urllib3', 'idna'):\n    locals()[package] = __import__(package)\n    # This traversal is apparently necessary such that the identities are\n    # preserved (requests.packages.url",
+            "preview_start_character": 265
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 179713,
+        "considered_files": 18,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-22",
+      "logical_time": 22,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-21",
+      "command_committed": true,
+      "committed_revision": 22
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0023:attempt1"
+  },
+  {
+    "call_id": "call_00_vnkvWzMCsVUtBRJY8DLL7356",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/requests/models.py\n+++ b/requests/models.py\n@@ -353,7 +353,7 @@\n \n         try:\n             host = idna.encode(host, uts46=True).decode('utf-8')\n-        except idna.IDNAError:\n+        except (idna.IDNAError, UnicodeError):\n             raise UnicodeError\n         return host\n \n",
+        "start_character": 0,
+        "end_character": 287,
+        "total_characters": 287,
+        "text_sha256": "a510ac27cf0ccdf22d9d4314184488af3b05283cfda310fd87df3fe46beb218a",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v10"
+        }
+      },
+      "action_id": "action-23",
+      "logical_time": 23,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-22",
+      "command_committed": true,
+      "committed_revision": 23
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0024:attempt1"
+  },
+  {
+    "call_id": "call_00_ucLDyWmmWMqOpaM2P8C72924",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v11"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "18c1e3bd17a7af14c6936d8c6fc34f370b08260733a3d07d7c0bf4903de1877b",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-24",
+      "logical_time": 24,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-23",
+      "command_committed": true,
+      "committed_revision": 24
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0025:attempt1"
+  },
+  {
+    "call_id": "call_00_P77C9mdsujf7AJjxhB9a7102",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "e0a69277db340b9667159759948d62ad038ebc1baae900cb64e9b79ab0639a39",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-25",
+      "logical_time": 25,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-24",
+      "command_committed": true,
+      "committed_revision": 25
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0026:attempt1"
+  },
+  {
+    "call_id": "call_00_SpkCGqB23SYcCMPArYdq3579",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "matches": [],
+        "total_matches": 0,
+        "next_cursor": null
+      },
+      "action_id": "action-26",
+      "logical_time": 26,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-25",
+      "command_committed": true,
+      "committed_revision": 26
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0027:attempt1"
+  },
+  {
+    "call_id": "call_00_PzcPmLIwZTBB8v5K2Sjk5734",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/requests/models.py\n+++ b/requests/models.py\n@@ -384,6 +384,11 @@\n             scheme, auth, host, port, path, query, fragment = parse_url(url)\n         except LocationParseError as e:\n             raise InvalidURL(*e.args)\n+        except UnicodeError:\n+            # The idna codec can raise UnicodeError for hosts with empty or\n+            # over-long labels (e.g. \"http://.example.com\"), rather than the\n+            # requests exception callers expect. Surface it as InvalidURL.\n+            raise InvalidURL('URL has an invalid label.')\n \n         if not scheme:\n             error = (\"Invalid URL {0!r}: No schema supplied. Perhaps you meant http://{0}?\")\n",
+        "start_character": 0,
+        "end_character": 669,
+        "total_characters": 669,
+        "text_sha256": "bd12084fd152c0ade27ceec15c65b840721b058a8309518fce0975e939a8b867",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        }
+      },
+      "action_id": "action-27",
+      "logical_time": 27,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-26",
+      "command_committed": true,
+      "committed_revision": 27
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0028:attempt1"
+  },
+  {
+    "call_id": "call_00_HoIFSfA3NohT8nVR2bgv2758",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "matches": [],
+        "total_matches": 0,
+        "next_cursor": null
+      },
+      "action_id": "action-28",
+      "logical_time": 28,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-27",
+      "command_committed": true,
+      "committed_revision": 28
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0029:attempt1"
+  },
+  {
+    "call_id": "call_00_yaeszQSZz5WcPORVqcj91948",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-db46ac65dceaa5d9d3569de2",
+        "report_event": {
+          "sequence": 26,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-28"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "files_sha256": "e0a69277db340b9667159759948d62ad038ebc1baae900cb64e9b79ab0639a39",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "22b500a0bccd98566c734d4fd3dc7ff43266e8176b472d3b10d3b0af8ed37b9d",
+        "body_characters": 68882,
+        "total_pages": 25,
+        "page": {
+          "index": 0,
+          "cursor": "0:29c969cb551200fb",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:e680514814f9a8e5",
+          "is_last": false,
+          "remaining_pages": 24
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 15,
+          "errors": 6,
+          "failed": 0,
+          "passed": 9,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 9
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "1a5ff86799568056ec05a1b7d05d3506",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 15,
+                "errors": 6,
+                "failed": 0,
+                "passed": 9,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "7eefbfbba0e16127cd5d39ea21ef6787c18963106927774d6a15f805ae124efc",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-db46ac65dceaa5d9d3569de2",
+            "cursor": "3:f8637ad289291a31",
+            "body_sha256": "22b500a0bccd98566c734d4fd3dc7ff43266e8176b472d3b10d3b0af8ed37b9d",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-29",
+      "logical_time": 29,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-28",
+      "command_committed": true,
+      "committed_revision": 29
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0030:attempt1"
+  },
+  {
+    "call_id": "call_00_87JFrc6fPLqdVDvw5twY8440",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-db46ac65dceaa5d9d3569de2",
+        "report_event": {
+          "sequence": 26,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-28"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "files_sha256": "e0a69277db340b9667159759948d62ad038ebc1baae900cb64e9b79ab0639a39",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "22b500a0bccd98566c734d4fd3dc7ff43266e8176b472d3b10d3b0af8ed37b9d",
+        "body_characters": 68882,
+        "total_pages": 25,
+        "page": {
+          "index": 1,
+          "cursor": "1:e680514814f9a8e5",
+          "start": 47,
+          "end": 3119,
+          "text": "{\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-7.4.4, pluggy-1.0.0\\nrootdir: /testbed\\nconfigfile: pytest.ini\\ncollected 288 items / 273 deselected / 15 selected\\n\\ntests/test_requests.py ......EEE...EEE                                   [100%]\\n\\n==================================== ERRORS ====================================\\n___________ ERROR at setup of TestRequests.test_invalid_files_input ____________\\nfile /testbed/tests/test_requests.py, line 729\\n      def test_invalid_files_input(self, httpbin):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:28\\n_______ ERROR at setup of TestRequests.test_invalid_ca_certificate_path ________\\nfile /testbed/tests/test_requests.py, line 866\\n      def test_invalid_ca_certificate_path(self, httpbin_secure):\\nfile /testbed/tests/conftest.py, line 33\\n  @pytest.fixture\\n  def httpbin_secure(httpbin_secure):\\nE       recursive dependency involving fixture 'httpbin_secure' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:33\\n______ ERROR at setup of TestRequests.test_invalid_ssl_certificate_files _______\\nfile /testbed/tests/test_requests.py, line 872\\n      def test_invalid_ssl_certificate_files(self, httpbin_secure):\\nfile /testbed/tests/conftest.py, line 33\\n  @pytest.fixture\\n  def httpbin_secure(httpbin_secure):\\nE       recursive dependency involving fixture 'httpbin_secure' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:33\\n_ ERROR at setup of TestTimeout.test_invalid_timeout[timeout0-(connect, read)] _\\nfile /testbed/tests/test_requests.py, line 2200\\n      @pytest.mark.parametrize(\\n          'timeout, error_text', (\\n              ((3, 4, 5), '(connect, read)'),\\n              ('foo', 'must be an int, float or None'),\\n          ))\\n  ",
+          "sha256": "0c31413769272dfcd1517ba26e49d8ca6cb511b2c4b8b7ec4136bfbb5adeac31",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 19659,
+              "continued_from_previous": false,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "2:8febc5ca166304c7",
+          "is_last": false,
+          "remaining_pages": 23
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 15,
+          "errors": 6,
+          "failed": 0,
+          "passed": 9,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 9
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "1a5ff86799568056ec05a1b7d05d3506",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 15,
+                "errors": 6,
+                "failed": 0,
+                "passed": 9,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "7eefbfbba0e16127cd5d39ea21ef6787c18963106927774d6a15f805ae124efc",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-db46ac65dceaa5d9d3569de2",
+            "cursor": "3:f8637ad289291a31",
+            "body_sha256": "22b500a0bccd98566c734d4fd3dc7ff43266e8176b472d3b10d3b0af8ed37b9d",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-30",
+      "logical_time": 30,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-29",
+      "command_committed": true,
+      "committed_revision": 30
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0031:attempt1"
+  },
+  {
+    "call_id": "call_00_mjikT72sRwCI49ruu3jO6244",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "matches": [
+          {
+            "path": "tests/test_requests.py",
+            "line": 85,
+            "character_offset": 2365,
+            "preview": "chema, '10.122.1.1:3128/'),\n            (InvalidURL, 'http://'),\n        ))\n    def test_invalid_url(self, exception, url):\n        with pytest.raises(exception):\n            requests.get(url)\n\n    def test_basic_building(self):\n        req = requests.Request(",
+            "preview_start_character": 2285
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 93400,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-31",
+      "logical_time": 31,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-30",
+      "command_committed": true,
+      "committed_revision": 31
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0032:attempt1"
+  },
+  {
+    "call_id": "call_00_DPtT8KARoqriOHgBPIs60971",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v12"
+        },
+        "path": "tests/test_requests.py",
+        "text": "        requests.head\n        requests.put\n        requests.patch\n        requests.post\n        # Not really an entry point, but people rely on it.\n        from requests.packages.urllib3.poolmanager import PoolManager\n\n    @pytest.mark.parametrize(\n        'exception, url', (\n            (MissingSchema, 'hiwpefhipowhefopw'),\n            (InvalidSchema, 'localhost:3128'),\n            (InvalidSchema, 'localhost.localdomain:3128/'),\n            (InvalidSchema, '10.122.1.1:3128/'),\n            (InvalidURL, 'http://'),\n        ))\n    def test_invalid_url(self, exception, url):\n        with pytest.raises(exception):\n            requests.get(url)\n\n    def test_basic_building(self):\n        req = requests.Request()\n        req.url = 'http://kennethreitz.org/'\n        req.data = {'life': '42'}\n\n        pr = req.prepare()\n",
+        "start_character": 1830,
+        "end_character": 2654,
+        "total_characters": 93400,
+        "text_sha256": "a932e188000e026b9da004969347a3e9d23f43874bfc32c5ba2aef38fcc913e6",
+        "next_cursor": "2654:8cd3ca3bed09aed2744767104b44d46210b42f0914906703f4a9ea14e97953ce"
+      },
+      "action_id": "action-32",
+      "logical_time": 32,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-31",
+      "command_committed": true,
+      "committed_revision": 32
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0033:attempt1"
+  },
+  {
+    "call_id": "call_00_lCOaWUufVwn6p3vmXdsO3644",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v13"
+        },
+        "operation": "write",
+        "paths": [
+          "tests/test_requests.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "e854150cab97ba03e45b6a62c13a51141f7bf636266887b6b3eb11559ea3f38d",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-33",
+      "logical_time": 33,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-32",
+      "command_committed": true,
+      "committed_revision": 33
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0034:attempt1"
+  },
+  {
+    "call_id": "call_00_iCFnYDp2bKWigjqVHMPH9837",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-77734c2edf7a220784b4d1c9",
+        "report_event": {
+          "sequence": 32,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-33"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v13"
+        },
+        "files_sha256": "e854150cab97ba03e45b6a62c13a51141f7bf636266887b6b3eb11559ea3f38d",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "59d338e494e2f0b56e3f27bbb806885c82008d8f1b0a8df4cc2ae5eef1eb80fb",
+        "body_characters": 39974,
+        "total_pages": 15,
+        "page": {
+          "index": 0,
+          "cursor": "0:2e65986e3a477c30",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:8c33ada6254c74c2",
+          "is_last": false,
+          "remaining_pages": 14
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 6,
+          "errors": 0,
+          "failed": 1,
+          "passed": 5,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 6
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "c79cb7f3dc134abeb72d483aa5a9641a",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 6,
+                "errors": 0,
+                "failed": 1,
+                "passed": 5,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "a6504cd7c0cd69daac290bafe380248858453a899d65fadb39c82fcc96247724",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-77734c2edf7a220784b4d1c9",
+            "cursor": "2:18203d39ea3f0c35",
+            "body_sha256": "59d338e494e2f0b56e3f27bbb806885c82008d8f1b0a8df4cc2ae5eef1eb80fb",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-34",
+      "logical_time": 34,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-33",
+      "command_committed": true,
+      "committed_revision": 34
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0035:attempt1"
+  },
+  {
+    "call_id": "call_00_O338OKJD9OoPRQr6AEKS3633",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-77734c2edf7a220784b4d1c9",
+        "report_event": {
+          "sequence": 32,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-33"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v13"
+        },
+        "files_sha256": "e854150cab97ba03e45b6a62c13a51141f7bf636266887b6b3eb11559ea3f38d",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "59d338e494e2f0b56e3f27bbb806885c82008d8f1b0a8df4cc2ae5eef1eb80fb",
+        "body_characters": 39974,
+        "total_pages": 15,
+        "page": {
+          "index": 1,
+          "cursor": "1:8c33ada6254c74c2",
+          "start": 47,
+          "end": 3119,
+          "text": "{\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-7.4.4, pluggy-1.0.0\\nrootdir: /testbed\\nconfigfile: pytest.ini\\ncollected 6 items\\n\\ntests/test_requests.py .....F                                            [100%]\\n\\n=================================== FAILURES ===================================\\n________ TestRequests.test_invalid_url[InvalidURL-http://.example.com] _________\\n\\nself = <tests.test_requests.TestRequests object at 0x7f9bc6b8ec40>\\nexception = <class 'requests.exceptions.InvalidURL'>\\nurl = 'http://.example.com'\\n\\n    @pytest.mark.parametrize(\\n        'exception, url', (\\n            (MissingSchema, 'hiwpefhipowhefopw'),\\n            (InvalidSchema, 'localhost:3128'),\\n            (InvalidSchema, 'localhost.localdomain:3128/'),\\n            (InvalidSchema, '10.122.1.1:3128/'),\\n            (InvalidURL, 'http://'),\\n            (InvalidURL, 'http://.example.com'),\\n        ))\\n    def test_invalid_url(self, exception, url):\\n        with pytest.raises(exception):\\n>           requests.get(url)\\n\\ntests/test_requests.py:88: \\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \\nrequests/api.py:75: in get\\n    return request('get', url, params=params, **kwargs)\\nrequests/api.py:61: in request\\n    return session.request(method=method, url=url, **kwargs)\\nrequests/sessions.py:529: in request\\n    resp = self.send(prep, **send_kwargs)\\nrequests/sessions.py:645: in send\\n    r = adapter.send(request, **kwargs)\\nrequests/adapters.py:440: in send\\n    resp = conn.urlopen(\\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/connectionpool.py:716: in urlopen\\n    httplib_response = self._make_request(\\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/connectionpool.py:416: in _make_request\\n    conn.request(method, url, **httplib_request_kw)\\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/connection.py:244: in request\\n    super(HTTPConnection, self).request(method, url, body=body, headers=headers)\\n/opt/miniconda3/envs/testbed/lib/python3.9/http/client.py:1285: in request\\n    self._send_request(method, url, body, headers, encode_chunked)\\n/opt/miniconda3/envs/testbed/lib/python3.9/http/client.py:1331: in _send_request\\n    self.endheaders(body, encode_chunked=encode_chunked)\\n/opt/miniconda3/envs/testbed/lib/python3.9/http/client.py:1280: in endheaders\\n    self._send_output(message_body, encode_chunked=encode_chunked)\\n/opt/miniconda3/envs/testbed/lib/python3.9/http/client.py:1040: in _send_output\\n    self.send(msg)\\n/opt/miniconda3/envs/testbed/lib/python3.9/http/client.py:980: in send\\n    self.connect()\\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/connection.py:205: in connect\\n    conn = self._new_conn()\\n/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/urllib3/connection.py:174: in _new_conn\\n    conn = connection.create_connection(\\n/",
+          "sha256": "ce6222966a278f7970d01e45f69ebf750aad4eb4b53d6461452fe0582ce3fb31",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 11162,
+              "continued_from_previous": false,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "2:18203d39ea3f0c35",
+          "is_last": false,
+          "remaining_pages": 13
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 6,
+          "errors": 0,
+          "failed": 1,
+          "passed": 5,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 6
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "c79cb7f3dc134abeb72d483aa5a9641a",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 6,
+                "errors": 0,
+                "failed": 1,
+                "passed": 5,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "a6504cd7c0cd69daac290bafe380248858453a899d65fadb39c82fcc96247724",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-77734c2edf7a220784b4d1c9",
+            "cursor": "2:18203d39ea3f0c35",
+            "body_sha256": "59d338e494e2f0b56e3f27bbb806885c82008d8f1b0a8df4cc2ae5eef1eb80fb",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-35",
+      "logical_time": 35,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-34",
+      "command_committed": true,
+      "committed_revision": 35
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0036:attempt1"
+  },
+  {
+    "call_id": "call_00_sYw98IdpN2WLtxPuzTKs8345",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v13"
+        },
+        "path": "requests/models.py",
+        "text": "        if ':' in url and not url.lower().startswith('http'):\n            self.url = url\n            return\n\n        # Support for unicode domain names and paths.\n        try:\n            scheme, auth, host, port, path, query, fragment = parse_url(url)\n        except LocationParseError as e:\n            raise InvalidURL(*e.args)\n        except UnicodeError:\n            # The idna codec can raise UnicodeError for hosts with empty or\n            # over-long labels (e.g. \"http://.example.com\"), rather than the\n            # requests exception callers expect. Surface it as InvalidURL.\n            raise InvalidURL('URL has an invalid label.')\n\n        if not scheme:\n            error = (\"Invalid URL {0!r}: No schema supplied. Perhaps you meant http://{0}?\")\n            error = error.format(to_native_string(url, 'utf8'))\n\n            raise MissingSchema(error)\n\n        if not host:\n            raise InvalidURL(\"Invalid URL %r: No host supplied\" % url)\n\n        # In general, we want to try IDNA encoding the hostname if the string contains\n        # non-ASCII characters. This allows users to automatically get the correct IDNA\n        # behaviour. For strings containing only ASCII characters, we need to also verify\n        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.\n        if not unicode_is_ascii(host):\n            try:\n                host = self._get_idna_encoded_host(host)\n            except UnicodeError:\n                raise InvalidURL('URL has an invalid label.')\n        elif host.startswith(u'*'):\n            raise InvalidURL('URL has an invalid label.')\n\n        # Carefully reconstruct the network location\n        netloc = auth or ''\n        if netloc:\n            netloc += '@'\n        netloc += host\n        if port:\n            netloc += ':' + str(port)\n\n        # Bare domains aren't valid URLs.\n        if not path:\n            path = '/'\n\n        if is_py2:\n            if isinstance(scheme, str):\n                scheme = scheme.encode('utf-8')\n            if isinstance(netloc, str):\n                netloc = netloc.encode('utf-8')\n            if isinstance(path, str):\n                path = path.encode('utf-8')\n            if isinstance(query, str):\n                query = query.encode('utf-8')\n            if isinstance(fragment, str):\n                fragment = fragment.encode('utf-8')\n\n        if isinstance(params, (str, bytes)):\n            params = to_native_string(params)\n\n        enc_params = self._encode_params(params)\n        if enc_params:\n            if query:\n                query = '%s&%s' % (query, enc_params)\n            else:\n                query = enc_params\n\n",
+        "start_character": 12712,
+        "end_character": 15372,
+        "total_characters": 35358,
+        "text_sha256": "f13ed426524355b931e27d6dbc7cba51440ac679b7846496d0650377065ba95a",
+        "next_cursor": "15372:3c1a53824672285bdea6d1e55edfc93d3fedd56a9a464d43a578745ced0132be"
+      },
+      "action_id": "action-36",
+      "logical_time": 36,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-35",
+      "command_committed": true,
+      "committed_revision": 36
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0037:attempt1"
+  },
+  {
+    "call_id": "call_00_D9MdGnAouVmulK3djBE65872",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "2766ef452a1395fb8aba88cde6a8ac95c275782fa5387ad9d7c3e3d2153789f1",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-37",
+      "logical_time": 37,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-36",
+      "command_committed": true,
+      "committed_revision": 37
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0038:attempt1"
+  },
+  {
+    "call_id": "call_00_8Ij0ufc4lEbr45tMDKA41477",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "operation": "write",
+        "paths": [
+          "requests/models.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488"
+      },
+      "action_id": "action-38",
+      "logical_time": 38,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-37",
+      "command_committed": true,
+      "committed_revision": 38
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0039:attempt1"
+  },
+  {
+    "call_id": "call_00_pRqhOuAbo74fXK26NCnc9364",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-0b371fa408ee37b1a859c4e4",
+        "report_event": {
+          "sequence": 38,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-38"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "1747763687c2b7c97d1f9282ba64f9c5c0132a3efa0147afa45190a247086197",
+        "body_characters": 33162,
+        "total_pages": 13,
+        "page": {
+          "index": 0,
+          "cursor": "0:46132c9ecd1a93e0",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:fbd06e437f761c59",
+          "is_last": false,
+          "remaining_pages": 12
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 6,
+          "errors": 0,
+          "failed": 0,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 6
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "d18ab033a4308a4b8754c732da5660aa",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 6,
+                "errors": 0,
+                "failed": 0,
+                "passed": 6,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "363cf292e750e8016fd58929b28e82df41a645728bdddeeba9fc72fa8ade3ea8",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-0b371fa408ee37b1a859c4e4",
+            "cursor": "1:fbd06e437f761c59",
+            "body_sha256": "1747763687c2b7c97d1f9282ba64f9c5c0132a3efa0147afa45190a247086197",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-39",
+      "logical_time": 39,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-38",
+      "command_committed": true,
+      "committed_revision": 39
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0040:attempt1"
+  },
+  {
+    "call_id": "call_00_zaq7U8tn4dQIxEQASvWN1773",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-56ee698b020ad5096abe5baf",
+        "report_event": {
+          "sequence": 40,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-39"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "44f9851bd23d075c6f27d15fb3e669d08f27d882fc4501ad1e16b32d71f99eae",
+        "body_characters": 436452,
+        "total_pages": 144,
+        "page": {
+          "index": 0,
+          "cursor": "0:1680f93fc5e47b9a",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:2ac67beea6c53d55",
+          "is_last": false,
+          "remaining_pages": 143
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 63,
+          "errors": 22,
+          "failed": 8,
+          "passed": 33,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 41
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "30a5e2dacda61b530a9b192d073261d2",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 63,
+                "errors": 22,
+                "failed": 8,
+                "passed": 33,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "6f4a0f9932e9f8a8a7b24546a3bf5a956497c5f22bb76255615093893f9cddd3",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-56ee698b020ad5096abe5baf",
+            "cursor": "37:3b697d618d283130",
+            "body_sha256": "44f9851bd23d075c6f27d15fb3e669d08f27d882fc4501ad1e16b32d71f99eae",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-40",
+      "logical_time": 40,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-39",
+      "command_committed": true,
+      "committed_revision": 40
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0041:attempt1"
+  },
+  {
+    "call_id": "call_00_LPWMGmtxe92dWTDWvlXx1230",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-56ee698b020ad5096abe5baf",
+        "report_event": {
+          "sequence": 40,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-39"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "44f9851bd23d075c6f27d15fb3e669d08f27d882fc4501ad1e16b32d71f99eae",
+        "body_characters": 436452,
+        "total_pages": 144,
+        "page": {
+          "index": 1,
+          "cursor": "1:2ac67beea6c53d55",
+          "start": 47,
+          "end": 3119,
+          "text": "{\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-7.4.4, pluggy-1.0.0\\nrootdir: /testbed\\nconfigfile: pytest.ini\\ncollected 289 items / 226 deselected / 63 selected\\n\\ntests/test_requests.py .........EEEEEEEEEEEEEEE.E.....E.EE..F.....FFF... [ 77%]\\n..EFF...FF..EE                                                           [100%]\\n\\n==================================== ERRORS ====================================\\n__________ ERROR at setup of TestRequests.test_proxy_error_on_bad_url __________\\nfile /testbed/tests/test_requests.py, line 545\\n      def test_proxy_error_on_bad_url(self, httpbin, httpbin_secure):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:28\\n________ ERROR at setup of TestRequests.test_unicode_get[/get-params0] _________\\nfile /testbed/tests/test_requests.py, line 847\\n      @pytest.mark.parametrize(\\n          'url, params', (\\n              ('/get', {'foo': 'føø'}),\\n              ('/get', {'føø': 'føø'}),\\n              ('/get', {'føø': 'føø'}),\\n              ('/get', {'foo': 'foo'}),\\n              ('ø', {'foo': 'foo'}),\\n          ))\\n      def test_unicode_get(self, httpbin, url, params):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:28\\n________ ERROR at setup of TestRequests.test_unicode_get[/get-params1] _________\\nfile /testbed/tests/test_requests.py, line 847\\n      @pytest.mark.parametrize(\\n          'url, params', (\\n              ('/get', {'foo': 'føø'}),\\n              ('/get', {'føø': 'føø'}),\\n              ('/get', {'føø': 'føø'}),\\n              ('/get', {'foo': 'foo'}),\\n              ('ø', {'foo': 'foo'}),\\n          ))\\n      def test_unicode_get(self, httpbin, url, params):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_s",
+          "sha256": "bfb7dee0bf3b41382c8b213f5c48ad57711f812e8b3acd0613895176bd33a2b2",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 163964,
+              "continued_from_previous": false,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "2:4d2c05ae930313bb",
+          "is_last": false,
+          "remaining_pages": 142
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 63,
+          "errors": 22,
+          "failed": 8,
+          "passed": 33,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 41
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "30a5e2dacda61b530a9b192d073261d2",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 63,
+                "errors": 22,
+                "failed": 8,
+                "passed": 33,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "6f4a0f9932e9f8a8a7b24546a3bf5a956497c5f22bb76255615093893f9cddd3",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-56ee698b020ad5096abe5baf",
+            "cursor": "37:3b697d618d283130",
+            "body_sha256": "44f9851bd23d075c6f27d15fb3e669d08f27d882fc4501ad1e16b32d71f99eae",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-41",
+      "logical_time": 41,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-40",
+      "command_committed": true,
+      "committed_revision": 41
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0042:attempt1"
+  },
+  {
+    "call_id": "call_00_QYTMtIXQ3EWjQeYCUSIX5043",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-1d47c52f2b75837ebb920fd4",
+        "report_event": {
+          "sequence": 43,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-41"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "b523b3e954c4acc687b0151833d53a67ae9ab0eb8f90379b55386553a931bb92",
+        "body_characters": 436570,
+        "total_pages": 144,
+        "page": {
+          "index": 0,
+          "cursor": "0:46821769afc076f7",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:30c5405bb0eaeffd",
+          "is_last": false,
+          "remaining_pages": 143
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 63,
+          "errors": 22,
+          "failed": 8,
+          "passed": 33,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 41
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "e5ef84bc094813ef712a85e504e805cb",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 63,
+                "errors": 22,
+                "failed": 8,
+                "passed": 33,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "52a6b82c5ff54a0ac6ac8ece44d713dae5a38dac823905850de518e11d7c5b5d",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-1d47c52f2b75837ebb920fd4",
+            "cursor": "37:21d97208dde1daf3",
+            "body_sha256": "b523b3e954c4acc687b0151833d53a67ae9ab0eb8f90379b55386553a931bb92",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-42",
+      "logical_time": 42,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-41",
+      "command_committed": true,
+      "committed_revision": 42
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0043:attempt1"
+  },
+  {
+    "call_id": "call_00_dbPoZ7hDMoKLR6bHa7uX5589",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "matches": [],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 93449,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-43",
+      "logical_time": 43,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-42",
+      "command_committed": true,
+      "committed_revision": 43
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0044:attempt1"
+  },
+  {
+    "call_id": "call_00_xSkcRhOxo2BO6PvCapjM0173",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-00f4f8a99f903f52ee261322",
+        "report_event": {
+          "sequence": 46,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-43"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "efd67c2c6c6789c00f3b9c4ca9e39ed8083a26ca976cc6ec36b10ae37da3c80e",
+        "body_characters": 147081,
+        "total_pages": 50,
+        "page": {
+          "index": 0,
+          "cursor": "0:dc496df3178825ba",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:2226d9c9b9276c53",
+          "is_last": false,
+          "remaining_pages": 49
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 24,
+          "errors": 13,
+          "failed": 2,
+          "passed": 9,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "b9178e1ccbc58b64a79897f3d950b7fd",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 24,
+                "errors": 13,
+                "failed": 2,
+                "passed": 9,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "6541e4aa5bf5b85e5d3faeb93446283d5a3c9edfd88282aeadd367869771262b",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-00f4f8a99f903f52ee261322",
+            "cursor": "11:870dc48839351deb",
+            "body_sha256": "efd67c2c6c6789c00f3b9c4ca9e39ed8083a26ca976cc6ec36b10ae37da3c80e",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-44",
+      "logical_time": 44,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-43",
+      "command_committed": true,
+      "committed_revision": 44
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0045:attempt1"
+  },
+  {
+    "call_id": "call_00_nZU6MQMcTc8fy5LjmMAj0112",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-00f4f8a99f903f52ee261322",
+        "report_event": {
+          "sequence": 46,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-43"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "efd67c2c6c6789c00f3b9c4ca9e39ed8083a26ca976cc6ec36b10ae37da3c80e",
+        "body_characters": 147081,
+        "total_pages": 50,
+        "page": {
+          "index": 1,
+          "cursor": "1:2226d9c9b9276c53",
+          "start": 47,
+          "end": 3119,
+          "text": "{\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-7.4.4, pluggy-1.0.0\\nrootdir: /testbed\\nconfigfile: pytest.ini\\ncollected 289 items / 265 deselected / 24 selected\\n\\ntests/test_requests.py ......EEEEEEEEEEEEEFF...                          [100%]\\n\\n==================================== ERRORS ====================================\\n___ ERROR at setup of TestRequests.test_header_and_body_removal_on_redirect ____\\nfile /testbed/tests/test_requests.py, line 265\\n      def test_header_and_body_removal_on_redirect(self, httpbin):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:28\\n_ ERROR at setup of TestRequests.test_headers_on_session_with_None_are_not_sent _\\nfile /testbed/tests/test_requests.py, line 442\\n      def test_headers_on_session_with_None_are_not_sent(self, httpbin):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:28\\n__________ ERROR at setup of TestRequests.test_headers_preserve_order __________\\nfile /testbed/tests/test_requests.py, line 450\\n      def test_headers_preserve_order(self, httpbin):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, httpbin, httpbin_secure, monkeypatch, nosan_server, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory\\n>       use 'pytest --fixtures [testpath]' for help on them.\\n\\n/testbed/tests/conftest.py:28\\n_________ ERROR at setup of TestRequests.test_conflicting_post_params __________\\nfile /testbed/tests/test_requests.py, line 823\\n      def test_conflicting_post_params(self, httpbin):\\nfile /testbed/tests/conftest.py, line 28\\n  @pytest.fixture\\n  def httpbin(httpbin):\\nE       recursive dependency involving fixture 'httpbin' detected\\n>       avail",
+          "sha256": "a33798da1ac66b8b7d2d0538244759df1081fedd6c6586d95db6bdb053a67607",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 52393,
+              "continued_from_previous": false,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "2:c791fee159885205",
+          "is_last": false,
+          "remaining_pages": 48
+        },
+        "validation_status": "failed",
+        "counts": {
+          "collected": 24,
+          "errors": 13,
+          "failed": 2,
+          "passed": 9,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 11
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "b9178e1ccbc58b64a79897f3d950b7fd",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 24,
+                "errors": 13,
+                "failed": 2,
+                "passed": 9,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "6541e4aa5bf5b85e5d3faeb93446283d5a3c9edfd88282aeadd367869771262b",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-00f4f8a99f903f52ee261322",
+            "cursor": "11:870dc48839351deb",
+            "body_sha256": "efd67c2c6c6789c00f3b9c4ca9e39ed8083a26ca976cc6ec36b10ae37da3c80e",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-45",
+      "logical_time": 45,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-44",
+      "command_committed": true,
+      "committed_revision": 45
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0046:attempt1"
+  },
+  {
+    "call_id": "call_00_ALGmaMREBFi36epbBPCI8188",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "matches": [
+          {
+            "path": "tests/test_requests.py",
+            "line": 823,
+            "character_offset": 30802,
+            "preview": "ata=data).json().get('form')\n        assert found_json == {'some': 'data'}\n\n    def test_conflicting_post_params(self, httpbin):\n        url = httpbin('post')\n        with open('requirements-dev.txt') as f:\n            with pytest.raises(ValueError):\n                reque",
+            "preview_start_character": 30722
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 93449,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-46",
+      "logical_time": 46,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-45",
+      "command_committed": true,
+      "committed_revision": 46
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0047:attempt1"
+  },
+  {
+    "call_id": "call_00_GVwjj1N5HFYzF1JVEQ2g6505",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-323fcafe5b10308a0d32f00d",
+        "report_event": {
+          "sequence": 50,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-46"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "b4f34bc7386e9e65b7fdfc25bcecb7c6f7259400f37d9e722a75135e922c261d",
+        "body_characters": 16366,
+        "total_pages": 8,
+        "page": {
+          "index": 0,
+          "cursor": "0:57bb8949fda8778b",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:8370b1fdd8a61c29",
+          "is_last": false,
+          "remaining_pages": 7
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 0,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 0
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "e5cc83da73cfb983c8285378806fd946",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 4,
+              "counts": {
+                "collected": 0,
+                "errors": 0,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "4344cdb039c1f491cb44690d749ea1cafe2ded21e8713c170ce28ef0829c811e",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-323fcafe5b10308a0d32f00d",
+            "cursor": "1:8370b1fdd8a61c29",
+            "body_sha256": "b4f34bc7386e9e65b7fdfc25bcecb7c6f7259400f37d9e722a75135e922c261d",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-47",
+      "logical_time": 47,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-46",
+      "command_committed": true,
+      "committed_revision": 47
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0048:attempt1"
+  },
+  {
+    "call_id": "call_00_i37S8dquT6CRd0OrEDtA6944",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/requests/models.py\n+++ b/requests/models.py\n@@ -405,6 +405,16 @@\n                 raise InvalidURL('URL has an invalid label.')\n         elif host.startswith(u'*'):\n             raise InvalidURL('URL has an invalid label.')\n+        else:\n+            # An ASCII host can still be an invalid IDNA domain, for example a\n+            # host with an empty label such as '.example.com'. urllib3 would\n+            # only trip over this much later, while socket.connect() idna-encodes\n+            # the host, leaking a bare UnicodeError. Validate the host here so\n+            # callers get the requests exception they expect.\n+            try:\n+                self._get_idna_encoded_host(host)\n+            except UnicodeError:\n+                raise InvalidURL('URL has an invalid label.')\n \n         # Carefully reconstruct the network location\n         netloc = auth or ''\n--- a/tests/test_requests.py\n+++ b/tests/test_requests.py\n@@ -81,6 +81,7 @@\n             (InvalidSchema, 'localhost.localdomain:3128/'),\n             (InvalidSchema, '10.122.1.1:3128/'),\n             (InvalidURL, 'http://'),\n+            (InvalidURL, 'http://.example.com'),\n         ))\n     def test_invalid_url(self, exception, url):\n         with pytest.raises(exception):\n",
+        "start_character": 0,
+        "end_character": 1256,
+        "total_characters": 1256,
+        "text_sha256": "191d5495212aa4741e066f8f0790aabb0a8055c09085eceda3e7a02ed01ae12c",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        }
+      },
+      "action_id": "action-48",
+      "logical_time": 48,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-47",
+      "command_committed": true,
+      "committed_revision": 48
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0049:attempt1"
+  },
+  {
+    "call_id": "call_00_PjCOteT7GPIQp7O3Ajn65991",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "matches": [
+          {
+            "path": "tests/test_requests.py",
+            "line": 60,
+            "character_offset": 1612,
+            "preview": "ssl\n    HAS_PYOPENSSL = True\nexcept AttributeError:\n    HAS_PYOPENSSL = False\n\n\nclass TestRequests:\n\n    digest_auth_algo = ('MD5', 'SHA-256', 'SHA-512')\n\n    def test_entry_points(self):\n\n        requests.session\n        requests.session().get\n ",
+            "preview_start_character": 1532
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 740,
+            "character_offset": 28131,
+            "preview": ".body\n\n    def test_POSTBIN_SEEKED_OBJECT_WITH_NO_ITER(self, httpbin):\n\n        class TestStream(object):\n            def __init__(self, data):\n                self.data = data.encode()\n                self.length = len(self.data)\n               ",
+            "preview_start_character": 28051
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 799,
+            "character_offset": 30083,
+            "preview": "bad file data'])\n\n    def test_post_with_custom_mapping(self, httpbin):\n        class CustomMapping(MutableMapping):\n            def __init__(self, *args, **kwargs):\n                self.data = dict(*args, **kwargs)\n\n            def __delitem__(s",
+            "preview_start_character": 30003
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1039,
+            "character_offset": 39367,
+            "preview": "sp, 'hook_working')\n\n    def test_prepared_from_session(self, httpbin):\n        class DummyAuth(requests.auth.AuthBase):\n            def __call__(self, r):\n                r.headers['Dummy-Auth-Test'] = 'dummy-auth-test-ok'\n                return",
+            "preview_start_character": 39287
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1234,
+            "character_offset": 45442,
+            "preview": "rror):\n            jar.get(key)\n\n    def test_cookie_policy_copy(self):\n        class MyCookiePolicy(cookielib.DefaultCookiePolicy):\n            pass\n\n        jar = requests.cookies.RequestsCookieJar()\n        jar.set_policy(MyCookiePolicy())\n   ",
+            "preview_start_character": 45362
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1729,
+            "character_offset": 64529,
+            "preview": "rt prep.body.read() == b'data'\n\n    def test_rewind_body_no_seek(self):\n        class BadFileObj:\n            def __init__(self, data):\n                self.data = data\n\n            def tell(self):\n                return 0\n\n            def __iter",
+            "preview_start_character": 64449
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1749,
+            "character_offset": 65102,
+            "preview": "nd request body' in str(e)\n\n    def test_rewind_body_failed_seek(self):\n        class BadFileObj:\n            def __init__(self, data):\n                self.data = data\n\n            def tell(self):\n                return 0\n\n            def seek(s",
+            "preview_start_character": 65022
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1772,
+            "character_offset": 65764,
+            "preview": "ng request body' in str(e)\n\n    def test_rewind_body_failed_tell(self):\n        class BadFileObj:\n            def __init__(self, data):\n                self.data = data\n\n            def tell(self):\n                raise OSError()\n\n            def",
+            "preview_start_character": 65684
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1976,
+            "character_offset": 73588,
+            "preview": "rect_malformed,\n                     url_final,\n                     ]\n\n        class CustomRedirectSession(requests.Session):\n            def get_redirect_target(self, resp):\n                # default behavior\n                if resp.is_redirect",
+            "preview_start_character": 73508
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 1998,
+            "character_offset": 74432,
+            "preview": "     assert not r.history[1].is_redirect\n        assert r.url == urls_test[2]\n\n\nclass TestCaseInsensitiveDict:\n\n    @pytest.mark.parametrize(\n        'cid', (\n            CaseInsensitiveDict({'Foo': 'foo', 'BAr': 'bar'}),\n            CaseInsensit",
+            "preview_start_character": 74352
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 2140,
+            "character_offset": 79259,
+            "preview": " cid == cid_copy\n        cid['changed'] = True\n        assert cid != cid_copy\n\n\nclass TestMorselToCookieExpires:\n    \"\"\"Tests for morsel_to_cookie when morsel contains expires.\"\"\"\n\n    def test_expires_valid_str(self):\n        \"\"\"Test case where ",
+            "preview_start_character": 79179
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 2172,
+            "character_offset": 80252,
+            "preview": "      cookie = morsel_to_cookie(morsel)\n        assert cookie.expires is None\n\n\nclass TestMorselToCookieMaxAge:\n\n    \"\"\"Tests for morsel_to_cookie when morsel contains max-age.\"\"\"\n\n    def test_max_age_valid_int(self):\n        \"\"\"Test case where ",
+            "preview_start_character": 80172
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 2193,
+            "character_offset": 80847,
+            "preview": "'\n        with pytest.raises(TypeError):\n            morsel_to_cookie(morsel)\n\n\nclass TestTimeout:\n\n    def test_stream_timeout(self, httpbin):\n        try:\n            requests.get(httpbin('delay/10'), timeout=2.0)\n        except requests.except",
+            "preview_start_character": 80767
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 2274,
+            "character_offset": 83598,
+            "preview": "sert r.ok\n\n\nSendCall = collections.namedtuple('SendCall', ('args', 'kwargs'))\n\n\nclass RedirectSession(SessionRedirectMixin):\n    def __init__(self, order_of_redirects):\n        self.redirects = order_of_redirects\n        self.calls = []\n        s",
+            "preview_start_character": 83518
+          },
+          {
+            "path": "tests/test_requests.py",
+            "line": 2431,
+            "character_offset": 88074,
+            "preview": "\n    except ConnectionError as e:\n        assert u\"Pool is closed.\" in str(e)\n\n\nclass TestPreparingURLs(object):\n    @pytest.mark.parametrize(\n        'url,expected',\n        (\n            ('http://google.com', 'http://google.com/'),\n            ",
+            "preview_start_character": 87994
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 93449,
+        "considered_files": 1,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-49",
+      "logical_time": 49,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-48",
+      "command_committed": true,
+      "committed_revision": 49
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0050:attempt1"
+  },
+  {
+    "call_id": "call_00_8xw2SNnbjCtUHQ8DImnC6373",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-a7d986f9711a03ee91d9e12a",
+        "report_event": {
+          "sequence": 53,
+          "operation_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-49"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "302cebc57f3194d173d632b7342e29de52958ba08e862bdf884e605abfd8b7e6",
+        "body_characters": 33656,
+        "total_pages": 13,
+        "page": {
+          "index": 0,
+          "cursor": "0:e06079d805d9441a",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:c87ebea4b59c5587",
+          "is_last": false,
+          "remaining_pages": 12
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 6,
+          "errors": 0,
+          "failed": 0,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 6
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 1,
+          "nested_report_count": 0,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "4540c079301dd1124b7f1997790472e2",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 6,
+                "errors": 0,
+                "failed": 0,
+                "passed": 6,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 1,
+          "root_counts_only": true,
+          "full_evidence_sha256": "ebf8da0dd71ff120505f64d1d28c3463a0c47de9659af3363080eddcaab741b3",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-a7d986f9711a03ee91d9e12a",
+            "cursor": "1:c87ebea4b59c5587",
+            "body_sha256": "302cebc57f3194d173d632b7342e29de52958ba08e862bdf884e605abfd8b7e6",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-50",
+      "logical_time": 50,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-49",
+      "command_committed": true,
+      "committed_revision": 50
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0051:attempt1"
+  },
+  {
+    "call_id": "call_00_NScowmLTAwREV8E1bkZo0756",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "6741df6c666878fb73420ea3679f7edfacf525bb34c566ca4ed9000fa3e7b528",
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488",
+        "diff_sha256": "191d5495212aa4741e066f8f0790aabb0a8055c09085eceda3e7a02ed01ae12c",
+        "changed_paths": [
+          "requests/models.py",
+          "tests/test_requests.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-51",
+      "logical_time": 51,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-50",
+      "command_committed": true,
+      "committed_revision": 51
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0052:attempt1"
+  },
+  {
+    "call_id": "call_00_EZDD4vTBm9d3mAXylGVr4896",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "source_sha256": "6741df6c666878fb73420ea3679f7edfacf525bb34c566ca4ed9000fa3e7b528",
+        "files_sha256": "2e2a2f3fb8a8f2d5a0d06c9608bd13389882c86777a9489f85ad13cf79286f2b",
+        "included_patch_ids": [],
+        "test_sequence": 53,
+        "message": "Fix for \"Getting http://.example.com raises UnicodeError\".\n\nRoot cause: PreparedRequest.prepare_url only ran non-ASCII hosts through IDNA encoding. ASCII hosts with an empty label (e.g. `.example.com`) skipped that branch, so the invalid domain survived until urllib3 idna-encoded it during socket.connect(), leaking a bare `UnicodeError: encoding with 'idna' codec failed`.\n\nChange (requests/models.py): the ASCII host branch now also validates the host via _get_idna_encoded_host and converts any IDNA failure into `InvalidURL('URL has an invalid label.')` at prepare time — matching the non-ASCII branch and the issue's expected result `InvalidUrl: URL has an invalid label.`\n\nRegression test (tests/test_requests.py): added `(InvalidURL, 'http://.example.com')` to TestRequests.test_invalid_url.\n\nVerification on this exact version (v15, files_sha256 2e2a2f3f...): pytest tests/test_requests.py -k \"test_invalid_url or test_prepare_url\" -> 6 passed, 0 failed, validation_status verified. Fixed candidate: patch-1.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "b8e6280d8da1315e824464106b474ce635da465aa37bd3f7de7f95972e1f1488",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v15"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-52",
+      "logical_time": 52,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-51",
+      "command_committed": true,
+      "committed_revision": 52
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0053:attempt1"
+  },
+  {
+    "call_id": "call_00_6tryC96YU5RtIXdvu2c75619",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Fixed and delivered. `http://.example.com` now raises InvalidURL('URL has an invalid label.') at prepare time instead of leaking UnicodeError from urllib3's socket-connect idna encoding. The ASCII host branch in PreparedRequest.prepare_url now validates via _get_idna_encoded_host, and a regression case was added to TestRequests.test_invalid_url. Public evidence on this exact version (v15): tests/test_requests.py -k \"test_invalid_url or test_prepare_url\" -> 6 passed, 0 failed, validation_status verified. Fixed candidate patch-1, legal delivery delivery-1 recorded.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0054:attempt1"
+  },
+  {
+    "call_id": "call_00_bB4M93RYDyUt5fKXzWDD2872",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/requests/models.py\n+++ b/requests/models.py\n@@ -405,6 +405,16 @@\n                 raise InvalidURL('URL has an invalid label.')\n         elif host.startswith(u'*'):\n             raise InvalidURL('URL has an invalid label.')\n+        else:\n+            # An ASCII host can still be an invalid IDNA domain, for example a\n+            # host with an empty label such as '.example.com'. urllib3 would\n+            # only trip over this much later, while socket.connect() idna-encodes\n+            # the host, leaking a bare UnicodeError. Validate the host here so\n+            # callers get the requests exception they expect.\n+            try:\n+                self._get_idna_encoded_host(host)\n+            except UnicodeError:\n+                raise InvalidURL('URL has an invalid label.')\n \n         # Carefully reconstruct the network location\n         netloc = auth or ''\n--- a/tests/test_requests.py\n+++ b/tests/test_requests.py\n@@ -81,6 +81,7 @@\n             (InvalidSchema, 'localhost.localdomain:3128/'),\n             (InvalidSchema, '10.122.1.1:3128/'),\n             (InvalidURL, 'http://'),\n+            (InvalidURL, 'http://.example.com'),\n         ))\n     def test_invalid_url(self, exception, url):\n         with pytest.raises(exception):\n",
+        "start_character": 0,
+        "end_character": 1256,
+        "total_characters": 1256,
+        "text_sha256": "191d5495212aa4741e066f8f0790aabb0a8055c09085eceda3e7a02ed01ae12c",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        }
+      },
+      "action_id": "action-53",
+      "logical_time": 53,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-52",
+      "command_committed": true,
+      "committed_revision": 53
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0055:attempt1"
+  },
+  {
+    "call_id": "call_00_YhLGhIZa2cI27WrUGXLK3050",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "path": "tests/test_requests.py",
+        "text": "        # Not really an entry point, but people rely on it.\n        from requests.packages.urllib3.poolmanager import PoolManager\n\n    @pytest.mark.parametrize(\n        'exception, url', (\n            (MissingSchema, 'hiwpefhipowhefopw'),\n            (InvalidSchema, 'localhost:3128'),\n            (InvalidSchema, 'localhost.localdomain:3128/'),\n            (InvalidSchema, '10.122.1.1:3128/'),\n            (InvalidURL, 'http://'),\n            (InvalidURL, 'http://.example.com'),\n        ))\n    def test_invalid_url(self, exception, url):\n        with pytest.raises(exception):\n            requests.get(url)\n\n    def test_basic_building(self):\n        req = requests.Request()\n        req.url = 'http://kennethreitz.org/'\n        req.data = {'life': '42'}\n\n        pr = req.prepare()\n        assert pr.url == req.url\n        assert pr.body == 'life=42'\n\n    @pytest.mark.parametrize('method', ('GET', 'HEAD'))\n    def test_no_content_length(self, httpbin, method):\n        req = requests.Request(method, httpbin(method.lower())).prepare()\n",
+        "start_character": 1918,
+        "end_character": 2958,
+        "total_characters": 93449,
+        "text_sha256": "18906a8316a82ca0f64a7bc857845ef6e54e4eaa8749322cbfc27cb58e0f4c9c",
+        "next_cursor": "2958:28f3e548c4def39b38cd854ffc1624fe97ffd04396284ce6f1f67ec495e4fc90"
+      },
+      "action_id": "action-54",
+      "logical_time": 54,
+      "command_id": "command:member_001:staff-3714457dc83e4eae8d78ab7e946fc636-53",
+      "command_committed": true,
+      "committed_revision": 54
+    },
+    "request_id": "v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:agent:v193:psf__requests-5414:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192104:member_001:0056:attempt1"
+  }
+]

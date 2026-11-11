@@ -1,0 +1,1158 @@
+[
+  {
+    "call_id": "call_00_vV1AeH7X3HSo6SQrEGyi9931",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "matches": [
+          {
+            "path": "src/_pytest/pathlib.py",
+            "line": 561,
+            "character_offset": 18472,
+            "preview": ".name)\n    yield from entries\n    for entry in entries:\n        if entry.is_dir(follow_symlinks=False) and recurse(entry):\n            yield from visit(entry.path, recurse)\n\n\ndef absolutepath(path: Union[Path, str]) -> Path:\n    \"\"\"Convert a path to an ab",
+            "preview_start_character": 18392
+          }
+        ],
+        "complete": true,
+        "next_cursor": null,
+        "scanned_characters": 927204,
+        "considered_files": 63,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-2",
+      "logical_time": 2,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-1",
+      "command_committed": true,
+      "committed_revision": 2
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0002:attempt1"
+  },
+  {
+    "call_id": "call_00_1P8s8wTraiLVvHR81jt72064",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "path": "src/_pytest/pathlib.py",
+        "text": "\n        for meta_importer in sys.meta_path:\n            spec = meta_importer.find_spec(module_name, [str(path.parent)])\n            if spec is not None:\n                break\n        else:\n            spec = importlib.util.spec_from_file_location(module_name, str(path))\n\n        if spec is None:\n            raise ImportError(\n                \"Can't find module {} at location {}\".format(module_name, str(path))\n            )\n        mod = importlib.util.module_from_spec(spec)\n        spec.loader.exec_module(mod)  # type: ignore[union-attr]\n        return mod\n\n    pkg_path = resolve_package_path(path)\n    if pkg_path is not None:\n        pkg_root = pkg_path.parent\n        names = list(path.with_suffix(\"\").relative_to(pkg_root).parts)\n        if names[-1] == \"__init__\":\n            names.pop()\n        module_name = \".\".join(names)\n    else:\n        pkg_root = path.parent\n        module_name = path.stem\n\n    # Change sys.path permanently: restoring it at the end of this function would cause surprising\n    # problems because of delayed imports: for example, a conftest.py file imported by this function\n    # might have local imports, which would fail at runtime if we restored sys.path.\n    if mode is ImportMode.append:\n        if str(pkg_root) not in sys.path:\n            sys.path.append(str(pkg_root))\n    elif mode is ImportMode.prepend:\n        if str(pkg_root) != sys.path[0]:\n            sys.path.insert(0, str(pkg_root))\n    else:\n        assert_never(mode)\n\n    importlib.import_module(module_name)\n\n    mod = sys.modules[module_name]\n    if path.name == \"__init__.py\":\n        return mod\n\n    ignore = os.environ.get(\"PY_IGNORE_IMPORTMISMATCH\", \"\")\n    if ignore != \"1\":\n        module_file = mod.__file__\n        if module_file.endswith((\".pyc\", \".pyo\")):\n            module_file = module_file[:-1]\n        if module_file.endswith(os.path.sep + \"__init__.py\"):\n            module_file = module_file[: -(len(os.path.sep + \"__init__.py\"))]\n\n        try:\n            is_same = os.path.samefile(str(path), module_file)\n        except FileNotFoundError:\n            is_same = False\n\n        if not is_same:\n            raise ImportPathMismatchError(module_name, module_file, path)\n\n    return mod\n\n\ndef resolve_package_path(path: Path) -> Optional[Path]:\n    \"\"\"Return the Python package path by looking for the last\n    directory upwards which still contains an __init__.py.\n\n    Returns None if it can not be determined.\n    \"\"\"\n    result = None\n    for parent in itertools.chain((path,), path.parents):\n        if parent.is_dir():\n            if not parent.joinpath(\"__init__.py\").is_file():\n                break\n            if not parent.name.isidentifier():\n                break\n            result = parent\n    return result\n\n\ndef visit(\n    path: str, recurse: Callable[[\"os.DirEntry[str]\"], bool]\n) -> Iterator[\"os.DirEntry[str]\"]:\n    \"\"\"Walk a directory recursively, in breadth-first order.\n\n    Entries at each directory level are sorted.\n    \"\"\"\n    entries = sorted(os.scandir(path), key=lambda entry: entry.name)\n    yield from entries\n    for entry in entries:\n        if entry.is_dir(follow_symlinks=False) and recurse(entry):\n            yield from visit(entry.path, recurse)\n\n\ndef absolutepath(path: Union[Path, str]) -> Path:\n    \"\"\"Convert a path to an absolute path using os.path.abspath.\n\n    Prefer this over Path.resolve() (see #6523).\n    Prefer this over Path.absolute() (not public, doesn't normalize).\n    \"\"\"\n    return Path(os.path.abspath(str(path)))\n\n\ndef commonpath(path1: Path, path2: Path) -> Optional[Path]:\n    \"\"\"Return the common part shared with the other path, or None if there is\n    no common part.\n\n    If one path is relative and one is absolute, returns None.\n    \"\"\"\n",
+        "start_character": 15351,
+        "end_character": 19086,
+        "total_characters": 20146,
+        "text_sha256": "3b779939efa611d3713eb529205699ecdb97ddfc28c19cf92954ae2fc2f2e431",
+        "next_cursor": "19086:1b2d7f6b1376c1de22c301fc34fb956c84c73810fbec8df86a609c1ceb9cdfa5"
+      },
+      "action_id": "action-3",
+      "logical_time": 3,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-2",
+      "command_committed": true,
+      "committed_revision": 3
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0003:attempt1"
+  },
+  {
+    "call_id": "call_00_uBMd9sceUzHXUni0MnGv2753",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "operation": "write",
+        "paths": [
+          "src/_pytest/pathlib.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "af0b7841d148d78890327ceaba6f9ad557e0973fe845c281377a3829c55e9cec",
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b"
+      },
+      "action_id": "action-4",
+      "logical_time": 4,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-3",
+      "command_committed": true,
+      "committed_revision": 4
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0004:attempt1"
+  },
+  {
+    "call_id": "call_00_vyWRWTE5gHWICM9nqaNL7285",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-1779c06f28501201f5c0764a",
+        "report_event": {
+          "sequence": 4,
+          "operation_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-4"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "files_sha256": "af0b7841d148d78890327ceaba6f9ad557e0973fe845c281377a3829c55e9cec",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "ac7da41f4b9b7c39ae6048755d382ac402c6797443fdba615e39011f9e671927",
+        "body_characters": 1029203,
+        "total_pages": 337,
+        "page": {
+          "index": 0,
+          "cursor": "0:ae72fe229803a391",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:d313562f8e545edf",
+          "is_last": false,
+          "remaining_pages": 336
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 141,
+          "errors": 0,
+          "failed": 0,
+          "passed": 140,
+          "skipped": 0,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 140
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 113,
+          "nested_report_count": 112,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "daf5c49095cb3447813d063e76e224c0",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 141,
+                "errors": 0,
+                "failed": 0,
+                "passed": 140,
+                "skipped": 0,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 113,
+          "root_counts_only": true,
+          "full_evidence_sha256": "8597b0e1861a20462794af881b715e40c5fa9464b7258276faf0d647e6e7ae6e",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-1779c06f28501201f5c0764a",
+            "cursor": "1:d313562f8e545edf",
+            "body_sha256": "ac7da41f4b9b7c39ae6048755d382ac402c6797443fdba615e39011f9e671927",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-5",
+      "logical_time": 5,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-4",
+      "command_committed": true,
+      "committed_revision": 5
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0005:attempt1"
+  },
+  {
+    "call_id": "call_00_eh9YWLzjuSfItqSuFfEK4808",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/src/_pytest/pathlib.py\n+++ b/src/_pytest/pathlib.py\n@@ -558,7 +558,7 @@\n     entries = sorted(os.scandir(path), key=lambda entry: entry.name)\n     yield from entries\n     for entry in entries:\n-        if entry.is_dir(follow_symlinks=False) and recurse(entry):\n+        if entry.is_dir() and recurse(entry):\n             yield from visit(entry.path, recurse)\n \n \n",
+        "start_character": 0,
+        "end_character": 369,
+        "total_characters": 369,
+        "text_sha256": "8e109dbfa006e5e22177221a776fa47ba2e35a5010ebf83fc4a5a1e8a9f3ef62",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        }
+      },
+      "action_id": "action-6",
+      "logical_time": 6,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-5",
+      "command_committed": true,
+      "committed_revision": 6
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0006:attempt1"
+  },
+  {
+    "call_id": "call_00_A76oMJ8fGiiBLiVAKD1b0080",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-1",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "c326330384f10a572063861d83522ab7c0f499992f4fcc5f883d8de5794c4a1d",
+        "files_sha256": "af0b7841d148d78890327ceaba6f9ad557e0973fe845c281377a3829c55e9cec",
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b",
+        "diff_sha256": "8e109dbfa006e5e22177221a776fa47ba2e35a5010ebf83fc4a5a1e8a9f3ef62",
+        "changed_paths": [
+          "src/_pytest/pathlib.py"
+        ],
+        "changed_path_count": 1,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-7",
+      "logical_time": 7,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-6",
+      "command_committed": true,
+      "committed_revision": 7
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0007:attempt1"
+  },
+  {
+    "call_id": "call_00_S37qtHJc6cyPQcpjvrGL1352",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-1",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_sha256": "c326330384f10a572063861d83522ab7c0f499992f4fcc5f883d8de5794c4a1d",
+        "files_sha256": "af0b7841d148d78890327ceaba6f9ad557e0973fe845c281377a3829c55e9cec",
+        "included_patch_ids": [],
+        "test_sequence": 4,
+        "message": "Deliver patch-1: in src/_pytest/pathlib.py `visit()`, recursion now uses `entry.is_dir()` instead of `entry.is_dir(follow_symlinks=False)`, restoring collection of symlinked directories (regression from b473e515 / pytest 6.1.0). Verified on this exact version: testing/test_pathlib.py + testing/test_collection.py → 141 collected, 140 passed, 1 xfailed, 0 failed, 0 errors (report test-report-1779c06f28501201f5c0764a).",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-8",
+      "logical_time": 8,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-7",
+      "command_committed": true,
+      "committed_revision": 8
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0008:attempt1"
+  },
+  {
+    "call_id": "call_00_vCdfigpV2QeLwTT7Ozuw0523",
+    "body": {
+      "ok": true,
+      "worker_state": "finish_review_pending",
+      "reason": "Located, fixed, verified and delivered the issue. In src/_pytest/pathlib.py, visit() used entry.is_dir(follow_symlinks=False), which skipped symlinked directories during collection (regression from b473e515 in pytest 6.1.0); changed to entry.is_dir() so symlinked directories are followed and collected as before. Public pytest on the exact delivered version over testing/test_pathlib.py and testing/test_collection.py: 141 collected, 140 passed, 1 xfailed, 0 failed, 0 errors (report test-report-1779c06f28501201f5c0764a). Published patch-1 (single file, one-line change) and saved delivery-1.",
+      "world_effect": false,
+      "accepted_finish": false,
+      "review_index": 1,
+      "policy_version": "v141-private-role-baseline-observed-runtime-r1",
+      "message_follows": true,
+      "team_finished": false
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0009:attempt1"
+  },
+  {
+    "call_id": "call_00_n9i6ieFvMbX0I4Wqfs7f5722",
+    "body": {
+      "ok": true,
+      "result": {
+        "text": "--- a/src/_pytest/pathlib.py\n+++ b/src/_pytest/pathlib.py\n@@ -558,7 +558,7 @@\n     entries = sorted(os.scandir(path), key=lambda entry: entry.name)\n     yield from entries\n     for entry in entries:\n-        if entry.is_dir(follow_symlinks=False) and recurse(entry):\n+        if entry.is_dir() and recurse(entry):\n             yield from visit(entry.path, recurse)\n \n \n",
+        "start_character": 0,
+        "end_character": 369,
+        "total_characters": 369,
+        "text_sha256": "8e109dbfa006e5e22177221a776fa47ba2e35a5010ebf83fc4a5a1e8a9f3ef62",
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        }
+      },
+      "action_id": "action-9",
+      "logical_time": 9,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-8",
+      "command_committed": true,
+      "committed_revision": 9
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0010:attempt1"
+  },
+  {
+    "call_id": "call_00_HiC9SDLtnryf9lsJ2sT11810",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "matches": [
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 11,
+            "character_offset": 182,
+            "preview": "ortlib_metadata\nfrom _pytest.config import ExitCode\nfrom _pytest.pathlib import symlink_or_skip\nfrom _pytest.pytester import Pytester\n\n\ndef prepend_pythonpath(*dirs):\n    cur = os.getenv(\"PYTHONPATH\")\n    if cur:\n        dirs += (cur,)\n    return ",
+            "preview_start_character": 102
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 732,
+            "character_offset": 25506,
+            "preview": "esult.stdout.fnmatch_lines([\"*1 passed*\"])\n\n    def test_cmdline_python_package_symlink(self, testdir, monkeypatch):\n        \"\"\"\n        --pyargs with packages with path containing symlink can have conftest.py in\n        their package (#2985)\n    ",
+            "preview_start_character": 25426
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 734,
+            "character_offset": 25607,
+            "preview": ", monkeypatch):\n        \"\"\"\n        --pyargs with packages with path containing symlink can have conftest.py in\n        their package (#2985)\n        \"\"\"\n        monkeypatch.delenv(\"PYTHONDONTWRITEBYTECODE\", raising=False)\n\n        dirname = \"lib\"",
+            "preview_start_character": 25527
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 752,
+            "character_offset": 26204,
+            "preview": "test.fixture\\ndef a_fixture():pass\"\n        )\n\n        d_local = testdir.mkdir(\"symlink_root\")\n        symlink_location = d_local / \"lib\"\n        symlink_or_skip(d, symlink_location, target_is_directory=True)\n\n        # The structure of the test d",
+            "preview_start_character": 26124
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 753,
+            "character_offset": 26227,
+            "preview": "ture():pass\"\n        )\n\n        d_local = testdir.mkdir(\"symlink_root\")\n        symlink_location = d_local / \"lib\"\n        symlink_or_skip(d, symlink_location, target_is_directory=True)\n\n        # The structure of the test directory is now:\n      ",
+            "preview_start_character": 26147
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 754,
+            "character_offset": 26270,
+            "preview": "estdir.mkdir(\"symlink_root\")\n        symlink_location = d_local / \"lib\"\n        symlink_or_skip(d, symlink_location, target_is_directory=True)\n\n        # The structure of the test directory is now:\n        # .\n        # ├── symlink_root\n        # ",
+            "preview_start_character": 26190
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 754,
+            "character_offset": 26289,
+            "preview": "nk_root\")\n        symlink_location = d_local / \"lib\"\n        symlink_or_skip(d, symlink_location, target_is_directory=True)\n\n        # The structure of the test directory is now:\n        # .\n        # ├── symlink_root\n        # │   └── lib -> ../l",
+            "preview_start_character": 26209
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 758,
+            "character_offset": 26414,
+            "preview": "        # The structure of the test directory is now:\n        # .\n        # ├── symlink_root\n        # │   └── lib -> ../lib\n        # └── lib\n        #     └── foo\n        #         ├── __init__.py\n        #         └── bar\n        #             ",
+            "preview_start_character": 26334
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 769,
+            "character_offset": 26787,
+            "preview": "ersed ordering is intentional here.\n        search_path = [\"lib\", os.path.join(\"symlink_root\", \"lib\")]\n        monkeypatch.setenv(\"PYTHONPATH\", prepend_pythonpath(*search_path))\n        for p in search_path:\n            monkeypatch.syspath_prepend",
+            "preview_start_character": 26707
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 774,
+            "character_offset": 26989,
+            "preview": "path:\n            monkeypatch.syspath_prepend(p)\n\n        # module picked up in symlink-ed directory:\n        # It picks up symlink_root/lib/foo/bar (symlink) via sys.path.\n        result = testdir.runpytest(\"--pyargs\", \"-v\", \"foo.bar\")\n        te",
+            "preview_start_character": 26909
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 775,
+            "character_offset": 27033,
+            "preview": "d(p)\n\n        # module picked up in symlink-ed directory:\n        # It picks up symlink_root/lib/foo/bar (symlink) via sys.path.\n        result = testdir.runpytest(\"--pyargs\", \"-v\", \"foo.bar\")\n        testdir.chdir()\n        assert result.ret == 0",
+            "preview_start_character": 26953
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 775,
+            "character_offset": 27059,
+            "preview": "ked up in symlink-ed directory:\n        # It picks up symlink_root/lib/foo/bar (symlink) via sys.path.\n        result = testdir.runpytest(\"--pyargs\", \"-v\", \"foo.bar\")\n        testdir.chdir()\n        assert result.ret == 0\n        result.stdout.fnm",
+            "preview_start_character": 26979
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 781,
+            "character_offset": 27269,
+            "preview": "lt.ret == 0\n        result.stdout.fnmatch_lines(\n            [\n                \"symlink_root/lib/foo/bar/test_bar.py::test_bar PASSED*\",\n                \"symlink_root/lib/foo/bar/test_bar.py::test_other PASSED*\",\n                \"*2 passed*\",\n    ",
+            "preview_start_character": 27189
+          },
+          {
+            "path": "testing/acceptance_test.py",
+            "line": 782,
+            "character_offset": 27343,
+            "preview": "     \"symlink_root/lib/foo/bar/test_bar.py::test_bar PASSED*\",\n                \"symlink_root/lib/foo/bar/test_bar.py::test_other PASSED*\",\n                \"*2 passed*\",\n            ]\n        )\n\n    def test_cmdline_python_package_not_exists(self, ",
+            "preview_start_character": 27263
+          },
+          {
+            "path": "testing/test_collection.py",
+            "line": 11,
+            "character_offset": 222,
+            "preview": "in import _in_venv\nfrom _pytest.main import Session\nfrom _pytest.pathlib import symlink_or_skip\nfrom _pytest.pytester import Testdir\n\n\nclass TestCollector:\n    def test_collect_versus_item(self):\n        from pytest import Collector, Item\n\n       ",
+            "preview_start_character": 142
+          },
+          {
+            "path": "testing/test_collection.py",
+            "line": 1137,
+            "character_offset": 38621,
+            "preview": "process()\n    result.stdout.fnmatch_lines([\"*1 passed in*\"])\n\n\ndef test_collect_symlink_file_arg(testdir):\n    \"\"\"Collect a direct symlink works even if it does not match python_files (#4325).\"\"\"\n    real = testdir.makepyfile(\n        real=\"\"\"\n   ",
+            "preview_start_character": 38541
+          },
+          {
+            "path": "testing/test_collection.py",
+            "line": 1138,
+            "character_offset": 38672,
+            "preview": "ed in*\"])\n\n\ndef test_collect_symlink_file_arg(testdir):\n    \"\"\"Collect a direct symlink works even if it does not match python_files (#4325).\"\"\"\n    real = testdir.makepyfile(\n        real=\"\"\"\n        def test_nodeid(request):\n            assert r",
+            "preview_start_character": 38592
+          },
+          {
+            "path": "testing/test_collection.py",
+            "line": 1142,
+            "character_offset": 38862,
+            "preview": "\"\"\n        def test_nodeid(request):\n            assert request.node.nodeid == \"symlink.py::test_nodeid\"\n        \"\"\"\n    )\n    symlink = testdir.tmpdir.join(\"symlink.py\")\n    symlink_or_skip(real, symlink)\n    result = testdir.runpytest(\"-v\", syml",
+            "preview_start_character": 38782
+          },
+          {
+            "path": "testing/test_collection.py",
+            "line": 1145,
+            "character_offset": 38909,
+            "preview": "  assert request.node.nodeid == \"symlink.py::test_nodeid\"\n        \"\"\"\n    )\n    symlink = testdir.tmpdir.join(\"symlink.py\")\n    symlink_or_skip(real, symlink)\n    result = testdir.runpytest(\"-v\", symlink)\n    result.stdout.fnmatch_lines([\"symlink.",
+            "preview_start_character": 38829
+          },
+          {
+            "path": "testing/test_collection.py",
+            "line": 1145,
+            "character_offset": 38940,
+            "preview": " \"symlink.py::test_nodeid\"\n        \"\"\"\n    )\n    symlink = testdir.tmpdir.join(\"symlink.py\")\n    symlink_or_skip(real, symlink)\n    result = testdir.runpytest(\"-v\", symlink)\n    result.stdout.fnmatch_lines([\"symlink.py::test_nodeid PASSED*\", \"*1 p",
+            "preview_start_character": 38860
+          }
+        ],
+        "complete": false,
+        "next_cursor": "search-80d324b5961b22d1307d089829fa8c8be6baa968ba39306e5db7c9a6fd23eed3",
+        "scanned_characters": 733380,
+        "considered_files": 115,
+        "skipped_nontext_entries": 0,
+        "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+        "scan_character_limit": 1048576,
+        "scan_file_limit": 256,
+        "result_character_limit": 8192
+      },
+      "action_id": "action-10",
+      "logical_time": 10,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-9",
+      "command_committed": true,
+      "committed_revision": 10
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0011:attempt1"
+  },
+  {
+    "call_id": "call_00_CxXOoWfbF6yp9uoBhezd4096",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "testing/test_collection.py",
+        "text": "    )\n    monkeypatch.setenv(\"PYTHONPATH\", str(testdir.tmpdir), prepend=os.pathsep)\n    with root.as_cwd():\n        result = testdir.runpytest_subprocess()\n    result.stdout.fnmatch_lines([\"*1 passed in*\"])\n\n\ndef test_collect_symlink_file_arg(testdir):\n    \"\"\"Collect a direct symlink works even if it does not match python_files (#4325).\"\"\"\n    real = testdir.makepyfile(\n        real=\"\"\"\n        def test_nodeid(request):\n            assert request.node.nodeid == \"symlink.py::test_nodeid\"\n        \"\"\"\n    )\n    symlink = testdir.tmpdir.join(\"symlink.py\")\n    symlink_or_skip(real, symlink)\n    result = testdir.runpytest(\"-v\", symlink)\n    result.stdout.fnmatch_lines([\"symlink.py::test_nodeid PASSED*\", \"*1 passed in*\"])\n    assert result.ret == 0\n\n\ndef test_collect_symlink_out_of_tree(testdir):\n    \"\"\"Test collection of symlink via out-of-tree rootdir.\"\"\"\n    sub = testdir.tmpdir.join(\"sub\")\n    real = sub.join(\"test_real.py\")\n    real.write(\n        textwrap.dedent(\n            \"\"\"\n        def test_nodeid(request):\n            # Should not contain sub/ prefix.\n            assert request.node.nodeid == \"test_real.py::test_nodeid\"\n        \"\"\"\n        ),\n        ensure=True,\n    )\n\n    out_of_tree = testdir.tmpdir.join(\"out_of_tree\").ensure(dir=True)\n    symlink_to_sub = out_of_tree.join(\"symlink_to_sub\")\n    symlink_or_skip(sub, symlink_to_sub)\n    sub.chdir()\n    result = testdir.runpytest(\"-vs\", \"--rootdir=%s\" % sub, symlink_to_sub)\n    result.stdout.fnmatch_lines(\n        [\n            # Should not contain \"sub/\"!\n",
+        "start_character": 38395,
+        "end_character": 39932,
+        "total_characters": 47960,
+        "text_sha256": "0b96a57746d6d9d6b32e14a58481fbd156110abdff9778cb57201d8fce1ab787",
+        "next_cursor": "39932:baf09773d5fd280405e8aa0f15022b2504d087617f718603d4cdd158db366533"
+      },
+      "action_id": "action-11",
+      "logical_time": 11,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-10",
+      "command_committed": true,
+      "committed_revision": 11
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0012:attempt1"
+  },
+  {
+    "call_id": "call_00_UkK5BuMAVCbEDAknvqy37397",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "path": "testing/test_collection.py",
+        "text": "            # Should not contain \"sub/\"!\n            \"test_real.py::test_nodeid PASSED\"\n        ]\n    )\n    assert result.ret == 0\n\n\ndef test_collectignore_via_conftest(testdir):\n    \"\"\"collect_ignore in parent conftest skips importing child (issue #4592).\"\"\"\n    tests = testdir.mkpydir(\"tests\")\n    tests.ensure(\"conftest.py\").write(\"collect_ignore = ['ignore_me']\")\n\n    ignore_me = tests.mkdir(\"ignore_me\")\n    ignore_me.ensure(\"__init__.py\")\n    ignore_me.ensure(\"conftest.py\").write(\"assert 0, 'should_not_be_called'\")\n\n    result = testdir.runpytest()\n    assert result.ret == ExitCode.NO_TESTS_COLLECTED\n\n\ndef test_collect_pkg_init_and_file_in_args(testdir):\n    subdir = testdir.mkdir(\"sub\")\n    init = subdir.ensure(\"__init__.py\")\n    init.write(\"def test_init(): pass\")\n    p = subdir.ensure(\"test_file.py\")\n    p.write(\"def test_file(): pass\")\n\n    # NOTE: without \"-o python_files=*.py\" this collects test_file.py twice.\n    # This changed/broke with \"Add package scoped fixtures #2283\" (2b1410895)\n    # initially (causing a RecursionError).\n",
+        "start_character": 39891,
+        "end_character": 40947,
+        "total_characters": 47960,
+        "text_sha256": "0b96a57746d6d9d6b32e14a58481fbd156110abdff9778cb57201d8fce1ab787",
+        "next_cursor": "40947:baf09773d5fd280405e8aa0f15022b2504d087617f718603d4cdd158db366533"
+      },
+      "action_id": "action-12",
+      "logical_time": 12,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-11",
+      "command_committed": true,
+      "committed_revision": 12
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0013:attempt1"
+  },
+  {
+    "call_id": "call_00_WeJHj83wdnRTRStQjyyv8318",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "operation": "write",
+        "paths": [
+          "testing/test_collection.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b"
+      },
+      "action_id": "action-13",
+      "logical_time": 13,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-12",
+      "command_committed": true,
+      "committed_revision": 13
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0014:attempt1"
+  },
+  {
+    "call_id": "call_00_cSqFTOiMFeuurNiH6CEI1340",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-c00e24e5d81a0f821dbf3c66",
+        "report_event": {
+          "sequence": 12,
+          "operation_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-13"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "56f9aa6ac16cf0c5e3e547c1aa59daf532359302b61b873ae011f179b480bed6",
+        "body_characters": 830530,
+        "total_pages": 272,
+        "page": {
+          "index": 0,
+          "cursor": "0:96a64a5b5e66d589",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:9714fe22992678fb",
+          "is_last": false,
+          "remaining_pages": 271
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 80,
+          "errors": 0,
+          "failed": 0,
+          "passed": 79,
+          "skipped": 0,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 79
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 114,
+          "nested_report_count": 113,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "c7036b0e3c33e6ca6a9f14b3648017ca",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 80,
+                "errors": 0,
+                "failed": 0,
+                "passed": 79,
+                "skipped": 0,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 114,
+          "root_counts_only": true,
+          "full_evidence_sha256": "babff71ace4b366e1642517b881ae61abd694b5dc4b228e40f073a284d04bbf5",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-c00e24e5d81a0f821dbf3c66",
+            "cursor": "1:9714fe22992678fb",
+            "body_sha256": "56f9aa6ac16cf0c5e3e547c1aa59daf532359302b61b873ae011f179b480bed6",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-14",
+      "logical_time": 14,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-13",
+      "command_committed": true,
+      "committed_revision": 14
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0015:attempt1"
+  },
+  {
+    "call_id": "call_00_x6MWQ9qvDf1Ko0mHq9jL6450",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-c00e24e5d81a0f821dbf3c66",
+        "report_event": {
+          "sequence": 12,
+          "operation_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-13"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "56f9aa6ac16cf0c5e3e547c1aa59daf532359302b61b873ae011f179b480bed6",
+        "body_characters": 830530,
+        "total_pages": 272,
+        "page": {
+          "index": 1,
+          "cursor": "1:9714fe22992678fb",
+          "start": 47,
+          "end": 3119,
+          "text": "{\n      \"status\": \"passed\",\n      \"executed\": true,\n      \"passed\": true,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-6.2.0.dev154+ga7e38c5c6, py-1.11.0, pluggy-0.13.1\\nrootdir: /testbed, configfile: pyproject.toml\\ncollected 80 items\\n\\ntesting/test_collection.py .............................x............... [ 56%]\\n...................................                                      [100%]\\n\\n======================== 79 passed, 1 xfailed in 2.95s =========================\\n\",\n      \"validation_status\": \"verified\",\n      \"counts\": {\n        \"collected\": 80,\n        \"errors\": 0,\n        \"failed\": 0,\n        \"passed\": 79,\n        \"skipped\": 0,\n        \"xfailed\": 1,\n        \"xpassed\": 0,\n        \"tests_run\": 79\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"pytest\",\n        \"source\": {\n          \"run_id\": \"c7036b0e3c33e6ca6a9f14b3648017ca\",\n          \"parent_run_id\": null,\n          \"pid\": 17,\n          \"process_group\": 17,\n          \"framework\": \"pytest\",\n          \"delegated_hash_process\": false\n        },\n        \"report_count\": 114,\n        \"journal_record_count\": 228,\n        \"nested_report_count\": 113,\n        \"duplicate_journal_records_ignored\": 0,\n        \"error\": null,\n        \"partial\": false,\n        \"root_counts_only\": true,\n        \"nested_failures_are_diagnostic_not_summed\": true,\n        \"sessions\": [\n          {\n            \"run_id\": \"207ada93a1316326d9db7de215177e7e\",\n            \"parent_run_id\": \"c7036b0e3c33e6ca6a9f14b3648017ca\",\n            \"pid\": 17,\n            \"framework\": \"pytest\",\n            \"counts\": {\n              \"collected\": 1,\n              \"errors\": 0,\n              \"failed\": 0,\n              \"passed\": 0,\n              \"skipped\": 0,\n              \"xfailed\": 0,\n              \"xpassed\": 0\n            },\n            \"exitstatus\": 0,\n            \"collection_errors\": 0,\n            \"collection_complete\": true,\n            \"partial\": true,\n            \"root\": false,\n            \"test_reports\": [],\n            \"test_reports_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n            \"duplicate_reports_ignored\": 0\n          },\n          {\n            \"run_id\": \"a2025a20562bfd86d8ae87423f0225fe\",\n            \"parent_run_id\": \"c7036b0e3c33e6ca6a9f14b3648017ca\",\n            \"pid\": 17,\n            \"framework\": \"pytest\",\n            \"counts\": {\n              \"collected\": 1,\n              \"errors\": 0,\n              \"failed\": 0,\n              \"passed\": 0,\n              \"skipped\": 0,\n              \"xfailed\": 0,\n              \"xpassed\": 0\n            },\n            \"exitstatus\": 0,\n            \"collection_errors\": 0,\n            \"collection_complete\": true,\n            \"partial\": true,\n            \"root\": false,\n            \"test_reports\": [],\n            \"test_reports_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n            \"duplicate_reports_ignored\": 0\n          },\n    ",
+          "sha256": "f6444055180f32be2721749e5fc68f85a311e24572a1e2ebaf884b4772b69970",
+          "split_entries": [
+            {
+              "path": "/groups/public_repository_tests",
+              "entry_start": 47,
+              "entry_end": 207334,
+              "continued_from_previous": false,
+              "continues_on_next": true
+            }
+          ],
+          "next_cursor": "2:469cadc67804d10c",
+          "is_last": false,
+          "remaining_pages": 270
+        },
+        "validation_status": "verified",
+        "counts": {
+          "collected": 80,
+          "errors": 0,
+          "failed": 0,
+          "passed": 79,
+          "skipped": 0,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 79
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 114,
+          "nested_report_count": 113,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "c7036b0e3c33e6ca6a9f14b3648017ca",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 80,
+                "errors": 0,
+                "failed": 0,
+                "passed": 79,
+                "skipped": 0,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 114,
+          "root_counts_only": true,
+          "full_evidence_sha256": "babff71ace4b366e1642517b881ae61abd694b5dc4b228e40f073a284d04bbf5",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-c00e24e5d81a0f821dbf3c66",
+            "cursor": "1:9714fe22992678fb",
+            "body_sha256": "56f9aa6ac16cf0c5e3e547c1aa59daf532359302b61b873ae011f179b480bed6",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-15",
+      "logical_time": 15,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-14",
+      "command_committed": true,
+      "committed_revision": 15
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0016:attempt1"
+  },
+  {
+    "call_id": "call_00_SkzDlKUWJtmejU98TlBh9303",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "operation": "write",
+        "paths": [
+          "src/_pytest/pathlib.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "1e8b984d4de75b9ab34a2422fbb9adb5c1dd6d345cafc58d021b02c971431ae7",
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b"
+      },
+      "action_id": "action-16",
+      "logical_time": 16,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-15",
+      "command_committed": true,
+      "committed_revision": 16
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0017:attempt1"
+  },
+  {
+    "call_id": "call_00_zjgOWh5KGUytIRModNX58031",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-b4914457516f7caad01b7c5a",
+        "report_event": {
+          "sequence": 16,
+          "operation_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-16"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v4"
+        },
+        "files_sha256": "1e8b984d4de75b9ab34a2422fbb9adb5c1dd6d345cafc58d021b02c971431ae7",
+        "executed": true,
+        "passed": false,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "aa76c3f749247b9d9eaff210feba46450c30d84a78c49ba97b5c77e795bad888",
+        "body_characters": 27130,
+        "total_pages": 11,
+        "page": {
+          "index": 0,
+          "cursor": "0:e91ba9f052be02ec",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:d9fef2d5d2e0821f",
+          "is_last": false,
+          "remaining_pages": 10
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "failed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "failed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "failed",
+        "counts": {
+          "collected": 1,
+          "errors": 0,
+          "failed": 1,
+          "passed": 0,
+          "skipped": 0,
+          "xfailed": 0,
+          "xpassed": 0,
+          "tests_run": 1
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 2,
+          "nested_report_count": 1,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "b1bdd1ac6ace962d68514210be53318e",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 1,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 2,
+          "root_counts_only": true,
+          "full_evidence_sha256": "1cb1e28c79a852ece9677f19f86affca926875c5ab31a1892b159338cd0dbda8",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-b4914457516f7caad01b7c5a",
+            "cursor": "2:6407af3e0d165eef",
+            "body_sha256": "aa76c3f749247b9d9eaff210feba46450c30d84a78c49ba97b5c77e795bad888",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-17",
+      "logical_time": 17,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-16",
+      "command_committed": true,
+      "committed_revision": 17
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0018:attempt1"
+  },
+  {
+    "call_id": "call_00_J7DmMepTCUY2fQXZfH727024",
+    "body": {
+      "ok": true,
+      "result": {
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "operation": "write",
+        "paths": [
+          "src/_pytest/pathlib.py"
+        ],
+        "path_count": 1,
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b"
+      },
+      "action_id": "action-18",
+      "logical_time": 18,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-17",
+      "command_committed": true,
+      "committed_revision": 18
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0019:attempt1"
+  },
+  {
+    "call_id": "call_00_R2WwIhmizvziul0MRsul8731",
+    "body": {
+      "ok": true,
+      "result": {
+        "version": "paged-public-test-feedback-v0.42",
+        "report_id": "test-report-261c474cf84fd7110b4f6f12",
+        "report_event": {
+          "sequence": 19,
+          "operation_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-18"
+        },
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "executed": true,
+        "passed": true,
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "body_sha256": "800324632a06fcc473d8d0e3291b525918a9492ee3d3ffd20309b2cedd91e4c1",
+        "body_characters": 1041431,
+        "total_pages": 341,
+        "page": {
+          "index": 0,
+          "cursor": "0:7099147896b8ae23",
+          "start": 0,
+          "end": 47,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "next_cursor": "1:a8b41dbdb9de8971",
+          "is_last": false,
+          "remaining_pages": 340
+        },
+        "directory": [
+          {
+            "path": "/groups/public_repository_tests",
+            "group_id": "public_repository_tests",
+            "status": "passed",
+            "entry_count": 1,
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ]
+          }
+        ],
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "untested": [],
+        "independent_acceptance": "not_run_by_public_tool",
+        "fixed_submission_is_acceptance": false,
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "validation_status": "verified",
+        "counts": {
+          "collected": 142,
+          "errors": 0,
+          "failed": 0,
+          "passed": 141,
+          "skipped": 0,
+          "xfailed": 1,
+          "xpassed": 0,
+          "tests_run": 141
+        },
+        "test_evidence": {
+          "version": "v193-bounded-public-test-evidence-header-r1",
+          "full_evidence_version": "v141-session-bound-public-test-execution-r1",
+          "framework": "pytest",
+          "report_count": 114,
+          "nested_report_count": 113,
+          "partial": false,
+          "parse_error_present": false,
+          "root_sessions": [
+            {
+              "run_id": "3876cda2cf0ccec069484f909e09850c",
+              "parent_run_id": null,
+              "root": true,
+              "exitstatus": 0,
+              "counts": {
+                "collected": 142,
+                "errors": 0,
+                "failed": 0,
+                "passed": 141,
+                "skipped": 0,
+                "xfailed": 1,
+                "xpassed": 0
+              }
+            }
+          ],
+          "total_sessions": 114,
+          "root_counts_only": true,
+          "full_evidence_sha256": "b98ce8e4fbde9db5c91628f3028afc431fdf0c15e6a8163f7a517128e7d2b9e9",
+          "full_details": {
+            "tool": "read_test_result",
+            "report_id": "test-report-261c474cf84fd7110b4f6f12",
+            "cursor": "1:a8b41dbdb9de8971",
+            "body_sha256": "800324632a06fcc473d8d0e3291b525918a9492ee3d3ffd20309b2cedd91e4c1",
+            "same_immutable_report": true,
+            "instruction": "Read this exact page and follow next_cursor for the complete framework evidence; no test reruns."
+          },
+          "full_test_records_omitted_from_repeated_header": true,
+          "full_test_records_remain_in_exact_body_pages": true
+        },
+        "command_executed": true
+      },
+      "action_id": "action-19",
+      "logical_time": 19,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-18",
+      "command_committed": true,
+      "committed_revision": 19
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0020:attempt1"
+  },
+  {
+    "call_id": "call_00_xWCBFEZu6wDTeLsFQTpY1673",
+    "body": {
+      "ok": true,
+      "result": {
+        "patch_id": "patch-2",
+        "author": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "source_sha256": "8bedf087915d9b29edbce325e7e9d1daecfeec24d12f70e5d05df57bfed5ce69",
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b",
+        "diff_sha256": "5eff48fbe3b09809c811aa42eebc1b517df2449b90e898ce973eae1282c57847",
+        "changed_paths": [
+          "src/_pytest/pathlib.py",
+          "testing/test_collection.py"
+        ],
+        "changed_path_count": 2,
+        "changed_paths_truncated": false
+      },
+      "action_id": "action-20",
+      "logical_time": 20,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-19",
+      "command_committed": true,
+      "committed_revision": 20
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0021:attempt1"
+  },
+  {
+    "call_id": "call_00_nFYFXn0pR5JYR1ReajhM7151",
+    "body": {
+      "ok": true,
+      "result": {
+        "delivery_id": "delivery-2",
+        "actor_id": "member_001",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "source_sha256": "8bedf087915d9b29edbce325e7e9d1daecfeec24d12f70e5d05df57bfed5ce69",
+        "files_sha256": "eb1558ea090eb99c8e250f9beabc49a02ad4dc0ec1c5292826eb27dac82c8fce",
+        "included_patch_ids": [],
+        "test_sequence": 19,
+        "message": "Deliver patch-2 (v5): symlinked directories are collected again.\n\nSource fix (src/_pytest/pathlib.py, `visit()`): `entry.is_dir(follow_symlinks=False)` → `entry.is_dir()`, removing the 6.1.0 regression from b473e515 so a symlink to a directory inside a collected directory is followed and collected as before. Other callers (collection entry points, fnmatch/rootdir handling with plain paths) are unaffected.\n\nRegression test (testing/test_collection.py::test_collect_symlink_dir): builds `real/test_real.py` plus directory symlink `symlink_to_real -> real`, and asserts BOTH `real/test_real.py::test_real` and `symlink_to_real/test_real.py::test_real` are collected and PASSED with exit code 0.\n\nEvidence the test discriminates: with the fix reverted, this test alone fails (1 collected, 1 failed, 0 passed — report test-report-b4914457516f7caad01b7c5a); with the fix in place it passes.\n\nCurrent-version (v5) public run: testing/test_collection.py + testing/test_pathlib.py → 142 collected, 141 passed, 1 xfailed, 0 failed, 0 errors (report test-report-261c474cf84fd7110b4f6f12). Earlier same-change run of test_collection.py alone: 80 collected, 79 passed, 1 xfailed (test-report-c00e24e5d81a0f821dbf3c66).\n\nNot verified: only these two modules ran; the remainder of the public suite was not executed on this version, and no hidden acceptance was run. A passing public run is not hidden acceptance.",
+        "status": "fixed_submission_pending_independent_acceptance",
+        "accepted": null,
+        "fixed_submission_is_acceptance": false,
+        "entry_metadata_sha256": "75c78ef134dbf9cd10ac883ef9ff0a4bd87eea7c6742398644636904a881d17b",
+        "organization_evidence": {
+          "version": "v141-role-baseline-managed-world-r1",
+          "organization_id": "S1",
+          "delivery_member": "member_001",
+          "delivery_id": "delivery-2",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v5"
+          },
+          "independent_review": null,
+          "explicit_delivery": true,
+          "automatic_work": false
+        }
+      },
+      "action_id": "action-21",
+      "logical_time": 21,
+      "command_id": "command:member_001:staff-4f1cd91e0f9f422c923ebc03487760a9-20",
+      "command_committed": true,
+      "committed_revision": 21
+    },
+    "request_id": "v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:agent:v193:pytest-dev__pytest-7982:DEEPSEEK_NT_S1_M1_10_V193_B5000K:20261110192008:member_001:0022:attempt1"
+  }
+]
