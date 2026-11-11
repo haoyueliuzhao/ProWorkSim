@@ -1,0 +1,17 @@
+.............F..                                                         [100%]
+=================================== FAILURES ===================================
+___________ test_nested_code_spans_are_not_quoted_twice_in_one_card ____________
+
+    def test_nested_code_spans_are_not_quoted_twice_in_one_card():
+        p={'messages':start(),'tools':[]};text='# ordinary source documentation\n'*30+'def repair(x):\n    y = transform(x)\n    return y\n'
+        call(p['messages'],'read_file',{'path':'a.py'},{'path':'a.py','text':text,'start_character':0,'end_character':len(text),'total_characters':len(text),'source_reference':version(1)})
+        quiet(p);g,idx,store,inv,en=setup(p)
+        out,proof=project(p,'E1',g,en,inv,store,count=count,measure=lambda v:count(json.dumps(v)),indices=idx,budget=4096)
+        cards=[s for s in proof['selected'] if any(f['kind']=='code_function' for f in s['card']['facts'])]
+>       assert cards and any(o['reason']=='already_quoted_source_span' for o in cards[0]['omitted_facts'])
+E       assert ([])
+
+tests/test_fact_context_v199.py:127: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_fact_context_v199.py::test_nested_code_spans_are_not_quoted_twice_in_one_card
+1 failed, 15 passed in 0.28s

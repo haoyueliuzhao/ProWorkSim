@@ -1,0 +1,47 @@
+.............FF.                                                         [100%]
+=================================== FAILURES ===================================
+___________ test_nested_code_spans_are_not_quoted_twice_in_one_card ____________
+
+    def test_nested_code_spans_are_not_quoted_twice_in_one_card():
+        p={'messages':start(),'tools':[]};text='def repair(x):\n    y = transform(x)\n    return y\n'
+        call(p['messages'],'read_file',{'path':'a.py'},{'path':'a.py','text':text,'start_character':0,'end_character':len(text),'total_characters':len(text),'source_reference':version(1)})
+        quiet(p);g,idx,store,inv,en=setup(p)
+        out,proof=project(p,'E1',g,en,inv,store,count=count,measure=lambda v:count(json.dumps(v)),indices=idx,budget=4096)
+        cards=[s for s in proof['selected'] if any(f['kind']=='code_function' for f in s['card']['facts'])]
+>       assert cards and any(o['reason']=='already_quoted_source_span' for o in cards[0]['omitted_facts'])
+E       assert ([])
+
+tests/test_fact_context_v199.py:127: AssertionError
+______________ test_wrong_member_cannot_recover_retained_sources _______________
+
+    def test_wrong_member_cannot_recover_retained_sources():
+        p=diagnostic_fixture();g,idx,store,inv,en=setup(p)
+        out,proof=project(p,'E3',g,en,inv,store,count=count,measure=lambda v:count(json.dumps(v)),indices=idx,budget=4096)
+        ref=proof['selected'][0]['card']['originals'][0]
+>       with pytest.raises(ValueError):store.read({'reference':ref,'start':0},point_id='point',slot_id='episode',member_id='other')
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_fact_context_v199.py:134: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/proworksim/software_context_reader_v179.py:17: in read
+    value=super().read(arguments,point_id=point_id,slot_id=slot_id,member_id=member_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_recovery_v176.py:38: in read
+    value=super().read(arguments,point_id=point_id,slot_id=slot_id,member_id=member_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <proworksim.software_context_reader_v179.SourceLabeledHistoryReader object at 0x7efd10bce2b0>
+arguments = {'reference': 'ctx:3f28ade6e4685e670795a38e', 'start': 0}
+point_id = 'point', slot_id = 'episode', member_id = 'other'
+
+    def read(self,arguments,*,point_id,slot_id,member_id):
+        if (point_id,slot_id,member_id)!=(self.point_id,self.slot_id,self.member_id):
+>           raise PermissionError('Cross-episode/member/private-state recall is forbidden')
+E           PermissionError: Cross-episode/member/private-state recall is forbidden
+
+src/proworksim/software_context_compression_v175.py:47: PermissionError
+=========================== short test summary info ============================
+FAILED tests/test_fact_context_v199.py::test_nested_code_spans_are_not_quoted_twice_in_one_card
+FAILED tests/test_fact_context_v199.py::test_wrong_member_cannot_recover_retained_sources
+2 failed, 14 passed in 0.30s

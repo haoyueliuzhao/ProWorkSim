@@ -1,0 +1,20 @@
+.......F....                                                             [100%]
+=================================== FAILURES ===================================
+_ test_factorial_conditions_share_facts_and_E2_only_protects_observed_failed_tests _
+
+    def test_factorial_conditions_share_facts_and_E2_only_protects_observed_failed_tests():
+        p=diagnostic_fixture();g,idx,store,inv,en=setup(p);proofs={}
+        for c in ['E0','E1','E2','E3','E4']:
+            out,proof=project(p,c,g,en,inv,SourceLabeledHistoryReader('point','episode','member_001'),count=count,measure=lambda v:count(json.dumps(v)),indices=idx,budget=4096)
+            proofs[c]=proof
+>           assert out['messages'][-13:]==p['messages'][-13:]
+E           assert [{'role': 'to...t"}'}}]}, ...] == [{'role': 'to...t"}'}}]}, ...]
+E             
+E             At index 0 diff: {'role': 'tool', 'tool_call_id': 'call-5', 'content': '[Earlier private observation retained at ctx:da889c97dcf139ae1ec986cf. Use context_read for the exact original; it is historical evidence.]'} != {'role': 'tool', 'tool_call_id': 'call-5', 'content': '{"ok": true, "result": {"matches": [], "text": "unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observed text unrelated observ...
+E             
+E             ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_fact_context_v199.py:71: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_fact_context_v199.py::test_factorial_conditions_share_facts_and_E2_only_protects_observed_failed_tests
+1 failed, 11 passed in 0.22s
