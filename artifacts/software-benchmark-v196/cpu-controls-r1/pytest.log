@@ -1,0 +1,469 @@
+EFFFFFFFFFFFFFFFFF                                                       [100%]
+==================================== ERRORS ====================================
+________________________ ERROR at setup of test_result _________________________
+file /data0/zhuxinrui/projects/ProWorkSim/tests/test_context_graph_v196.py, line 18
+  def test_result(run,ver=1,passed=False,text=''):
+E       fixture 'run' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, world_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/data0/zhuxinrui/projects/ProWorkSim/tests/test_context_graph_v196.py:18
+=================================== FAILURES ===================================
+_______ test_execution_and_read_are_one_run_with_actionable_diagnostics ________
+
+    def test_execution_and_read_are_one_run_with_actionable_diagnostics():
+>       payload=old_failed_prefix();graph=build(payload)
+                                          ^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+_________ test_actual_rerun_and_new_version_remain_three_distinct_runs _________
+
+    def test_actual_rerun_and_new_version_remain_three_distinct_runs():
+        payload=old_failed_prefix();ms=payload['messages']
+        call(ms,'run_tests',{'selection':{'kind':'pytest','targets':['tests/test_parser.py']}},test_result('r2'))
+        call(ms,'replace_file',{'path':'parser.py','old':'x','new':'x+1'},{'source_reference':version(2),'paths':['parser.py']})
+        call(ms,'run_tests',{'selection':{'kind':'pytest','targets':['tests/test_parser.py']}},test_result('r3',2,True))
+>       graph=build(payload);assert len([n for n in graph.nodes.values() if n['type']=='TestRun'])==3
+              ^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+___ test_old_report_read_never_reverts_current_version_or_validates_new_code ___
+
+    def test_old_report_read_never_reverts_current_version_or_validates_new_code():
+        payload=old_failed_prefix();ms=payload['messages']
+        call(ms,'replace_file',{'path':'parser.py','old':'return x','new':'return x+1'},{'source_reference':version(2),'paths':['parser.py']})
+        call(ms,'read_test_result',{'report_id':'r1'},test_result('r1'))
+>       graph=build(payload);assert graph.nodes[graph.current_version]['attrs']['source_reference']==version(2)
+              ^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+___________ test_conflicting_report_identity_is_not_silently_merged ____________
+
+    def test_conflicting_report_identity_is_not_silently_merged():
+        payload=old_failed_prefix();call(payload['messages'],'read_test_result',{'report_id':'r1'},test_result('r1',2))
+>       with pytest.raises(GraphIntegrityError):build(payload)
+                                                ^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+_ test_incremental_repetition_is_idempotent_and_separate_scopes_have_separate_ids _
+
+    def test_incremental_repetition_is_idempotent_and_separate_scopes_have_separate_ids():
+>       p=old_failed_prefix();g=build(p);before=g.snapshot();g.ingest(p,step=0)
+                                ^^^^^^^^
+
+tests/test_context_graph_v196.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+_________ test_future_graph_falls_back_without_exposing_future_fields __________
+
+    def test_future_graph_falls_back_without_exposing_future_fields():
+>       p=old_failed_prefix();g=build(p);g.step=2
+                                ^^^^^^^^
+
+tests/test_context_graph_v196.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+__________ test_inferred_dependencies_cannot_be_promoted_to_confirmed __________
+
+    def test_inferred_dependencies_cannot_be_promoted_to_confirmed():
+>       g=build(old_failed_prefix());a,b=list(g.nodes)[:2];sid=next(iter(g.sources))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+_________ test_confirmed_static_edges_are_syntax_not_runtime_coverage __________
+
+    def test_confirmed_static_edges_are_syntax_not_runtime_coverage():
+>       g=build(old_failed_prefix())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+________ test_nested_function_calls_do_not_become_outer_function_calls _________
+
+    def test_nested_function_calls_do_not_become_outer_function_calls():
+        ms=start();call(ms,'read_file',{'path':'nest.py'},{'path':'nest.py','source_reference':version(1),
+            'text':'def outer():\n    def inner():\n        target()\n    return inner\n'})
+>       g=build({'messages':ms,'tools':[]})
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "nest.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+_______ test_graph_uses_observed_dependency_to_find_related_old_failure ________
+
+    def test_graph_uses_observed_dependency_to_find_related_old_failure():
+>       p=old_failed_prefix();g=build(p);out,proof,_=view(p,graph=g)
+                                ^^^^^^^^
+
+tests/test_context_graph_v196.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+________ test_unrelated_historical_failure_is_excluded_from_local_view _________
+
+    def test_unrelated_historical_failure_is_excluded_from_local_view():
+>       p=old_failed_prefix();g=build(p)
+                                ^^^^^^^^
+
+tests/test_context_graph_v196.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+___ test_equal_candidate_pool_and_upper_budget_for_flat_and_graph_selection ____
+
+    def test_equal_candidate_pool_and_upper_budget_for_flat_and_graph_selection():
+>       p=old_failed_prefix();plain=build(p,deps=False);graph=build(p)
+                                    ^^^^^^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+___ test_baseline_matches_frozen_window_and_preserves_actions_recent_history ___
+
+    def test_baseline_matches_frozen_window_and_preserves_actions_recent_history():
+        p=old_failed_prefix();store=SourceLabeledHistoryReader('point','episode','member_001')
+        expected,_=old_project(p,'M1-5',store,count=lambda s:(len(s)+3)//4)
+>       got,_,_=view(p,'M1-5');assert got==expected
+                ^^^^^^^^^^^^^^
+
+tests/test_context_graph_v196.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:37: in view
+    graph=graph or build(payload);store=SourceLabeledHistoryReader('point','episode','member_001')
+                   ^^^^^^^^^^^^^^
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+_____________ test_exact_original_recovery_and_cross_member_denial _____________
+
+    def test_exact_original_recovery_and_cross_member_denial():
+>       p=old_failed_prefix();_,proof,store=view(p)
+                                            ^^^^^^^
+
+tests/test_context_graph_v196.py:148: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:37: in view
+    graph=graph or build(payload);store=SourceLabeledHistoryReader('point','episode','member_001')
+                   ^^^^^^^^^^^^^^
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+____ test_corrupt_graph_or_tampered_fact_falls_back_to_original_masked_view ____
+
+    def test_corrupt_graph_or_tampered_fact_falls_back_to_original_masked_view():
+>       p=old_failed_prefix();g=build(p);key=next(iter(g.edges));g.edges[key]['target']='missing'
+                                ^^^^^^^^
+
+tests/test_context_graph_v196.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+______ test_small_budget_returns_indices_without_shortening_recent_window ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f8bde58b360>
+
+    def test_small_budget_returns_indices_without_shortening_recent_window(monkeypatch):
+        p=old_failed_prefix();monkeypatch.setitem(RULES,'added_content_tokens',1)
+>       got,proof,_=view(p);base,_,_=view(p,'M1-5')
+                    ^^^^^^^
+
+tests/test_context_graph_v196.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:37: in view
+    graph=graph or build(payload);store=SourceLabeledHistoryReader('point','episode','member_001')
+                   ^^^^^^^^^^^^^^
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+__________ test_no_filesystem_or_hidden_world_access_and_determinism ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f8bde58ba80>
+
+    def test_no_filesystem_or_hidden_world_access_and_determinism(monkeypatch):
+        monkeypatch.setattr(Path,'read_bytes',lambda *_:pytest.fail('Unobserved source access'))
+>       p=old_failed_prefix();a,pa,_=view(p);b,pb,_=view(p)
+                                     ^^^^^^^
+
+tests/test_context_graph_v196.py:178: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_context_graph_v196.py:37: in view
+    graph=graph or build(payload);store=SourceLabeledHistoryReader('point','episode','member_001')
+                   ^^^^^^^^^^^^^^
+tests/test_context_graph_v196.py:35: in build
+    def build(payload,*,deps=True):return ObservedWorkGraph('episode','member_001',dependencies_enabled=deps).ingest(payload,step=0)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/proworksim/software_context_graph_v196.py:342: in ingest
+    name=call.get('function',{}).get('name');arguments=obj(call.get('function',{}).get('arguments'))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+text = '{"path": "parser.py"}'
+
+    def obj(text):
+>       try:value=json.loads(text)
+                  ^^^^
+E       NameError: name 'json' is not defined. Did you forget to import 'json'?
+
+src/proworksim/software_context_graph_v196.py:32: NameError
+=========================== short test summary info ============================
+FAILED tests/test_context_graph_v196.py::test_execution_and_read_are_one_run_with_actionable_diagnostics
+FAILED tests/test_context_graph_v196.py::test_actual_rerun_and_new_version_remain_three_distinct_runs
+FAILED tests/test_context_graph_v196.py::test_old_report_read_never_reverts_current_version_or_validates_new_code
+FAILED tests/test_context_graph_v196.py::test_conflicting_report_identity_is_not_silently_merged
+FAILED tests/test_context_graph_v196.py::test_incremental_repetition_is_idempotent_and_separate_scopes_have_separate_ids
+FAILED tests/test_context_graph_v196.py::test_future_graph_falls_back_without_exposing_future_fields
+FAILED tests/test_context_graph_v196.py::test_inferred_dependencies_cannot_be_promoted_to_confirmed
+FAILED tests/test_context_graph_v196.py::test_confirmed_static_edges_are_syntax_not_runtime_coverage
+FAILED tests/test_context_graph_v196.py::test_nested_function_calls_do_not_become_outer_function_calls
+FAILED tests/test_context_graph_v196.py::test_graph_uses_observed_dependency_to_find_related_old_failure
+FAILED tests/test_context_graph_v196.py::test_unrelated_historical_failure_is_excluded_from_local_view
+FAILED tests/test_context_graph_v196.py::test_equal_candidate_pool_and_upper_budget_for_flat_and_graph_selection
+FAILED tests/test_context_graph_v196.py::test_baseline_matches_frozen_window_and_preserves_actions_recent_history
+FAILED tests/test_context_graph_v196.py::test_exact_original_recovery_and_cross_member_denial
+FAILED tests/test_context_graph_v196.py::test_corrupt_graph_or_tampered_fact_falls_back_to_original_masked_view
+FAILED tests/test_context_graph_v196.py::test_small_budget_returns_indices_without_shortening_recent_window
+FAILED tests/test_context_graph_v196.py::test_no_filesystem_or_hidden_world_access_and_determinism
+ERROR tests/test_context_graph_v196.py::test_result
+17 failed, 1 error in 0.81s
