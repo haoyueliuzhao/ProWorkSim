@@ -1,0 +1,64 @@
+FF.FF...F...                                                             [100%]
+=================================== FAILURES ===================================
+__________ test_partial_class_body_cannot_be_a_fully_qualified_symbol __________
+
+    def test_partial_class_body_cannot_be_a_fully_qualified_symbol():
+        ms=start();text='    def method(self):\n        return 1\n';read_piece(ms,'a.py',text,50,50+len(text),1000)
+        en=entities(build({'messages':ms}));assert not any(e['kind']=='Symbol' for e in en.entities.values())
+>       assert any(e['kind']=='Reference' and e['attrs']['qualified_name'] is None for e in en.entities.values())
+E       assert False
+E        +  where False = any(<generator object test_partial_class_body_cannot_be_a_fully_qualified_symbol.<locals>.<genexpr> at 0x7fa02d215d80>)
+
+tests/test_global_evidence_v198.py:20: AssertionError
+_ test_complete_same_version_pieces_resolve_exact_qualified_names_and_signature _
+
+    def test_complete_same_version_pieces_resolve_exact_qualified_names_and_signature():
+        ms=start();text='class A:\n    def f(self, x):\n        return x\nclass B:\n    def f(self):\n        return 1\n';split=30
+        read_piece(ms,'a.py',text[:split],0,split,len(text));read_piece(ms,'a.py',text[split:],split,len(text),len(text))
+        en=entities(build({'messages':ms}));syms=[e for e in en.entities.values() if e['kind']=='Symbol']
+>       assert {'A','A.f','B','B.f'}=={e['identity']['qualified_name'] for e in syms}
+E       AssertionError: assert {'A', 'A.f', 'B', 'B.f'} == set()
+E         
+E         Extra items in the left set:
+E         'B'
+E         'A.f'
+E         'B.f'
+E         'A'
+E         Use -v to get more diff
+
+tests/test_global_evidence_v198.py:26: AssertionError
+___________ test_conflicting_overlap_is_recorded_not_chosen_silently ___________
+
+    def test_conflicting_overlap_is_recorded_not_chosen_silently():
+        ms=start();read_piece(ms,'a.py','def f():\n',0,9,15);read_piece(ms,'a.py','WRONG',4,9,15)
+>       en=entities(build({'messages':ms}));assert en.fragments[0]['conflict'] and not en.full_files
+                                                   ^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_global_evidence_v198.py:36: IndexError
+_____ test_cross_file_resolution_remains_inferred_even_with_complete_text ______
+
+    def test_cross_file_resolution_remains_inferred_even_with_complete_text():
+        ms=start();a='from pkg.b import f\ndef g():\n    return f()\n';b='def f():\n    return 1\n'
+        read_piece(ms,'pkg/a.py',a,0,len(a),len(a));read_piece(ms,'pkg/b.py',b,0,len(b),len(b))
+        en=entities(build({'messages':ms}));links=[e for e in en.edges.values() if e['relation_type']=='resolves_to']
+>       assert links and all(e['verification_status']=='Inferred' and not e['runtime_dispatch_verified'] for e in links)
+E       assert ([])
+
+tests/test_global_evidence_v198.py:42: AssertionError
+__ test_more_than_eight_real_failed_reports_can_be_covered_without_path_gate ___
+
+    def test_more_than_eight_real_failed_reports_can_be_covered_without_path_gate():
+        _,proof,_=project_fixture(many_failed_tests())
+>       assert len(proof['mandatory'])==10
+E       AssertionError: assert 9 == 10
+E        +  where 9 = len({'event:7e5dcd0d3ed8061cf30d756b': {'constraint': 'latest_observed_unsuccessful_actual_test_for_exact_selector', 'sele...e113a10', 'source_version': 'Version:712e7cacc876ffb32e724797', 'does_not_prove_current_code_failure': True, ...}, ...})
+
+tests/test_global_evidence_v198.py:70: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_global_evidence_v198.py::test_partial_class_body_cannot_be_a_fully_qualified_symbol
+FAILED tests/test_global_evidence_v198.py::test_complete_same_version_pieces_resolve_exact_qualified_names_and_signature
+FAILED tests/test_global_evidence_v198.py::test_conflicting_overlap_is_recorded_not_chosen_silently
+FAILED tests/test_global_evidence_v198.py::test_cross_file_resolution_remains_inferred_even_with_complete_text
+FAILED tests/test_global_evidence_v198.py::test_more_than_eight_real_failed_reports_can_be_covered_without_path_gate
+5 failed, 7 passed in 0.26s

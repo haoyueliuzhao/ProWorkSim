@@ -1,0 +1,1154 @@
+{
+  "seed": 20261111198,
+  "rows": [
+    {
+      "point": "P020",
+      "event": "E002",
+      "label": "useful",
+      "reason": "Helper catch context bounds separate non-ASCII edit.",
+      "source_messages": [
+        14
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E002",
+        "kind": "code",
+        "paths": [
+          "requests/models.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          14
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "requests/models.py",
+            "message_index": 14
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 14,
+            "excerpt": "    def __repr__(self):\n        return '<PreparedRequest [%s]>' % (self.method)\n\n    def copy(self):\n        p = PreparedRequest()\n        p.method = self.method\n        p.url = self.url\n        p.headers = self.headers.copy() if self.headers is not None else None\n        p._cookies = _copy_cookie_jar(self._cookies)\n        p.body = self.body\n        p.hooks = self.hooks\n        p._body_position = self._body_position\n        return p\n\n    def prepare_method(self, method):\n        \"\"\"Prepares the given HTTP method.\"\"\"\n        self.method = method\n        if self.method is not None:\n            self.method = to_native_string(self.method.upper())\n\n    @staticmethod\n    def _get_idna_encoded_host(host):\n        import idna\n\n        try:\n            host = idna.encode(host, uts46=True).decode('utf-8')\n        except idna.IDNAError:\n            raise UnicodeError\n        return host\n\n    def prepare_url(self, url, params):\n        \"\"\"Prepares the given HTTP URL.\"\"\"\n        #: Accept objects ",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P047",
+      "event": "E054",
+      "label": "useful",
+      "reason": "Previous body provides scope for current edit but retained before text suffices.",
+      "source_messages": [
+        233
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E054",
+        "kind": "code",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v21"
+        },
+        "source_message_indices": [
+          233
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "seaborn/_core/scales.py",
+            "message_index": 233
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 233,
+            "excerpt": "\n        else:\n            normalize = vmin = vmax = None\n\n        new._pipeline = [\n            axis.convert_units,\n            forward,\n            normalize,\n            prop.get_mapping(new, data)\n        ]\n\n        def spacer(x):\n            x = x.dropna().unique()\n            if len(x) < 2:\n                return np.nan\n            return np.min(np.diff(np.sort(x)))\n        new._spacer = spacer\n\n        # TODO How to allow disabling of legend for all uses of property?\n        # Could add a Scale parameter, or perhaps Scale.suppress()?\n        # Are there other useful parameters that would be in Scale.legend()\n        # besides allowing Scale.legend(False)?\n        if prop.legend:\n            axis.set_view_interval(vmin, vmax)\n            locs = axis.major.locator()\n            locs = locs[(vmin <= locs) & (locs <= vmax)]\n            formatter = axis.major.formatter\n            # Some formatters (e.g. ScalarFormatter) factor a common offset (like\n            # \"1e6\") out of the ti",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P047",
+      "event": "E037",
+      "label": "useful",
+      "reason": "Captured-axis probe construction makes observation interpretable; exact action retained.",
+      "source_messages": [
+        167
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E037",
+        "kind": "change",
+        "paths": [
+          "tests/_core/test_issue_diag_tmp.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v14"
+        },
+        "source_message_indices": [
+          167
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "tests/_core/test_issue_diag_tmp.py",
+            "message_index": 166
+          },
+          {
+            "name": "written_text",
+            "value": "import matplotlib as mpl\nimport pandas as pd\n\nfrom seaborn._core import scales as S\nfrom seaborn._core.properties import PointSize\n\n\ndef test_diag():\n    with mpl.rc_context({\"axes.formatter.useoffset\": True}):\n        orig = S.PseudoAxis.__init__\n        captured = {}\n\n        def patched(self, *a, **k):\n            o",
+            "message_index": 166
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P036",
+      "event": "E005",
+      "label": "useful",
+      "reason": "Diff includes recursive call context; retained edit and issue already establish intended change.",
+      "source_messages": [
+        24
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E005",
+        "kind": "diff",
+        "paths": [
+          "src/_pytest/pathlib.py"
+        ],
+        "version_status": "current_observed_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_message_indices": [
+          24
+        ],
+        "facts": [
+          {
+            "name": "diff_excerpt",
+            "value": "--- a/src/_pytest/pathlib.py\n+++ b/src/_pytest/pathlib.py\n@@ -558,7 +558,7 @@\n     entries = sorted(os.scandir(path), key=lambda entry: entry.name)\n     yield from entries\n     for entry in entries:\n-        if entry.is_dir(follow_symlinks=False) and recurse(entry):\n+        if entry.is_dir() and recurse(entry):\n             yield from visit(entry.path, recurse)\n \n \n",
+            "message_index": 24
+          },
+          {
+            "name": "path",
+            "value": "src/_pytest/pathlib.py",
+            "message_index": 24
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 24,
+            "excerpt": "--- a/src/_pytest/pathlib.py\n+++ b/src/_pytest/pathlib.py\n@@ -558,7 +558,7 @@\n     entries = sorted(os.scandir(path), key=lambda entry: entry.name)\n     yield from entries\n     for entry in entries:\n-        if entry.is_dir(follow_symlinks=False) and recurse(entry):\n+        if entry.is_dir() and recurse(entry):\n             yield from visit(entry.path, recurse)\n \n \n",
+            "truncated": false
+          }
+        ]
+      }
+    },
+    {
+      "point": "P023",
+      "event": "E009",
+      "label": "useful",
+      "reason": "Cache consumer body gives context beyond small change.",
+      "source_messages": [
+        50
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E009",
+        "kind": "code",
+        "paths": [
+          "sphinx/ext/viewcode.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          50
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "sphinx/ext/viewcode.py",
+            "message_index": 50
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 50,
+            "excerpt": " names.add(fullname)\n            pagename = posixpath.join(OUTPUT_DIRNAME, modname.replace('.', '/'))\n            inline = nodes.inline('', _('[source]'), classes=['viewcode-link'])\n            onlynode = addnodes.only(expr='html')\n            onlynode += addnodes.pending_xref('', inline, reftype='viewcode', refdomain='std',\n                                              refexplicit=False, reftarget=pagename,\n                                              refid=fullname, refdoc=env.docname)\n            signode += onlynode\n\n\ndef env_merge_info(app: Sphinx, env: BuildEnvironment, docnames: Iterable[str],\n                   other: BuildEnvironment) -> None:\n    if not hasattr(other, '_viewcode_modules'):\n        return\n    # create a _viewcode_modules dict on the main environment\n    if not hasattr(env, '_viewcode_modules'):\n        env._viewcode_modules = {}  # type: ignore\n    # now merge in the information from the subprocess\n    env._viewcode_modules.update(other._viewcode_modules)  # t",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P044",
+      "event": "E006",
+      "label": "useful",
+      "reason": "Public is_separable tests add scope context.",
+      "source_messages": [
+        26
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E006",
+        "kind": "code",
+        "paths": [
+          "astropy/modeling/tests/test_separable.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          26
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "astropy/modeling/tests/test_separable.py",
+            "message_index": 26
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 26,
+            "excerpt": "1, 1]]))\n\n    # Error\n    with pytest.raises(ModelDefinitionError, match=r\"Unsupported operands for arithmetic operator: .*\"):\n        _arith_oper(sh1, map1)\n\n\n@pytest.mark.parametrize(('compound_model', 'result'), compound_models.values())\ndef test_separable(compound_model, result):\n    assert_allclose(is_separable(compound_model), result[0])\n    assert_allclose(separability_matrix(compound_model), result[1])\n\n\ndef test_custom_model_separable():\n    @custom_model\n    def model_a(x):\n        return x\n\n    assert model_a().separable\n\n    @custom_model\n    def model_c(x, y):\n        return x + y\n\n    assert not model_c().separable\n    assert np.all(separability_matrix(model_c()) == [True, True])\n",
+            "truncated": false
+          }
+        ]
+      }
+    },
+    {
+      "point": "P006",
+      "event": "E001",
+      "label": "useful",
+      "reason": "Identity and Pow handling provide context for equality behavior beyond changed lines.",
+      "source_messages": [
+        12
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E001",
+        "kind": "code",
+        "paths": [
+          "sympy/core/basic.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          12
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "sympy/core/basic.py",
+            "message_index": 12
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 12,
+            "excerpt": "        return self.class_key(), args, S.One.sort_key(), S.One\n\n    def __eq__(self, other):\n        \"\"\"Return a boolean indicating whether a == b on the basis of\n        their symbolic trees.\n\n        This is the same as a.compare(b) == 0 but faster.\n\n        Notes\n        =====\n\n        If a class that overrides __eq__() needs to retain the\n        implementation of __hash__() from a parent class, the\n        interpreter must be told this explicitly by setting __hash__ =\n        <ParentClass>.__hash__. Otherwise the inheritance of __hash__()\n        will be blocked, just as if __hash__ had been explicitly set to\n        None.\n\n        References\n        ==========\n\n        from http://docs.python.org/dev/reference/datamodel.html#object.__hash__\n        \"\"\"\n        from sympy import Pow\n        if self is other:\n            return True\n\n        if type(self) is not type(other):\n            # issue 6100 a**1.0 == a like a**2.0 == a**2\n            if isinstance(self, Pow) and self.exp =",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P046",
+      "event": "E030",
+      "label": "useful",
+      "reason": "Actual regression oracles explain failure distinction; full created test remains in action.",
+      "source_messages": [
+        134
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E030",
+        "kind": "change",
+        "paths": [
+          "tests/_core/test_issue_offset_tmp.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v11"
+        },
+        "source_message_indices": [
+          134
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "tests/_core/test_issue_offset_tmp.py",
+            "message_index": 133
+          },
+          {
+            "name": "written_text",
+            "value": "import matplotlib as mpl\nimport pandas as pd\nimport pytest\n\nfrom seaborn._core.scales import Continuous\nfrom seaborn._core.properties import PointSize\n\n\ndef _labels(useoffset, data):\n    with mpl.rc_context({\"axes.formatter.useoffset\": useoffset}):\n        return Continuous()._setup(pd.Series(data), PointSize())._legen",
+            "message_index": 133
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P022",
+      "event": "E017",
+      "label": "useful",
+      "reason": "v5 test body may help compare test placement, but retained edits record change.",
+      "source_messages": [
+        95
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E017",
+        "kind": "code",
+        "paths": [
+          "tests/test_ext_viewcode.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "source_message_indices": [
+          95
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "tests/test_ext_viewcode.py",
+            "message_index": 95
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 95,
+            "excerpt": "\"\"\"\n    test_ext_viewcode\n    ~~~~~~~~~~~~~~~~~\n\n    Test sphinx.ext.viewcode extension.\n\n    :copyright: Copyright 2007-2021 by the Sphinx team, see AUTHORS.\n    :license: BSD, see LICENSE for details.\n\"\"\"\n\nimport re\n\nimport pytest\n\n\n@pytest.mark.sphinx(testroot='ext-viewcode')\ndef test_viewcode(app, status, warning):\n    app.builder.build_all()\n\n    warnings = re.sub(r'\\\\+', '/', warning.getvalue())\n    assert re.findall(\n        r\"index.rst:\\d+: WARNING: Object named 'func1' not found in include \" +\n        r\"file .*/spam/__init__.py'\",\n        warnings\n    )\n\n    result = (app.outdir / 'index.html').read_text()\n    assert result.count('href=\"_modules/spam/mod1.html#func1\"') == 2\n    assert result.count('href=\"_modules/spam/mod2.html#func2\"') == 2\n    assert result.count('href=\"_modules/spam/mod1.html#Class1\"') == 2\n    assert result.count('href=\"_modules/spam/mod2.html#Class2\"') == 2\n    assert result.count('@decorator') == 1\n\n    # test that the class attribute is correctly docume",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P026",
+      "event": "E003",
+      "label": "useful",
+      "reason": "7 项选择通过的原始版本证据可复核，但当前状态与保留调用已说明范围。",
+      "source_messages": [
+        13,
+        14,
+        31
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E003",
+        "kind": "test",
+        "paths": [
+          "lib/matplotlib/tests/test_axes.py"
+        ],
+        "version_status": "current_observed_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_message_indices": [
+          14
+        ],
+        "facts": [
+          {
+            "name": "passed",
+            "value": true,
+            "message_index": 14
+          },
+          {
+            "name": "counts",
+            "value": {
+              "collected": 7,
+              "errors": 0,
+              "failed": 0,
+              "passed": 7,
+              "skipped": 0,
+              "xfailed": 0,
+              "xpassed": 0,
+              "tests_run": 7
+            },
+            "message_index": 14
+          },
+          {
+            "name": "report_id",
+            "value": "test-report-729c006a196894e6d8445e78",
+            "message_index": 14
+          },
+          {
+            "name": "validation_status",
+            "value": "verified",
+            "message_index": 14
+          },
+          {
+            "name": "declared_selection",
+            "value": {
+              "kind": "pytest",
+              "targets": [
+                "lib/matplotlib/tests/test_axes.py"
+              ],
+              "keyword": "hexbin"
+            },
+            "message_index": 13
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 14,
+            "excerpt": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+            "truncated": false
+          }
+        ]
+      }
+    },
+    {
+      "point": "P015",
+      "event": "E002",
+      "label": "useful",
+      "reason": "Shows guard placement relative to superclass setup and self.name; changed validation block is already retained.",
+      "source_messages": [
+        12
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E002",
+        "kind": "code",
+        "paths": [
+          "src/flask/blueprints.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          12
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "src/flask/blueprints.py",
+            "message_index": 12
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 12,
+            "excerpt": "        subdomain: t.Optional[str] = None,\n        url_defaults: t.Optional[dict] = None,\n        root_path: t.Optional[str] = None,\n        cli_group: t.Optional[str] = _sentinel,  # type: ignore\n    ):\n        super().__init__(\n            import_name=import_name,\n            static_folder=static_folder,\n            static_url_path=static_url_path,\n            template_folder=template_folder,\n            root_path=root_path,\n        )\n\n        if \".\" in name:\n            raise ValueError(\"'name' may not contain a dot '.' character.\")\n\n        self.name = name\n        self.url_prefix = url_prefix\n        self.subdomain = subdomain\n        self.deferred_functions: t.List[DeferredSetupFunction] = []\n\n        if url_defaults is None:\n            url_defaults = {}\n\n        self.url_values_defaults = url_defaults\n        self.cli_group = cli_group\n        self._blueprints: t.List[t.Tuple[\"Blueprint\", dict]] = []\n\n    def _check_setup_finished(self, f_name: str) -> None:\n        if self._go",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P031",
+      "event": "E006",
+      "label": "useful",
+      "reason": "Both timezone suites failed before repair; single-case recent failure and new full pass already establish correction.",
+      "source_messages": [
+        20,
+        23
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E006",
+        "kind": "failed_test",
+        "paths": [
+          "tests/cache/tests.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_message_indices": [
+          20,
+          23
+        ],
+        "facts": [
+          {
+            "name": "passed",
+            "value": false,
+            "message_index": 20
+          },
+          {
+            "name": "counts",
+            "value": {
+              "collected": 112,
+              "errors": 0,
+              "failed": 2,
+              "passed": 110,
+              "skipped": 0,
+              "xfailed": 0,
+              "xpassed": 0,
+              "tests_run": 112
+            },
+            "message_index": 20
+          },
+          {
+            "name": "report_id",
+            "value": "test-report-6e6f09c2c4759efa5331d3a3",
+            "message_index": 20
+          },
+          {
+            "name": "validation_status",
+            "value": "failed",
+            "message_index": 20
+          },
+          {
+            "name": "declared_selection",
+            "value": {
+              "kind": "django",
+              "targets": [
+                "cache.tests.DBCacheTests",
+                "cache.tests.DBCacheWithTimeZoneTests"
+              ]
+            },
+            "message_index": 19
+          },
+          {
+            "name": "error_excerpt",
+            "value": "nAssertionError: 49 != 29",
+            "message_index": 23
+          },
+          {
+            "name": "reported_location",
+            "value": "tests/cache/tests.py",
+            "message_index": 23
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 20,
+            "excerpt": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+            "truncated": false
+          },
+          {
+            "message_index": 23,
+            "excerpt": "{\n      \"status\": \"failed\",\n      \"executed\": true,\n      \"passed\": false,\n      \"output\": \"Creating test database for alias 'default'...\\n.................F.......................................................F......................................\\n======================================================================\\nFAIL: test_cull (cache.tests.DBCacheTests)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/testbed/tests/cache/tests.py\\\", line 619, in test_cull\\n    self._perform_cull_test('cull', 50, 29)\\n  File \\\"/testbed/tests/cache/tests.py\\\", line 616, in _perform_cull_test\\n    self.assertEqual(count, final_count)\\nAssertionError: 49 != 29\\n\\n======================================================================\\nFAIL: test_cull (cache.tests.DBCacheWithTimeZoneTests)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/testbed/tests/cache/t",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P043",
+      "event": "E012",
+      "label": "irrelevant",
+      "reason": "Intermediate edit superseded; actions retained.",
+      "source_messages": [
+        47
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E012",
+        "kind": "change",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_message_indices": [
+          47
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "astropy/modeling/separable.py",
+            "message_index": 46
+          },
+          {
+            "name": "change_before",
+            "value": "    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n    if isinstance(right, Model):\n        cright = _coord_matrix(right, 'right'",
+            "message_index": 46
+          },
+          {
+            "name": "change_after",
+            "value": "    noutp = _compute_n_outputs(left, right)\n\n    if isinstance(left, Model):\n        cleft = _coord_matrix(left, 'left', noutp)\n    else:\n        cleft = np.zeros((noutp, left.shape[1]))\n        cleft[: left.shape[0], : left.shape[1]] = left\n    if isinstance(right, Model):\n        cright = _coord_matrix(right, 'right'",
+            "message_index": 46
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P023",
+      "event": "E027",
+      "label": "irrelevant",
+      "reason": "Same-version prior failure is repeated by latest current report; no unique traceback in saved read pages.",
+      "source_messages": [
+        119,
+        122,
+        125,
+        137,
+        140,
+        143
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E027",
+        "kind": "failed_test",
+        "paths": [
+          "tests/test_ext_viewcode.py"
+        ],
+        "version_status": "current_observed_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "source_message_indices": [
+          119,
+          122,
+          125,
+          137,
+          140,
+          143
+        ],
+        "facts": [
+          {
+            "name": "passed",
+            "value": false,
+            "message_index": 119
+          },
+          {
+            "name": "counts",
+            "value": {
+              "collected": 3,
+              "errors": 0,
+              "failed": 1,
+              "passed": 2,
+              "skipped": 0,
+              "xfailed": 0,
+              "xpassed": 0,
+              "tests_run": 3
+            },
+            "message_index": 119
+          },
+          {
+            "name": "report_id",
+            "value": "test-report-c7af67e54f84429e9c14065a",
+            "message_index": 119
+          },
+          {
+            "name": "validation_status",
+            "value": "failed",
+            "message_index": 119
+          },
+          {
+            "name": "declared_selection",
+            "value": {
+              "kind": "pytest",
+              "targets": [
+                "tests/test_ext_viewcode.py"
+              ]
+            },
+            "message_index": 118
+          },
+          {
+            "name": "reported_location",
+            "value": "tests/test_ext_viewcode.py",
+            "message_index": 122
+          },
+          {
+            "name": "observed_command_json",
+            "value": "[\n        \"/opt/miniconda3/envs/testbed/bin/python\",\n        \"-m\",\n        \"pytest\",\n        \"--\",\n        \"tests/test_ext_viewcode.py\"\n      ]",
+            "message_index": 140
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 119,
+            "excerpt": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+            "truncated": false
+          },
+          {
+            "message_index": 122,
+            "excerpt": "   \"xfailed\": 0,\n        \"xpassed\": 0,\n        \"tests_run\": 3\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"pytest\",\n        \"source\": {\n          \"run_id\": \"8b4470d51cbb6796d75ed28226a8f594\",\n          \"parent_run_id\": null,\n          \"pid\": 19,\n          \"process_group\": 19,\n          \"framework\": \"pytest\",\n          \"delegated_hash_process\": false\n        },\n        \"report_count\": 1,\n        \"journal_record_count\": 2,\n        \"nested_report_count\": 0,\n        \"duplicate_journal_records_ignored\": 0,\n        \"error\": null,\n        \"partial\": false,\n        \"root_counts_only\": true,\n        \"nested_failures_are_diagnostic_not_summed\": true,\n        \"sessions\": [\n          {\n            \"run_id\": \"8b4470d51cbb6796d75ed28226a8f594\",\n            \"parent_run_id\": null,\n            \"pid\": 19,\n            \"framework\": \"pytest\",\n            \"counts\": {\n              \"collected\": 3,\n              \"errors\": 0,\n        ",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P043",
+      "event": "E001",
+      "label": "irrelevant",
+      "reason": "Duplicate early public API read.",
+      "source_messages": [
+        5
+      ],
+      "resolution": "adjudicated",
+      "candidate": {
+        "id": "E001",
+        "kind": "code",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          5
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "astropy/modeling/separable.py",
+            "message_index": 5
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 5,
+            "excerpt": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\n\"\"\"\nFunctions to determine if a model is separable, i.e.\nif the model outputs are independent.\n\nIt analyzes ``n_inputs``, ``n_outputs`` and the operators\nin a compound model by stepping through the transforms\nand creating a ``coord_matrix`` of shape (``n_outputs``, ``n_inputs``).\n\n\nEach modeling operator is represented by a function which\ntakes two simple models (or two ``coord_matrix`` arrays) and\nreturns an array of shape (``n_outputs``, ``n_inputs``).\n\n\"\"\"\n\nimport numpy as np\n\nfrom .core import Model, ModelDefinitionError, CompoundModel\nfrom .mappings import Mapping\n\n\n__all__ = [\"is_separable\", \"separability_matrix\"]\n\n\ndef is_separable(transform):\n    \"\"\"\n    A separability test for the outputs of a transform.\n\n    Parameters\n    ----------\n    transform : `~astropy.modeling.core.Model`\n        A (compound) model.\n\n    Returns\n    -------\n    is_separable : ndarray\n        A boolean array with size ``transform.n_output",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P047",
+      "event": "E050",
+      "label": "irrelevant",
+      "reason": "No-op write rejection resolved.",
+      "source_messages": [
+        212
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E050",
+        "kind": "error",
+        "paths": [
+          "tests/_core/test_issue_offset_tmp.py"
+        ],
+        "version_status": "unknown",
+        "source_version": null,
+        "source_message_indices": [
+          212
+        ],
+        "facts": [
+          {
+            "name": "error_type",
+            "value": "ValueError",
+            "message_index": 212
+          },
+          {
+            "name": "error_excerpt",
+            "value": "The operation would not change the current version",
+            "message_index": 212
+          },
+          {
+            "name": "path",
+            "value": "tests/_core/test_issue_offset_tmp.py",
+            "message_index": 211
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P043",
+      "event": "E002",
+      "label": "irrelevant",
+      "reason": "Old stack body superseded by current read.",
+      "source_messages": [
+        8
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E002",
+        "kind": "code",
+        "paths": [
+          "astropy/modeling/separable.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          8
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "astropy/modeling/separable.py",
+            "message_index": 8
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 8,
+            "excerpt": "noutp = lnout + rnout\n    return noutp\n\n\ndef _arith_oper(left, right):\n    \"\"\"\n    Function corresponding to one of the arithmetic operators\n    ['+', '-'. '*', '/', '**'].\n\n    This always returns a nonseparable output.\n\n\n    Parameters\n    ----------\n    left, right : `astropy.modeling.Model` or ndarray\n        If input is of an array, it is the output of `coord_matrix`.\n\n    Returns\n    -------\n    result : ndarray\n        Result from this operation.\n    \"\"\"\n    # models have the same number of inputs and outputs\n    def _n_inputs_outputs(input):\n        if isinstance(input, Model):\n            n_outputs, n_inputs = input.n_outputs, input.n_inputs\n        else:\n            n_outputs, n_inputs = input.shape\n        return n_inputs, n_outputs\n\n    left_inputs, left_outputs = _n_inputs_outputs(left)\n    right_inputs, right_outputs = _n_inputs_outputs(right)\n\n    if left_inputs != right_inputs or left_outputs != right_outputs:\n        raise ModelDefinitionError(\n            \"Unsupported",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P047",
+      "event": "E022",
+      "label": "irrelevant",
+      "reason": "Assertion-free past pass cannot resolve current failures.",
+      "source_messages": [
+        95,
+        98
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E022",
+        "kind": "test",
+        "paths": [
+          "tests/_core/test_issue_offset_tmp.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "source_message_indices": [
+          95,
+          98
+        ],
+        "facts": [
+          {
+            "name": "passed",
+            "value": true,
+            "message_index": 95
+          },
+          {
+            "name": "counts",
+            "value": {
+              "collected": 2,
+              "errors": 0,
+              "failed": 0,
+              "passed": 2,
+              "skipped": 0,
+              "xfailed": 0,
+              "xpassed": 0,
+              "tests_run": 2
+            },
+            "message_index": 95
+          },
+          {
+            "name": "report_id",
+            "value": "test-report-f1ead3b9ad403eb436eabdb4",
+            "message_index": 95
+          },
+          {
+            "name": "validation_status",
+            "value": "verified",
+            "message_index": 95
+          },
+          {
+            "name": "declared_selection",
+            "value": {
+              "kind": "pytest",
+              "targets": [
+                "tests/_core/test_issue_offset_tmp.py"
+              ],
+              "keyword": "offset"
+            },
+            "message_index": 94
+          },
+          {
+            "name": "reported_location",
+            "value": "tests/_core/test_issue_offset_tmp.py",
+            "message_index": 98
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 95,
+            "excerpt": "{\n  \"groups\": {\n    \"public_repository_tests\": ",
+            "truncated": false
+          },
+          {
+            "message_index": 98,
+            "excerpt": "{\n      \"status\": \"passed\",\n      \"executed\": true,\n      \"passed\": true,\n      \"output\": \"============================= test session starts ==============================\\nplatform linux -- Python 3.9.20, pytest-8.3.3, pluggy-1.5.0\\nrootdir: /testbed\\nconfigfile: pyproject.toml\\nplugins: cov-5.0.0, xdist-3.6.1\\ncollected 2 items\\n\\ntests/_core/test_issue_offset_tmp.py ..                                  [100%]\\n\\n============================== 2 passed in 0.71s ===============================\\n\",\n      \"validation_status\": \"verified\",\n      \"counts\": {\n        \"collected\": 2,\n        \"errors\": 0,\n        \"failed\": 0,\n        \"passed\": 2,\n        \"skipped\": 0,\n        \"xfailed\": 0,\n        \"xpassed\": 0,\n        \"tests_run\": 2\n      },\n      \"test_evidence\": {\n        \"version\": \"v141-session-bound-public-test-execution-r1\",\n        \"framework\": \"pytest\",\n        \"source\": {\n          \"run_id\": \"0d7c751f23aa9a9c96b1644460215509\",\n          \"parent_run_id\": null,\n          \"pid\": 46,\n   ",
+            "truncated": true
+          }
+        ]
+      }
+    },
+    {
+      "point": "P048",
+      "event": "E008",
+      "label": "irrelevant",
+      "reason": "Resolved no-op.",
+      "source_messages": [
+        38
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E008",
+        "kind": "error",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "version_status": "unknown",
+        "source_version": null,
+        "source_message_indices": [
+          38
+        ],
+        "facts": [
+          {
+            "name": "error_type",
+            "value": "ValueError",
+            "message_index": 38
+          },
+          {
+            "name": "error_excerpt",
+            "value": "The operation would not change the current version",
+            "message_index": 38
+          },
+          {
+            "name": "path",
+            "value": "seaborn/_core/scales.py",
+            "message_index": 37
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P021",
+      "event": "E007",
+      "label": "irrelevant",
+      "reason": "重复空读取无实现证据。",
+      "source_messages": [
+        38
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E007",
+        "kind": "code",
+        "paths": [
+          "sphinx/builders/epub3.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v1"
+        },
+        "source_message_indices": [
+          38
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "sphinx/builders/epub3.py",
+            "message_index": 38
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P047",
+      "event": "E040",
+      "label": "irrelevant",
+      "reason": "Superseded edit retained in actions.",
+      "source_messages": [
+        179
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E040",
+        "kind": "change",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v15"
+        },
+        "source_message_indices": [
+          179
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "seaborn/_core/scales.py",
+            "message_index": 178
+          },
+          {
+            "name": "change_before",
+            "value": "            formatter = axis.major.formatter\n            labels = formatter.format_ticks(locs)\n            # Some formatters (e.g. ScalarFormatter) factor a common offset out of\n            # the tick labels. Because the legend has no place to display that\n            # offset, format the labels so that they describe t",
+            "message_index": 178
+          },
+          {
+            "name": "change_after",
+            "value": "            formatter = axis.major.formatter\n            # Some formatters (e.g. ScalarFormatter) factor a common offset (like\n            # \"1e6\") out of the tick labels. Because the legend has no place to\n            # display that offset, format the labels such that they describe the\n            # true values rather",
+            "message_index": 178
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P048",
+      "event": "E057",
+      "label": "irrelevant",
+      "reason": "Resolved absent temporary path.",
+      "source_messages": [
+        254
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E057",
+        "kind": "error",
+        "paths": [
+          "tests/_core/test_issue_diag_tmp.py"
+        ],
+        "version_status": "unknown",
+        "source_version": null,
+        "source_message_indices": [
+          254
+        ],
+        "facts": [
+          {
+            "name": "error_type",
+            "value": "ToolRejection",
+            "message_index": 254
+          },
+          {
+            "name": "error_excerpt",
+            "value": "Path is absent from this source version. Copy an exact path from list_files or search_repository. To create a new file, explicitly use create_file; write_file only replaces an existing file.",
+            "message_index": 254
+          },
+          {
+            "name": "path",
+            "value": "tests/_core/test_issue_diag_tmp.py",
+            "message_index": 253
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P007",
+      "event": "E016",
+      "label": "irrelevant",
+      "reason": "Change text retained in action.",
+      "source_messages": [
+        81
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E016",
+        "kind": "change",
+        "paths": [
+          "sympy/core/expr.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v6"
+        },
+        "source_message_indices": [
+          81
+        ],
+        "facts": [
+          {
+            "name": "path",
+            "value": "sympy/core/expr.py",
+            "message_index": 80
+          },
+          {
+            "name": "change_before",
+            "value": "        except SympifyError:\n            raise TypeError(\"Invalid comparison %s < %s\" % (self, other))",
+            "message_index": 80
+          },
+          {
+            "name": "change_after",
+            "value": "        except SympifyError:\n            return NotImplemented",
+            "message_index": 80
+          }
+        ],
+        "previews": []
+      }
+    },
+    {
+      "point": "P047",
+      "event": "E013",
+      "label": "irrelevant",
+      "reason": "Superseded diff.",
+      "source_messages": [
+        62
+      ],
+      "resolution": "agreed",
+      "candidate": {
+        "id": "E013",
+        "kind": "diff",
+        "paths": [
+          "seaborn/_core/scales.py"
+        ],
+        "version_status": "historical_version",
+        "source_version": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v3"
+        },
+        "source_message_indices": [
+          62
+        ],
+        "facts": [
+          {
+            "name": "diff_excerpt",
+            "value": "--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -379,6 +379,11 @@\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n             labels = axis.major.formatter.format_ticks(locs)\n+            # Append the offset (e.g. \"1e6\") that some formatters factor out so\n+            # that legend labels remain faithful to the underlying values.\n+            offset = getattr(axis.major.formatter, \"get_offset\", lambda: \"\")()\n+            if offse",
+            "message_index": 62
+          },
+          {
+            "name": "path",
+            "value": "seaborn/_core/scales.py",
+            "message_index": 62
+          }
+        ],
+        "previews": [
+          {
+            "message_index": 62,
+            "excerpt": "--- a/seaborn/_core/scales.py\n+++ b/seaborn/_core/scales.py\n@@ -379,6 +379,11 @@\n             locs = axis.major.locator()\n             locs = locs[(vmin <= locs) & (locs <= vmax)]\n             labels = axis.major.formatter.format_ticks(locs)\n+            # Append the offset (e.g. \"1e6\") that some formatters factor out so\n+            # that legend labels remain faithful to the underlying values.\n+            offset = getattr(axis.major.formatter, \"get_offset\", lambda: \"\")()\n+            if offset:\n+                labels = [f\"{label}{offset}\" for label in labels]\n             new._legend = list(locs), list(labels)\n \n         return new\n",
+            "truncated": false
+          }
+        ]
+      }
+    }
+  ],
+  "selection_without_current_algorithm_results": true
+}
