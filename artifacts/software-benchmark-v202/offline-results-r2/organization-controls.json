@@ -1,0 +1,215 @@
+[
+  {
+    "case": "cross_owner_dependency",
+    "pass": true,
+    "candidates": [
+      {
+        "operation": "AddHandoff",
+        "task_ids": [
+          "TA",
+          "TB"
+        ],
+        "reason": "cross_owner_explicit_task_dependency_without_contract",
+        "evidence_ids": [
+          "control-source:9"
+        ],
+        "status": "proposal_only",
+        "not_executed": true,
+        "sender": "member_001",
+        "recipient": "member_002",
+        "candidate_id": "org:7ca1b43fb1afdb897e4f814f",
+        "validation": {
+          "valid": true,
+          "errors": [],
+          "live_mutation_authorized": false,
+          "required_harness_steps": [
+            "scoped_handoff_or_review_receipt"
+          ],
+          "unfinished_tasks_retain_existing_owners": true,
+          "artifact_authorship_unchanged": true,
+          "proposal_is_not_a_handoff_success": true
+        }
+      },
+      {
+        "operation": "AddHandoff",
+        "task_ids": [
+          "TA",
+          "TC"
+        ],
+        "reason": "cross_owner_explicit_task_dependency_without_contract",
+        "evidence_ids": [
+          "control-source:10"
+        ],
+        "status": "proposal_only",
+        "not_executed": true,
+        "sender": "member_001",
+        "recipient": "member_002",
+        "candidate_id": "org:bb008964457ce0198dc5f07c",
+        "validation": {
+          "valid": true,
+          "errors": [],
+          "live_mutation_authorized": false,
+          "required_harness_steps": [
+            "scoped_handoff_or_review_receipt"
+          ],
+          "unfinished_tasks_retain_existing_owners": true,
+          "artifact_authorship_unchanged": true,
+          "proposal_is_not_a_handoff_success": true
+        }
+      }
+    ]
+  },
+  {
+    "case": "ordinary_change_no_reassignment",
+    "pass": true
+  },
+  {
+    "case": "explicit_handoff_supresses_duplicate",
+    "pass": true
+  },
+  {
+    "case": "blocked_bottleneck",
+    "pass": true,
+    "candidates": [
+      {
+        "operation": "Reassign",
+        "task_ids": [
+          "TA"
+        ],
+        "reason": "three_recorded_blocks_with_multiple_dependents",
+        "evidence_ids": [
+          "synthetic_control:blocked0",
+          "synthetic_control:blocked1",
+          "synthetic_control:blocked2"
+        ],
+        "status": "proposal_only",
+        "not_executed": true,
+        "old_owner": "member_001",
+        "new_owner": "member_002",
+        "candidate_id": "org:99c42c5e7e1188d7227de19f",
+        "validation": {
+          "valid": true,
+          "errors": [],
+          "live_mutation_authorized": false,
+          "required_harness_steps": [
+            "offer_transfer",
+            "accept_transfer",
+            "scoped_evidence_handoff"
+          ],
+          "unfinished_tasks_retain_existing_owners": true,
+          "artifact_authorship_unchanged": true,
+          "proposal_is_not_a_handoff_success": true
+        }
+      }
+    ]
+  },
+  {
+    "case": "unsafe_new_owner",
+    "pass": true
+  },
+  {
+    "case": "merge_requires_total_ownership",
+    "pass": true
+  },
+  {
+    "case": "private_no_route",
+    "pass": true,
+    "plan": {
+      "routes": [
+        {
+          "recipient": "member_001",
+          "facts": [
+            {
+              "fact_id": "fixture-fact",
+              "source_ids": [
+                "write:interface"
+              ],
+              "version": {
+                "object_id": "workspace-member_001",
+                "version_id": "v2"
+              },
+              "delivery_mode": "existing_private_source",
+              "publication_receipt": null
+            }
+          ],
+          "withheld_count": 0,
+          "sent": false,
+          "presented": false,
+          "read": false,
+          "used": false,
+          "source_versions_are_not_current_validation": true
+        },
+        {
+          "recipient": "member_002",
+          "facts": [],
+          "withheld_count": 1,
+          "sent": false,
+          "presented": false,
+          "read": false,
+          "used": false,
+          "source_versions_are_not_current_validation": true
+        }
+      ],
+      "transport_calls": 0,
+      "state": "plan_only",
+      "private_history_references_not_reused_across_members": true
+    }
+  },
+  {
+    "case": "published_scoped_route",
+    "pass": true,
+    "plan": {
+      "routes": [
+        {
+          "recipient": "member_001",
+          "facts": [
+            {
+              "fact_id": "fixture-fact",
+              "source_ids": [
+                "write:interface"
+              ],
+              "version": {
+                "object_id": "workspace-member_001",
+                "version_id": "v2"
+              },
+              "delivery_mode": "existing_private_source",
+              "publication_receipt": "fixture-explicit-share"
+            }
+          ],
+          "withheld_count": 0,
+          "sent": false,
+          "presented": false,
+          "read": false,
+          "used": false,
+          "source_versions_are_not_current_validation": true
+        },
+        {
+          "recipient": "member_002",
+          "facts": [
+            {
+              "fact_id": "fixture-fact",
+              "source_ids": [
+                "write:interface"
+              ],
+              "version": {
+                "object_id": "workspace-member_001",
+                "version_id": "v2"
+              },
+              "delivery_mode": "published_artifact_copy_with_provenance",
+              "publication_receipt": "fixture-explicit-share"
+            }
+          ],
+          "withheld_count": 0,
+          "sent": false,
+          "presented": false,
+          "read": false,
+          "used": false,
+          "source_versions_are_not_current_validation": true
+        }
+      ],
+      "transport_calls": 0,
+      "state": "plan_only",
+      "private_history_references_not_reused_across_members": true
+    }
+  }
+]
