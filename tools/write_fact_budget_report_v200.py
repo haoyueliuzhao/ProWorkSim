@@ -1,0 +1,203 @@
+"""Build the v200 report from frozen results, not manually copied scores."""
+import sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from prepare_dependency_audit_v197 import ROOT,read
+BASE=ROOT/'artifacts/software-benchmark-v200';DOC=ROOT/'docs/experiments'
+def table(headers,rows):
+    def cell(v):return str(v).replace('\n',' ').replace('|','／').replace('[',r'\[').replace(']',r'\]')
+    return '| '+' | '.join(headers)+' |\n| '+' | '.join(['---']*len(headers))+' |\n'+''.join('| '+' | '.join(cell(v) for v in r)+' |\n' for r in rows)
+def main():
+    metrics=read(BASE/'metrics-r1/summary.json');data=read(BASE/'development-r1/summary.json');gate=read(BASE/'admission-r1/decision.json')
+    lookup={(g['condition'],g['budget']):g for g in metrics['groups']};names={'F0':'v199 E3，事件单卡','F1':'相同排序，事件可拆多卡','F2':'全局事实相关性与成本排序','F3':'F2＋Confirmed 来源依赖','F4':'F3＋诊断包和精确去重'}
+    main_table=table(['条件','直接呈现参考事实','合法恢复','完整输入 token 估计','相对 F0','同源字符重复率'],[
+        [c+'：'+names[c],f"{lookup[c,4096]['direct_facts']}/19",f"{lookup[c,4096]['recoverable_facts']}/19",f"{lookup[c,4096]['input_tokens_estimate']:,}",f"{gate['main_input_change_vs_F0'][c]*100:+.2f}%",f"{lookup[c,4096]['exact_character_redundancy']*100:.2f}%"] for c in names])
+    sensitivity=table(['附加预算','F0','F1','F2','F3','F4'],[[b,*[f"{lookup[c,b]['direct_facts']}/19" for c in names]] for b in [1024,2048,4096]])
+    report=f'''# v200：事实级上下文预算分配实验报告
+
+日期：2026-11-12。范围为审计指定的 P0 工程修订与 P1 历史离线对照。
+
+## 1. 结论与本轮决策
+
+**允许一个事件拆成多张事实卡，解决了这组开发参考中的全部六项遗漏；新的全局事实排序、依赖约束和诊断包并没有继续提高效果。**
+
+- F1 在 2,048 和 4,096 两档均直接呈现 **19/19** 项参考事实，F0 为 13/19；没有给它增加总预算。
+- 主档 F1 完整输入估计比 F0 高 **1.28%**。它修复了已知呈现缺口，不等于已经证明真实任务成本更低。
+- F2、F3 均为 **15/19**，二者在全部 144 对输入上完全相同；Confirmed 关系仍无增量。
+- F4 的精确来源字符重复率为 **0%**，但只有 **12/19** 项直接呈现，且输入比 F3 多 4,313 token。减少重复字符没有转化为信息或成本收益。
+
+因此保留 **F1 为下一轮冻结验证的候选**，不将 F2–F4 替换为当前默认方法，不继续扩大图传播。本轮没有启动真实模型任务、独立留出评估或训练，没有消耗 API 预算。
+
+## 2. 实际实现与比较范围
+
+保留 v199 r4 的事件—事实—原文片段结构、状态归一、版本身份、权限和回读入口。新增无损片段目录：一个事实可以分成多个连续片段，每片保留原 Fact ID、来源消息、哈希、JSON 路径、字符区间和版本。过长文本按实际分词成本及行边界切分，不改写或补全内容。
+
+每张呈现单元仍最多 768 token，但一个事件可以占多张单元；所有单元的字段、来源引用、头部和分隔符共同计入 1,024／2,048／4,096 总预算。一个事实的片段未全部显示时，不冒充整个事实已显示。被替换位置的原文引用始终保留。
+
+| 条件 | 实际做法 | 用途 |
+| --- | --- | --- |
+| F0 | 原样调用 v199 r4 E3；144 份基线输入逐份完全一致 | 当前事件呈现基线 |
+| F1 | 保留事件顺序、事实类型优先级及相关性顺序，允许同事件继续生成后续事实卡 | 检验呈现粒度修订 |
+| F2 | 对全部合法事实片段按任务相关性、确定性层级和估计成本排序 | 检验细粒度全局排序 |
+| F3 | F2 加当前有效 Confirmed 边支持的来源限定闭包 | 检验已证实关系的增量 |
+| F4 | F3 再加入同次测试的状态／选择器／诊断联合呈现，并消除同源区间重叠 | 检验包组织与去重的组合影响 |
+
+F1 与 F0 是**表示粒度的整体修订**：包含无损拆分、多卡装填及片段标识，不能把全部差异只归于一个数值开关。F4 同时改变诊断包与去重，也不能把它的恶化单独归因为去重。
+
+五组使用同一份 v199 原始事实清单和共同片段目录，不读取参考事实 ID 来排序。最近五个工具周期、动作链、工具权限、来源范围及完整输入 98,304 token 上限保持一致。12 个历史任务各取 4 个决策点，共 48 点×5 条件×3 预算＝**720 个离线视图**，不是 720 个新模型回合，也不是 48 个独立任务。
+
+## 3. 主档结果
+
+主档为 4,096 附加 token。以下完整输入合计覆盖同一组 48 个决策点，是本地官方分词器估计，**不是供应商 usage，也不是完整任务累计成本**。
+
+{main_table}
+参考事实在公共候选目录中的覆盖为 19/19；15 个文本目标均可定位到原文。这里的“直接呈现”按来源、精确片段及完整区间并集判断，不能仅凭出现了相同单词或数字计分。
+
+F0 的基线是 **13/19，不是 0/19**。对这 19 项源身份明确的旧历史参考，近期窗口、原动作链和其他未改原文分别没有增加新的严格同源覆盖；已选历史卡贡献表中覆盖数。这不表示整个输入只有这些信息：动作文字中相似表述单独记为未证实的字面再现，不升级为同版本、同执行来源证据。
+
+### F1：表示粒度修订有效
+
+原来同文件或同报告的多条事实争用一张 768-token 卡。F1 允许它们继续占用该事件的后续卡，所以 Requests 的两条主机名分支、Astropy 的分派项、Seaborn 的预期标签、格式器类型和偏移设置均进入输入。
+
+主档输入增加 22,512 token，约 1.28%；卡片由 243 张增至 271 张。F1 的同源字符重复率也从 2.28% 升至 8.03%，说明全覆盖并非免费：多个观察片段和较大的父代码块仍可能重复。
+
+### F2：细粒度排序没有优于原顺序
+
+F2 比 F1 少用 5,791 token（约 0.32%），却丢失 4 项事实。Scikit-learn 的关键断言及 KNN 构造，候选顺位约 43–51；Seaborn 的 `USE_OFFSET True` 与故意 `assert False` 分别在 97、126 位，均在预算耗尽后被排除。
+
+这是候选已存在后的排序与分配失败，不是来源缺失。实现按字面相关性除以独立单元估计成本的平方根排序；该估计没有完整反映共享卡片的边际成本和互补事实价值。它还可能先选短子片段，后选覆盖相同内容的较长父片段。实际同源字符重复率达到 19.84%。这些说明当前启发式有局限，不能概括为所有事实级排序都无效。
+
+### F3：来源限定闭包已经自然满足
+
+本批仅形成 8 个可用于选择的有证据限定关系，F2 已全部满足，因此 F3 没有改变任何一份输入。这些关系限定测试身份与同次执行状态等来源语义，**不是 123 条软件依赖的完整 Path Recall，也不是运行时因果证明**。
+
+保持 Inferred 与 Confirmed 的原边界，没有为获得增益而放宽边的确认标准。按审计要求，暂停把关系扩展当成有效优化器；图的身份、版本、来源及状态维护功能继续保留。
+
+### F4：零字符重复不等于净收益
+
+F4 只合并同一私有作用域、同次执行或同一文件版本、精确来源地址重叠的文本。它没有合并不同 TestRun 或不同版本的相似错误，原始来源仍在。
+
+但诊断包强制共同保留同报告的状态、选择器和诊断，改变了早期预算分配。F4 对 P047 的格式器和偏移量候选在第 19、22 位即因包的总成本未获准入；P046 的实际标签输出也未呈现。它没有达到“重复减少且覆盖保持”的要求。
+
+F4 卡片数为 305，少于 F3 的 315；因此不能直接说它因为卡片更多而更贵。重复率统计的是有区间来源的字符，不包括全部结构化状态、引用、JSON 语法和包成本，也不是 token 重复率。两组选择内容、片段组织及包限制同时不同，本轮不能单独识别哪一项导致全部分差。
+
+## 4. 预算敏感性
+
+{sensitivity}
+F1 在 2,048 档已经覆盖全部 19 项，完整输入为 1,713,796；同档 F0 为 1,703,225，增加 10,571（约 0.62%）。作为辅助跨预算观察，F1-2048 也比 F0-4096 少 49,611 token（约 2.81%），但不能将这个后验选档结果当成独立最优预算证明。
+
+1,024 档 F1 尚有 4 个验证事件组／8 个最小状态单元未呈现；F4 尚有 1 组／2 单元。低预算缺口均显式记录。2,048 与 4,096 档 F1 的这些保护缺口为 0。F0 的原实现只有事件级保护记录，不把它不存在的事实单元诊断误读为“全部事实约束已满足”。
+
+## 5. 复核与测量边界
+
+延续你此前“由我自行审阅”的指示，本轮由主助手做 AI 工程复核，**没有冒充两名人工专家的独立审阅与仲裁**。原 19 项事实、8 个事件来源和 6 个遗漏保留原文边界；另在运行成绩产生前按固定种子抽取 24 个事实，分别来自 8 个旧 Useful、8 个旧 Irrelevant、8 个未标注事件。
+
+24 项源值全部核验；按当前任务审阅为 6 相关、11 不适合默认呈现、7 不确定，必要性均未独立确立。例如同一 CPU 函数事件既有 cpu_shares 依据，也有无关的参数预处理；旧 Irrelevant 事件中也可能含当前版本通过状态。**旧事件标签没有直接转成事实标签。**
+
+该分层小样本不能外推全部呈现事实的 Fact Precision。报告保留已复核相关／无关／未知的呈现次数及其余未标注数量，不把原文一致性当相关精度。P007 警告异常、P047 故意失败的探针及 P046 可能过严的临时预言继续保留限定。
+
+19项主参考来自8个决策点、6个仓库，且各点事实数不同；它们不是19个独立任务。19/19不能外推成全部任务或全部必要事实的覆盖率，也不能据此作正式非劣效结论。
+
+全部方法与预算档可合法恢复 19/19 条参考事实。引用使用相同点身份与存储协议，复用 v199 已完成的有界 reader 字节验证，并重新检查本轮全部 720 视图中的引用入口。**新 Agent 回读为 0，理解、采用与真实任务收益未测量。**
+
+## 6. 工程验证与准入
+
+- 720/720 视图完成，0 选择／渲染异常；144 个 F0 输入与 v199 E3 完全一致。
+- 15 项 CPU 控制通过；10,487 次片段呈现逐项匹配原始来源、权限和版本，并检查单卡／总预算。
+- 完成后新增同一来源坐标下字节冲突的拒绝控制；9,657 对实际候选重叠片段无冲突。实验用原源码已冻结，旧视图未重写，没有为该防护重跑实验。
+- 评分器首次对不足五次工具调用的早期点处理错误，已修正为沿用共同近期窗口规则；仅重新汇总原视图，原错误日志保留。
+- 四路低优先级 CPU 运行约 {data['wall_seconds']:.2f} 秒墙钟、{data['worker_CPU_seconds']:.2f} 秒累计 worker CPU；单 worker 峰值约 {data['peak_worker_RSS_KiB']/1024:.1f} MiB。执行顺序及缓存复用使分组 CPU 耗时不能作为独立速度基准。
+
+F1 的开发粒度门通过；F2 排序门、F3 图增量门、F4 净效果门未通过。F4 的身份与去重工程门通过，不等于效果门通过。没有新被测 API、Docker、GPU、训练或共享主机配置操作，旧账本未动；AI 工程审阅平台成本无法单独取得。
+
+## 7. 后续路线
+
+本轮保留 F1 原型及全部负向结果，不根据这 19 个已知目标继续调权重。下一步应先冻结候选方法及事实层标注规范，在任务隔离材料上做离线验证；历史留出 r2 的轨迹和评分本轮没有打开，它也不是整个项目历史从未暴露的确认集。
+
+独立确认之后才考虑真实单 Agent 的默认呈现、实际回读、事实采用、代码及交付双端点和完整成本。图维护仍是单独研究线，后续比较 Static／Event-driven／Periodic Rebuild 的过期边、漏更新、延迟与成本；不能从本轮离线选择直接推出动态维护收益。
+
+最终目标仍是图构建与维护、职责分配、通信和上下文的反馈闭环。后续 REVIEW2 可沿用私有作用域、角色、任务、版本和预算作为视图入口；本轮只有单成员历史，未引入角色收益、多 Agent 自治或 RSI。相关接口和分阶段控制见[附录](software-benchmark-v200-fact-budget-appendix.md)。
+
+## 8. 结果文件
+
+- [完整指标](../../artifacts/software-benchmark-v200/metrics-r1/summary.json)、[遗漏原因](../../artifacts/software-benchmark-v200/omission-analysis-r1/summary.json)。
+- [准入决定](../../artifacts/software-benchmark-v200/admission-r1/decision.json)、[复核样本与判断](../../artifacts/software-benchmark-v200/review-r1/assessment.json)。
+- [冻结协议](../../artifacts/software-benchmark-v200/protocol-r1/plan.json)、[实际来源清单](../../artifacts/software-benchmark-v200/development-r1/sources.json)。
+'''
+    refs=read(ROOT/'artifacts/software-benchmark-v199/fact-reference-r1/facts.json')['facts'];status={(r['point'],r['condition']):{f['reference']:f for f in r['facts']} for r in metrics['reference_details'] if r['budget']==4096}
+    fact_table=table(['参考事实','原值／片段','F0','F1','F2','F3','F4'],[[r['id'],r['value'],*['是' if status[r['point'],c][r['id']]['direct_union'] else '否' for c in names]] for r in refs])
+    review=read(BASE/'review-r1/assessment.json');sample=table(['条目','原事件层','事实相关性判断','说明'],[[r['review_id']+' '+r['point'],r['legacy_event_stratum'],r['relevance'],r['reason']] for r in review['rows']])
+    inputs=table(['预算','条件','输入 token','卡片','已选来源依赖闭合／触发','复核样本相关／无关／未知','未标注 Fact 呈现数'],[[g['budget'],g['condition'],g['input_tokens_estimate'],g['cards'],f"{g['dependency_closed']}/{g['dependency_triggers']}",f"{g['sample_relevant']}/{g['sample_irrelevant']}/{g['sample_unknown']}",g['unreviewed_selected_fact_ids']] for g in metrics['groups']])
+    appendix=f'''# v200：实现、逐项覆盖与后续接口附录
+
+对应[主报告](software-benchmark-v200-fact-budget-report.md)，2026-11-12。算法不是按这19个参考ID配置；以下表格只由冻结视图事后计算。
+
+## A. 默认事实覆盖
+
+{fact_table}
+结构化值通过 JSON 指针验证；跨多个呈现片段的文本必须以精确区间并集完整覆盖，缺一段不计完整。相似词、别的测试执行、另一版本相同代码不自动成为本来源的事实。近期窗口、动作链、未改原文及附加卡片分别计量，并集只计一次。
+
+## B. 预算与辅助指标
+
+{inputs}
+源限定关系总目录仅8个单元级链接。F4主档2/2只代表已呈现触发项的闭合，不代表覆盖了全部8个链接；F0–F3主档是8/8。不要用较小条件分母制造“依赖完整率提高”。未标注数是逐点不同Fact ID的呈现次数，不是独立事实总数或错误数。总体Fact Precision保持未定，不能将小样本比例外推。
+
+## C. 24项补充复核
+
+{sample}
+样本固定种子20261112200，在首次结果之前按旧事件类别分层抽样；类别是抽样依据，不是事实正确标签。复核为主助手AI，非双人专业人工审阅。所有必要性结论仍是开发判断，未知不强填。
+
+## D. 可复现实现
+
+```mermaid
+flowchart LR
+    H[此前真实可见历史] --> I[事件／Fact／来源版本清单]
+    I --> S[无损片段目录]
+    S --> F1[F1：保留原顺序，多卡装填]
+    S --> F2[F2：任务相关性与单元成本排序]
+    F2 --> F3[F3：有来源证明的限定闭包]
+    F3 --> F4[F4：同次报告包＋精确区间去重]
+    F1 --> B[统一总预算与原文引用]
+    F2 --> B
+    F3 --> B
+    F4 --> B
+```
+
+F0原样复用v199 r4 E3。F1–F4使用共同渲染器和片段目录。字符串默认按360个本地value token切片，为768上限内的元数据留空间；总预算按实际拼接后的卡片文本计算，包含分隔符，完整输入另测。不修改原先已经可见的文本或动作。
+
+F1沿用v199的事件保护顺序及组内PRIORITY。F2先保留实际失败选择器的counts／passed／selector最小来源状态，再按任务相关性层级、BM25分数除以独立单元成本平方根、类型和稳定身份排序。BM25 k1=1.2，b=0.75。独立单元成本不是装入已占用卡片后的精确边际成本，这是本轮已记录的局限。
+
+F3仅使用当前有效、已记录来源的reports_test及精确完整定义declares对应。测试身份通过同次执行状态限定，完整函数摘录通过对应文件身份限定；没有放宽运行时调用和跨文件因果确认。F4在此基础上将同次报告的状态、selector及一个诊断一起请求预算；同时将同一来源坐标的已呈现字符从后续片段剔除。冲突字节拒绝合并；不同TestRun、成员或版本不合并。
+
+已执行命令：
+
+```bash
+LITELLM_LOCAL_MODEL_COST_MAP=True OPENHANDS_SUPPRESS_BANNER=1 .venv/bin/python tools/run_offline_scorer_v096.py tools/run_fact_budget_v200.py
+.venv/bin/python tools/score_fact_budget_v200.py
+.venv/bin/python -m pytest -q tests/test_fact_budget_v200.py
+```
+
+完成目录禁止覆盖，失败、来源快照和全部负向结果保留。大体积原文与视图在`runs/software-benchmark-v200/development-r1/`；指标文件保存路径和哈希。最终新增字节冲突防护在运行后通过CPU控制，另对9657对实际重叠源做一次一致性核验，未改写测量数据。当前源码与实际测量源码的区别见[防护记录](../../artifacts/software-benchmark-v200/postrun-source-guard-r1/summary.json)。
+
+主要代码：[选择与渲染](../../src/proworksim/software_fact_budget_v200.py)、[运行器](../../tools/run_fact_budget_v200.py)、[独立指标](../../tools/score_fact_budget_v200.py)、[CPU控制](../../tests/test_fact_budget_v200.py)。
+
+## E. 后续统一接口与未启动阶段
+
+当前真实入口为成员私有`FactInventory`、带源证明的`EvidenceBindings`、请求payload、同作用域reader和预算；scope包含episode/member，版本、权限、事实来源先于排序验证。角色未作为本轮变化变量，不因接口参数可扩展就宣称有角色感知收益。
+
+下一阶段的成员视图合同应显式携带`episode_id/member_id/task_id/role/workspace_reference/budget`及可访问来源集合；角色仅能在已有权限内调整信息呈现，不能使其他成员未公开材料变可见。产物采用、review、handoff必须来自真实harness事件，而非模型自述。
+
+| 阶段 | 核心比较 | 本轮状态 |
+| --- | --- | --- |
+| v201任务级离线确认 | 冻结F0/F1，另立事实标注和隔离来源；必要时保留F2负例 | 未打开留出轨迹或评分 |
+| v202真实单Agent | 默认呈现、实际回读、采用、最终修复／交付及总成本 | 未启动API，未设新预算 |
+| v203维护机制 | Static／Event-driven／Periodic Rebuild；签名、调用方、测试重跑、提交失效和快照成本 | 仅协议，不宣称已运行对照 |
+| v204固定REVIEW2 | 原始／图条件化通信×原始／图条件化上下文；同总团队预算 | 未启动团队回合 |
+| 后续联合改进 | Graph Builder、Maintainer、Organization Policy、Information Policy及配对反馈 | 保留研究目标，未执行RSI或训练 |
+
+动态图维护要另测双成员分别修改依赖文件、伙伴采用补丁、责任转移时的版本与来源变化。真实更新正确率、过期边、漏更新、延迟和范围必须与本轮静态离线视图区分；CPU合成控制不能替代真实任务效果。
+'''
+    (DOC/'software-benchmark-v200-fact-budget-report.md').write_text(report)
+    (DOC/'software-benchmark-v200-fact-budget-appendix.md').write_text(appendix)
+    print('v200 report and appendix written')
+if __name__=='__main__':main()
