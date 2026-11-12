@@ -1,0 +1,59 @@
+{
+  "reference": {
+    "id": "H11-1-R02",
+    "value": "                    imported_name in self._type_annotation_names\n                    or as_name in self._type_annotation_names\n",
+    "origins": [
+      {
+        "source_id": "source:5876c2806989757e41280621",
+        "message_index": 8,
+        "message_sha256": "e10af3c019ae945d30a26d493e933c6f16456edd136fbb002326448489fc965b",
+        "channel": "body",
+        "pointer": "/result/text",
+        "span": [
+          1882,
+          2009
+        ]
+      }
+    ],
+    "factuality": "literal_source_verified",
+    "provenance": "captured_request_and_hash_verified",
+    "source_version": {
+      "object_id": "obj-c567f5b9c7d905481548e89b",
+      "version_id": "v1"
+    },
+    "version_validity": "historical",
+    "relevance": "necessary",
+    "necessity": "primary_AI_required_for_stated_decision",
+    "rationale": "名称集合如何决定unused-import抑制，与类型注释解析组成当前诊断链。",
+    "complementarity": [],
+    "redundancy": "not_fully_adjudicated",
+    "recoverability": "to_be_measured_from_each_view_not_inferred_from_storage"
+  },
+  "matching_catalogue_units": [],
+  "matching_extracted_facts": [],
+  "related_extracted_facts": [
+    {
+      "id": "fact:5b91b22a7b4c3eba5858ae32",
+      "kind": "code_statement",
+      "value": "                is_type_annotation_import = (\n"
+    },
+    {
+      "id": "fact:2ee9ff621a7cc718f9099259",
+      "kind": "code_control",
+      "value": "                    if is_type_annotation_import:\n                        # Most likely a typing import if it wasn't used so far.\n                        continue\n\n"
+    },
+    {
+      "id": "fact:de9be2442d5b1b190552f3a8",
+      "kind": "code_control",
+      "value": "                elif isinstance(stmt, astroid.ImportFrom) and stmt.modname != FUTURE:\n                    if SPECIAL_OBJ.search(imported_name):\n                        # Filter special objects (__doc__, __all__) etc.,\n                        # because they can be imported for exporting.\n                        continue\n\n                    if _is_from_future_import(stmt, name):\n                        # Check if the name is in fact loaded from a\n                        # __future__ import in another module.\n                        continue\n\n                    if is_type_annotation_import:\n                        # Most likely a typing import if it wasn't used so far.\n                        continue\n\n                    if imported_name == \"*\":\n                        self.add_message(\"unused-wildcard-import\", args=name, node=stmt)\n                    else:\n                        if as_name is None:\n                            msg = f\"{imported_name} imported from {stmt.modname}\"\n                        el"
+    },
+    {
+      "id": "fact:10f9a853c1e7edad24bd0073",
+      "kind": "code_control",
+      "value": "                    if is_type_annotation_import:\n                        # Most likely a typing import if it wasn't used so far.\n                        continue\n\n"
+    }
+  ],
+  "reason": "multiline assignment RHS absent from bounded code spans; one-line statement extraction captures opener, while enclosing long blocks are excluded",
+  "source_can_be_legally_recovered": true,
+  "frozen_candidate_not_modified": true
+}

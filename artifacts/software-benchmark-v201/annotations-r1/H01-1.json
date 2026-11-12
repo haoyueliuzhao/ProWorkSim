@@ -1,0 +1,74 @@
+{
+  "point": "H01-1",
+  "decision": "定位float16被提升的两个dtype分支，尚未修改。",
+  "review_mode": "primary_AI_prefix_review; no human or independent gold claim",
+  "source_packet": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v201/source-prefix-r1/H01-1/review-packet.json.gz",
+    "sha256": "432c1b2d76fbf3d7f1576d5f24a68d205a5d573ae67f82ac5327118c9c5208b9",
+    "bytes": 142966
+  },
+  "reference_facts": [
+    {
+      "id": "H01-1-R01",
+      "value": "                if not (np.can_cast(np.float32, value.dtype) or\n                        value.dtype.fields):\n                    dtype = float\n",
+      "origins": [
+        {
+          "source_id": "source:36ccd89b2367d3b553372c45",
+          "message_index": 20,
+          "message_sha256": "7d068a47a6cfe514770110206b2be5a5114cf663c6f33274fa57f65561b1f107",
+          "channel": "body",
+          "pointer": "/result/text",
+          "span": [
+            1044,
+            1187
+          ]
+        }
+      ],
+      "factuality": "literal_source_verified",
+      "provenance": "captured_request_and_hash_verified",
+      "source_version": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v1"
+      },
+      "version_validity": "current",
+      "relevance": "necessary",
+      "necessity": "primary_AI_required_for_stated_decision",
+      "rationale": "Quantity复制快路径也含dtype提升条件；只检查后一个数组分支不足以限定修改范围。",
+      "complementarity": [],
+      "redundancy": "not_fully_adjudicated",
+      "recoverability": "to_be_measured_from_each_view_not_inferred_from_storage"
+    },
+    {
+      "id": "H01-1-R02",
+      "value": "        if dtype is None and (not (np.can_cast(np.float32, value.dtype)\n                                   or value.dtype.fields)\n                              or value.dtype.kind == 'O'):\n            value = value.astype(float)\n",
+      "origins": [
+        {
+          "source_id": "source:346153b704f482ce80aa7217",
+          "message_index": 35,
+          "message_sha256": "5b8df6ffbbe8d9fa2b7a6d7761982a069f81df8c0ec79a0df8f21959a0553527",
+          "channel": "body",
+          "pointer": "/result/text",
+          "span": [
+            1313,
+            1542
+          ]
+        }
+      ],
+      "factuality": "literal_source_verified",
+      "provenance": "captured_request_and_hash_verified",
+      "source_version": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v1"
+      },
+      "version_validity": "current",
+      "relevance": "necessary",
+      "necessity": "primary_AI_required_for_stated_decision",
+      "rationale": "第二个dtype默认转换分支与float16现象直接相关，需与快路径对照。",
+      "complementarity": [],
+      "redundancy": "not_fully_adjudicated",
+      "recoverability": "to_be_measured_from_each_view_not_inferred_from_storage"
+    }
+  ],
+  "method_views_seen": false,
+  "future_response_or_score_seen": false
+}
