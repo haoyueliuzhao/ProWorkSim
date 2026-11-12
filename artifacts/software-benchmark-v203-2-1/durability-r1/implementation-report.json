@@ -1,0 +1,63 @@
+{
+  "implementation": "SQLite WAL with synchronous FULL and BEGIN IMMEDIATE; ordinary-user local process controls only",
+  "files": {
+    "src/proworksim/software_observer_journal_v203_2_1.py": "655403500dc462cdffd6598e1f5edb7f419d7c51a419eed4a547588d2b7b5f66",
+    "tests/test_observer_journal_v203_2_1.py": "b85699e9fefe4a78b5d3968e9a317d0bdc798b829661756bfe2d8acb1883b87b",
+    "tools/check_observer_durability_v203_2_1.py": "3eda48987c5e41b1c396735fd5998de27f48c04cf322efbcd1c4b0f0d16197c6"
+  },
+  "interface": {
+    "ObserverJournal(path,timeout=0.25,max_record_bytes=16777216)": "Open one connection per process. Never inherit an open connection after fork. Errors propagate to the observer adapter.",
+    "append(kind,key,payload,source=None)": "Return sequence, record_sha256, duplicate, durable. Same canonical record/key deduplicates after restart. Different bytes raise ObservationConflict and persist conflict counter. No world action is dispatched.",
+    "records(after=0,through=None)": "Iterator over a fixed committed prefix. Each dict has kind/key/payload/source plus sequence and record/previous/chain hashes. Consume only observation data when rebuilding state.",
+    "load_projection(name=\"default\")": "Return cursor, state, source_chain_sha256. Missing projection has cursor=0 and state=None.",
+    "save_projection(name,through_sequence,state,expected_cursor=...)": "Atomically commit state+cursor with compare-and-swap. Checkpoint references a committed source prefix.",
+    "pending(name=\"default\")": "Stream committed observations after the durable projection cursor. No in-memory retry list.",
+    "integrity(expected_records=None)": "Check SQLite structure, record chain, projection checkpoints and conflict counters. Expected count comparison is advisory; complete_capture_proven is always false without external primary manifests.",
+    "export(path) / inspect_export(path)": "Atomic replace publishes complete JSONL export. Interrupted .partial files remain. Inspection distinguishes complete, partial and corrupt without repairing source evidence."
+  },
+  "validated_guarantees": [
+    "One serialized sequence across concurrent producer processes; each producer order is preserved.",
+    "Process exit after COMMIT before acknowledgement leaves the observation pending durably and same-key retry is safe.",
+    "Process exit during projection transaction leaves old checkpoint and pending records intact.",
+    "An export crash before atomic replace preserves the previous complete export; the interrupted prefix is classified partial.",
+    "The old ObservedPort wrapper preserved the original response object and one world call while the journal was locked. Observer-only receipt recovery did not repeat that call.",
+    "Logical record corruption is reported and rejected on reads/appends; tests do not repair or replace it."
+  ],
+  "limits": [
+    "No observer can promise an observation survives process death before durable commit. The world-before-write case performed one independent CPU file effect and recovered zero receipt records.",
+    "FULL synchronous SQLite plus process-exit controls is not a tested guarantee against lost disks, faulty fsync implementations, power failure or malicious file rewrites.",
+    "The journal has no world action executor. Its integrity output cannot prove all actions/inputs were captured; task-level coverage must compare independent original request/receipt manifests.",
+    "A busy/disk/serialization exception can produce an observation gap; fail-open adapters must retain diagnostics and preserve the world result. This module never hides the gap by queuing unlimited records.",
+    "Cross-process commit order is observer capture order, not a causal order of concurrent world mutations.",
+    "Payload size is bounded and SQLite cache is capped at 2048KiB. tracemalloc excludes SQLite native memory, while lifetime RSS includes imports and earlier cases.",
+    "Latency is a single local CPU run with tracemalloc enabled, excludes payload acquisition and projection, and is not a production performance claim."
+  ],
+  "validation": {
+    "pytest": {
+      "command": ".venv/bin/python -m pytest -q tests/test_observer_journal_v203_2_1.py",
+      "passed": 7,
+      "seconds": 0.16
+    },
+    "ruff": {
+      "command": ".venv/bin/ruff check src/proworksim/software_observer_journal_v203_2_1.py tests/test_observer_journal_v203_2_1.py tools/check_observer_durability_v203_2_1.py",
+      "passed": true
+    },
+    "actual_process_cases": {
+      "command": ".venv/bin/python tools/check_observer_durability_v203_2_1.py",
+      "passed": 10,
+      "summary": "summary.json"
+    },
+    "initial_environment_attempts": [
+      "System python was absent; system python3 lacked pytest/openpyxl. No test artifacts or dependencies were changed. Existing .venv interpreter was then used successfully."
+    ]
+  },
+  "scope": {
+    "new_model_API_calls": 0,
+    "new_GPU_work": 0,
+    "docker_objects": 0,
+    "services_created": 0,
+    "root_operations": 0,
+    "shared_host_configuration_changes": 0,
+    "git_commit_by_subagent": false
+  }
+}

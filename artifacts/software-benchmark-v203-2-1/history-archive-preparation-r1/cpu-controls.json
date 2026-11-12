@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "pytest": "3 passed in 0.24s",
+  "command": ".venv/bin/python -B -m pytest -q tests/test_history_archive_v203_2_1.py",
+  "material_checked": [
+    "real zstd encode and complete decode against original streaming SHA256",
+    "synthetic-only release and single-file restore to original canonical path",
+    "original mode and nanosecond mtime restoration",
+    "existing restore target refusal",
+    "corrupt compressed stream cannot release originals",
+    "changed original inode identity rejected",
+    "live own-user FD and active resource claim rejection",
+    "ledger/summary/public-test/patch/score exclusions"
+  ],
+  "scope": "small synthetic temporary files; actual historical files unchanged",
+  "disk_headroom_in_synthetic_test": "mocked500GiB so a5KiB fixture exercises encode/restore on a smaller/tmp filesystem; production floor is unchanged",
+  "prior_control_findings": [
+    {
+      "status": "fixture issue",
+      "detail": "Initial real/tmp free space below20GiB archive floor correctly refused encoding; fixture now explicitly supplies simulated headroom."
+    },
+    {
+      "status": "implementation defect fixed",
+      "detail": "Restore previously set mtime before flushing buffered writes, so final flush changed it; flush now precedes metadata restoration, actual nanosecond roundtrip passes."
+    }
+  ],
+  "real_history_archived_by_this_subtask": 0,
+  "real_history_files_unlinked_by_this_subtask": 0,
+  "actual_data1_archive_writes_by_this_subtask": 0
+}
