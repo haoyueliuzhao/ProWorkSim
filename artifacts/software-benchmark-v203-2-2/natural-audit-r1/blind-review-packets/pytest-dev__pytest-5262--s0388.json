@@ -1,0 +1,3029 @@
+{
+  "cutoff": {
+    "capture_time": 1794492852.715831,
+    "chain_sha256": "e896b68f473f1a14c43ee0e88ae4de300b1eaa4ec6c14a0ca2ed91ca7abe8da0",
+    "event_key": "receipt:member_002:model-d07529fd2520d539e9be32a2:call_00_gdnZodHshZHYNJ3FacDi4032",
+    "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+    "record_sha256": "bd5a7cc7372bc99f71c0a49c9758daeca7384851a5204d324647d6f967325f93",
+    "sequence": 388
+  },
+  "exposure_boundary": "inclusive anchor only; no post-cutoff action/outcome or prior audit assessment supplied",
+  "global_trigger_fact": {
+    "actor": "member_002",
+    "arguments": {
+      "body": "Independent review of patch-2: ACCEPTED (review-2).\n\nWhat I did\n- Adopted patch-2 into my private tree. The three-way merge left conflict markers in testing/test_capture.py; I resolved them and verified my resulting tree is byte-identical to patch-2's published files_sha256 4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf (your source v5), diff_sha256 f836779e...\n- Ran the public suite on that exact version (report test-report-d857cf131fbd0fbec033a784, source v5, validation_status=verified): collected 116, passed 108, failed 0, errors 0, skipped 7, xfailed 1. I confirmed inside the saved report that your new test testing/test_capture.py::test_typeerror_encodedfile_write ran and passed — it is not an unexecuted or skipped test.\n\nCode judgment (read the code, not just your summary)\n- src/_pytest/capture.py:425ff: the read-only @property mode returning \"r+\" is declared before __getattr__, so it wins attribute resolution and the old delegation to the binary buffer's \"rb+\" is bypassed. That \"b\" was exactly what made youtube-dl choose its bytes path and hit EncodedFile.write's TypeError. \"r+\" is a text mode, readable and writable, so write(str)->encode still works. write(), writelines(), name and all other delegation are unchanged.\n- The regression test compares -s vs captured runs on sys.stdout.write(b\"foo\") and pins the PY3 \"TypeError: write() argument must be str, not bytes\" text, so it pins the real captured-stdout contract rather than a string constant. Your self-criticism about patch-1 was accurate and patch-2 genuinely closes it.\n\nNon-blocking notes (no rework required)\n- \"r+\" is hardcoded rather than derived from self.buffer.mode with \"b\" stripped; if the underlying buffer mode ever changed, the advertised mode would not track it.\n- Correctness relies on the property preceding __getattr__; a future refactor that reorders them would silently reintroduce the bug. A one-line comment already mitigates this.\n\nYour remaining steps (yours, not mine): explicitly integrate what you need into your final tree, run the public tests on your exact final version, fix_patch(task_ids=[]) and submit_integration. Acceptance is recorded evidence only; it is not hidden acceptance and I cannot submit on your behalf.",
+      "recipient": "member_001",
+      "task_id": "root_goal"
+    },
+    "decision_id": "model-d07529fd2520d539e9be32a2",
+    "error": null,
+    "ok": true,
+    "result": {
+      "message_sequence": 65,
+      "recipient": "member_001",
+      "task_id": "root_goal",
+      "world_file_effect": false
+    },
+    "source": {
+      "capture_time": 1794492852.715831,
+      "chain_sha256": "e896b68f473f1a14c43ee0e88ae4de300b1eaa4ec6c14a0ca2ed91ca7abe8da0",
+      "event_key": "receipt:member_002:model-d07529fd2520d539e9be32a2:call_00_gdnZodHshZHYNJ3FacDi4032",
+      "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+      "record_sha256": "bd5a7cc7372bc99f71c0a49c9758daeca7384851a5204d324647d6f967325f93",
+      "sequence": 388
+    },
+    "tool": "send_message"
+  },
+  "initial_public_issue": null,
+  "initial_role_contract": {
+    "automatic_merge_test_accept_submit": false,
+    "communication_edges": [
+      [
+        "member_001",
+        "member_002"
+      ],
+      [
+        "member_002",
+        "member_001"
+      ]
+    ],
+    "declarations_override_frozen_roles": false,
+    "delivery_member": "member_001",
+    "fixed_members": [
+      "member_001",
+      "member_002"
+    ],
+    "formal_execution_authorized": false,
+    "id": "REVIEW2",
+    "independent_review_required_for_delivery": true,
+    "mechanism": "candidate_version_independent_review",
+    "member_count": 2,
+    "name": "REVIEW2",
+    "organization_instruction": "member_001 develops and delivers; member_002 independently reviews the exact fixed author candidate. An accepted review requires actual adoption and same-version public test execution. Editing the author version requires another fixed candidate and review.",
+    "phases": [
+      {
+        "active_members": [
+          "member_001",
+          "member_002"
+        ],
+        "name": "shared-budget-fair-opportunities",
+        "opportunities": 2
+      }
+    ],
+    "public_task_board_is_shared": true,
+    "role_descriptions_are_instructions_not_new_tool_powers": true,
+    "role_file_ACLs_unchanged": true,
+    "roles": {
+      "member_001": {
+        "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+        "title": "开发兼交付"
+      },
+      "member_002": {
+        "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+        "title": "独立复核"
+      }
+    },
+    "schedule_semantics": "All fixed live members eligible; fair scheduler controls actual opportunities.",
+    "version": "v141-s1-free2-review2-contract-r1"
+  },
+  "latest_actual_target_request": {
+    "actor": "member_001",
+    "complete_original_wire_present": true,
+    "decision_id": "model-9b95fef1f7097556c23e8599",
+    "latest_observation_message_index": 16,
+    "observation": {
+      "actor_id": "member_001",
+      "all_fixed_patches": [
+        {
+          "patch_id": "patch-1",
+          "sequence": 16
+        },
+        {
+          "patch_id": "patch-2",
+          "sequence": 49
+        }
+      ],
+      "current_version_test_coverage": {
+        "public_repository_tests": {
+          "executed": true,
+          "passed": true,
+          "status": "passed"
+        }
+      },
+      "delivery_status": {
+        "current_effective_fixed_candidate": {
+          "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+          "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v5"
+          }
+        },
+        "current_effective_patch_id": "patch-2",
+        "current_workspace_has_net_changes": true,
+        "designated_delivery_member": "member_001",
+        "fix_patch_arguments": {
+          "message": "Describe this fixed version",
+          "task_ids": []
+        },
+        "fixed_patch_id": "patch-2",
+        "guide_is_not_automatic_execution_or_acceptance": true,
+        "legal_delivery_id": null,
+        "next_explicit_action": {
+          "arguments": {
+            "message": "Deliver this exact version."
+          },
+          "tool": "submit_integration"
+        },
+        "next_explicit_tool": "submit_integration",
+        "pending_accepted_peer_patch_ids": [],
+        "public_test_executed": true,
+        "public_test_passed": true,
+        "public_test_sequence": 47,
+        "requires_independent_review": true,
+        "scope": "Same-version public evidence only; submission is not official acceptance",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "work_stage": "ready_for_explicit_delivery"
+      },
+      "fixed_organization": {
+        "delivery_member": "member_001",
+        "direct_recipients": [
+          "member_002"
+        ],
+        "fixed_publication_visible_to_all_members": true,
+        "id": "REVIEW2",
+        "members": [
+          "member_001",
+          "member_002"
+        ],
+        "name": "REVIEW2",
+        "role": {
+          "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+          "title": "开发兼交付"
+        },
+        "role_directory": {
+          "member_001": {
+            "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+            "member_id": "member_001",
+            "title": "开发兼交付"
+          },
+          "member_002": {
+            "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+            "member_id": "member_002",
+            "title": "独立复核"
+          }
+        },
+        "schedule": {
+          "cycle": 60,
+          "member": "member_001",
+          "organization_id": "REVIEW2",
+          "selection_basis": "persisted organization eligibility then fair round-robin",
+          "slot_position": 120
+        },
+        "shared_task_board": true
+      },
+      "handoffs": [],
+      "included_patch_ids": [],
+      "logical_time": 65,
+      "member_availability": {
+        "member_001": {
+          "can_receive_work": true,
+          "current_work_ended": false,
+          "permanent_retirement": false,
+          "remaining_decisions": 438,
+          "remaining_decisions_scope": "shared_team_pool_not_personal_allocation",
+          "stable_member": true,
+          "status": "ready",
+          "waiting": false
+        },
+        "member_002": {
+          "can_receive_work": true,
+          "current_work_ended": false,
+          "permanent_retirement": false,
+          "remaining_decisions": 438,
+          "remaining_decisions_scope": "shared_team_pool_not_personal_allocation",
+          "stable_member": true,
+          "status": "running",
+          "waiting": false
+        }
+      },
+      "messages": [
+        {
+          "actor_id": "member_002",
+          "body": "I'm member_002 (independent reviewer). I'm ready and waiting for your fixed candidate.\n\nIssue summary I've verified in the public tree: `_pytest.capture.EncodedFile` (src/_pytest/capture.py) has no `mode` attribute of its own, so `__getattr__` forwards to the underlying binary buffer and reports e.g. `rb+`. Callers like youtube-dl check `\"b\" in out.mode` and then call `write(bytes)`, but `EncodedFile.write()` raises TypeError on bytes under PY3.\n\nExpected review criteria I'll apply:\n1. `EncodedF",
+          "fixed_reference": null,
+          "kind": "work_message",
+          "recipient": "member_001",
+          "sequence": 9,
+          "task_id": "root_goal"
+        },
+        {
+          "actor_id": "member_002",
+          "body": "Review recorded: ACCEPT for patch-1 (review-1, event sequence 30).\n\nWhat I did independently\n- integrate_patch(patch-1) into my private tree: 0 conflicts, my version v2, files_sha256 920201c2e3edf47e702b933f022cdb7b6132316d421836fd5b4660f256d56822, diff_sha256 93224ceb9a29cb3676d292809fc7a50859c61bd42e62776b7e0aef4ebf390fe5.\n- run_tests on that exact version.\n\nEvidence at v2\n- testing/test_capture.py: 108 passed, 0 failed, 7 skipped, 1 xfail; validation_status=verified.\n- Focused -k \"encodedfile",
+          "fixed_reference": null,
+          "kind": "work_message",
+          "recipient": "member_001",
+          "sequence": 31,
+          "task_id": "root_goal"
+        }
+      ],
+      "older_handoff_sequences": [],
+      "older_message_sequences": [],
+      "organization_protocol": {
+        "final_integration_responsible": "member_001",
+        "independent_review_required": true,
+        "members": [
+          "member_001",
+          "member_002"
+        ],
+        "opportunities_consumed": 74,
+        "organization_id": "REVIEW2",
+        "phase": "open_work_with_explicit_candidate_handoffs",
+        "record_counts": {
+          "published_candidates": 2,
+          "reviews": 2,
+          "tasks": 0
+        },
+        "role_declarations": {},
+        "version": "v141-role-baseline-managed-world-r1"
+      },
+      "patches": [
+        {
+          "author": "member_001",
+          "base_reference": {
+            "object_id": "obj-8653276299fc07bbd5d18650",
+            "version_id": "v1"
+          },
+          "changed_path_count": 2,
+          "changed_paths": [
+            "src/_pytest/capture.py",
+            "testing/test_capture.py"
+          ],
+          "changed_paths_truncated": false,
+          "diff_sha256": "93224ceb9a29cb3676d292809fc7a50859c61bd42e62776b7e0aef4ebf390fe5",
+          "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+          "files_sha256": "920201c2e3edf47e702b933f022cdb7b6132316d421836fd5b4660f256d56822",
+          "patch_id": "patch-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v3"
+          },
+          "source_sha256": "4ff5aa1eefb7d1e08fde2e1ba29ccd9cf74e29bfad4eb9ab5d6b66811a758ac6"
+        },
+        {
+          "author": "member_001",
+          "base_reference": {
+            "object_id": "obj-8653276299fc07bbd5d18650",
+            "version_id": "v1"
+          },
+          "changed_path_count": 2,
+          "changed_paths": [
+            "src/_pytest/capture.py",
+            "testing/test_capture.py"
+          ],
+          "changed_paths_truncated": false,
+          "diff_sha256": "f836779ef41f1eaac423b9f7119b0c962dad85c005bf92c6210e180e55a85581",
+          "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+          "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+          "patch_id": "patch-2",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v5"
+          },
+          "source_sha256": "44636ad3f50146bc971fdcf034a50e559335f78192bacd99c6b97cf54cc5b467"
+        }
+      ],
+      "shared_resource_limits": {
+        "max_attempts": 512,
+        "max_decisions": 512,
+        "max_test_runs": 512,
+        "max_total_tokens": 5000000
+      },
+      "tasks": [],
+      "team_model_budget": {
+        "attempts": 79,
+        "available_tokens": 727141,
+        "charged_tokens": 4272859,
+        "decisions": 74,
+        "held_tokens": 0,
+        "limits": {
+          "max_attempts": 512,
+          "max_decisions": 512,
+          "max_total_tokens": 5000000
+        },
+        "remaining_attempts": 433,
+        "remaining_decisions": 438,
+        "state_sha256": "fe4f41fdb3bf8b460df217ceade2645d78a42b08a48aff539cde07f5607ab2d8"
+      },
+      "team_test_budget": {
+        "limit": 512,
+        "remaining": 504,
+        "used": 8
+      },
+      "workspace_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v5"
+      }
+    },
+    "request_id": "v203.2.1:pytest-dev__pytest-5262:DEEPSEEK_NT_REVIEW2_V141_B5000K:202611122032105:member_001:0040",
+    "request_sha256_from_verified_physical_join": "b5e87de0feefd7837b5d63f068ce7049ca895e093e26556b6e0e986180679530",
+    "role_task": "Resolve the unchanged original repository issue. You are member_001, role 开发兼交付, in organization REVIEW2. Locate, design and implement; publish the exact final candidate for independent review. All 2 configured members use the same model and managed tools, with separate private versions, SDK conversations and notes. No shell, hidden grading, recruitment or replacement exists. Your legal direct recipients are member_002. fix_patch explicitly publishes that immutable version to all configured legal members. Later private edits do not propagate. handoff_patch is a directed notice along a legal edge. Members must explicitly integrate_patch to use a published version; messages do not merge code. Task-board metadata is shared. Optional task ownership changes require offer_transfer and accept_transfer; a message cannot transfer responsibility. Use read_task for exact issue pages, search_repository or list_files/read_file to locate code, and write_file/replace_file/create_file/delete_file/rename_file for permitted edits. Use null or empty cursor for the first page and copy next_cursor unchanged for continuation. run_tests uses only the frozen public entrypoint on your exact current version. The whole team shares 5000000 cumulative input-plus-output tokens, 512 model decisions, 512 attempts and 512 accepted public test operations; these are not per-member grants. Communication, reading history, format repair and rejected requests consume real work. Only member_001 may submit the final integration and its final working tree is the predeclared code endpoint; other members' unmerged code is never selected by a grader. After the final edit/integration, explicitly run_tests, fix_patch(task_ids=[]), then submit_integration. Public tests need to execute on that same version; a pass is not hidden acceptance. staff_done ends your current work, staff_wait suspends it; a real later visible event may wake the same session without extra budget. No action is performed automatically.  Test results are private, versioned reports. run_tests executes once and returns a fixed-order directory and the first exact body page. Use read_test_result(report_id, cursor) to read more saved pages without rerunning tests. Only the original testing member can read the report; sharing an ID gives no permission. Share actual text if useful. Old cursors remain tied to the old event and version after edits. Page reads spend the same team decision/token pool but no test call. Reading all pages is optional and is not a submission requirement.\nmember_001 develops and delivers; member_002 independently reviews the exact fixed author candidate. An accepted review requires actual adoption and same-version public test execution. Editing the author version requires another fixed candidate and review.\nUse org_status for actual task IDs, current responsibility, fixed candidate identities, accepted/requested-change records and the next explicit actions. Before creating tasks, send_message uses task_id='root_goal'; the benchmark instance ID is not a task-board ID. org_declare_role records your current responsibility focus without changing tools, ownership or frozen review authority. An author publishes with fix_patch and sends handoff_patch; a recipient explicitly integrate_patch, run_tests, then org_review_patch to accept. Acceptance does not merge into another member's tree. An accepted peer patch remains available to member_001, who must explicitly integrate and finish its own current-version test, fixed candidate and submit_integration. Requested changes name the original patch author as the responsible recipient. Original public tests are not hidden grading. There is no pipeline or Sprint startup gate. In FREE2, independent review is optional; in REVIEW2, member_002 must accept member_001's exact final fixed version before delivery. All these actions, rejected requests, final self-review and history use the same team budget.\n\n_pytest.capture.EncodedFile mode should not include `b` (binary)\n<!--\r\nThanks for submitting an issue!\r\n\r\nHere's a quick checklist for what to provide:\r\n-->\r\n\r\n- [x] a detailed description of the bug or suggestion\r\n\r\nException when youtube-dl logs to pytest captured output. Youtube-dl looks for `b` in `out.mode` to decide whether to writes `bytes` or `str`. `_pytest.capture.EncodedFile` incorrectly advertises `rb+`, the mode of the underlying stream. Its `write()` method raises an exception when passed `bytes`.\r\n\r\n```\r\n(pytest-issue-ve3) 01:11:48:nlevitt@Internets-Air-2:/tmp$ py.test test.py \r\n============================================================================== test session starts ===============================================================================\r\nplatform darwin -- Python 3.7.3, pytest-4.5.0, py-1.8.0, pluggy-0.11.0\r\nrootdir: /private/tmp\r\ncollected 1 item                                                                                                                                                                 \r\n\r\ntest.py F                                                                                                                                                                  [100%]\r\n\r\n==================================================================================== FAILURES ====================================================================================\r\n____________________________________________________________________________________ test_foo ____________________________________________________________________________________\r\n\r\n    def test_foo():\r\n>       youtube_dl.YoutubeDL().extract_info('http://example.com/')\r\n\r\ntest.py:4: \r\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/YoutubeDL.py:796: in extract_info\r\n    ie_result = ie.extract(url)\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/extractor/common.py:529: in extract\r\n    ie_result = self._real_extract(url)\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/extractor/generic.py:2245: in _real_extract\r\n    self.to_screen('%s: Requesting header' % video_id)\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/extractor/common.py:913: in to_screen\r\n    self._downloader.to_screen('[%s] %s' % (self.IE_NAME, msg))\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/YoutubeDL.py:502: in to_screen\r\n    return self.to_stdout(message, skip_eol, check_quiet=True)\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/YoutubeDL.py:516: in to_stdout\r\n    self._write_string(output, self._screen_file)\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/YoutubeDL.py:505: in _write_string\r\n    write_string(s, out=out, encoding=self.params.get('encoding'))\r\npytest-issue-ve3/lib/python3.7/site-packages/youtube_dl/utils.py:1496: in write_string\r\n    out.write(byt)\r\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \r\n\r\nself = <_pytest.capture.EncodedFile object at 0x10df124a8>, obj = b'[generic] example: Requesting header\\n'\r\n\r\n    def write(self, obj):\r\n        if isinstance(obj, six.text_type):\r\n            obj = obj.encode(self.encoding, \"replace\")\r\n        elif _PY3:\r\n            raise TypeError(\r\n>               \"write() argument must be str, not {}\".format(type(obj).__name__)\r\n            )\r\nE           TypeError: write() argument must be str, not bytes\r\n\r\npytest-issue-ve3/lib/python3.7/site-packages/_pytest/capture.py:437: TypeError\r\n============================================================================ 1 failed in 2.74 seconds ============================================================================\r\n```\r\n\r\n- [x] output of `pip list` from the virtual environment you are using\r\n```\r\nPackage        Version  \r\n-------------- ---------\r\natomicwrites   1.3.0    \r\nattrs          19.1.0   \r\nmore-itertools 7.0.0    \r\npip            19.1.1   \r\npluggy         0.11.0   \r\npy             1.8.0    \r\npytest         4.5.0    \r\nsetuptools     41.0.1   \r\nsix            1.12.0   \r\nwcwidth        0.1.7    \r\nwheel          0.33.4   \r\nyoutube-dl     2019.5.11\r\n```\r\n\r\n- [x] pytest and operating system versions\r\n```\r\nThis is pytest version 4.5.0, imported from /private/tmp/pytest-issue-ve3/lib/python3.7/site-packages/pytest.py\r\n```\r\n\r\n```\r\nmacOS 10.14.4 (18E226)\r\n```\r\n\r\n- [x] minimal example if possible\r\n\r\n```\r\npip install pytest youtube-dl\r\npy.test test.py\r\n```\r\n\r\ntest.py:\r\n```\r\nimport youtube_dl\r\ndef test_foo():\r\n    youtube_dl.YoutubeDL().extract_info('http://example.com/')\r\n```\r\n\n\n\nRepair and verification workflow:\n- Use the issue and public contract to identify the requested behavior and relevant callers or edge cases. Choose an actionable hypothesis before repeating searches.\n- Use the documented tools and public test entry. Collection errors, unavailable dependencies, failed commands and zero collected tests are not successful verification.\n- Derive expected behavior independently of your patch. Inspect the final diff to confirm what behavior it actually changes; comments or passing unrelated tests do not establish a repair.\n- Prefer a focused issue reproduction or regression test. After editing again, distinguish older test evidence from results for the current version. Reuse sufficient current evidence rather than rerunning identical checks without a reason.\n- If progress stalls, use the concrete tool or test error to choose a different action, or report the unresolved limitation honestly.\nAll actions, self-review and history summarization share the original cumulative token, attempt, decision and time limits.\n\nPublic execution facts:\nWorking directory: /testbed\nTask interpreter: /opt/miniconda3/envs/testbed/bin/python\nRepository-wide public test frontend: /opt/miniconda3/envs/testbed/bin/python -m pytest\nUse this same interpreter for reproduction scripts and module invocations. The native terminal may report its current Python path; if it differs, use the absolute task interpreter above. Public frontend qualification was based on repository/interpreter family representatives, not a run of every task's full suite. Choose test targets from the original issue and public checkout only. A missing dependency, collection error, timeout or unexecuted test is not a passing test.\n\nPublic terminal usage:\n- The terminal accepts one native shell command per call. Bare independent command lines can be rejected before execution. Submit separate calls, explicitly join dependent commands with &&, or deliberately author a script and invoke it. Multiline strings and heredocs are not automatically invalid; the native parser remains authoritative.\n- If a command is still running, use the native continuation or interrupt operation before another command. No rejected command is automatically split, rewritten or retried.\n\nPublic testing uses the declared task interpreter and /testbed. Choose targets from the public repository and issue; no hidden acceptance tests are provided. Omitting selection runs the original public entry. Supported selections: {\"arbitrary_commands\": false, \"frontend\": \"pytest\", \"hidden_material_used\": false, \"maximum_targets\": 16, \"same_interpreter_cwd_timeout\": true, \"selection_kinds\": [\"full\", \"pytest\"], \"version\": \"v110-public-test-selection-r1\"}\nAllowed fields: kind, targets, optional keyword (-k), optional markers (-m). Shape example only: {\"keyword\": \"case and not slow\", \"kind\": \"pytest\", \"markers\": \"not slow\", \"targets\": [\"tests/test_example.py::test_case\"]}. Replace all example targets and filters with those found in this public repository.\nUse run_tests(selection=<selection object>), then copy next_cursor exactly when reading its public output. A selected test is evidence only for its recorded source version and selected scope, not a claim that every public or hidden test passed. A zero-test, all-skipped or unverified run is not reported as passed; inspect validation_status and counts.",
+    "source": {
+      "capture_time": 1794492817.3453658,
+      "chain_sha256": "d1cf400060bfc69bd69d255a78f7055bf9e7aaec3282f3a6968fa685f4de2567",
+      "event_key": "request:v203.2.1:pytest-dev__pytest-5262:DEEPSEEK_NT_REVIEW2_V141_B5000K:202611122032105:member_001:0040",
+      "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+      "record_sha256": "f73b8dd72c57bafaeb3c9c7fe57fb43ede16c3ef7af4110b993b0c5d8e2a7cbf",
+      "sequence": 380
+    }
+  },
+  "prefix_source_index": {
+    "maximum_sequence": 388,
+    "path": "blind-review-packets/prefix-indexes/pytest-dev__pytest-5262--s0388.jsonl",
+    "rows": 388,
+    "sha256": "cd1ad09e9c0def37930bcf6d62aa3cdcbc036731312940a8dda70412fb10927e"
+  },
+  "reviewer_instruction": "Judge only evidence available by cutoff. Separate global occurrence from actor presentation. Do not infer not-read from missing explicit read. Public-test outcomes are contemporaneous evidence, never official scores. No labels have been supplied.",
+  "schema": "v203.2.2-natural-collaboration-r1",
+  "target_actor": "member_001",
+  "target_actor_recent_receipts": [
+    {
+      "actor": "member_001",
+      "arguments": {
+        "new": "    assert bio.getvalue() == b\"hello\"",
+        "old": "    assert bio.getvalue() == b\"hello\"\n\n\ndef test_safe_text_dupfile_does_not_use_encodedfile_text_stream():\n    \"\"\"safe_text_dupfile keeps duplicating FDs even for text mode inputs.\n\n    It short-circuits to \"use the stream as is\" when the input has a\n    non-binary mode and an ``encoding``. EncodedFile now reports a text\n    mode, so that path must remain correct: the returned object is still a\n    usable text stream writing through to the buffer.\n    \"\"\"\n    bio = io.BytesIO()\n    f = capture.safe_text_dupfile(bio, \"wb\")\n    assert \"b\" not in f.mode\n    f.write(\"hello\")\n    assert bio.getvalue() == b\"hello\"",
+        "path": "testing/test_capture.py"
+      },
+      "decision_id": "model-9f6fd630f673ae16bbb7b102",
+      "error": null,
+      "ok": true,
+      "result": {
+        "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+        "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+        "operation": "write",
+        "path_count": 1,
+        "paths": [
+          "testing/test_capture.py"
+        ],
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        }
+      },
+      "source": {
+        "capture_time": 1794492267.8651512,
+        "chain_sha256": "127eb5aca02435b7dfd57bfbf7d8abbab59c33ce705b56a963e49c07ec2a6ae8",
+        "event_key": "receipt:member_001:model-9f6fd630f673ae16bbb7b102:call_00_6JhoIQ53dvR44VWghF0Z5828",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "1d116c6c220b1c71255c7a4d0af68cd2c45373cfb5acd4070b6bf658de00edb6",
+        "sequence": 259
+      },
+      "tool": "replace_file"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "selection": {
+          "kind": "pytest",
+          "targets": [
+            "testing/test_capture.py"
+          ]
+        }
+      },
+      "decision_id": "model-e1106f682aba6830dd252f84",
+      "error": null,
+      "ok": true,
+      "result": {
+        "body_characters": 757462,
+        "body_sha256": "86a76269a076177d5a5040776125eb1a4bc15cd7b7b4066eeb8cade426b33fbf",
+        "command_executed": true,
+        "counts": {
+          "collected": 116,
+          "errors": 0,
+          "failed": 0,
+          "passed": 108,
+          "skipped": 7,
+          "tests_run": 108,
+          "xfailed": 1,
+          "xpassed": 0
+        },
+        "directory": [
+          {
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ],
+            "entry_count": 1,
+            "group_id": "public_repository_tests",
+            "path": "/groups/public_repository_tests",
+            "status": "passed"
+          }
+        ],
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "executed": true,
+        "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+        "fixed_submission_is_acceptance": false,
+        "independent_acceptance": "not_run_by_public_tool",
+        "page": {
+          "cursor": "0:ca2ab0840b082f15",
+          "end": 47,
+          "index": 0,
+          "is_last": false,
+          "next_cursor": "1:f7cdfb6822725849",
+          "remaining_pages": 247,
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "start": 0,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": "
+        },
+        "passed": true,
+        "report_event": {
+          "operation_id": "command:member_001:staff-c6c41ce3be1b49a3a7bda8f8260e0f5a-48",
+          "sequence": 47
+        },
+        "report_id": "test-report-df31d5bebc38d1aa42bbeb7e",
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "test_evidence": {
+          "duplicate_journal_records_ignored": 0,
+          "error": null,
+          "evidence_sha256": "ff91da0631d77e9cee5a3f08804f7fb6a34d21a112debccae80e42e69ecbec77",
+          "framework": "pytest",
+          "journal_record_count": 116,
+          "nested_failures_are_diagnostic_not_summed": true,
+          "nested_report_count": 57,
+          "observer_sha256": "1a384dd6b4f12b0138408a9b0d509ff9645b126a23bc8f44525c7d977f413e24",
+          "partial": false,
+          "public_verification_is_hidden_acceptance": false,
+          "report_count": 58,
+          "root_counts_only": true,
+          "security_scope": "framework observation, not a same-UID anti-forgery boundary",
+          "sessions": [
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "c66cc4ee7c3c2944d65f2dc2edd636eb",
+              "test_reports_sha256": "1d7f537d3d27b1156a156c6ae5db990a2a1ffda692a45172941c0fd7a85d6d56"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "871afa5e331ddd8dff6e9fbbff601796",
+              "test_reports_sha256": "1d7f537d3d27b1156a156c6ae5db990a2a1ffda692a45172941c0fd7a85d6d56"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "e5b9fedb60584e095a418d321e28f596",
+              "test_reports_sha256": "80f1ce6b4ecb53fb8527e9dbbddc8c762804a6e5f8822d0dfac01653fb68ea22"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "e076b5f5ff8b83ade390d4a7c366edcb",
+              "test_reports_sha256": "80f1ce6b4ecb53fb8527e9dbbddc8c762804a6e5f8822d0dfac01653fb68ea22"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 1,
+              "counts": {
+                "collected": 0,
+                "errors": 1,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 2,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 0,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "4d4c1214f5699dfb0009fd0f1cb397e9",
+              "test_reports_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 2,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capture_and_fixtures.py::test_func1",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capture_and_fixtures.py::test_func2",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 4,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "dd809e2231d4ba0f8a356cbffb63809d",
+              "test_reports_sha256": "ae68f540fc675a0f239db69e6cba728183005e86f35337a87b2f60232c731eea"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capture_scope_cache.py::test_func",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "42d2f25514db45d2857f4268fa1b38d2",
+              "test_reports_sha256": "75c3257f18734cf8cc10e0ca534e176ff5fd4ee59023fcb97a5426b18427e02f"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 1,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_no_carry_over.py::test_func2",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 5,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "c7aac4002247d9560147fb792724abb7",
+              "test_reports_sha256": "1c4b7c879be84d3e022fb94dd96b78be12c3475908e44c56fdb3b2661e7dab4d"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_teardown_capturing.py::test_func1",
+                  "outcome": "failed",
+                  "phase": "teardown",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "7532a1abc927f62c4f937573c315d0a0",
+              "test_reports_sha256": "4bc144124fb5b27b6aa9adf9d0b36055231aac0bdd9dda32e544155435603c33"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_teardown_capturing_final.py::test_func",
+                  "outcome": "failed",
+                  "phase": "teardown",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "dae2412b430ff59441fb6ac7ab8deb09",
+              "test_reports_sha256": "da24a38c8a2daefc3fd60eaafd15fdfd54ed3f65fabe1c470b504c1d9985623d"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 1,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capturing_outerr.py::test_capturing_error",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 5,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "ebec91cc35bfaacfcd12820854ff324d",
+              "test_reports_sha256": "3b590f8f4275de217fb14246dccc4a2efc1346ed71c9501c3c9673757792f0bb"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_stream_ownership.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 153,
+              "root": false,
+              "run_id": "e0e4b76c557ddae87fe59aa7affd5e58",
+              "test_reports_sha256": "fe239cee4c2fee46c07af3c4d02507476b16ce1b668066088793857060107b0c"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_immediate_setupteardown.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_immediate_setupteardown.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "teardown",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 154,
+              "root": false,
+              "run_id": "109a15d74d9afc1e606a7d0f1b9d6067",
+              "test_reports_sha256": "931c61cefb9eb7769c45e9ff2bae34bf5e7a70f8297eaedc588033a9b9a73e41"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_immediate_setupteardown.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_immediate_setupteardown.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "teardown",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 155,
+              "root": false,
+              "run_id": "ff86aec91da79a0856f443695b054cab",
+              "test_reports_sha256": "931c61cefb9eb7769c45e9ff2bae34bf5e7a70f8297eaedc588033a9b9a73e41"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_crossscope_fixtures.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_crossscope_fixtures.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "teardown",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 156,
+              "root": false,
+              "run_id": "e842760dae16cab914ed0a908261b23f",
+              "test_reports_sha256": "c262f2758fd76f25974a173874e3038e7dfbec8cd20431b6d9cf7e880088c179"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_crossscope_fixtures.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_logging_and_crossscope_fixtures.py::test_logging",
+                  "outcome": "failed",
+                  "phase": "teardown",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 157,
+              "root": false,
+              "run_id": "4dc537e286151aaec7499cc01b9d6c08",
+              "test_reports_sha256": "c262f2758fd76f25974a173874e3038e7dfbec8cd20431b6d9cf7e880088c179"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 0,
+                "errors": 0,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 5,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 0,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 158,
+              "root": false,
+              "run_id": "a9a5cc0b38bfcf8150023b66ede26c13",
+              "test_reports_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_conftestlogging_and_test_logging.py::test_hello",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 159,
+              "root": false,
+              "run_id": "1ebba062e5bf26de59510c0bf92cca3e",
+              "test_reports_sha256": "c97156e6ad3fecf8bd6b82f3d4285728b6b16de08ce361596ded8236cc645c76"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 2,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 160,
+              "root": false,
+              "run_id": "c78ad4df23f0fec9646a419348a54602",
+              "test_reports_sha256": "e070b213e5e852e81fd44cb5d12ecbed29db7954d6109757fa9d5f9ca7908ac7"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "05eae71a10bf22df79592d25391568b8",
+              "test_reports_sha256": "a555da253f32be4c45339af0b18eb0eee8844814784c154667122dc2d9a63278"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "87d76070a162dbc61cebbe16d4dab01a",
+              "test_reports_sha256": "a555da253f32be4c45339af0b18eb0eee8844814784c154667122dc2d9a63278"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 2,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capsyscapfd.py::test_one",
+                  "outcome": "failed",
+                  "phase": "setup",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capsyscapfd.py::test_two",
+                  "outcome": "failed",
+                  "phase": "setup",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "dd358d0209ea096c6fd2e87d44f06191",
+              "test_reports_sha256": "5668d568c03d065bfea38494708de41612ee798c3160e5dd53af7f74c93d9340"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 2,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capturing_getfixturevalue.py::test_one",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                },
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capturing_getfixturevalue.py::test_two",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 4,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "d6429dc0f7a1253c1afb6485185ff42c",
+              "test_reports_sha256": "3a7349fed8f282074d894e1a352d1591b6c34643ca9de196ad01983c28d8614e"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capsyscapfdbinary.py::test_one",
+                  "outcome": "failed",
+                  "phase": "setup",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "10a8574ba175999f89d8e82131875f02",
+              "test_reports_sha256": "9d02bd398e56e20aebdfccb215e8e358872a5b212329eb30a0610a4e5b940ec8"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capture_is_represented_on_failure_issue128.py::test_hello",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "409215e7e9d1eb779547e1fc1c75f1fe",
+              "test_reports_sha256": "7915b65cf492714bf0284cf55603dece2b8856a608f1c07bd227d941ccde6822"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capture_is_represented_on_failure_issue128.py::test_hello",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "88e69843e0b5e79d037a6c933eac4fda",
+              "test_reports_sha256": "7915b65cf492714bf0284cf55603dece2b8856a608f1c07bd227d941ccde6822"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "07c64cd2e694356a2da30f030f950b75",
+              "test_reports_sha256": "27791f2b46aa99c623ad7cd0090a0d3aa44fd27ba833141c97704b0628a50bed"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "3e2af1f14082ac7ab3565992aa8f92f0",
+              "test_reports_sha256": "ad27592216cf96282d08c07f88927e56d0a16cc5ab28f60d9a03bfcfdd5b21b1"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "bcbd7ebf58c46f70a9f81c84d4d7ab4f",
+              "test_reports_sha256": "b0940d6a408a1feac291661a407b5fd66455577a776d5756bf8a9c269f2a8e68"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_partial_setup_failure.py::test_hello",
+                  "outcome": "failed",
+                  "phase": "setup",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "083ce64e18d98c60409829c18cde6583",
+              "test_reports_sha256": "817fea716cc10871ccef51f84a6719b9456546badd43bc900ca5a575486a3d73"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 2,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 161,
+              "root": false,
+              "run_id": "108cbb333a81a84923363571bf386472",
+              "test_reports_sha256": "f1f47d2e7084171d5b97110a69cedde26e63b3e184b80a45b76a9a8b8edb19a1"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 162,
+              "root": false,
+              "run_id": "5b9cb22a04a51f30bce71df467342cc7",
+              "test_reports_sha256": "418e8d80e81a9c37da7edfd48758454eabe65273cf110d3619b6b1e27139c592"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 0,
+                "passed": 2,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 6,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 163,
+              "root": false,
+              "run_id": "b5c1c58f735379dfab5832ab362e97d6",
+              "test_reports_sha256": "90021c33d59d9d38fff14203b65d6d66749970987f2b1d9330b3cdf22ec61cad"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 0,
+                "passed": 2,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 6,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 164,
+              "root": false,
+              "run_id": "f2518e7c8c4b5c30fb442e1426706ff6",
+              "test_reports_sha256": "90021c33d59d9d38fff14203b65d6d66749970987f2b1d9330b3cdf22ec61cad"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 0,
+                "passed": 2,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 6,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 165,
+              "root": false,
+              "run_id": "52e0de087f4daceda438da3eb0248301",
+              "test_reports_sha256": "90021c33d59d9d38fff14203b65d6d66749970987f2b1d9330b3cdf22ec61cad"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 0,
+                "passed": 2,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 6,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 166,
+              "root": false,
+              "run_id": "44fa9adb941c8d360847cc4f2835d12f",
+              "test_reports_sha256": "90021c33d59d9d38fff14203b65d6d66749970987f2b1d9330b3cdf22ec61cad"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 167,
+              "root": false,
+              "run_id": "fd01a78de771fe65518447ee1ae6c9cf",
+              "test_reports_sha256": "2bdd0bd2b00eb036bd3fd74268e822bdadb012341d21df293bd426facd5641ef"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 168,
+              "root": false,
+              "run_id": "f092f18a56ad1440aab017f81ec847cd",
+              "test_reports_sha256": "2bdd0bd2b00eb036bd3fd74268e822bdadb012341d21df293bd426facd5641ef"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "015a7714b9b9ad59a4b1af8e6315c0f1",
+              "test_reports_sha256": "fdc442d5f3ebd68064d925b1ea8d97e872bc11429b0ee22e654e1c30c8f60dc7"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "150f739fafc2ac8a226e46874f54283a",
+              "test_reports_sha256": "fdc442d5f3ebd68064d925b1ea8d97e872bc11429b0ee22e654e1c30c8f60dc7"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 1,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "sub1/test_mod.py::test_func1",
+                  "outcome": "failed",
+                  "phase": "setup",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 1,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "709fba3015fce7c77d144fdbae555323",
+              "test_reports_sha256": "1429051e331efa081aa2a15eceb01f6a34adcc908b0bd8a9f109b297b2fa0d68"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 0,
+                "skipped": 1,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 169,
+              "root": false,
+              "run_id": "3a4811243ed76666b1092617e1e8d27b",
+              "test_reports_sha256": "5a75b6db6731f129409d25b06b0f47441b72f67090a3754931a275f1dbcf905e"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "98b08b80ef6d66831657d7a4a95965a8",
+              "test_reports_sha256": "020e720f21c7d1d03722e9641adfb25aeba5118ae8fbf36e48ed4ea0b073f455"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_capture_badoutput_issue412.py::test_func",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "002d23652b3d7fcf236ba938d4d6c7eb",
+              "test_reports_sha256": "9176904a1a912090b0e31eede9cd74844128ff317fc147125c456825450e67e9"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "1e7d594a54b8a53e265ba3a405e22970",
+              "test_reports_sha256": "f9f0945eeb649183491109edef283528568daf8423ab934c1b0ce960f89f10f8"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 0,
+                "passed": 2,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 6,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "ec6e4c40bdcceed1963cfe2a68e0e37a",
+              "test_reports_sha256": "d58c8592cbc9b6b2310853d893d1ef562f6385c6a3882b4487756eca688efff4"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_simple_only_fd.py::test_x",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 173,
+              "root": false,
+              "run_id": "631f81f4dd73274c77907043864c372b",
+              "test_reports_sha256": "f021c1e00cd7a78b69d553c619fc937eb771d12ef152b81a60edbf9da600bfeb"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 3,
+                "errors": 0,
+                "failed": 0,
+                "passed": 3,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 9,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 174,
+              "root": false,
+              "run_id": "df3a05b9817fefe19f40434fb432a0ed",
+              "test_reports_sha256": "0443c658f1ec9b07e2073e5c87de4d759b9c707d3ec395f00698bfeabf3552f1"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 2,
+                "errors": 0,
+                "failed": 1,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_close_and_capture_again.py::test_capture_again",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 5,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 175,
+              "root": false,
+              "run_id": "bd8bec1cf4ea62ffedd1034018581a5d",
+              "test_reports_sha256": "118999d0f5221776f19b5abc25651f0fc4f88949c630b7a575b64df2c37815c5"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "477a7b69d613d94b634c5d14723d8e1a",
+              "test_reports_sha256": "9756694b07df910ea935c88f3634b1d28d51ffba457037b32064c6135a79452f"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "68cb808e01e6fd7cecee1a6bb249c0fb",
+              "test_reports_sha256": "e22116ac3de6bb5f92556b80714043c99b54a528bf4b477ce72bea63b793b69f"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 178,
+              "root": false,
+              "run_id": "d366c92c759c56a10eac38dc69a747b0",
+              "test_reports_sha256": "b1ef443559dc8bc6d46a168e7d310024b0e18f750cde1914cfe0dbd0c857b434"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 180,
+              "root": false,
+              "run_id": "6af091808aa828964e1d19092f88e729",
+              "test_reports_sha256": "be6e33bff8b9bd29312dfdd873df3684a84a08571420d38ebd5e305e740c72a4"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 181,
+              "root": false,
+              "run_id": "a93cfa369a52b79298cb8601353e8a69",
+              "test_reports_sha256": "6483241a03215a18b20de4b99e223654fe9249bda7e92618b5634719d0fff686"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 0,
+                "passed": 1,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 3,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 182,
+              "root": false,
+              "run_id": "255d3759a4184c8c608543f1d1a56135",
+              "test_reports_sha256": "6483241a03215a18b20de4b99e223654fe9249bda7e92618b5634719d0fff686"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_typeerror_encodedfile_write.py::test_fails",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "fcde9e08c9e80c38a9b93802596a4def",
+              "test_reports_sha256": "da45b6915795c00d3f2150f09b6efbd98ffc94a86a4c1ac66650c9b16c7725ae"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 1,
+                "errors": 0,
+                "failed": 1,
+                "passed": 0,
+                "skipped": 0,
+                "xfailed": 0,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 1,
+              "first_failed_reports": [
+                {
+                  "invocation": 1,
+                  "nodeid": "test_typeerror_encodedfile_write.py::test_fails",
+                  "outcome": "failed",
+                  "phase": "call",
+                  "wasxfail": false
+                }
+              ],
+              "framework": "pytest",
+              "omitted_test_report_count": 2,
+              "parent_run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "partial": false,
+              "pid": 151,
+              "root": false,
+              "run_id": "bfaa670f8e2ad4873761ee5854b060ff",
+              "test_reports_sha256": "da45b6915795c00d3f2150f09b6efbd98ffc94a86a4c1ac66650c9b16c7725ae"
+            },
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794492314.8955147,
+                "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+                "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+                "sequence": 269
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 116,
+                "errors": 0,
+                "failed": 0,
+                "passed": 108,
+                "skipped": 7,
+                "xfailed": 1,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 343,
+              "parent_run_id": null,
+              "partial": false,
+              "pid": 151,
+              "root": true,
+              "run_id": "fd4351a7dd49a0feaa14f7263d755e3f",
+              "test_reports_sha256": "09be4f0199c841063677e4c0846c0cc7b3a91dc42389ece1967f9765ac474618"
+            }
+          ],
+          "source": {
+            "delegated_hash_process": false,
+            "framework": "pytest",
+            "parent_run_id": null,
+            "pid": 151,
+            "process_group": 151,
+            "run_id": "fd4351a7dd49a0feaa14f7263d755e3f"
+          },
+          "stdout_used_for_verdict": false,
+          "version": "v141-session-bound-public-test-execution-r1"
+        },
+        "total_pages": 248,
+        "untested": [],
+        "validation_status": "verified",
+        "version": "paged-public-test-feedback-v0.42"
+      },
+      "source": {
+        "capture_time": 1794492314.8955147,
+        "chain_sha256": "509ff26b621fc87b85452a857270e1e90f27484980c4542fea4279f4673e6b7a",
+        "event_key": "receipt:member_001:model-e1106f682aba6830dd252f84:call_00_ANykQIw6CKdBghhuCnbN8693",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "9b125ecbc6d25a87f7add9ad56390dd6c02d875797f00afbd8086ea0d1d04a17",
+        "sequence": 269
+      },
+      "tool": "run_tests"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "message": "Fix: `_pytest.capture.EncodedFile.mode` must not advertise binary mode.\n\nRoot cause: `EncodedFile` defines no `mode` of its own, so `__getattr__` forwards to the underlying binary buffer and reports e.g. `rb+`. Callers such as youtube-dl branch on `\"b\" in out.mode` and then call `write(bytes)`, which `EncodedFile.write()` rejects with TypeError on PY3.\n\nChange (src/_pytest/capture.py): add a read-only `mode` property on `EncodedFile` returning `\"r+\"`. The stream accepts text and encodes internally, so advertising a text mode is accurate.\n\nTest (testing/test_capture.py): `test_encodedfile_mode_has_no_b` asserts `mode` has no \"b\" and equals \"r+\", then exercises the caller's actual decision branch — since mode is not binary it writes `str` and asserts the bytes reach the underlying buffer. Before the fix this object reported `rb+`, so a caller took the bytes path and hit the TypeError from the issue.\n\nScope: 2 files, no other behavior changed. `write()`, `name`, `encoding` and `__getattr__` delegation are untouched.\n\nEvidence: run_tests on this exact version → testing/test_capture.py, 116 collected, 108 passed, 0 failed, 7 skipped, 1 xfailed, validation_status=verified.",
+        "task_ids": []
+      },
+      "decision_id": "model-d32ca2af07e0a83f915bcca8",
+      "error": null,
+      "ok": true,
+      "result": {
+        "author": "member_001",
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "changed_path_count": 2,
+        "changed_paths": [
+          "src/_pytest/capture.py",
+          "testing/test_capture.py"
+        ],
+        "changed_paths_truncated": false,
+        "diff_sha256": "f836779ef41f1eaac423b9f7119b0c962dad85c005bf92c6210e180e55a85581",
+        "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+        "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+        "patch_id": "patch-2",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v5"
+        },
+        "source_sha256": "44636ad3f50146bc971fdcf034a50e559335f78192bacd99c6b97cf54cc5b467"
+      },
+      "source": {
+        "capture_time": 1794492337.0120947,
+        "chain_sha256": "6bf2fe95e7194902d9bd2bf5ad03adc1ed1bcce02a18667c4c85c77c5f50c2fc",
+        "event_key": "receipt:member_001:model-d32ca2af07e0a83f915bcca8:call_00_itlv5V5tmBzcWH2TLZEp4786",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "968b72795d143b7091607d2418ba2e5224faecebdb1c77e2a5229f3edc139773",
+        "sequence": 274
+      },
+      "tool": "fix_patch"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "message": "Please adopt, run public tests, and review this final candidate: patch-2 (source v5).\n\nWhy there is a patch-2: I found a real weakness in my own patch-1 evidence during self-review. Its test only asserted the string value of `mode`; it never exercised the branch youtube-dl actually takes. So it would have passed even if the behavior from the issue were still broken. patch-2 keeps the same production fix but makes the regression test pin the real contract.\n\nProduction change (src/_pytest/capture.py), unchanged from patch-1 in substance:\n- Adds a read-only `mode` property on `EncodedFile` returning \"r+\".\n- Root cause: `EncodedFile` defined no `mode`, so `__getattr__` forwarded to the underlying binary buffer and reported e.g. \"rb+\". youtube-dl branches on `\"b\" in out.mode` and then calls `write(bytes)`, which `EncodedFile.write()` rejects with TypeError on PY3 (the traceback in the issue).\n- `write()` deliberately still raises TypeError on bytes; that enforcement is correct and untouched. `name`, `encoding`, and `__getattr__` delegation untouched.\n\nTest change (testing/test_capture.py): `test_encodedfile_mode_has_no_b` now asserts `mode` has no \"b\" and equals \"r+\", then reproduces the caller's decision: since mode is not binary, it writes `str` and asserts the encoded bytes reach the underlying buffer. Pre-fix, that object reported \"rb+\" and a caller would have taken the bytes path into the TypeError.\n\nOn my v5 I ran testing/test_capture.py: 116 collected, 108 passed, 0 failed, 7 skipped, 1 xfailed, validation_status=verified, public_test_sequence 47.\n\nOne scope note so you can check it independently: I also explored whether the new text `mode` interacts with the `safe_text_dupfile` early-return branch (`\"b\" not in mode and hasattr(f, \"encoding\")`). I read the function body and concluded it does not: that branch is only reached when `f.fileno()` raises, and it returns `f` unchanged, so the `mode` property changes no control flow there. I therefore removed a second test I had drafted for it, because it asserted something unrelated and would have been a misleading test in the candidate.\n\nPlease verify on the exact adopted version yourself rather than relying on my numbers: the diff touches only these 2 files, and `mode` is the only behavioral change.",
+        "patch_id": "patch-2",
+        "to_member": "member_002"
+      },
+      "decision_id": "model-7c4c0cbfd189917ed87c3c92",
+      "error": null,
+      "ok": true,
+      "result": {
+        "handoff_sequence": 51,
+        "patch_id": "patch-2",
+        "recipient": "member_002"
+      },
+      "source": {
+        "capture_time": 1794492382.8698552,
+        "chain_sha256": "72af4de607b3d2c8e63a0b12f7af8462e1c315fdc3a08f4885d9769a64032a7c",
+        "event_key": "receipt:member_001:model-7c4c0cbfd189917ed87c3c92:call_00_ESlhx3nretynuYu7SC103442",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "02e517039de72c6972ef5cf649c2801014d87647f052f2604945a384bd2803a5",
+        "sequence": 284
+      },
+      "tool": "handoff_patch"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "reason": "patch-2 (source v5, tested: 108 passed, validation_status=verified) is published and handed off to member_002. REVIEW2 requires member_002's independent adoption and acceptance of this exact version, and submit_integration needs that peer event. Waiting for actual review rather than re-running identical checks."
+      },
+      "decision_id": "model-51e7426852bd242cd6578ac9",
+      "error": null,
+      "ok": true,
+      "result": {},
+      "source": {
+        "capture_time": 1794492426.050837,
+        "chain_sha256": "bbd3769b0a46c8c7662ac6c6a3decd9dc39da6b7b249ecfb5b9ec3cabba74131",
+        "event_key": "receipt:member_001:model-51e7426852bd242cd6578ac9:call_00_sh0Xn3kBCDzAcUk6t9o27027",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "8aa9f1c9282f41e5dc90f701fd1b9f492b8cefaf723fb26e0707f7d783e9f31a",
+        "sequence": 294
+      },
+      "tool": "staff_wait"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {},
+      "decision_id": "model-9b95fef1f7097556c23e8599",
+      "error": null,
+      "ok": true,
+      "result": {
+        "candidate_directory_complete": true,
+        "candidates": [
+          {
+            "adopted_by_you": false,
+            "author": "member_001",
+            "available_to_final_integrator": true,
+            "decision": "accept",
+            "decision_event_sequence": 30,
+            "identity": {
+              "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+              "files_sha256": "920201c2e3edf47e702b933f022cdb7b6132316d421836fd5b4660f256d56822",
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v3"
+              }
+            },
+            "next_receiver_step": "integrate_patch_explicitly_before_test_and_accept",
+            "original_record": "read_work_event(patch_fixed sequence)",
+            "patch_id": "patch-1",
+            "rework_responsible": null
+          },
+          {
+            "adopted_by_you": false,
+            "author": "member_001",
+            "available_to_final_integrator": true,
+            "decision": "accept",
+            "decision_event_sequence": 64,
+            "identity": {
+              "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+              "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v5"
+              }
+            },
+            "next_receiver_step": "integrate_patch_explicitly_before_test_and_accept",
+            "original_record": "read_work_event(patch_fixed sequence)",
+            "patch_id": "patch-2",
+            "rework_responsible": null
+          }
+        ],
+        "complete": true,
+        "current": {
+          "final_integration_responsible": "member_001",
+          "independent_review_required": true,
+          "members": [
+            "member_001",
+            "member_002"
+          ],
+          "opportunities_consumed": 74,
+          "organization_id": "REVIEW2",
+          "phase": "open_work_with_explicit_candidate_handoffs",
+          "record_counts": {
+            "published_candidates": 2,
+            "reviews": 2,
+            "tasks": 0
+          },
+          "role_declarations": {},
+          "version": "v141-role-baseline-managed-world-r1"
+        },
+        "events": [
+          {
+            "actor_id": "member_001",
+            "kind": "patch_fixed",
+            "patch_id": "patch-1",
+            "sequence": 16,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v3"
+            }
+          },
+          {
+            "actor_id": "member_002",
+            "decision": "accept",
+            "kind": "organization_v141:candidate_reviewed",
+            "patch_id": "patch-1",
+            "review_id": "review-1",
+            "sequence": 30
+          },
+          {
+            "actor_id": "member_001",
+            "kind": "submit",
+            "sequence": 32,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v3"
+            }
+          },
+          {
+            "actor_id": "member_001",
+            "kind": "patch_fixed",
+            "patch_id": "patch-2",
+            "sequence": 49,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v5"
+            }
+          },
+          {
+            "actor_id": "member_002",
+            "decision": "accept",
+            "kind": "organization_v141:candidate_reviewed",
+            "patch_id": "patch-2",
+            "review_id": "review-2",
+            "sequence": 64
+          }
+        ],
+        "exact_record_tool": "read_work_event(sequence)",
+        "message_task_id_without_task": "root_goal",
+        "next_after_sequence": null,
+        "no_private_peer_workspace_or_test_output": true,
+        "task_directory": [],
+        "task_directory_complete": true,
+        "your_closure": {
+          "current_effective_fixed_candidate": {
+            "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+            "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v5"
+            }
+          },
+          "current_effective_patch_id": "patch-2",
+          "current_workspace_has_net_changes": true,
+          "designated_delivery_member": "member_001",
+          "fix_patch_arguments": {
+            "message": "Describe this fixed version",
+            "task_ids": []
+          },
+          "fixed_patch_id": "patch-2",
+          "guide_is_not_automatic_execution_or_acceptance": true,
+          "legal_delivery_id": null,
+          "next_explicit_action": {
+            "arguments": {
+              "message": "Deliver this exact version."
+            },
+            "tool": "submit_integration"
+          },
+          "next_explicit_tool": "submit_integration",
+          "pending_accepted_peer_patch_ids": [],
+          "public_test_executed": true,
+          "public_test_passed": true,
+          "public_test_sequence": 47,
+          "requires_independent_review": true,
+          "scope": "Same-version public evidence only; submission is not official acceptance",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v5"
+          },
+          "work_stage": "ready_for_explicit_delivery"
+        }
+      },
+      "source": {
+        "capture_time": 1794492824.5722036,
+        "chain_sha256": "90759b38d63c9d2e1796e95571b871ef96002df9c35feadb36927ab686d346d1",
+        "event_key": "receipt:member_001:model-9b95fef1f7097556c23e8599:call_00_sMGcHUoo45muFcoQXOi85792",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "9429daf60fa0ee0d64867f7704344805315934a39d973e1727d01f186a2918fa",
+        "sequence": 383
+      },
+      "tool": "org_status"
+    }
+  ],
+  "target_receipts_after_latest_request": [
+    {
+      "actor": "member_001",
+      "arguments": {},
+      "decision_id": "model-9b95fef1f7097556c23e8599",
+      "error": null,
+      "ok": true,
+      "result": {
+        "candidate_directory_complete": true,
+        "candidates": [
+          {
+            "adopted_by_you": false,
+            "author": "member_001",
+            "available_to_final_integrator": true,
+            "decision": "accept",
+            "decision_event_sequence": 30,
+            "identity": {
+              "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+              "files_sha256": "920201c2e3edf47e702b933f022cdb7b6132316d421836fd5b4660f256d56822",
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v3"
+              }
+            },
+            "next_receiver_step": "integrate_patch_explicitly_before_test_and_accept",
+            "original_record": "read_work_event(patch_fixed sequence)",
+            "patch_id": "patch-1",
+            "rework_responsible": null
+          },
+          {
+            "adopted_by_you": false,
+            "author": "member_001",
+            "available_to_final_integrator": true,
+            "decision": "accept",
+            "decision_event_sequence": 64,
+            "identity": {
+              "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+              "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v5"
+              }
+            },
+            "next_receiver_step": "integrate_patch_explicitly_before_test_and_accept",
+            "original_record": "read_work_event(patch_fixed sequence)",
+            "patch_id": "patch-2",
+            "rework_responsible": null
+          }
+        ],
+        "complete": true,
+        "current": {
+          "final_integration_responsible": "member_001",
+          "independent_review_required": true,
+          "members": [
+            "member_001",
+            "member_002"
+          ],
+          "opportunities_consumed": 74,
+          "organization_id": "REVIEW2",
+          "phase": "open_work_with_explicit_candidate_handoffs",
+          "record_counts": {
+            "published_candidates": 2,
+            "reviews": 2,
+            "tasks": 0
+          },
+          "role_declarations": {},
+          "version": "v141-role-baseline-managed-world-r1"
+        },
+        "events": [
+          {
+            "actor_id": "member_001",
+            "kind": "patch_fixed",
+            "patch_id": "patch-1",
+            "sequence": 16,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v3"
+            }
+          },
+          {
+            "actor_id": "member_002",
+            "decision": "accept",
+            "kind": "organization_v141:candidate_reviewed",
+            "patch_id": "patch-1",
+            "review_id": "review-1",
+            "sequence": 30
+          },
+          {
+            "actor_id": "member_001",
+            "kind": "submit",
+            "sequence": 32,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v3"
+            }
+          },
+          {
+            "actor_id": "member_001",
+            "kind": "patch_fixed",
+            "patch_id": "patch-2",
+            "sequence": 49,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v5"
+            }
+          },
+          {
+            "actor_id": "member_002",
+            "decision": "accept",
+            "kind": "organization_v141:candidate_reviewed",
+            "patch_id": "patch-2",
+            "review_id": "review-2",
+            "sequence": 64
+          }
+        ],
+        "exact_record_tool": "read_work_event(sequence)",
+        "message_task_id_without_task": "root_goal",
+        "next_after_sequence": null,
+        "no_private_peer_workspace_or_test_output": true,
+        "task_directory": [],
+        "task_directory_complete": true,
+        "your_closure": {
+          "current_effective_fixed_candidate": {
+            "entry_metadata_sha256": "3b7b7b9d2d26517aa616813e12fbf70bb55ce764e58c876fc8b6a9697f344ec1",
+            "files_sha256": "4a45172fc155045d7eee91afc68aab6366de687790098aa1f461623e1c4fefbf",
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v5"
+            }
+          },
+          "current_effective_patch_id": "patch-2",
+          "current_workspace_has_net_changes": true,
+          "designated_delivery_member": "member_001",
+          "fix_patch_arguments": {
+            "message": "Describe this fixed version",
+            "task_ids": []
+          },
+          "fixed_patch_id": "patch-2",
+          "guide_is_not_automatic_execution_or_acceptance": true,
+          "legal_delivery_id": null,
+          "next_explicit_action": {
+            "arguments": {
+              "message": "Deliver this exact version."
+            },
+            "tool": "submit_integration"
+          },
+          "next_explicit_tool": "submit_integration",
+          "pending_accepted_peer_patch_ids": [],
+          "public_test_executed": true,
+          "public_test_passed": true,
+          "public_test_sequence": 47,
+          "requires_independent_review": true,
+          "scope": "Same-version public evidence only; submission is not official acceptance",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v5"
+          },
+          "work_stage": "ready_for_explicit_delivery"
+        }
+      },
+      "source": {
+        "capture_time": 1794492824.5722036,
+        "chain_sha256": "90759b38d63c9d2e1796e95571b871ef96002df9c35feadb36927ab686d346d1",
+        "event_key": "receipt:member_001:model-9b95fef1f7097556c23e8599:call_00_sMGcHUoo45muFcoQXOi85792",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032405/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "9429daf60fa0ee0d64867f7704344805315934a39d973e1727d01f186a2918fa",
+        "sequence": 383
+      },
+      "tool": "org_status"
+    }
+  ],
+  "task_id": "pytest-dev__pytest-5262",
+  "trigger_kinds": [
+    "successful_send_message"
+  ],
+  "trigger_visibility_to_target": "global event; do not assume recipient has seen it at this cutoff",
+  "window_id": "pytest-dev__pytest-5262:s0388"
+}

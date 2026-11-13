@@ -1,0 +1,922 @@
+{
+  "cutoff": {
+    "capture_time": 1794491589.7419398,
+    "chain_sha256": "7f4bfe2243e124cbe50039a2078c14212dae08b134df9e154d6f0f5292d94436",
+    "event_key": "receipt:member_002:model-c74ce09addf7d44ee3aa82db:call_00_iKuXfuYqnaee4uxStcW40362",
+    "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+    "record_sha256": "78211c5780ce85bd4cf12c52d02677f24752c267bba695acdb77a1345e6113d7",
+    "sequence": 163
+  },
+  "exposure_boundary": "inclusive anchor only; no post-cutoff action/outcome or prior audit assessment supplied",
+  "global_trigger_fact": {
+    "actor": "member_002",
+    "arguments": {
+      "body": "INDEPENDENT REVIEW: ACCEPT (review-1) for patch-1.\n\nWhat I did independently:\n1. integrate_patch(patch-1) into my own tree -> source v2, files_sha256 d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13, 0 conflicts.\n2. Inspected diff_workspace: only xarray/core/nanops.py, _maybe_null_out; `hasattr(axis,\"__len__\")` ValueError removed; null_mask = (np.take(mask.shape, axis).prod() - mask.sum(axis) - min_count) < 0. Semantics check out: total masked elements across all reduced axes compared to min_count; tuple/list axes now allowed; np.take handles negative axes; axis=None and single-axis paths unchanged.\n3. run_tests on that exact version (pytest, xarray/tests/test_duck_array_ops.py + xarray/tests/test_dataarray.py, -k \"min_count or nanops or reduce\"): report test-report-fb088a136257b61c9ef1d46a, sequence 22, validation_status=verified, counts collected 837 / passed 800 / failed 0 / errors 0 / skipped 33 / xfailed 4.\nExisting single-axis min_count coverage (test_duck_array_ops.py::test_min_count dim=None and dim='x', sum/prod; test_min_count_dataset) and rolling/resample min_periods paths all pass -> no regression.\n\nTwo notes (not blockers):\n- patch-1 does NOT add a regression test. Coverage is fine but the multi-dim min_count path itself is not pinned by a public test. If you can cheaply extend test_duck_array_ops.py (e.g. parametrize aggdim with (\"dim_0\",\"dim_1\") in test_min_count using series_reduce) it strengthens the delivery; if you add it, that is a NEW version and I'll need to re-adopt and re-test.\n- Same fix is correct for dask too, since the expression is dtype-agnostic.\n\nYour move as delivery member: integrate your own final tree, run_tests on your exact final version, fix_patch(task_ids=[]), then submit_integration. Tell me if you publish a new candidate and I will review it the same way.",
+      "recipient": "member_001",
+      "task_id": "root_goal"
+    },
+    "decision_id": "model-c74ce09addf7d44ee3aa82db",
+    "error": null,
+    "ok": true,
+    "result": {
+      "message_sequence": 25,
+      "recipient": "member_001",
+      "task_id": "root_goal",
+      "world_file_effect": false
+    },
+    "source": {
+      "capture_time": 1794491589.7419398,
+      "chain_sha256": "7f4bfe2243e124cbe50039a2078c14212dae08b134df9e154d6f0f5292d94436",
+      "event_key": "receipt:member_002:model-c74ce09addf7d44ee3aa82db:call_00_iKuXfuYqnaee4uxStcW40362",
+      "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+      "record_sha256": "78211c5780ce85bd4cf12c52d02677f24752c267bba695acdb77a1345e6113d7",
+      "sequence": 163
+    },
+    "tool": "send_message"
+  },
+  "initial_public_issue": null,
+  "initial_role_contract": {
+    "automatic_merge_test_accept_submit": false,
+    "communication_edges": [
+      [
+        "member_001",
+        "member_002"
+      ],
+      [
+        "member_002",
+        "member_001"
+      ]
+    ],
+    "declarations_override_frozen_roles": false,
+    "delivery_member": "member_001",
+    "fixed_members": [
+      "member_001",
+      "member_002"
+    ],
+    "formal_execution_authorized": false,
+    "id": "REVIEW2",
+    "independent_review_required_for_delivery": true,
+    "mechanism": "candidate_version_independent_review",
+    "member_count": 2,
+    "name": "REVIEW2",
+    "organization_instruction": "member_001 develops and delivers; member_002 independently reviews the exact fixed author candidate. An accepted review requires actual adoption and same-version public test execution. Editing the author version requires another fixed candidate and review.",
+    "phases": [
+      {
+        "active_members": [
+          "member_001",
+          "member_002"
+        ],
+        "name": "shared-budget-fair-opportunities",
+        "opportunities": 2
+      }
+    ],
+    "public_task_board_is_shared": true,
+    "role_descriptions_are_instructions_not_new_tool_powers": true,
+    "role_file_ACLs_unchanged": true,
+    "roles": {
+      "member_001": {
+        "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+        "title": "开发兼交付"
+      },
+      "member_002": {
+        "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+        "title": "独立复核"
+      }
+    },
+    "schedule_semantics": "All fixed live members eligible; fair scheduler controls actual opportunities.",
+    "version": "v141-s1-free2-review2-contract-r1"
+  },
+  "latest_actual_target_request": {
+    "actor": "member_001",
+    "complete_original_wire_present": true,
+    "decision_id": "model-7ebaa5c354ff7bd688298b9a",
+    "latest_observation_message_index": 19,
+    "observation": {
+      "actor_id": "member_001",
+      "all_fixed_patches": [
+        {
+          "patch_id": "patch-1",
+          "sequence": 19
+        }
+      ],
+      "current_version_test_coverage": {
+        "public_repository_tests": {
+          "executed": true,
+          "passed": true,
+          "status": "passed"
+        }
+      },
+      "delivery_status": {
+        "current_effective_fixed_candidate": {
+          "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+          "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          }
+        },
+        "current_effective_patch_id": "patch-1",
+        "current_workspace_has_net_changes": true,
+        "designated_delivery_member": "member_001",
+        "fix_patch_arguments": {
+          "message": "Describe this fixed version",
+          "task_ids": []
+        },
+        "fixed_patch_id": "patch-1",
+        "guide_is_not_automatic_execution_or_acceptance": true,
+        "legal_delivery_id": null,
+        "next_explicit_action": {
+          "arguments": {
+            "message": "Deliver this exact version."
+          },
+          "tool": "submit_integration"
+        },
+        "next_explicit_tool": "submit_integration",
+        "pending_accepted_peer_patch_ids": [],
+        "public_test_executed": true,
+        "public_test_passed": true,
+        "public_test_sequence": 17,
+        "requires_independent_review": true,
+        "scope": "Same-version public evidence only; submission is not official acceptance",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "work_stage": "ready_for_explicit_delivery"
+      },
+      "fixed_organization": {
+        "delivery_member": "member_001",
+        "direct_recipients": [
+          "member_002"
+        ],
+        "fixed_publication_visible_to_all_members": true,
+        "id": "REVIEW2",
+        "members": [
+          "member_001",
+          "member_002"
+        ],
+        "name": "REVIEW2",
+        "role": {
+          "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+          "title": "开发兼交付"
+        },
+        "role_directory": {
+          "member_001": {
+            "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+            "member_id": "member_001",
+            "title": "开发兼交付"
+          },
+          "member_002": {
+            "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+            "member_id": "member_002",
+            "title": "独立复核"
+          }
+        },
+        "schedule": {
+          "cycle": 18,
+          "member": "member_001",
+          "organization_id": "REVIEW2",
+          "selection_basis": "persisted organization eligibility then fair round-robin",
+          "slot_position": 36
+        },
+        "shared_task_board": true
+      },
+      "handoffs": [],
+      "included_patch_ids": [],
+      "logical_time": 27,
+      "member_availability": {
+        "member_001": {
+          "can_receive_work": true,
+          "current_work_ended": false,
+          "permanent_retirement": false,
+          "remaining_decisions": 481,
+          "remaining_decisions_scope": "shared_team_pool_not_personal_allocation",
+          "stable_member": true,
+          "status": "ready",
+          "waiting": false
+        },
+        "member_002": {
+          "can_receive_work": true,
+          "current_work_ended": false,
+          "permanent_retirement": false,
+          "remaining_decisions": 481,
+          "remaining_decisions_scope": "shared_team_pool_not_personal_allocation",
+          "stable_member": true,
+          "status": "running",
+          "waiting": false
+        }
+      },
+      "messages": [
+        {
+          "actor_id": "member_002",
+          "body": "I'm member_002 (independent reviewer). Standing by to independently adopt + test your fixed candidate for the `sum`/`min_count` multi-dim issue (xarray/core/nanops.py, mask.shape[axis] -> np.take(a.shape, axis).prod()).\n\nPlease publish with fix_patch and send handoff_patch to me with the patch_id once your candidate is final (including any test file changes). I will integrate_patch, run_tests on that exact version, and then org_review_patch accept or request changes.\n\nMeanwhile I'm studying the ",
+          "fixed_reference": null,
+          "kind": "work_message",
+          "recipient": "member_001",
+          "sequence": 2,
+          "task_id": "root_goal"
+        }
+      ],
+      "older_handoff_sequences": [],
+      "older_message_sequences": [],
+      "organization_protocol": {
+        "final_integration_responsible": "member_001",
+        "independent_review_required": true,
+        "members": [
+          "member_001",
+          "member_002"
+        ],
+        "opportunities_consumed": 31,
+        "organization_id": "REVIEW2",
+        "phase": "open_work_with_explicit_candidate_handoffs",
+        "record_counts": {
+          "published_candidates": 1,
+          "reviews": 1,
+          "tasks": 0
+        },
+        "role_declarations": {
+          "member_002": {
+            "changes_permissions_or_ownership": false,
+            "event_sequence": 12,
+            "frozen_role_obligation": {
+              "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+              "title": "独立复核"
+            },
+            "logical_time": 16,
+            "member_id": "member_002",
+            "prior_event_sequence": null,
+            "reason": "REVIEW2 fixed organization assigns me 独立复核; delivery_status and fixed_organization role directory require member_002 to accept member_001's exact final fixed version before delivery.",
+            "responsibility": "Independently adopt member_001's exact fixed candidate for the multi-dimension min_count issue in xarray/core/nanops.py (_maybe_null_out), run the public pytest entrypoint on that exact version, and record accept or request-changes evidence. I do not deliver; member_001 owns final integration.",
+            "role_label": "independent-reviewer",
+            "source": "explicit_self_declaration"
+          }
+        },
+        "version": "v141-role-baseline-managed-world-r1"
+      },
+      "patches": [
+        {
+          "author": "member_001",
+          "base_reference": {
+            "object_id": "obj-8653276299fc07bbd5d18650",
+            "version_id": "v1"
+          },
+          "changed_path_count": 1,
+          "changed_paths": [
+            "xarray/core/nanops.py"
+          ],
+          "changed_paths_truncated": false,
+          "diff_sha256": "646b653b37cef0103fff7dd7869ebc1025ccb012da84a430a3578ece21aa3919",
+          "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+          "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+          "patch_id": "patch-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          },
+          "source_sha256": "ae43cf2b0a73d367cbb3d81454f030770089f05fbc38bace605ace82f2d8bc82"
+        }
+      ],
+      "shared_resource_limits": {
+        "max_attempts": 512,
+        "max_decisions": 512,
+        "max_test_runs": 512,
+        "max_total_tokens": 5000000
+      },
+      "tasks": [],
+      "team_model_budget": {
+        "attempts": 32,
+        "available_tokens": 3621597,
+        "charged_tokens": 1378403,
+        "decisions": 31,
+        "held_tokens": 0,
+        "limits": {
+          "max_attempts": 512,
+          "max_decisions": 512,
+          "max_total_tokens": 5000000
+        },
+        "remaining_attempts": 480,
+        "remaining_decisions": 481,
+        "state_sha256": "479fe34ad48854410fa4b299f762145d99c4f4369654319def7213147b2a8629"
+      },
+      "team_test_budget": {
+        "limit": 512,
+        "remaining": 507,
+        "used": 5
+      },
+      "workspace_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v2"
+      }
+    },
+    "request_id": "v203.2.1:pydata__xarray-4356:DEEPSEEK_NT_REVIEW2_V141_B5000K:202611122032103:member_001:0018",
+    "request_sha256_from_verified_physical_join": "26e236a13915aab635fe6a2d7206454f16fc6c4ed7145a8102ad0100c3da8912",
+    "role_task": "Resolve the unchanged original repository issue. You are member_001, role 开发兼交付, in organization REVIEW2. Locate, design and implement; publish the exact final candidate for independent review. All 2 configured members use the same model and managed tools, with separate private versions, SDK conversations and notes. No shell, hidden grading, recruitment or replacement exists. Your legal direct recipients are member_002. fix_patch explicitly publishes that immutable version to all configured legal members. Later private edits do not propagate. handoff_patch is a directed notice along a legal edge. Members must explicitly integrate_patch to use a published version; messages do not merge code. Task-board metadata is shared. Optional task ownership changes require offer_transfer and accept_transfer; a message cannot transfer responsibility. Use read_task for exact issue pages, search_repository or list_files/read_file to locate code, and write_file/replace_file/create_file/delete_file/rename_file for permitted edits. Use null or empty cursor for the first page and copy next_cursor unchanged for continuation. run_tests uses only the frozen public entrypoint on your exact current version. The whole team shares 5000000 cumulative input-plus-output tokens, 512 model decisions, 512 attempts and 512 accepted public test operations; these are not per-member grants. Communication, reading history, format repair and rejected requests consume real work. Only member_001 may submit the final integration and its final working tree is the predeclared code endpoint; other members' unmerged code is never selected by a grader. After the final edit/integration, explicitly run_tests, fix_patch(task_ids=[]), then submit_integration. Public tests need to execute on that same version; a pass is not hidden acceptance. staff_done ends your current work, staff_wait suspends it; a real later visible event may wake the same session without extra budget. No action is performed automatically.  Test results are private, versioned reports. run_tests executes once and returns a fixed-order directory and the first exact body page. Use read_test_result(report_id, cursor) to read more saved pages without rerunning tests. Only the original testing member can read the report; sharing an ID gives no permission. Share actual text if useful. Old cursors remain tied to the old event and version after edits. Page reads spend the same team decision/token pool but no test call. Reading all pages is optional and is not a submission requirement.\nmember_001 develops and delivers; member_002 independently reviews the exact fixed author candidate. An accepted review requires actual adoption and same-version public test execution. Editing the author version requires another fixed candidate and review.\nUse org_status for actual task IDs, current responsibility, fixed candidate identities, accepted/requested-change records and the next explicit actions. Before creating tasks, send_message uses task_id='root_goal'; the benchmark instance ID is not a task-board ID. org_declare_role records your current responsibility focus without changing tools, ownership or frozen review authority. An author publishes with fix_patch and sends handoff_patch; a recipient explicitly integrate_patch, run_tests, then org_review_patch to accept. Acceptance does not merge into another member's tree. An accepted peer patch remains available to member_001, who must explicitly integrate and finish its own current-version test, fixed candidate and submit_integration. Requested changes name the original patch author as the responsible recipient. Original public tests are not hidden grading. There is no pipeline or Sprint startup gate. In FREE2, independent review is optional; in REVIEW2, member_002 must accept member_001's exact final fixed version before delivery. All these actions, rejected requests, final self-review and history use the same team budget.\n\nsum: min_count is not available for reduction with more than one dimensions\n**Is your feature request related to a problem? Please describe.**\r\n\r\n`sum` with `min_count` errors when passing more than one dim:\r\n\r\n```python\r\nimport xarray as xr\r\nda = xr.DataArray([[1., 2, 3], [4, 5, 6]])\r\nda.sum([\"dim_0\", \"dim_1\"], min_count=1)\r\n```\r\n\r\n**Describe the solution you'd like**\r\nThe logic to calculate the number of valid elements is here:\r\nhttps://github.com/pydata/xarray/blob/1be777fe725a85b8cc0f65a2bc41f4bc2ba18043/xarray/core/nanops.py#L35\r\n\r\nI *think* this can be fixed by replacing\r\n\r\n`mask.shape[axis]` with `np.take(a.shape, axis).prod()`\r\n\r\n**Additional context**\r\nPotentially relevant for #4351\r\n\n\n\nRepair and verification workflow:\n- Use the issue and public contract to identify the requested behavior and relevant callers or edge cases. Choose an actionable hypothesis before repeating searches.\n- Use the documented tools and public test entry. Collection errors, unavailable dependencies, failed commands and zero collected tests are not successful verification.\n- Derive expected behavior independently of your patch. Inspect the final diff to confirm what behavior it actually changes; comments or passing unrelated tests do not establish a repair.\n- Prefer a focused issue reproduction or regression test. After editing again, distinguish older test evidence from results for the current version. Reuse sufficient current evidence rather than rerunning identical checks without a reason.\n- If progress stalls, use the concrete tool or test error to choose a different action, or report the unresolved limitation honestly.\nAll actions, self-review and history summarization share the original cumulative token, attempt, decision and time limits.\n\nPublic execution facts:\nWorking directory: /testbed\nTask interpreter: /opt/miniconda3/envs/testbed/bin/python\nRepository-wide public test frontend: /opt/miniconda3/envs/testbed/bin/python -m pytest\nUse this same interpreter for reproduction scripts and module invocations. The native terminal may report its current Python path; if it differs, use the absolute task interpreter above. Public frontend qualification was based on repository/interpreter family representatives, not a run of every task's full suite. Choose test targets from the original issue and public checkout only. A missing dependency, collection error, timeout or unexecuted test is not a passing test.\n\nPublic terminal usage:\n- The terminal accepts one native shell command per call. Bare independent command lines can be rejected before execution. Submit separate calls, explicitly join dependent commands with &&, or deliberately author a script and invoke it. Multiline strings and heredocs are not automatically invalid; the native parser remains authoritative.\n- If a command is still running, use the native continuation or interrupt operation before another command. No rejected command is automatically split, rewritten or retried.\n\nPublic testing uses the declared task interpreter and /testbed. Choose targets from the public repository and issue; no hidden acceptance tests are provided. Omitting selection runs the original public entry. Supported selections: {\"arbitrary_commands\": false, \"frontend\": \"pytest\", \"hidden_material_used\": false, \"maximum_targets\": 16, \"same_interpreter_cwd_timeout\": true, \"selection_kinds\": [\"full\", \"pytest\"], \"version\": \"v110-public-test-selection-r1\"}\nAllowed fields: kind, targets, optional keyword (-k), optional markers (-m). Shape example only: {\"keyword\": \"case and not slow\", \"kind\": \"pytest\", \"markers\": \"not slow\", \"targets\": [\"tests/test_example.py::test_case\"]}. Replace all example targets and filters with those found in this public repository.\nUse run_tests(selection=<selection object>), then copy next_cursor exactly when reading its public output. A selected test is evidence only for its recorded source version and selected scope, not a claim that every public or hidden test passed. A zero-test, all-skipped or unverified run is not reported as passed; inspect validation_status and counts.",
+    "source": {
+      "capture_time": 1794491533.3449562,
+      "chain_sha256": "65ac6c52169df0b0c08be1db36617d75a2ab7d33f4de083973647adfcdfbf706",
+      "event_key": "request:v203.2.1:pydata__xarray-4356:DEEPSEEK_NT_REVIEW2_V141_B5000K:202611122032103:member_001:0018",
+      "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+      "record_sha256": "0ce0848d39d3213b465a8e969271b10a597909bde4954cf2261031bf068789cc",
+      "sequence": 155
+    }
+  },
+  "prefix_source_index": {
+    "maximum_sequence": 163,
+    "path": "blind-review-packets/prefix-indexes/pydata__xarray-4356--s0163.jsonl",
+    "rows": 163,
+    "sha256": "f4bc03bbfb6acefd18df8426d779828cbb256821158c59eb913aa6dc607684ba"
+  },
+  "reviewer_instruction": "Judge only evidence available by cutoff. Separate global occurrence from actor presentation. Do not infer not-read from missing explicit read. Public-test outcomes are contemporaneous evidence, never official scores. No labels have been supplied.",
+  "schema": "v203.2.2-natural-collaboration-r1",
+  "target_actor": "member_001",
+  "target_actor_recent_receipts": [
+    {
+      "actor": "member_001",
+      "arguments": {
+        "new": "    if axis is not None and getattr(result, \"ndim\", False):\n        null_mask = (np.take(mask.shape, axis).prod() - mask.sum(axis) - min_count) < 0",
+        "old": "    if hasattr(axis, \"__len__\"):  # if tuple or list\n        raise ValueError(\n            \"min_count is not available for reduction with more than one dimensions.\"\n        )\n\n    if axis is not None and getattr(result, \"ndim\", False):\n        null_mask = (mask.shape[axis] - mask.sum(axis) - min_count) < 0",
+        "path": "xarray/core/nanops.py"
+      },
+      "decision_id": "model-fc4c415e4d4bdc827b446fd3",
+      "error": null,
+      "ok": true,
+      "result": {
+        "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+        "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+        "operation": "write",
+        "path_count": 1,
+        "paths": [
+          "xarray/core/nanops.py"
+        ],
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        }
+      },
+      "source": {
+        "capture_time": 1794490983.5802534,
+        "chain_sha256": "89edfdfba1a63f32ca6c586526983ec00ba3724a11a9c61ee08a3d1bc84a8a0c",
+        "event_key": "receipt:member_001:model-fc4c415e4d4bdc827b446fd3:call_00_iHXl549Pm61R0hxcuRRJ5201",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "c29e877944b7e2055fa33a437bdcb35737b21e013a0c1325b243b63fab4e1719",
+        "sequence": 33
+      },
+      "tool": "replace_file"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "selection": {
+          "keyword": "reduce",
+          "kind": "pytest",
+          "targets": [
+            "xarray/tests/test_dataarray.py"
+          ]
+        }
+      },
+      "decision_id": "model-581ef204a3318bd822611345",
+      "error": null,
+      "ok": true,
+      "result": {
+        "body_characters": 1533654,
+        "body_sha256": "2bedee6c8037f8f61b0996d689dfcbd0fb6ac05faf46c0b56036365f45d82216",
+        "command_executed": true,
+        "counts": {
+          "collected": 451,
+          "errors": 0,
+          "failed": 0,
+          "passed": 446,
+          "skipped": 1,
+          "tests_run": 446,
+          "xfailed": 4,
+          "xpassed": 0
+        },
+        "directory": [
+          {
+            "entries": [
+              {
+                "path": "/groups/public_repository_tests/tests/0",
+                "status": "passed",
+                "test_id": "model-selected-public-entrypoint"
+              }
+            ],
+            "entry_count": 1,
+            "group_id": "public_repository_tests",
+            "path": "/groups/public_repository_tests",
+            "status": "passed"
+          }
+        ],
+        "directory_group_count": 1,
+        "directory_scope": "Bounded navigation only; exact full permitted results remain in saved body pages",
+        "executed": true,
+        "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+        "fixed_submission_is_acceptance": false,
+        "independent_acceptance": "not_run_by_public_tool",
+        "page": {
+          "cursor": "0:ace535831a579de4",
+          "end": 47,
+          "index": 0,
+          "is_last": false,
+          "next_cursor": "1:fadc7851cf6f3f9e",
+          "remaining_pages": 500,
+          "sha256": "5cc801f56c164f69d31c79848748b8e85d3b10d697cfa7cdac45971c5cad367f",
+          "split_entries": [],
+          "start": 0,
+          "text": "{\n  \"groups\": {\n    \"public_repository_tests\": "
+        },
+        "passed": true,
+        "report_event": {
+          "operation_id": "command:member_001:staff-db69bf025fa2416388bde3bc2ce47859-20",
+          "sequence": 17
+        },
+        "report_id": "test-report-ec14468ce5af3cebdc586a44",
+        "scope": "Model-selected public tests only; no hidden evaluator or unrestricted command",
+        "serialization": "json_unicode_indent2_trailing_lf_v042",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "test_evidence": {
+          "duplicate_journal_records_ignored": 0,
+          "error": null,
+          "evidence_sha256": "f4b21fc03732cc3fa63828e0e27c09297a7588bf4132d127e93fa49a36120bc7",
+          "framework": "pytest",
+          "journal_record_count": 2,
+          "nested_failures_are_diagnostic_not_summed": true,
+          "nested_report_count": 0,
+          "observer_sha256": "1a384dd6b4f12b0138408a9b0d509ff9645b126a23bc8f44525c7d977f413e24",
+          "partial": false,
+          "public_verification_is_hidden_acceptance": false,
+          "report_count": 1,
+          "root_counts_only": true,
+          "security_scope": "framework observation, not a same-UID anti-forgery boundary",
+          "sessions": [
+            {
+              "all_original_reports_source": {
+                "capture_time": 1794491166.8705971,
+                "chain_sha256": "a88c14d401ff44be46605054e4a87643f6a2e898fcbba4ee2506a848667ff457",
+                "event_key": "receipt:member_001:model-581ef204a3318bd822611345:call_00_eYnghtFa5iMmjZWb6WpC3409",
+                "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+                "record_sha256": "ec0ac5e906338f7232580cb6914e9187ed42e6d5a67693f37c13c010264bea2a",
+                "sequence": 108
+              },
+              "collection_complete": true,
+              "collection_errors": 0,
+              "counts": {
+                "collected": 451,
+                "errors": 0,
+                "failed": 0,
+                "passed": 446,
+                "skipped": 1,
+                "xfailed": 4,
+                "xpassed": 0
+              },
+              "duplicate_reports_ignored": 0,
+              "exitstatus": 0,
+              "first_failed_reports": [],
+              "framework": "pytest",
+              "omitted_test_report_count": 1352,
+              "parent_run_id": null,
+              "partial": false,
+              "pid": 70,
+              "root": true,
+              "run_id": "37f6ff996b36654802e4f7952e10b0e4",
+              "test_reports_sha256": "bfe97cf605cf95c06ec917e5f14e86de417b35d4a61cbdfc6da801a89489d0e5"
+            }
+          ],
+          "source": {
+            "delegated_hash_process": false,
+            "framework": "pytest",
+            "parent_run_id": null,
+            "pid": 70,
+            "process_group": 70,
+            "run_id": "37f6ff996b36654802e4f7952e10b0e4"
+          },
+          "stdout_used_for_verdict": false,
+          "version": "v141-session-bound-public-test-execution-r1"
+        },
+        "total_pages": 501,
+        "untested": [],
+        "validation_status": "verified",
+        "version": "paged-public-test-feedback-v0.42"
+      },
+      "source": {
+        "capture_time": 1794491166.8705971,
+        "chain_sha256": "a88c14d401ff44be46605054e4a87643f6a2e898fcbba4ee2506a848667ff457",
+        "event_key": "receipt:member_001:model-581ef204a3318bd822611345:call_00_eYnghtFa5iMmjZWb6WpC3409",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "ec0ac5e906338f7232580cb6914e9187ed42e6d5a67693f37c13c010264bea2a",
+        "sequence": 108
+      },
+      "tool": "run_tests"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {},
+      "decision_id": "model-2df3af2d77144405f96ac962",
+      "error": null,
+      "ok": true,
+      "result": {
+        "end_character": 695,
+        "next_cursor": null,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "start_character": 0,
+        "text": "--- a/xarray/core/nanops.py\n+++ b/xarray/core/nanops.py\n@@ -26,13 +26,8 @@\n     \"\"\"\n     xarray version of pandas.core.nanops._maybe_null_out\n     \"\"\"\n-    if hasattr(axis, \"__len__\"):  # if tuple or list\n-        raise ValueError(\n-            \"min_count is not available for reduction with more than one dimensions.\"\n-        )\n-\n     if axis is not None and getattr(result, \"ndim\", False):\n-        null_mask = (mask.shape[axis] - mask.sum(axis) - min_count) < 0\n+        null_mask = (np.take(mask.shape, axis).prod() - mask.sum(axis) - min_count) < 0\n         if null_mask.any():\n             dtype, fill_value = dtypes.maybe_promote(result.dtype)\n             result = result.astype(dtype)\n",
+        "text_sha256": "646b653b37cef0103fff7dd7869ebc1025ccb012da84a430a3578ece21aa3919",
+        "total_characters": 695
+      },
+      "source": {
+        "capture_time": 1794491197.590838,
+        "chain_sha256": "2f9eb2408c99eada8150e0e8a3e16c92faa1a421cf26b471ef727308f5b90360",
+        "event_key": "receipt:member_001:model-2df3af2d77144405f96ac962:call_00_sOiPk42uOK6lqTH2a8FX1111",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "5175b5c8e36921f30f039dc227a64ae4488fd66099caa6a8ff0da95a3ba5e4f4",
+        "sequence": 113
+      },
+      "tool": "diff_workspace"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "message": "Fix sum/prod with min_count for multi-dimension reductions (xarray/core/nanops.py::_maybe_null_out).\\n\\n- Remove the ValueError that rejected tuple/list axis (\"min_count is not available for reduction with more than one dimensions.\").\\n- Compute the number of reduced elements per reduced slice as np.take(mask.shape, axis).prod(), which equals mask.shape[axis] for a single int axis and the product of dim lengths for a tuple axis, so null_mask stays shape-compatible with result from mask.sum(axis).\\n\\nVerified on this exact version: xarray/tests/test_dataarray.py -k reduce => 446 passed, 0 failed, 1 skipped, 4 xfailed.\\nExpected behavior from issue: xr.DataArray([[1.,2,3],[4,5,6]]).sum([\\\"dim_0\\\",\\\"dim_1\\\"], min_count=1) returns 21 instead of raising.",
+        "task_ids": []
+      },
+      "decision_id": "model-3cae00c426256b5af0399ee1",
+      "error": null,
+      "ok": true,
+      "result": {
+        "author": "member_001",
+        "base_reference": {
+          "object_id": "obj-8653276299fc07bbd5d18650",
+          "version_id": "v1"
+        },
+        "changed_path_count": 1,
+        "changed_paths": [
+          "xarray/core/nanops.py"
+        ],
+        "changed_paths_truncated": false,
+        "diff_sha256": "646b653b37cef0103fff7dd7869ebc1025ccb012da84a430a3578ece21aa3919",
+        "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+        "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+        "patch_id": "patch-1",
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v2"
+        },
+        "source_sha256": "ae43cf2b0a73d367cbb3d81454f030770089f05fbc38bace605ace82f2d8bc82"
+      },
+      "source": {
+        "capture_time": 1794491227.7201657,
+        "chain_sha256": "60f4fcd8794ab715365fcf90119f8b7ace981b541bea077e87d76b6ed2161e8a",
+        "event_key": "receipt:member_001:model-3cae00c426256b5af0399ee1:call_00_38apE7l1bKrmiwCZVE1N8841",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "5815e916ac38265cde65d94e04d92d74fb8b3dfca602d81cd44b3e5ec69423c9",
+        "sequence": 118
+      },
+      "tool": "fix_patch"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "message": "Final candidate published: patch-1 (base obj-8653276299fc07bbd5d18650 v1, source v2, files_sha256 d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13).\\n\\nSingle changed path: xarray/core/nanops.py, function _maybe_null_out:\\n- removed the `if hasattr(axis, \"__len__\"): raise ValueError(\"min_count is not available for reduction with more than one dimensions.\")` block;\\n- null_mask now uses `(np.take(mask.shape, axis).prod() - mask.sum(axis) - min_count) < 0`, matching the issue's suggested fix (equivalent to mask.shape[axis] for an int axis, product of reduced dim lengths for a tuple axis) and keeping full_result shape compatible with mask.sum(axis).\\n\\nRepro target from the issue: xr.DataArray([[1.,2,3],[4,5,6]]).sum([\"dim_0\",\"dim_1\"], min_count=1) -> 21.0; min_count=7 -> nan.\\nMy same-version evidence: pytest xarray/tests/test_dataarray.py -k reduce => 446 passed, 1 skipped, 4 xfailed, 0 failed (report test-report-ec14468ce5af3cebdc586a44, source v2, files_sha256 d2a78133...).\\n\\nPlease integrate_patch patch-1, run_tests on that exact version, then org_review_patch accept or request changes. No test-file changes are included in the candidate.",
+        "patch_id": "patch-1",
+        "to_member": "member_002"
+      },
+      "decision_id": "model-7eb322819af3a55244f82b5d",
+      "error": null,
+      "ok": true,
+      "result": {
+        "handoff_sequence": 21,
+        "patch_id": "patch-1",
+        "recipient": "member_002"
+      },
+      "source": {
+        "capture_time": 1794491317.6433592,
+        "chain_sha256": "3a872673ce48e1066ef3b414d95964947da74e877a9a7617f54513eb7b9abc69",
+        "event_key": "receipt:member_001:model-7eb322819af3a55244f82b5d:call_00_9p6HczGwNyDgDed3TK8P2323",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "d83add4ccd88c2af8b7ce6b387568c6597d193befd4b62501251a41724ad2c25",
+        "sequence": 130
+      },
+      "tool": "handoff_patch"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {
+        "reason": "Candidate patch-1 handed off to member_002 for independent review (adopt + same-version public tests). Waiting for the real review event before submitting final integration."
+      },
+      "decision_id": "model-3fc4308c2c49d4d8ac8719c3",
+      "error": null,
+      "ok": true,
+      "result": {},
+      "source": {
+        "capture_time": 1794491373.9950078,
+        "chain_sha256": "a76dff32909c15586f0a83796c7c008f3bd43cad9fe303da4d2ade9d2d84c0e3",
+        "event_key": "receipt:member_001:model-3fc4308c2c49d4d8ac8719c3:call_00_sN1UUoKP2inGSRfkai7L4694",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "40506749c5919fc9ba7a80909513d1e5bc606acc17466ab1e2751595f3f06ada",
+        "sequence": 140
+      },
+      "tool": "staff_wait"
+    },
+    {
+      "actor": "member_001",
+      "arguments": {},
+      "decision_id": "model-7ebaa5c354ff7bd688298b9a",
+      "error": null,
+      "ok": true,
+      "result": {
+        "candidate_directory_complete": true,
+        "candidates": [
+          {
+            "adopted_by_you": false,
+            "author": "member_001",
+            "available_to_final_integrator": true,
+            "decision": "accept",
+            "decision_event_sequence": 24,
+            "identity": {
+              "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+              "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v2"
+              }
+            },
+            "next_receiver_step": "integrate_patch_explicitly_before_test_and_accept",
+            "original_record": "read_work_event(patch_fixed sequence)",
+            "patch_id": "patch-1",
+            "rework_responsible": null
+          }
+        ],
+        "complete": true,
+        "current": {
+          "final_integration_responsible": "member_001",
+          "independent_review_required": true,
+          "members": [
+            "member_001",
+            "member_002"
+          ],
+          "opportunities_consumed": 31,
+          "organization_id": "REVIEW2",
+          "phase": "open_work_with_explicit_candidate_handoffs",
+          "record_counts": {
+            "published_candidates": 1,
+            "reviews": 1,
+            "tasks": 0
+          },
+          "role_declarations": {
+            "member_002": {
+              "changes_permissions_or_ownership": false,
+              "event_sequence": 12,
+              "frozen_role_obligation": {
+                "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+                "title": "独立复核"
+              },
+              "logical_time": 16,
+              "member_id": "member_002",
+              "prior_event_sequence": null,
+              "reason": "REVIEW2 fixed organization assigns me 独立复核; delivery_status and fixed_organization role directory require member_002 to accept member_001's exact final fixed version before delivery.",
+              "responsibility": "Independently adopt member_001's exact fixed candidate for the multi-dimension min_count issue in xarray/core/nanops.py (_maybe_null_out), run the public pytest entrypoint on that exact version, and record accept or request-changes evidence. I do not deliver; member_001 owns final integration.",
+              "role_label": "independent-reviewer",
+              "source": "explicit_self_declaration"
+            }
+          },
+          "version": "v141-role-baseline-managed-world-r1"
+        },
+        "events": [
+          {
+            "actor_id": "member_002",
+            "kind": "organization_v141:role_declared",
+            "sequence": 12
+          },
+          {
+            "actor_id": "member_001",
+            "kind": "patch_fixed",
+            "patch_id": "patch-1",
+            "sequence": 19,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v2"
+            }
+          },
+          {
+            "actor_id": "member_002",
+            "decision": "accept",
+            "kind": "organization_v141:candidate_reviewed",
+            "patch_id": "patch-1",
+            "review_id": "review-1",
+            "sequence": 24
+          }
+        ],
+        "exact_record_tool": "read_work_event(sequence)",
+        "message_task_id_without_task": "root_goal",
+        "next_after_sequence": null,
+        "no_private_peer_workspace_or_test_output": true,
+        "task_directory": [],
+        "task_directory_complete": true,
+        "your_closure": {
+          "current_effective_fixed_candidate": {
+            "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+            "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v2"
+            }
+          },
+          "current_effective_patch_id": "patch-1",
+          "current_workspace_has_net_changes": true,
+          "designated_delivery_member": "member_001",
+          "fix_patch_arguments": {
+            "message": "Describe this fixed version",
+            "task_ids": []
+          },
+          "fixed_patch_id": "patch-1",
+          "guide_is_not_automatic_execution_or_acceptance": true,
+          "legal_delivery_id": null,
+          "next_explicit_action": {
+            "arguments": {
+              "message": "Deliver this exact version."
+            },
+            "tool": "submit_integration"
+          },
+          "next_explicit_tool": "submit_integration",
+          "pending_accepted_peer_patch_ids": [],
+          "public_test_executed": true,
+          "public_test_passed": true,
+          "public_test_sequence": 17,
+          "requires_independent_review": true,
+          "scope": "Same-version public evidence only; submission is not official acceptance",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          },
+          "work_stage": "ready_for_explicit_delivery"
+        }
+      },
+      "source": {
+        "capture_time": 1794491544.2109008,
+        "chain_sha256": "c2eff994581620e6d8562735d0e42e0368471bf65e93a3154342ab5a5573c8f9",
+        "event_key": "receipt:member_001:model-7ebaa5c354ff7bd688298b9a:call_00_UXlFJ8v4TSS4sbENFYGX0185",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "27a65590caa18e808e01afbf1a2aa1dbc990796034576e21770aa6ae508d45a0",
+        "sequence": 158
+      },
+      "tool": "org_status"
+    }
+  ],
+  "target_receipts_after_latest_request": [
+    {
+      "actor": "member_001",
+      "arguments": {},
+      "decision_id": "model-7ebaa5c354ff7bd688298b9a",
+      "error": null,
+      "ok": true,
+      "result": {
+        "candidate_directory_complete": true,
+        "candidates": [
+          {
+            "adopted_by_you": false,
+            "author": "member_001",
+            "available_to_final_integrator": true,
+            "decision": "accept",
+            "decision_event_sequence": 24,
+            "identity": {
+              "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+              "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v2"
+              }
+            },
+            "next_receiver_step": "integrate_patch_explicitly_before_test_and_accept",
+            "original_record": "read_work_event(patch_fixed sequence)",
+            "patch_id": "patch-1",
+            "rework_responsible": null
+          }
+        ],
+        "complete": true,
+        "current": {
+          "final_integration_responsible": "member_001",
+          "independent_review_required": true,
+          "members": [
+            "member_001",
+            "member_002"
+          ],
+          "opportunities_consumed": 31,
+          "organization_id": "REVIEW2",
+          "phase": "open_work_with_explicit_candidate_handoffs",
+          "record_counts": {
+            "published_candidates": 1,
+            "reviews": 1,
+            "tasks": 0
+          },
+          "role_declarations": {
+            "member_002": {
+              "changes_permissions_or_ownership": false,
+              "event_sequence": 12,
+              "frozen_role_obligation": {
+                "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+                "title": "独立复核"
+              },
+              "logical_time": 16,
+              "member_id": "member_002",
+              "prior_event_sequence": null,
+              "reason": "REVIEW2 fixed organization assigns me 独立复核; delivery_status and fixed_organization role directory require member_002 to accept member_001's exact final fixed version before delivery.",
+              "responsibility": "Independently adopt member_001's exact fixed candidate for the multi-dimension min_count issue in xarray/core/nanops.py (_maybe_null_out), run the public pytest entrypoint on that exact version, and record accept or request-changes evidence. I do not deliver; member_001 owns final integration.",
+              "role_label": "independent-reviewer",
+              "source": "explicit_self_declaration"
+            }
+          },
+          "version": "v141-role-baseline-managed-world-r1"
+        },
+        "events": [
+          {
+            "actor_id": "member_002",
+            "kind": "organization_v141:role_declared",
+            "sequence": 12
+          },
+          {
+            "actor_id": "member_001",
+            "kind": "patch_fixed",
+            "patch_id": "patch-1",
+            "sequence": 19,
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v2"
+            }
+          },
+          {
+            "actor_id": "member_002",
+            "decision": "accept",
+            "kind": "organization_v141:candidate_reviewed",
+            "patch_id": "patch-1",
+            "review_id": "review-1",
+            "sequence": 24
+          }
+        ],
+        "exact_record_tool": "read_work_event(sequence)",
+        "message_task_id_without_task": "root_goal",
+        "next_after_sequence": null,
+        "no_private_peer_workspace_or_test_output": true,
+        "task_directory": [],
+        "task_directory_complete": true,
+        "your_closure": {
+          "current_effective_fixed_candidate": {
+            "entry_metadata_sha256": "974027683c0f712c1ec055e8dd33c89967f741707faa067d6f18a1fb61c77c85",
+            "files_sha256": "d2a78133fc15f31240ae92b918cef05743ae1a3280601663a1bb3273cba41b13",
+            "source_reference": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v2"
+            }
+          },
+          "current_effective_patch_id": "patch-1",
+          "current_workspace_has_net_changes": true,
+          "designated_delivery_member": "member_001",
+          "fix_patch_arguments": {
+            "message": "Describe this fixed version",
+            "task_ids": []
+          },
+          "fixed_patch_id": "patch-1",
+          "guide_is_not_automatic_execution_or_acceptance": true,
+          "legal_delivery_id": null,
+          "next_explicit_action": {
+            "arguments": {
+              "message": "Deliver this exact version."
+            },
+            "tool": "submit_integration"
+          },
+          "next_explicit_tool": "submit_integration",
+          "pending_accepted_peer_patch_ids": [],
+          "public_test_executed": true,
+          "public_test_passed": true,
+          "public_test_sequence": 17,
+          "requires_independent_review": true,
+          "scope": "Same-version public evidence only; submission is not official acceptance",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          },
+          "work_stage": "ready_for_explicit_delivery"
+        }
+      },
+      "source": {
+        "capture_time": 1794491544.2109008,
+        "chain_sha256": "c2eff994581620e6d8562735d0e42e0368471bf65e93a3154342ab5a5573c8f9",
+        "event_key": "receipt:member_001:model-7ebaa5c354ff7bd688298b9a:call_00_UXlFJ8v4TSS4sbENFYGX0185",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032403/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "27a65590caa18e808e01afbf1a2aa1dbc990796034576e21770aa6ae508d45a0",
+        "sequence": 158
+      },
+      "tool": "org_status"
+    }
+  ],
+  "task_id": "pydata__xarray-4356",
+  "trigger_kinds": [
+    "successful_send_message"
+  ],
+  "trigger_visibility_to_target": "global event; do not assume recipient has seen it at this cutoff",
+  "window_id": "pydata__xarray-4356:s0163"
+}

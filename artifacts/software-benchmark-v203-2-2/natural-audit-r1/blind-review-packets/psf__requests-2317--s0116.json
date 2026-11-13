@@ -1,0 +1,529 @@
+{
+  "cutoff": {
+    "capture_time": 1794492605.8900175,
+    "chain_sha256": "b26f0e327c847bd132b116decb3b5a9b381546010b997d065ec1f7779c77e562",
+    "event_key": "receipt:member_001:model-e905e5379a1098bb398ed808:call_00_iIPcCPYiAbqp2K4BJWHD1545",
+    "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+    "record_sha256": "307531e8af33c5e0eca6c173d23140f433752d6621f757e1c4f098910a627b5f",
+    "sequence": 116
+  },
+  "exposure_boundary": "inclusive anchor only; no post-cutoff action/outcome or prior audit assessment supplied",
+  "global_trigger_fact": {
+    "actor": "member_001",
+    "arguments": {
+      "message": "Final candidate patch-1 is published (source version v2, files_sha256 6fbebad25675bdfad520324b2883c92d62665098befec4fb7e9539d4ba8b7ae8). Please integrate_patch, run_tests on that same version, then org_review_patch accept or request_changes.\n\nScope of change: single file requests/sessions.py, only in Session.request(). Replaces `method = builtin_str(method)` with:\n  if isinstance(method, bytes):\n      method = method.decode('utf8')\n  elif method is not None:\n      method = str(method)\n\nWhy it is the right fix: builtin_str in requests/compat.py is plain `str` on both branches, so on Python 3 it renders bytes b'GET' as \"b'GET'\" (the issue's 404 cause); on Python 2 builtin_str is the bytes type, b'GET' passed through unchanged, which is why the reporter saw no bug on 2.6. After the change b'GET' -> 'GET', plain str methods unchanged, None stays None (so Request(method=None) keeps its existing behavior). This mirrors the bytes handling already used in PreparedRequest.prepare_url.\n\nEvidence on this exact version:\n- Focused offline: test_requests.py -k \"basic_building or header_keys_are_native or prepare_unicode_url or entry_points or autoset\" => 5 passed, 0 failed (report test-report-369ff6655bdae9317111db12, validation_status verified).\n- Full public entrypoint on this version: 142 collected, 81 passed, 61 failed. Please note the 61 failures are all call-phase failures of live-network tests (test_HTTP_200_OK_GET_* etc., test_DIGEST*, test_POSTBIN_*, TestTimeout::*, test_user_agent_transfers) in a sandbox with no outbound network; every offline unit test in the module passes. I am not claiming those as green or as hidden acceptance.\n\nSuggested regression check if you want one: PreparedRequest/Session flow where method is b'GET' should end up with prep.method == 'GET', and also confirm b'get' lowercases correctly through prepare_method's .upper().",
+      "patch_id": "patch-1",
+      "to_member": "member_002"
+    },
+    "decision_id": "model-e905e5379a1098bb398ed808",
+    "error": null,
+    "ok": true,
+    "result": {
+      "handoff_sequence": 18,
+      "patch_id": "patch-1",
+      "recipient": "member_002"
+    },
+    "source": {
+      "capture_time": 1794492605.8900175,
+      "chain_sha256": "b26f0e327c847bd132b116decb3b5a9b381546010b997d065ec1f7779c77e562",
+      "event_key": "receipt:member_001:model-e905e5379a1098bb398ed808:call_00_iIPcCPYiAbqp2K4BJWHD1545",
+      "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+      "record_sha256": "307531e8af33c5e0eca6c173d23140f433752d6621f757e1c4f098910a627b5f",
+      "sequence": 116
+    },
+    "tool": "handoff_patch"
+  },
+  "initial_public_issue": null,
+  "initial_role_contract": {
+    "automatic_merge_test_accept_submit": false,
+    "communication_edges": [
+      [
+        "member_001",
+        "member_002"
+      ],
+      [
+        "member_002",
+        "member_001"
+      ]
+    ],
+    "declarations_override_frozen_roles": false,
+    "delivery_member": "member_001",
+    "fixed_members": [
+      "member_001",
+      "member_002"
+    ],
+    "formal_execution_authorized": false,
+    "id": "REVIEW2",
+    "independent_review_required_for_delivery": true,
+    "mechanism": "candidate_version_independent_review",
+    "member_count": 2,
+    "name": "REVIEW2",
+    "organization_instruction": "member_001 develops and delivers; member_002 independently reviews the exact fixed author candidate. An accepted review requires actual adoption and same-version public test execution. Editing the author version requires another fixed candidate and review.",
+    "phases": [
+      {
+        "active_members": [
+          "member_001",
+          "member_002"
+        ],
+        "name": "shared-budget-fair-opportunities",
+        "opportunities": 2
+      }
+    ],
+    "public_task_board_is_shared": true,
+    "role_descriptions_are_instructions_not_new_tool_powers": true,
+    "role_file_ACLs_unchanged": true,
+    "roles": {
+      "member_001": {
+        "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+        "title": "开发兼交付"
+      },
+      "member_002": {
+        "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+        "title": "独立复核"
+      }
+    },
+    "schedule_semantics": "All fixed live members eligible; fair scheduler controls actual opportunities.",
+    "version": "v141-s1-free2-review2-contract-r1"
+  },
+  "latest_actual_target_request": {
+    "actor": "member_002",
+    "complete_original_wire_present": true,
+    "decision_id": "model-d1881c4ad3e8e4f437dd111c",
+    "latest_observation_message_index": 26,
+    "observation": {
+      "actor_id": "member_002",
+      "all_fixed_patches": [
+        {
+          "patch_id": "patch-1",
+          "sequence": 16
+        }
+      ],
+      "current_version_test_coverage": {
+        "public_repository_tests": {
+          "executed": false,
+          "passed": null,
+          "status": "untested"
+        }
+      },
+      "delivery_status": {
+        "current_effective_fixed_candidate": null,
+        "current_effective_patch_id": null,
+        "current_workspace_has_net_changes": false,
+        "designated_delivery_member": "member_001",
+        "fix_patch_arguments": {
+          "message": "Describe this fixed version",
+          "task_ids": []
+        },
+        "fixed_patch_id": null,
+        "guide_is_not_automatic_execution_or_acceptance": true,
+        "legal_delivery_id": null,
+        "next_explicit_action": {
+          "arguments": {
+            "patch_id": "patch-1"
+          },
+          "note": "Explicit adoption may expose conflicts; inspect and resolve them yourself.",
+          "tool": "integrate_patch"
+        },
+        "next_explicit_tool": "run_tests",
+        "pending_accepted_peer_patch_ids": [],
+        "public_test_executed": false,
+        "public_test_passed": null,
+        "public_test_sequence": null,
+        "requires_independent_review": true,
+        "scope": "Same-version public evidence only; submission is not official acceptance",
+        "source_reference": {
+          "object_id": "obj-520aa9e6ee8ece99dce73855",
+          "version_id": "v1"
+        },
+        "work_stage": "awaiting_explicit_adoption"
+      },
+      "fixed_organization": {
+        "delivery_member": "member_001",
+        "direct_recipients": [
+          "member_001"
+        ],
+        "fixed_publication_visible_to_all_members": true,
+        "id": "REVIEW2",
+        "members": [
+          "member_001",
+          "member_002"
+        ],
+        "name": "REVIEW2",
+        "role": {
+          "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+          "title": "独立复核"
+        },
+        "role_directory": {
+          "member_001": {
+            "instruction": "Locate, design and implement; publish the exact final candidate for independent review.",
+            "member_id": "member_001",
+            "title": "开发兼交付"
+          },
+          "member_002": {
+            "instruction": "Independently adopt and test the author's fixed candidate, then accept or request changes.",
+            "member_id": "member_002",
+            "title": "独立复核"
+          }
+        },
+        "schedule": {
+          "cycle": 12,
+          "member": "member_002",
+          "organization_id": "REVIEW2",
+          "selection_basis": "persisted organization eligibility then fair round-robin",
+          "slot_position": 25
+        },
+        "shared_task_board": true
+      },
+      "handoffs": [],
+      "included_patch_ids": [],
+      "logical_time": 19,
+      "member_availability": {
+        "member_001": {
+          "can_receive_work": true,
+          "current_work_ended": false,
+          "permanent_retirement": false,
+          "remaining_decisions": 490,
+          "remaining_decisions_scope": "shared_team_pool_not_personal_allocation",
+          "stable_member": true,
+          "status": "running",
+          "waiting": false
+        },
+        "member_002": {
+          "can_receive_work": true,
+          "current_work_ended": false,
+          "permanent_retirement": false,
+          "remaining_decisions": 490,
+          "remaining_decisions_scope": "shared_team_pool_not_personal_allocation",
+          "stable_member": true,
+          "status": "ready",
+          "waiting": false
+        }
+      },
+      "messages": [],
+      "older_handoff_sequences": [],
+      "older_message_sequences": [],
+      "organization_protocol": {
+        "final_integration_responsible": "member_001",
+        "independent_review_required": true,
+        "members": [
+          "member_001",
+          "member_002"
+        ],
+        "opportunities_consumed": 22,
+        "organization_id": "REVIEW2",
+        "phase": "open_work_with_explicit_candidate_handoffs",
+        "record_counts": {
+          "published_candidates": 1,
+          "reviews": 0,
+          "tasks": 0
+        },
+        "role_declarations": {},
+        "version": "v141-role-baseline-managed-world-r1"
+      },
+      "patches": [
+        {
+          "author": "member_001",
+          "base_reference": {
+            "object_id": "obj-8653276299fc07bbd5d18650",
+            "version_id": "v1"
+          },
+          "changed_path_count": 1,
+          "changed_paths": [
+            "requests/sessions.py"
+          ],
+          "changed_paths_truncated": false,
+          "diff_sha256": "941df4d85e22308236a6813e5ca468891da545950def41a0ea802ec0489a510b",
+          "entry_metadata_sha256": "8381b9067ab23688dc62b972b375f1d581217515eb419cff177adbfa273881f5",
+          "files_sha256": "6fbebad25675bdfad520324b2883c92d62665098befec4fb7e9539d4ba8b7ae8",
+          "patch_id": "patch-1",
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v2"
+          },
+          "source_sha256": "7fae6a7172c5263c03ddb32f95474481a62b6e119e77a2f130f045de6432bc2a"
+        }
+      ],
+      "shared_resource_limits": {
+        "max_attempts": 512,
+        "max_decisions": 512,
+        "max_test_runs": 512,
+        "max_total_tokens": 5000000
+      },
+      "tasks": [],
+      "team_model_budget": {
+        "attempts": 22,
+        "available_tokens": 4326435,
+        "charged_tokens": 673565,
+        "decisions": 22,
+        "held_tokens": 0,
+        "limits": {
+          "max_attempts": 512,
+          "max_decisions": 512,
+          "max_total_tokens": 5000000
+        },
+        "remaining_attempts": 490,
+        "remaining_decisions": 490,
+        "state_sha256": "19ceaefa9ec22da06c99f7acb39d361f1d76c60f85e79d616fa585cf030e80b1"
+      },
+      "team_test_budget": {
+        "limit": 512,
+        "remaining": 510,
+        "used": 2
+      },
+      "workspace_reference": {
+        "object_id": "obj-520aa9e6ee8ece99dce73855",
+        "version_id": "v1"
+      }
+    },
+    "request_id": "v203.2.1:psf__requests-2317:DEEPSEEK_NT_REVIEW2_V141_B5000K:202611122032107:member_002:0010",
+    "request_sha256_from_verified_physical_join": "f0364db4a65cadd42f4379ad52d280701f3159bf3e7c590a62c89834de375961",
+    "role_task": "Resolve the unchanged original repository issue. You are member_002, role 独立复核, in organization REVIEW2. Independently adopt and test the author's fixed candidate, then accept or request changes. All 2 configured members use the same model and managed tools, with separate private versions, SDK conversations and notes. No shell, hidden grading, recruitment or replacement exists. Your legal direct recipients are member_001. fix_patch explicitly publishes that immutable version to all configured legal members. Later private edits do not propagate. handoff_patch is a directed notice along a legal edge. Members must explicitly integrate_patch to use a published version; messages do not merge code. Task-board metadata is shared. Optional task ownership changes require offer_transfer and accept_transfer; a message cannot transfer responsibility. Use read_task for exact issue pages, search_repository or list_files/read_file to locate code, and write_file/replace_file/create_file/delete_file/rename_file for permitted edits. Use null or empty cursor for the first page and copy next_cursor unchanged for continuation. run_tests uses only the frozen public entrypoint on your exact current version. The whole team shares 5000000 cumulative input-plus-output tokens, 512 model decisions, 512 attempts and 512 accepted public test operations; these are not per-member grants. Communication, reading history, format repair and rejected requests consume real work. Only member_001 may submit the final integration and its final working tree is the predeclared code endpoint; other members' unmerged code is never selected by a grader. After the final edit/integration, explicitly run_tests, fix_patch(task_ids=[]), then submit_integration. Public tests need to execute on that same version; a pass is not hidden acceptance. staff_done ends your current work, staff_wait suspends it; a real later visible event may wake the same session without extra budget. No action is performed automatically.  Test results are private, versioned reports. run_tests executes once and returns a fixed-order directory and the first exact body page. Use read_test_result(report_id, cursor) to read more saved pages without rerunning tests. Only the original testing member can read the report; sharing an ID gives no permission. Share actual text if useful. Old cursors remain tied to the old event and version after edits. Page reads spend the same team decision/token pool but no test call. Reading all pages is optional and is not a submission requirement.\nmember_001 develops and delivers; member_002 independently reviews the exact fixed author candidate. An accepted review requires actual adoption and same-version public test execution. Editing the author version requires another fixed candidate and review.\nUse org_status for actual task IDs, current responsibility, fixed candidate identities, accepted/requested-change records and the next explicit actions. Before creating tasks, send_message uses task_id='root_goal'; the benchmark instance ID is not a task-board ID. org_declare_role records your current responsibility focus without changing tools, ownership or frozen review authority. An author publishes with fix_patch and sends handoff_patch; a recipient explicitly integrate_patch, run_tests, then org_review_patch to accept. Acceptance does not merge into another member's tree. An accepted peer patch remains available to member_001, who must explicitly integrate and finish its own current-version test, fixed candidate and submit_integration. Requested changes name the original patch author as the responsible recipient. Original public tests are not hidden grading. There is no pipeline or Sprint startup gate. In FREE2, independent review is optional; in REVIEW2, member_002 must accept member_001's exact final fixed version before delivery. All these actions, rejected requests, final self-review and history use the same team budget.\n\nmethod = builtin_str(method) problem\nIn requests/sessions.py is a command:\n\nmethod = builtin_str(method)\nConverts method from\nb’GET’\nto\n\"b'GET’\"\n\nWhich is the literal string, no longer a binary string.  When requests tries to use the method \"b'GET’”, it gets a 404 Not Found response.\n\nI am using python3.4 and python-neutronclient (2.3.9) with requests (2.4.3).  neutronclient is broken because it uses this \"args = utils.safe_encode_list(args)\" command which converts all the values to binary string, including method.\n\nI'm not sure if this is a bug with neutronclient or a bug with requests, but I'm starting here.  Seems if requests handled the method value being a binary string, we wouldn't have any problem.\n\nAlso, I tried in python2.6 and this bug doesn't exist there. Some difference between 2.6 and 3.4 makes this not work right.\n\n\n\nRepair and verification workflow:\n- Use the issue and public contract to identify the requested behavior and relevant callers or edge cases. Choose an actionable hypothesis before repeating searches.\n- Use the documented tools and public test entry. Collection errors, unavailable dependencies, failed commands and zero collected tests are not successful verification.\n- Derive expected behavior independently of your patch. Inspect the final diff to confirm what behavior it actually changes; comments or passing unrelated tests do not establish a repair.\n- Prefer a focused issue reproduction or regression test. After editing again, distinguish older test evidence from results for the current version. Reuse sufficient current evidence rather than rerunning identical checks without a reason.\n- If progress stalls, use the concrete tool or test error to choose a different action, or report the unresolved limitation honestly.\nAll actions, self-review and history summarization share the original cumulative token, attempt, decision and time limits.\n\nPublic execution facts:\nWorking directory: /testbed\nTask interpreter: /opt/miniconda3/envs/testbed/bin/python\nRepository-wide public test frontend: /opt/miniconda3/envs/testbed/bin/python -m pytest\nUse this same interpreter for reproduction scripts and module invocations. The native terminal may report its current Python path; if it differs, use the absolute task interpreter above. Public frontend qualification was based on repository/interpreter family representatives, not a run of every task's full suite. Choose test targets from the original issue and public checkout only. A missing dependency, collection error, timeout or unexecuted test is not a passing test.\n\nPublic terminal usage:\n- The terminal accepts one native shell command per call. Bare independent command lines can be rejected before execution. Submit separate calls, explicitly join dependent commands with &&, or deliberately author a script and invoke it. Multiline strings and heredocs are not automatically invalid; the native parser remains authoritative.\n- If a command is still running, use the native continuation or interrupt operation before another command. No rejected command is automatically split, rewritten or retried.\n\nPublic testing uses the declared task interpreter and /testbed. Choose targets from the public repository and issue; no hidden acceptance tests are provided. Omitting selection runs the original public entry. Supported selections: {\"arbitrary_commands\": false, \"frontend\": \"pytest\", \"hidden_material_used\": false, \"maximum_targets\": 16, \"same_interpreter_cwd_timeout\": true, \"selection_kinds\": [\"full\", \"pytest\"], \"version\": \"v110-public-test-selection-r1\"}\nAllowed fields: kind, targets, optional keyword (-k), optional markers (-m). Shape example only: {\"keyword\": \"case and not slow\", \"kind\": \"pytest\", \"markers\": \"not slow\", \"targets\": [\"tests/test_example.py::test_case\"]}. Replace all example targets and filters with those found in this public repository.\nUse run_tests(selection=<selection object>), then copy next_cursor exactly when reading its public output. A selected test is evidence only for its recorded source version and selected scope, not a claim that every public or hidden test passed. A zero-test, all-skipped or unverified run is not reported as passed; inspect validation_status and counts.",
+    "source": {
+      "capture_time": 1794492590.16002,
+      "chain_sha256": "e838e8b9bf71a10e2f878f46070caaafaa235b597d7289a0c41385b823db755d",
+      "event_key": "request:v203.2.1:psf__requests-2317:DEEPSEEK_NT_REVIEW2_V141_B5000K:202611122032107:member_002:0010",
+      "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+      "record_sha256": "f1a42120912d751834110ccd7efd778fcda38057484deb632e471d448f3f3b54",
+      "sequence": 108
+    }
+  },
+  "prefix_source_index": {
+    "maximum_sequence": 116,
+    "path": "blind-review-packets/prefix-indexes/psf__requests-2317--s0116.jsonl",
+    "rows": 116,
+    "sha256": "37a04c34201ce2fe5a7db7e586f49a9f7d048fb270c3436db1ab50cff82fd0ca"
+  },
+  "reviewer_instruction": "Judge only evidence available by cutoff. Separate global occurrence from actor presentation. Do not infer not-read from missing explicit read. Public-test outcomes are contemporaneous evidence, never official scores. No labels have been supplied.",
+  "schema": "v203.2.2-natural-collaboration-r1",
+  "target_actor": "member_002",
+  "target_actor_recent_receipts": [
+    {
+      "actor": "member_002",
+      "arguments": {
+        "max_lines": 60,
+        "path": "requests/sessions.py",
+        "start_line": 400
+      },
+      "decision_id": "model-3aa4b3af305db41071d51212",
+      "error": null,
+      "ok": true,
+      "result": {
+        "end_character": 16041,
+        "next_cursor": "16041:dc2649a3d21e43bcc55fb6e734bfb5b74f289279f1aed63a707b08f3f325ba9b",
+        "path": "requests/sessions.py",
+        "source_reference": {
+          "object_id": "obj-520aa9e6ee8ece99dce73855",
+          "version_id": "v1"
+        },
+        "start_character": 13720,
+        "text": "        :param data: (optional) Dictionary or bytes to send in the body of the\n            :class:`Request`.\n        :param json: (optional) json to send in the body of the\n            :class:`Request`.\n        :param headers: (optional) Dictionary of HTTP Headers to send with the\n            :class:`Request`.\n        :param cookies: (optional) Dict or CookieJar object to send with the\n            :class:`Request`.\n        :param files: (optional) Dictionary of ``'filename': file-like-objects``\n            for multipart encoding upload.\n        :param auth: (optional) Auth tuple or callable to enable\n            Basic/Digest/Custom HTTP Auth.\n        :param timeout: (optional) How long to wait for the server to send\n            data before giving up, as a float, or a (`connect timeout, read\n            timeout <user/advanced.html#timeouts>`_) tuple.\n        :type timeout: float or tuple\n        :param allow_redirects: (optional) Set to True by default.\n        :type allow_redirects: bool\n        :param proxies: (optional) Dictionary mapping protocol to the URL of\n            the proxy.\n        :param stream: (optional) whether to immediately download the response\n            content. Defaults to ``False``.\n        :param verify: (optional) if ``True``, the SSL cert will be verified.\n            A CA_BUNDLE path can also be provided.\n        :param cert: (optional) if String, path to ssl client cert file (.pem).\n            If Tuple, ('cert', 'key') pair.\n        \"\"\"\n\n        method = builtin_str(method)\n\n        # Create the Request.\n        req = Request(\n            method = method.upper(),\n            url = url,\n            headers = headers,\n            files = files,\n            data = data or {},\n            json = json,\n            params = params or {},\n            auth = auth,\n            cookies = cookies,\n            hooks = hooks,\n        )\n        prep = self.prepare_request(req)\n\n        proxies = proxies or {}\n\n        settings = self.merge_environment_settings(\n            prep.url, proxies, stream, verify, cert\n        )\n\n        # Send the request.\n        send_kwargs = {\n            'timeout': timeout,\n            'allow_redirects': allow_redirects,\n        }\n        send_kwargs.update(settings)\n        resp = self.send(prep, **send_kwargs)\n\n        return resp\n",
+        "text_sha256": "968b595aa5367cec2dc5e519511da8ce2c7d1f6d7c28a9712effa64ae372e104",
+        "total_characters": 23790
+      },
+      "source": {
+        "capture_time": 1794492520.6147835,
+        "chain_sha256": "174be449942844a2cebdce3dc7ce807d83be97d50887277cf7316275e0dc828c",
+        "event_key": "receipt:member_002:model-3aa4b3af305db41071d51212:call_00_MwMMqGZnd8uj78lsMsiE2684",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "3e03733d13e7a2b02692f51a36bf788682082866e2c6411a2f57d74521d95859",
+        "sequence": 56
+      },
+      "tool": "read_file"
+    },
+    {
+      "actor": "member_002",
+      "arguments": {},
+      "decision_id": "model-425b40bb73f4426d1e693649",
+      "error": null,
+      "ok": true,
+      "result": {
+        "candidate_directory_complete": true,
+        "candidates": [],
+        "complete": true,
+        "current": {
+          "final_integration_responsible": "member_001",
+          "independent_review_required": true,
+          "members": [
+            "member_001",
+            "member_002"
+          ],
+          "opportunities_consumed": 13,
+          "organization_id": "REVIEW2",
+          "phase": "open_work_with_explicit_candidate_handoffs",
+          "record_counts": {
+            "published_candidates": 0,
+            "reviews": 0,
+            "tasks": 0
+          },
+          "role_declarations": {},
+          "version": "v141-role-baseline-managed-world-r1"
+        },
+        "events": [],
+        "exact_record_tool": "read_work_event(sequence)",
+        "message_task_id_without_task": "root_goal",
+        "next_after_sequence": null,
+        "no_private_peer_workspace_or_test_output": true,
+        "task_directory": [],
+        "task_directory_complete": true,
+        "your_closure": {
+          "current_effective_fixed_candidate": null,
+          "current_effective_patch_id": null,
+          "current_workspace_has_net_changes": false,
+          "designated_delivery_member": "member_001",
+          "fix_patch_arguments": {
+            "message": "Describe this fixed version",
+            "task_ids": []
+          },
+          "fixed_patch_id": null,
+          "guide_is_not_automatic_execution_or_acceptance": true,
+          "legal_delivery_id": null,
+          "next_explicit_action": {
+            "arguments": {
+              "body": "Publish a fixed candidate when ready for independent review.",
+              "recipient": "member_001",
+              "task_id": "root_goal"
+            },
+            "tool": "send_message"
+          },
+          "next_explicit_tool": "run_tests",
+          "pending_accepted_peer_patch_ids": [],
+          "public_test_executed": false,
+          "public_test_passed": null,
+          "public_test_sequence": null,
+          "requires_independent_review": true,
+          "scope": "Same-version public evidence only; submission is not official acceptance",
+          "source_reference": {
+            "object_id": "obj-520aa9e6ee8ece99dce73855",
+            "version_id": "v1"
+          },
+          "work_stage": "awaiting_author_candidate"
+        }
+      },
+      "source": {
+        "capture_time": 1794492528.17924,
+        "chain_sha256": "f50bdf5514eb390a2fd199a8e6c5223f17b358b6481dbf256dd54c797c288a2b",
+        "event_key": "receipt:member_002:model-425b40bb73f4426d1e693649:call_00_0dU7bdTd69eTmEOSbFbl4179",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "c1d119336d1c3387ca4094f1939dcf07fe3fb85c314cb565ace5c10a83ee3d10",
+        "sequence": 66
+      },
+      "tool": "org_status"
+    },
+    {
+      "actor": "member_002",
+      "arguments": {
+        "key": "review-plan",
+        "status": "open",
+        "text": "1) Wait for member_001 to publish fixed candidate (fix_patch + handoff_patch). 2) integrate_patch into my private tree. 3) Inspect diff for requests/sessions.py request(). 4) run_tests (focused tests/test_requests.py + full) on adopted version. 5) org_review_patch accept or request_changes."
+      },
+      "decision_id": "model-ad0075d01c3f3e4fa5094fcf",
+      "error": null,
+      "ok": true,
+      "result": {},
+      "source": {
+        "capture_time": 1794492535.6804726,
+        "chain_sha256": "79a19e3a37e1fee66660d4fa22c4f0719ca23ef918afeee02bc2c772c7fdbfe3",
+        "event_key": "receipt:member_002:model-ad0075d01c3f3e4fa5094fcf:call_00_3MHGgZGs2VDCVaVRyjTL3682",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "6184c36bd609dd60fad848fee4fb60f9a5eea569814390d95f3dcea81a8d7a5d",
+        "sequence": 76
+      },
+      "tool": "work_todo"
+    },
+    {
+      "actor": "member_002",
+      "arguments": {
+        "reason": "Awaiting member_001's published fixed candidate (fix_patch + handoff_patch) for independent adoption and review; no candidate exists yet and I cannot review my own work."
+      },
+      "decision_id": "model-dadfa6c67c7beb3072f091b0",
+      "error": null,
+      "ok": true,
+      "result": {},
+      "source": {
+        "capture_time": 1794492543.5488505,
+        "chain_sha256": "6a0437dda3345ba7270350bc58a645d0857db60a8aa508c99b579a21279ef878",
+        "event_key": "receipt:member_002:model-dadfa6c67c7beb3072f091b0:call_00_SmcxXNmjIE7Usn47CTjp3432",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "b8ce458da491a0be5caa7cd0fa250f078272aeb2f174899e5cc14b7458a5550f",
+        "sequence": 86
+      },
+      "tool": "staff_wait"
+    },
+    {
+      "actor": "member_002",
+      "arguments": {
+        "patch_id": "patch-1"
+      },
+      "decision_id": "model-d1881c4ad3e8e4f437dd111c",
+      "error": null,
+      "ok": true,
+      "result": {
+        "conflict_count": 0,
+        "conflicts": [],
+        "entry_metadata_sha256": "8381b9067ab23688dc62b972b375f1d581217515eb419cff177adbfa273881f5",
+        "files_sha256": "6fbebad25675bdfad520324b2883c92d62665098befec4fb7e9539d4ba8b7ae8",
+        "operation": "integrate",
+        "patch_id": "patch-1",
+        "path_count": 1,
+        "paths": [
+          "requests/sessions.py"
+        ],
+        "source_reference": {
+          "object_id": "obj-520aa9e6ee8ece99dce73855",
+          "version_id": "v2"
+        }
+      },
+      "source": {
+        "capture_time": 1794492594.9942958,
+        "chain_sha256": "0a7950a9666ef6d0cae95873ae6bf1493ca2d9920d6a73528865397e5db948ba",
+        "event_key": "receipt:member_002:model-d1881c4ad3e8e4f437dd111c:call_00_vwEnBKUlSenI5KRKBeEC5661",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "8ee59425fdad926bd7a3079affdb5b03e4cc3be3faa2792705e1307e06c258da",
+        "sequence": 111
+      },
+      "tool": "integrate_patch"
+    }
+  ],
+  "target_receipts_after_latest_request": [
+    {
+      "actor": "member_002",
+      "arguments": {
+        "patch_id": "patch-1"
+      },
+      "decision_id": "model-d1881c4ad3e8e4f437dd111c",
+      "error": null,
+      "ok": true,
+      "result": {
+        "conflict_count": 0,
+        "conflicts": [],
+        "entry_metadata_sha256": "8381b9067ab23688dc62b972b375f1d581217515eb419cff177adbfa273881f5",
+        "files_sha256": "6fbebad25675bdfad520324b2883c92d62665098befec4fb7e9539d4ba8b7ae8",
+        "operation": "integrate",
+        "patch_id": "patch-1",
+        "path_count": 1,
+        "paths": [
+          "requests/sessions.py"
+        ],
+        "source_reference": {
+          "object_id": "obj-520aa9e6ee8ece99dce73855",
+          "version_id": "v2"
+        }
+      },
+      "source": {
+        "capture_time": 1794492594.9942958,
+        "chain_sha256": "0a7950a9666ef6d0cae95873ae6bf1493ca2d9920d6a73528865397e5db948ba",
+        "event_key": "receipt:member_002:model-d1881c4ad3e8e4f437dd111c:call_00_vwEnBKUlSenI5KRKBeEC5661",
+        "journal": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-1/passive-pilot10-r4/episodes/2032407/controller-output/model-ledger/passive-observer/events.sqlite",
+        "record_sha256": "8ee59425fdad926bd7a3079affdb5b03e4cc3be3faa2792705e1307e06c258da",
+        "sequence": 111
+      },
+      "tool": "integrate_patch"
+    }
+  ],
+  "task_id": "psf__requests-2317",
+  "trigger_kinds": [
+    "successful_handoff_patch"
+  ],
+  "trigger_visibility_to_target": "global event; do not assume recipient has seen it at this cutoff",
+  "window_id": "psf__requests-2317:s0116"
+}

@@ -1,0 +1,43 @@
+{
+  "GPU_use": false,
+  "capture_boundaries_per_arm": 1000,
+  "command": [
+    "tools/benchmark_passive_observer_cost_v203_2_2.py"
+  ],
+  "containers": 0,
+  "extra_initial_and_close_records_on_arm": 2,
+  "input_sha256": "ddf2e646aa27395af9eda3fb097d7202c6b1b998c40434be33c8d2d1de2c4f1e",
+  "limitations": [
+    "Only 3 pairs of 1000 synthetic capture boundaries; no long-duration production or leak claim.",
+    "The real v203.2.1 Sidecar.record/finish and ObserverJournal WAL/FULL path are reused; no legacy PassiveRecorder substitute.",
+    "Both arms import the same runtime modules. Startup, imports and frozen-file loading are excluded from capture_lifecycle/workload times but included in parent-measured process totals.",
+    "Synthetic model inputs/outputs and tool receipts are frozen, small and deterministic; no provider, real tool, controller scheduling, actual task, model reasoning or production payload replay occurs.",
+    "Measured latency is a local synthetic operation (two capture boundaries), not provider/HTTP request latency; off-arm work is deliberately tiny, so relative slowdown is not a production percentage.",
+    "Capture lifecycle includes initialization, INITIAL, append boundaries and finish/CAPTURE_CLOSED; operation percentiles exclude initialization, finish, disk/RSS sampling and verification.",
+    "Workload CPU/wall includes common synthetic result hashing and bounded resource samples; no online graph projection is added, matching the real append-only Sidecar.",
+    "Host HTTP capture, physical provider journal, SDK history, archival/compression, scoring, export, full offline analysis and persistent services are excluded.",
+    "RSS is a process high-water mark/current Linux proc snapshot, not an allocation attribution. Startup imports are present in both arms; small paired differences can be noisy.",
+    "Disk figures are logical file bytes and allocated st_blocks*512, sampled while open and after close; transient within-sample WAL peaks and directory metadata are not measured.",
+    "Crash recovery covers process exit after final durable commit, with no prior projection checkpoint; it verifies the journal and reconstructs receipt-derived PassiveState only. It is not a restored running agent/controller or full accepted-request view reconstruction.",
+    "Recovery excludes MODEL_REQUEST/MODEL_RESPONSE semantic projection; those records are still hash-chain verified and exactly reconciled against the frozen manifest.",
+    "No power/storage loss, precommit evidence loss, concurrent writers, missing host records or production completeness guarantee is tested here.",
+    "A single sequential run order off/on, on/off, off/on has no CPU pinning, cache flushing, isolation or confidence interval; shared-host scheduling/filesystem load may influence results."
+  ],
+  "maximum_concurrent_workers": 1,
+  "operations_per_arm": 500,
+  "pairs": 3,
+  "real_API_calls": 0,
+  "root_or_host_configuration_changes": false,
+  "runtime": "3.14.6 | packaged by Anaconda, Inc. | (main, Jun 18 2026, 21:28:09) [GCC 14.3.0]",
+  "source_sha256": {
+    "src/proworksim/software_observer_journal_v203_2_1.py": "65bd21fa7d0ee1663e8d422310236a64860374b0efbc677ab696804c514b756e",
+    "src/proworksim/software_passive_observer_v203_2.py": "6a69cc093d620663331107c9f02e81080f3ef1fe0d8d0ba73de4382971a8ea4c",
+    "src/proworksim/software_role_baseline_runtime_v203_2_1.py": "e84b2c04294e8a8b87eb13072b4d3724a05ce9e5b84c40fab1cfa99d57b85573",
+    "tools/benchmark_passive_observer_cost_v203_2_2.py": "56e38833d0ef7dcbba239527ccb6c91ccddee4e9b6273af6a401197706873407"
+  },
+  "version": "v203.2.2",
+  "worker_caps": {
+    "CPU_seconds": 60,
+    "address_space_bytes": 1073741824
+  }
+}
