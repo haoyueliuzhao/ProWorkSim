@@ -1,0 +1,171 @@
+"""Single-writer world persistence, immutable file versions and crash recovery."""
+
+import fcntl
+import hashlib
+import json
+import os
+import shutil
+from contextlib import contextmanager
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+
+
+def json_bytes(value) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode()
+
+
+def digest(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
+
+
+def atomic_write(path: Path, data: bytes):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(dir=path.parent, prefix=".tmp-", delete=False) as f:
+        tmp = Path(f.name)
+        try:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
+    os.replace(tmp, path)
+
+
+def read_json(path: Path):
+    return json.loads(path.read_text())
+
+
+class Store:
+    def __init__(self, root: str | Path):
+        self.root = Path(root).resolve()
+        self.control = self.root / "control"
+        self.workspace = self.root / "workspace"
+        self.fault_hook = None
+
+    @contextmanager
+    def lock(self):
+        with (self.control / "world.lock").open("a+") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+    def load(self) -> dict:
+        return read_json(self.control / "state.json")
+
+    def save(self, state: dict):
+        atomic_write(self.control / "state.json", json_bytes(state))
+
+    def version_path(self, artifact: dict, version_id: str) -> Path:
+        if version_id not in artifact["versions"]:
+            raise ValueError("Unknown artifact version")
+        return (
+            self.control / "versions" / artifact["artifact_id"] / version_id / artifact["filename"]
+        )
+
+    def current_path(self, artifact: dict) -> Path:
+        placement = artifact.get("materialization")
+        public = placement == "workspace" if placement else "analyst" in artifact["readers"]
+        base = self.workspace if public else self.control / "role_files"
+        relative = Path(artifact.get("storage_path", artifact["filename"]))
+        if relative.is_absolute() or not relative.parts or any(
+            part in {".", ".."} for part in relative.parts
+        ):
+            raise ValueError("Artifact storage_path must be a safe relative path")
+        result = base / relative
+        if not result.resolve().is_relative_to(base.resolve()):
+            raise ValueError("Artifact storage_path escapes its materialization root")
+        return result
+
+    def content(self, artifact: dict, version_id: str | None = None) -> bytes:
+        version_id = version_id or artifact["current_version"]
+        path = (
+            self.current_path(artifact)
+            if version_id == artifact["current_version"]
+            else self.version_path(artifact, version_id)
+        )
+        return path.read_bytes()
+
+    def put(
+        self,
+        state: dict,
+        artifact_id: str,
+        content: bytes,
+        owner: str,
+        dependencies: list[dict] | None = None,
+    ) -> dict:
+        artifact = state["artifacts"][artifact_id]
+        version_id = f"v{len(artifact['versions']) + 1}"
+        version = {
+            "artifact_id": artifact_id,
+            "version_id": version_id,
+            "owner": owner,
+            "sha256": digest(content),
+            "logical_time": state["clock"],
+            "derived_from": dependencies if dependencies is not None else [],
+            "status": "draft",
+            "review_status": "unreviewed",
+        }
+        artifact["versions"][version_id] = version
+        artifact["current_version"] = version_id
+        atomic_write(self.version_path(artifact, version_id), content)
+        if self.fault_hook is not None:
+            self.fault_hook(
+                "version_staged", {"artifact_id": artifact_id, "version_id": version_id}
+            )
+        atomic_write(self.current_path(artifact), content)
+        if state.get("runtime_kind") == "world_core":
+            # A neutral runtime has no business-specific freshness oracle.
+            artifact["freshness"] = "unknown"
+        else:
+            from .freshness import refresh_freshness
+
+            refresh_freshness(state)
+        version["freshness_at_creation"] = artifact["freshness"]
+        return version
+
+    def recover(self, state: dict):
+        """Materialize committed versions after an interrupted write, never recalculate."""
+        from .core.journal import validate_committed_prefix
+
+        validate_committed_prefix(state)
+        # Only referenced version directories are committed facts. Quarantine
+        # staged orphan bytes; do not mistake them for a new committed version.
+        version_root = self.control / "versions"
+        for object_dir in version_root.iterdir() if version_root.exists() else ():
+            if not object_dir.is_dir():
+                continue
+            committed = state.get("artifacts", {}).get(object_dir.name, {}).get("versions", {})
+            for version_dir in object_dir.iterdir():
+                if version_dir.is_dir() and version_dir.name not in committed:
+                    target = self.control / "uncommitted" / object_dir.name / version_dir.name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    if target.exists():
+                        shutil.rmtree(target)
+                    shutil.move(str(version_dir), str(target))
+        if state.get("runtime_kind") == "world_core":
+            # These two namespaces belong exclusively to WorldCore mirrors.
+            # Never scan or remove arbitrary files elsewhere in the workspace.
+            registered = {self.current_path(a) for a in state["artifacts"].values()}
+            for base in (self.workspace, self.control / "role_files"):
+                managed = base / "artifacts"
+                if managed.is_symlink():
+                    raise ValueError("Managed artifact namespace must not be a symlink")
+                if managed.exists():
+                    for path in managed.rglob("*"):
+                        if (path.is_file() or path.is_symlink()) and path not in registered:
+                            path.unlink()
+        for artifact in state["artifacts"].values():
+            # Check the immutable committed prefix, not only the latest mirror.
+            for vid, metadata in artifact["versions"].items():
+                if digest(self.version_path(artifact, vid).read_bytes()) != metadata["sha256"]:
+                    raise ValueError("Corrupt immutable artifact version")
+            version = artifact["versions"][artifact["current_version"]]
+            path = self.current_path(artifact)
+            if not path.exists() or digest(path.read_bytes()) != version["sha256"]:
+                data = self.version_path(artifact, artifact["current_version"]).read_bytes()
+                if digest(data) != version["sha256"]:
+                    raise ValueError("Corrupt immutable artifact version")
+                atomic_write(path, data)

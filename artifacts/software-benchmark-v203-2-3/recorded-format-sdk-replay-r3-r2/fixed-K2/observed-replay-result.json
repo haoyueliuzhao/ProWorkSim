@@ -1,0 +1,799 @@
+{
+  "version": "v203.2.3-recorded-provider-format-replay-r3",
+  "passed": true,
+  "condition": "K2",
+  "outcomes": [
+    {
+      "worker_id": "member_001",
+      "status": "running",
+      "action_performed": true,
+      "response": {
+        "ok": true,
+        "result": {
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v1"
+          },
+          "matches": [
+            {
+              "path": "astropy/timeseries/binned.py",
+              "line": 12,
+              "character_offset": 329,
+              "preview": "s import Quantity\n\nfrom astropy.timeseries.core import BaseTimeSeries, autocheck_required_columns\n\n__all__ = ['BinnedTimeSeries']\n\n\n@autocheck_required_columns\nclass BinnedTimeSeries(BaseTimeSeries):\n    \"\"\"\n    A class to represent binned time series data ",
+              "preview_start_character": 249
+            },
+            {
+              "path": "astropy/timeseries/binned.py",
+              "line": 17,
+              "character_offset": 391,
+              "preview": "eSeries, autocheck_required_columns\n\n__all__ = ['BinnedTimeSeries']\n\n\n@autocheck_required_columns\nclass BinnedTimeSeries(BaseTimeSeries):\n    \"\"\"\n    A class to represent binned time series data in tabular form.\n\n    `~astropy.timeseries.BinnedTimeSeries` p",
+              "preview_start_character": 311
+            },
+            {
+              "path": "astropy/timeseries/binned.py",
+              "line": 72,
+              "character_offset": 3522,
+              "preview": "dditional keyword arguments are passed to `~astropy.table.QTable`.\n    \"\"\"\n\n    _required_columns = ['time_bin_start', 'time_bin_size']\n\n    def __init__(self, data=None, *, time_bin_start=None, time_bin_end=None,\n                 time_bin_size=None, n_bins",
+              "preview_start_character": 3442
+            },
+            {
+              "path": "astropy/timeseries/binned.py",
+              "line": 84,
+              "character_offset": 4146,
+              "preview": "and\n                time_bin_size is None and n_bins is None):\n            self._required_columns_relax = True\n            return\n\n        # First if time_bin_start and time_bin_end have been given in the table data, we\n        # should extract them and tre",
+              "preview_start_character": 4066
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 9,
+              "character_offset": 236,
+              "preview": "wraps\n\nfrom astropy.table import QTable\n\n__all__ = ['BaseTimeSeries', 'autocheck_required_columns']\n\nCOLUMN_RELATED_METHODS = ['add_column',\n                          'add_columns',\n                          'keep_columns',\n                          'remove",
+              "preview_start_character": 156
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 19,
+              "character_offset": 525,
+              "preview": "    'remove_columns',\n                          'rename_column']\n\n\ndef autocheck_required_columns(cls):\n    \"\"\"\n    This is a decorator that ensures that the table contains specific\n    methods indicated by the _required_columns attribute. The aim is to\n   ",
+              "preview_start_character": 445
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 22,
+              "character_offset": 656,
+              "preview": "ator that ensures that the table contains specific\n    methods indicated by the _required_columns attribute. The aim is to\n    decorate all methods that might affect the columns in the table and check\n    for consistency after the methods have been run.\n   ",
+              "preview_start_character": 576
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 32,
+              "character_offset": 1015,
+              "preview": "rgs):\n            result = method(self, *args, **kwargs)\n            self._check_required_columns()\n            return result\n\n        return wrapper\n\n    for name in COLUMN_RELATED_METHODS:\n        if (not hasattr(cls, name) or\n                not isinstan",
+              "preview_start_character": 935
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 48,
+              "character_offset": 1411,
+              "preview": "ethod(getattr(cls, name)))\n\n    return cls\n\n\nclass BaseTimeSeries(QTable):\n\n    _required_columns = None\n    _required_columns_enabled = True\n\n    # If _required_column_relax is True, we don't require the columns to be\n    # present but we do require them t",
+              "preview_start_character": 1331
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 49,
+              "character_offset": 1440,
+              "preview": "   return cls\n\n\nclass BaseTimeSeries(QTable):\n\n    _required_columns = None\n    _required_columns_enabled = True\n\n    # If _required_column_relax is True, we don't require the columns to be\n    # present but we do require them to be the correct ones IF pres",
+              "preview_start_character": 1360
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 55,
+              "character_offset": 1749,
+              "preview": "soon as the required columns\n    # are all present, we toggle this to False\n    _required_columns_relax = False\n\n    def _check_required_columns(self):\n\n        if not self._required_columns_enabled:\n            return\n\n        if self._required_columns is ",
+              "preview_start_character": 1669
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 57,
+              "character_offset": 1796,
+              "preview": "ent, we toggle this to False\n    _required_columns_relax = False\n\n    def _check_required_columns(self):\n\n        if not self._required_columns_enabled:\n            return\n\n        if self._required_columns is not None:\n\n            if self._required_column",
+              "preview_start_character": 1716
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 59,
+              "character_offset": 1842,
+              "preview": "umns_relax = False\n\n    def _check_required_columns(self):\n\n        if not self._required_columns_enabled:\n            return\n\n        if self._required_columns is not None:\n\n            if self._required_columns_relax:\n                required_columns = se",
+              "preview_start_character": 1762
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 62,
+              "character_offset": 1905,
+              "preview": "     if not self._required_columns_enabled:\n            return\n\n        if self._required_columns is not None:\n\n            if self._required_columns_relax:\n                required_columns = self._required_columns[:len(self.colnames)]\n            else:\n   ",
+              "preview_start_character": 1825
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 64,
+              "character_offset": 1957,
+              "preview": "    return\n\n        if self._required_columns is not None:\n\n            if self._required_columns_relax:\n                required_columns = self._required_columns[:len(self.colnames)]\n            else:\n                required_columns = self._required_colum",
+              "preview_start_character": 1877
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 65,
+              "character_offset": 2022,
+              "preview": "       if self._required_columns_relax:\n                required_columns = self._required_columns[:len(self.colnames)]\n            else:\n                required_columns = self._required_columns\n\n            plural = 's' if len(required_columns) > 1 else ''",
+              "preview_start_character": 1942
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 67,
+              "character_offset": 2119,
+              "preview": "[:len(self.colnames)]\n            else:\n                required_columns = self._required_columns\n\n            plural = 's' if len(required_columns) > 1 else ''\n\n            if not self._required_columns_relax and len(self.colnames) == 0:\n\n                r",
+              "preview_start_character": 2039
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 71,
+              "character_offset": 2225,
+              "preview": "     plural = 's' if len(required_columns) > 1 else ''\n\n            if not self._required_columns_relax and len(self.colnames) == 0:\n\n                raise ValueError(\"{} object is invalid - expected '{}' \"\n                                 \"as the first col",
+              "preview_start_character": 2145
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 83,
+              "character_offset": 2895,
+              "preview": "__name__, required_columns[0], plural, self.colnames[0]))\n\n            if (self._required_columns_relax\n                    and self._required_columns == self.colnames[:len(self._required_columns)]):\n                self._required_columns_relax = False\n\n   ",
+              "preview_start_character": 2815
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 84,
+              "character_offset": 2948,
+              "preview": "0]))\n\n            if (self._required_columns_relax\n                    and self._required_columns == self.colnames[:len(self._required_columns)]):\n                self._required_columns_relax = False\n\n    @contextmanager\n    def _delay_required_column_check",
+              "preview_start_character": 2868
+            }
+          ],
+          "complete": false,
+          "next_cursor": "search-904746288eecadb34a814fafdb4fbf776e543c6aa7194ace38fe38abaf83f4b8",
+          "scanned_characters": 19081,
+          "considered_files": 3,
+          "skipped_nontext_entries": 0,
+          "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+          "scan_character_limit": 1048576,
+          "scan_file_limit": 256,
+          "result_character_limit": 8192
+        },
+        "action_id": "action-2",
+        "logical_time": 2,
+        "command_id": "command:member_001:staff-ded733f9a73d4977aea93ebdb097d937-1",
+        "command_committed": true,
+        "committed_revision": 2
+      },
+      "decision": {
+        "kind": "act",
+        "action": "search_repository",
+        "arguments": {
+          "text": "_required_columns",
+          "path_prefix": "astropy/timeseries"
+        },
+        "model_call_id": "model-303a7b21eb8ab811b0ea9d0f",
+        "model_tool_call_id": "call_00_Nxgw2ryNhRWbOJU1B2dW5801",
+        "decision_id": "model-303a7b21eb8ab811b0ea9d0f"
+      }
+    },
+    {
+      "worker_id": "member_002",
+      "status": "running",
+      "action_performed": true,
+      "response": {
+        "ok": true,
+        "result": {
+          "current": {
+            "version": "v141-role-baseline-managed-world-r1",
+            "organization_id": "REVIEW2",
+            "opportunities_consumed": 1,
+            "members": [
+              "member_001",
+              "member_002"
+            ],
+            "final_integration_responsible": "member_001",
+            "role_declarations": {},
+            "independent_review_required": true,
+            "phase": "open_work_with_explicit_candidate_handoffs",
+            "record_counts": {
+              "published_candidates": 0,
+              "reviews": 0,
+              "tasks": 0
+            }
+          },
+          "your_closure": {
+            "source_reference": {
+              "object_id": "obj-520aa9e6ee8ece99dce73855",
+              "version_id": "v1"
+            },
+            "public_test_executed": false,
+            "public_test_passed": null,
+            "public_test_sequence": null,
+            "fixed_patch_id": null,
+            "legal_delivery_id": null,
+            "next_explicit_tool": "run_tests",
+            "fix_patch_arguments": {
+              "task_ids": [],
+              "message": "Describe this fixed version"
+            },
+            "scope": "Same-version public evidence only; submission is not official acceptance",
+            "designated_delivery_member": "member_001",
+            "current_workspace_has_net_changes": false,
+            "current_effective_fixed_candidate": null,
+            "current_effective_patch_id": null,
+            "work_stage": "awaiting_author_candidate",
+            "pending_accepted_peer_patch_ids": [],
+            "next_explicit_action": {
+              "tool": "send_message",
+              "arguments": {
+                "recipient": "member_001",
+                "task_id": "root_goal",
+                "body": "Publish a fixed candidate when ready for independent review."
+              }
+            },
+            "requires_independent_review": true,
+            "guide_is_not_automatic_execution_or_acceptance": true
+          },
+          "task_directory": [],
+          "task_directory_complete": true,
+          "message_task_id_without_task": "root_goal",
+          "candidates": [],
+          "candidate_directory_complete": true,
+          "events": [],
+          "next_after_sequence": null,
+          "complete": true,
+          "exact_record_tool": "read_work_event(sequence)",
+          "no_private_peer_workspace_or_test_output": true
+        },
+        "action_id": "action-3",
+        "logical_time": 3,
+        "command_id": "command:member_002:staff-ded733f9a73d4977aea93ebdb097d937-2",
+        "command_committed": true,
+        "committed_revision": 3
+      },
+      "decision": {
+        "kind": "act",
+        "action": "org_status",
+        "arguments": {},
+        "model_call_id": "model-51492b6af5293280f60faf86",
+        "model_tool_call_id": "call_00_YzOSWamhz52aQikt31wt9948",
+        "decision_id": "model-51492b6af5293280f60faf86"
+      }
+    },
+    {
+      "worker_id": "member_001",
+      "status": "running",
+      "action_performed": true,
+      "response": {
+        "ok": true,
+        "result": {
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v1"
+          },
+          "path": "astropy/timeseries/core.py",
+          "text": "    _required_columns_enabled = True\n\n    # If _required_column_relax is True, we don't require the columns to be\n    # present but we do require them to be the correct ones IF present. Note\n    # that this is a temporary state - as soon as the required columns\n    # are all present, we toggle this to False\n    _required_columns_relax = False\n\n    def _check_required_columns(self):\n\n        if not self._required_columns_enabled:\n            return\n\n        if self._required_columns is not None:\n\n            if self._required_columns_relax:\n                required_columns = self._required_columns[:len(self.colnames)]\n            else:\n                required_columns = self._required_columns\n\n            plural = 's' if len(required_columns) > 1 else ''\n\n            if not self._required_columns_relax and len(self.colnames) == 0:\n\n                raise ValueError(\"{} object is invalid - expected '{}' \"\n                                 \"as the first column{} but time series has no columns\"\n                                 .format(self.__class__.__name__, required_columns[0], plural))\n\n            elif self.colnames[:len(required_columns)] != required_columns:\n\n                raise ValueError(\"{} object is invalid - expected '{}' \"\n                                 \"as the first column{} but found '{}'\"\n                                 .format(self.__class__.__name__, required_columns[0], plural, self.colnames[0]))\n\n            if (self._required_columns_relax\n                    and self._required_columns == self.colnames[:len(self._required_columns)]):\n                self._required_columns_relax = False\n\n    @contextmanager\n    def _delay_required_column_checks(self):\n        self._required_columns_enabled = False\n        yield\n        self._required_columns_enabled = True\n        self._check_required_columns()\n",
+          "start_character": 1436,
+          "end_character": 3280,
+          "total_characters": 3280,
+          "text_sha256": "13de87d77c2a63ef0c771caad73a501c24e16d083e7d0290b6991dce1634b291",
+          "next_cursor": null
+        },
+        "action_id": "action-4",
+        "logical_time": 4,
+        "command_id": "command:member_001:staff-ded733f9a73d4977aea93ebdb097d937-3",
+        "command_committed": true,
+        "committed_revision": 4
+      },
+      "decision": {
+        "kind": "act",
+        "action": "read_file",
+        "arguments": {
+          "path": "astropy/timeseries/core.py",
+          "start_line": 49,
+          "max_lines": 60
+        },
+        "model_call_id": "model-04e7af8ee8803be50d71a933",
+        "model_tool_call_id": "call_00_3XTeDdG1O3O3jxKlKuDG6712",
+        "decision_id": "model-04e7af8ee8803be50d71a933"
+      }
+    },
+    {
+      "worker_id": "member_002",
+      "status": "model_format_feedback",
+      "reason": "Exactly one native tool call; no-tool text is not implicit done",
+      "action_performed": false,
+      "decision_consumed": true
+    },
+    {
+      "worker_id": "member_001",
+      "status": "running",
+      "action_performed": true,
+      "response": {
+        "ok": true,
+        "result": {
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v1"
+          },
+          "path": "astropy/timeseries/core.py",
+          "text": "# Licensed under a 3-clause BSD style license - see LICENSE.rst\n\nfrom types import FunctionType\nfrom contextlib import contextmanager\nfrom functools import wraps\n\nfrom astropy.table import QTable\n\n__all__ = ['BaseTimeSeries', 'autocheck_required_columns']\n\nCOLUMN_RELATED_METHODS = ['add_column',\n                          'add_columns',\n                          'keep_columns',\n                          'remove_column',\n                          'remove_columns',\n                          'rename_column']\n\n\ndef autocheck_required_columns(cls):\n    \"\"\"\n    This is a decorator that ensures that the table contains specific\n    methods indicated by the _required_columns attribute. The aim is to\n    decorate all methods that might affect the columns in the table and check\n    for consistency after the methods have been run.\n    \"\"\"\n\n    def decorator_method(method):\n\n        @wraps(method)\n        def wrapper(self, *args, **kwargs):\n            result = method(self, *args, **kwargs)\n            self._check_required_columns()\n            return result\n\n        return wrapper\n\n    for name in COLUMN_RELATED_METHODS:\n        if (not hasattr(cls, name) or\n                not isinstance(getattr(cls, name), FunctionType)):\n            raise ValueError(f\"{name} is not a valid method\")\n        setattr(cls, name, decorator_method(getattr(cls, name)))\n\n    return cls\n\n\nclass BaseTimeSeries(QTable):\n\n    _required_columns = None\n    _required_columns_enabled = True\n\n",
+          "start_character": 0,
+          "end_character": 1474,
+          "total_characters": 3280,
+          "text_sha256": "13de87d77c2a63ef0c771caad73a501c24e16d083e7d0290b6991dce1634b291",
+          "next_cursor": "1474:b9443f6245f771da8ec046983756613d26d117a2570c209d1a4bef9728cbff50"
+        },
+        "action_id": "action-5",
+        "logical_time": 5,
+        "command_id": "command:member_001:staff-ded733f9a73d4977aea93ebdb097d937-4",
+        "command_committed": true,
+        "committed_revision": 5
+      },
+      "decision": {
+        "kind": "act",
+        "action": "read_file",
+        "arguments": {
+          "path": "astropy/timeseries/core.py",
+          "start_line": 1,
+          "max_lines": 50
+        },
+        "model_call_id": "model-f4f191a12b6ddb277dd061eb",
+        "model_tool_call_id": "call_00_HUgpX51gGtIoRMxf02hv4170",
+        "decision_id": "model-f4f191a12b6ddb277dd061eb"
+      }
+    },
+    {
+      "worker_id": "member_002",
+      "status": "running",
+      "action_performed": true,
+      "response": {
+        "ok": true,
+        "result": {
+          "message_sequence": 4,
+          "recipient": "member_001",
+          "task_id": "root_goal",
+          "world_file_effect": false
+        },
+        "action_id": "action-6",
+        "logical_time": 6,
+        "command_id": "command:member_002:staff-ded733f9a73d4977aea93ebdb097d937-5",
+        "command_committed": true,
+        "committed_revision": 6
+      },
+      "decision": {
+        "kind": "act",
+        "action": "send_message",
+        "arguments": {
+          "recipient": "member_001",
+          "task_id": "root_goal",
+          "body": "member_002 (独立复核) here. I'm ready to independently review your fixed candidate for the TimeSeries required-columns issue. Please publish with fix_patch and send handoff_patch when ready. I'll integrate_patch, run public tests on that exact version, then org_review_patch accept/request_changes. Meanwhile I'm inspecting astropy/timeseries/core.py required-columns validation logic on my side."
+        },
+        "model_call_id": "model-129a8b45cf2c434e0966460a",
+        "model_tool_call_id": "call_00_GKzXfB0IjRQgzxw3qIoJ6028",
+        "decision_id": "model-129a8b45cf2c434e0966460a"
+      }
+    },
+    {
+      "worker_id": "member_001",
+      "status": "running",
+      "action_performed": true,
+      "response": {
+        "ok": true,
+        "result": {
+          "source_reference": {
+            "object_id": "obj-c567f5b9c7d905481548e89b",
+            "version_id": "v1"
+          },
+          "matches": [
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 73,
+              "character_offset": 2316,
+              "preview": "olumns_relax and len(self.colnames) == 0:\n\n                raise ValueError(\"{} object is invalid - expected '{}' \"\n                                 \"as the first column{} but time series has no columns\"\n                                 .format(self.__class",
+              "preview_start_character": 2236
+            },
+            {
+              "path": "astropy/timeseries/core.py",
+              "line": 79,
+              "character_offset": 2651,
+              "preview": "n(required_columns)] != required_columns:\n\n                raise ValueError(\"{} object is invalid - expected '{}' \"\n                                 \"as the first column{} but found '{}'\"\n                                 .format(self.__class__.__name__, req",
+              "preview_start_character": 2571
+            }
+          ],
+          "complete": false,
+          "next_cursor": "search-d4f747f454d94f5ad5e08e30a8aeae6b7d260dbf1917badc88bb2710cd27c2aa",
+          "scanned_characters": 1048576,
+          "considered_files": 27,
+          "skipped_nontext_entries": 0,
+          "matching_file_scope": "Permitted current source only; page counts are not repository totals",
+          "scan_character_limit": 1048576,
+          "scan_file_limit": 256,
+          "result_character_limit": 8192
+        },
+        "action_id": "action-7",
+        "logical_time": 7,
+        "command_id": "command:member_001:staff-ded733f9a73d4977aea93ebdb097d937-6",
+        "command_committed": true,
+        "committed_revision": 7
+      },
+      "decision": {
+        "kind": "act",
+        "action": "search_repository",
+        "arguments": {
+          "text": "object is invalid",
+          "path_prefix": "astropy/timeseries"
+        },
+        "model_call_id": "model-30d7e2b57158ba327dbe1d30",
+        "model_tool_call_id": "call_00_yVfK5Z2cINGFoYGzIHAF3191",
+        "decision_id": "model-30d7e2b57158ba327dbe1d30"
+      }
+    },
+    {
+      "worker_id": "member_002",
+      "status": "worker_waiting",
+      "reason": "Programmed diagnostic boundary after recorded provider tape",
+      "action_performed": false
+    },
+    {
+      "worker_id": "member_001",
+      "status": "worker_waiting",
+      "reason": "Programmed diagnostic boundary after recorded provider tape",
+      "action_performed": false
+    }
+  ],
+  "recovery_projection_calls": 2,
+  "remapped_projection_calls": 2,
+  "recorded_two_tool_response_rejected": true,
+  "new_provider_calls": 0,
+  "replay": {
+    "version": "v203.2.3-recorded-provider-format-replay-r3",
+    "tape_sha256": "c44737183545e22040990041377991a312020f519c2a929184f09f92dc691b2d",
+    "recorded_responses_replayed": {
+      "member_001": 4,
+      "member_002": 3
+    },
+    "programmed_boundary_responses": {
+      "member_001": 1,
+      "member_002": 1
+    },
+    "new_provider_calls": 0,
+    "new_cash_charge": 0,
+    "response_receipts": [
+      {
+        "member": "member_001",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_001/response-0001.json",
+          "sha256": "e2124ebf9c96199bd43c9244672e06235ecbfaed300996c518b8b4dfe15f4bcb",
+          "bytes": 1030
+        },
+        "response_id": "e0090008-dcae-401a-bfda-33fad60d80b7",
+        "response_sha256": "e2124ebf9c96199bd43c9244672e06235ecbfaed300996c518b8b4dfe15f4bcb",
+        "current_wire_sha256": "c8475f10eb320c4200f6b644b4fdea8992f2fb5871a960523bb041ccaaf5a564",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "c8475f10eb320c4200f6b644b4fdea8992f2fb5871a960523bb041ccaaf5a564",
+          "prompt_tokens": 24654,
+          "local_encoded_prompt_tokens": 10916,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "834c991a038759da2dc27245d4151ea160b31d9a27d7693b22a4ecdb302f6d86",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 11044,
+          "historical_prompt_bound": 24654,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_002",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_002/response-0001.json",
+          "sha256": "79a1fd2d2213b7a30d8190cd0439696ab63d58d5450cefff556abc486bf841cf",
+          "bytes": 987
+        },
+        "response_id": "2fad8df8-7359-44a9-8124-5df7462f4969",
+        "response_sha256": "79a1fd2d2213b7a30d8190cd0439696ab63d58d5450cefff556abc486bf841cf",
+        "current_wire_sha256": "dd547bb0f2a2cca3085df2516213b1f24065755f7e240baef55ae53503aeaadf",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "dd547bb0f2a2cca3085df2516213b1f24065755f7e240baef55ae53503aeaadf",
+          "prompt_tokens": 19140,
+          "local_encoded_prompt_tokens": 10932,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "31592e317e6fa3e3e8f36b7049276f376925440063762a8a99ba106ad6722377",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 11060,
+          "historical_prompt_bound": 19140,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_001",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_001/response-0002.json",
+          "sha256": "bdff70136eb4b91722cbfdd4768841ccf62e2dda759de91b87ceb9966b160d7a",
+          "bytes": 983
+        },
+        "response_id": "8d6ec826-ce2b-4be1-95f0-d088285b606c",
+        "response_sha256": "bdff70136eb4b91722cbfdd4768841ccf62e2dda759de91b87ceb9966b160d7a",
+        "current_wire_sha256": "3a161de72e196a25dbd7d3f14619964106284da73d5dfff103c4d5b939028474",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "3a161de72e196a25dbd7d3f14619964106284da73d5dfff103c4d5b939028474",
+          "prompt_tokens": 24654,
+          "local_encoded_prompt_tokens": 16592,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "5073b3b9b18cd48c008b52294f3b5321ab5701fb49f63d251c300d7533893ba9",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 16720,
+          "historical_prompt_bound": 24654,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_002",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_002/response-0002.json",
+          "sha256": "a6f64c26271c30d0f77e0e7a16ccd87b9de53459dcd0533a08975da8a969ae07",
+          "bytes": 1470
+        },
+        "response_id": "8fc5a143-c45e-4cc6-a88c-723c5b675ce4",
+        "response_sha256": "a6f64c26271c30d0f77e0e7a16ccd87b9de53459dcd0533a08975da8a969ae07",
+        "current_wire_sha256": "3dfb1ea6a34ab64ed8948c91db02e7f1147c9b6de982f5bc86d6f08ef877f812",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "3dfb1ea6a34ab64ed8948c91db02e7f1147c9b6de982f5bc86d6f08ef877f812",
+          "prompt_tokens": 19140,
+          "local_encoded_prompt_tokens": 14689,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "510afa6053b8cb1af14c93b2ca99edb2b12ef6ffc24c26dcfc4e99c9b826ef6e",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 14817,
+          "historical_prompt_bound": 19140,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_001",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_001/response-0003.json",
+          "sha256": "9d33002e4a8f8b0d7c3a18cc404b31475b8223131c72de13775b17339058eee7",
+          "bytes": 982
+        },
+        "response_id": "c7bcb8b0-f62c-4cee-9d25-523468b9ec92",
+        "response_sha256": "9d33002e4a8f8b0d7c3a18cc404b31475b8223131c72de13775b17339058eee7",
+        "current_wire_sha256": "cf9a2882eb9ab433671592b5551946059a91ab1dcce64f7559815132611374e6",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "cf9a2882eb9ab433671592b5551946059a91ab1dcce64f7559815132611374e6",
+          "prompt_tokens": 24654,
+          "local_encoded_prompt_tokens": 20316,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "188d76892d1837622824f4e3c6449f2672fae929bd2c32175851fc232eed85a8",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 20444,
+          "historical_prompt_bound": 24654,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_002",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_002/response-0003.json",
+          "sha256": "3f06d2ff1029c273076c8b047315043a44f93c9d7a290fc530e5bffd522d8125",
+          "bytes": 1544
+        },
+        "response_id": "aa9ac518-8b42-4ffc-a8dc-26eaea0b28d7",
+        "response_sha256": "3f06d2ff1029c273076c8b047315043a44f93c9d7a290fc530e5bffd522d8125",
+        "current_wire_sha256": "94814330e9de18ad27f8472a39dcaa41ef6be878b4c57bf89279907c3b59926c",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "94814330e9de18ad27f8472a39dcaa41ef6be878b4c57bf89279907c3b59926c",
+          "prompt_tokens": 19140,
+          "local_encoded_prompt_tokens": 17894,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "6c691f93df743b802f928fe50e3605fbf82e0bad74b4167d7507fdbf6a9a98af",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 18022,
+          "historical_prompt_bound": 19140,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_001",
+        "kind": "unmodified_historical_provider_response",
+        "historical_source": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v203-2-3/role-context-pilot12-r2/episodes/2032300/controller-output/model-ledger/member_001/response-0004.json",
+          "sha256": "b48c1c8032b4f4e8667169e91dd0eaa5c1582a339f6dd06bd5a98e85bfb68564",
+          "bytes": 1070
+        },
+        "response_id": "225e5d27-a077-4bdf-9ca7-b0ed8ddda7ba",
+        "response_sha256": "b48c1c8032b4f4e8667169e91dd0eaa5c1582a339f6dd06bd5a98e85bfb68564",
+        "current_wire_sha256": "15b021b645bf7419afaf5deace8437d8ba04d09e80e7868d79838c32644f79bc",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "15b021b645bf7419afaf5deace8437d8ba04d09e80e7868d79838c32644f79bc",
+          "prompt_tokens": 24654,
+          "local_encoded_prompt_tokens": 23384,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "8acf7c6301edfb018c8f9f71a167293275e13ff1c0465bb416dc8522609b8e9a",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 23512,
+          "historical_prompt_bound": 24654,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_002",
+        "kind": "programmed_diagnostic_boundary_not_provider_output",
+        "historical_source": null,
+        "response_id": "diagnostic-end-of-recorded-tape-member_002-1",
+        "response_sha256": "56f0e2e910da127dcabf0d4371cf312625692b3469eebdcf63867fc7feb73cf4",
+        "current_wire_sha256": "f30e0ec55b2cd4a4ea7b42c47d2eb7f61846fc1c3abc65177417f841ad26ebe8",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "f30e0ec55b2cd4a4ea7b42c47d2eb7f61846fc1c3abc65177417f841ad26ebe8",
+          "prompt_tokens": 20330,
+          "local_encoded_prompt_tokens": 20202,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "b7de2751d7cdccafb2937eedfce8a5f1eb1ec918e5d7128fd473a8876a20228c",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 20330,
+          "historical_prompt_bound": 19140,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      },
+      {
+        "member": "member_001",
+        "kind": "programmed_diagnostic_boundary_not_provider_output",
+        "historical_source": null,
+        "response_id": "diagnostic-end-of-recorded-tape-member_001-1",
+        "response_sha256": "efd3bee136beedf3e97ecbdc7ac4627de3f9afa85b21b1ae6e0b2c769d8a8387",
+        "current_wire_sha256": "e6d751c239822a942a8000dcf6cb26761e9b869be5100f2606ecbabd9ba9a9c3",
+        "current_count": {
+          "version": "software-benchmark-v055-official-recipe-counter-r1",
+          "method": "diagnostic_replay_max_current_recipe_and_historical_prompt_bound",
+          "backend": "DeepseekV41Encoding.encode_1017_tokenizer",
+          "request_sha256": "e6d751c239822a942a8000dcf6cb26761e9b869be5100f2606ecbabd9ba9a9c3",
+          "prompt_tokens": 25847,
+          "local_encoded_prompt_tokens": 25719,
+          "reservation_margin_tokens": 128,
+          "token_ids_sha256": "8b139a2a4cb12ecdd39148a2fb18dba89af6df54a9e5c2b5e1f075ec38ee1cde",
+          "tokenizer_sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+          "tokenizer_manifest_sha256": "5c48a716a8042bda9c3c651405b2b347956a29dda24e9427b491f0a13b6fb5e6",
+          "provider_model_alias": "deepseek-flash",
+          "recipe_canonical_model": "DeepSeek-V4.1-Flash",
+          "exact_provider_token_count": false,
+          "server_usage_is_authoritative": true,
+          "model_weight_loads": 0,
+          "network_requests": 0,
+          "current_recipe_prompt_tokens": 25847,
+          "historical_prompt_bound": 24654,
+          "formal_provider_counter_changed": false,
+          "current_provider_usage_measured": false
+        },
+        "new_provider_calls": 0,
+        "new_cash_charge": 0,
+        "usage_interpretation": "historical reported usage or programmed boundary; not current provider billing"
+      }
+    ]
+  },
+  "interpretation": "Actual SDK replay of old provider outputs, not a new model run or benchmark score"
+}
