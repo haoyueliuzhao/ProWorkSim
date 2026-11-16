@@ -89,9 +89,9 @@
 
 ## 6 本轮发现的系统性问题
 
-**一是公开测试传输的截止时间没有随恢复对齐。** 九条闭合轨迹的首次有效测试请求都遭到`Upload must bind one permitted operation and its exact episode deadline`。实际请求的`hard_deadline_monotonic`与RPC持有的`hard_at`不相等。代码层面，恢复重置了团队及公开测试callback的剩余时钟，但新actor的RPC仍使用另一份生命周期截止时间；上传层要求精确一致，所以在送达actor前拒绝。
+**一是公开测试传输的截止时间没有随恢复对齐。** 九条闭合轨迹首次进入传输校验的测试请求都遭到`Upload must bind one permitted operation and its exact episode deadline`。实际请求的`hard_deadline_monotonic`与RPC持有的`hard_at`不相等。代码层面，恢复重置了团队及公开测试callback的剩余时钟，但新actor的RPC仍使用另一份生命周期截止时间；上传层要求精确一致，所以在送达actor前拒绝。
 
-随后RPC被标记为failed，后续调用返回`A failed or closed internal transfer cannot be replayed`。9条轨迹合计313次真正进入受管工具的测试调用全部失败：9次首次截止时间拒绝、294次通道已失败拒绝、10次选参／路径拒绝。模型响应里共有315次测试请求，另2次未成为受管执行，不能混成同一口径。没有任何`managed_public_test`执行响应或世界中的test执行事件。所有正常闭合候选的复核列表及合法提交均为空。
+随后RPC被标记为failed，后续调用返回`A failed or closed internal transfer cannot be replayed`。9条轨迹合计313次真正进入受管工具的测试调用全部失败：9次首次截止时间拒绝、294次通道已失败拒绝、10次选参／路径拒绝。模型响应里共有315次测试请求，另2次未成为受管执行，不能混成同一口径。没有任何`managed_public_test`执行响应或世界中的test执行事件。这9个闭合回合的复核列表及合法提交均为空。
 
 因此，“代码通过但交付为0”的4条轨迹有明确系统阻塞：没有同版本测试执行证据，复核和交付条件无法满足。不能把缺口全归为模型忘记提交、组织流程冗余或协作能力不足。源代码合并本身并非完全缺失：9条轨迹合计10次`integrate_patch`成功，但随后验证无法闭合。
 
