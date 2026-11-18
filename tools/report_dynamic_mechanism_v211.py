@@ -9,7 +9,7 @@ progress=load(ROOT/'progress.json');reconciliation=load(ROOT/'completion-reconci
 assert hashlib.sha256((ROOT/'progress.json').read_bytes()).hexdigest()==reconciliation['raw_progress_sha256']
 assert all(s['status']=='closed' for s in progress['states'].values())
 with sqlite3.connect('file:'+str(R/'runs/software-benchmark-v211/budget700-r1/ledger.sqlite')+'?mode=ro',uri=True) as c:
- records=c.execute('select id,slot,status,cost,tokens,body from requests').fetchall()
+ records=c.execute("select id,slot,status,cost,tokens,body from requests WHERE slot LIKE 'v211:%'").fetchall()
 usage=collections.defaultdict(collections.Counter)
 for rid,slot,status,cost,tokens,body in records:
  assert status=='settled';v=json.loads(body);assert tokens==v['total_tokens']
