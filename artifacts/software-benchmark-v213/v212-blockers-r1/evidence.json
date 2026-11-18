@@ -1,0 +1,938 @@
+{
+  "version": "v213-readonly-v212-blockers-r1",
+  "rows": [
+    {
+      "instance_id": "sympy__sympy-19346",
+      "condition": "SINGLE",
+      "generation_status": "closed",
+      "code": true,
+      "delivery": true,
+      "formal_delivery_present": true,
+      "usage": {
+        "tokens": 4335441,
+        "cost_CNY_upper": 7.24377184,
+        "requests": 81
+      },
+      "stops": {},
+      "tools": {
+        "dynamic_status": 2,
+        "add_collaboration": 1,
+        "org_status": 2,
+        "assign_verification": 1,
+        "search_repository": 7,
+        "work_readiness": 1,
+        "list_files": 2,
+        "begin_work": 1,
+        "read_file": 14,
+        "work_note": 5,
+        "org_declare_role": 1,
+        "search_file": 4,
+        "no_tool": 6,
+        "replace_file": 2,
+        "run_tests": 7,
+        "read_test_result": 3,
+        "diff_workspace": 3,
+        "fix_patch": 1,
+        "integrate_patch": 1,
+        "handoff_patch": 1,
+        "complete_work": 1,
+        "delivery_checklist": 3,
+        "org_review_patch": 1,
+        "send_message": 2,
+        "submit_integration": 1,
+        "staff_done": 2,
+        "work_todo": 1
+      },
+      "errors": [
+        {
+          "tool": "read_file",
+          "code": "unknown_published_patch",
+          "message": "Unknown fixed patch ID. Read org_status for published candidates.",
+          "arguments": {
+            "path": "sympy/printing/tests/test_repr.py",
+            "start_line": 44,
+            "max_lines": 14,
+            "patch_id": "baseline-probe"
+          }
+        },
+        {
+          "tool": "run_tests",
+          "code": "public_test_selection_invalid",
+          "message": "Sympy keywords are simple name substrings, not pytest expressions",
+          "arguments": {
+            "selection": {
+              "kind": "sympy",
+              "targets": [
+                "sympy/printing/tests/test_repr.py"
+              ],
+              "keywords": [
+                "dict or set or frozenset"
+              ]
+            }
+          }
+        },
+        {
+          "tool": "work_note",
+          "code": null,
+          "message": "Notes are bounded to 8 keys, 80-character keys and 2000 characters per note",
+          "arguments": {
+            "key": "self_review_final",
+            "text": "FINAL SELF-REVIEW (v2, files_sha256 84d9c025...). Diff re-read via diff_workspace: repr.py gains _print_dict/_print_set/_print_frozenset (+15 lines); test_repr.py gains test_dict/test_set/test_frozenset (+15 lines). This is NOT comments/formatting-only: real printer methods dispatch on Python dict/set/frozenset via ReprPrinter._print.\n\nISSUE-SPECIFIC BEHAVIOR ACTUALLY EXERCISED:\n- Issue snippets: srepr({x,y}) -> wrong '{x, y}'; srepr({x:y}) -> wrong '{x: y}'. Both are builtin Python set/dict of Symbols, so they reach _print_set/_print_dict directly. Correct expected: \"{Symbol('x'), Symbol('y')}\" and \"{Symbol('x'): Symbol('y')}\".\n- My test evidence test-report-22391dd582f8fc5c4b5a1d92 (seq 53, v2): sympy -k [test_dict,test_set,test_frozenset,test_list,test_tuple] -> 6 passed, 0 errors, validation_status=verified. Those tests assert srepr({})/{x}/{x:y}/set()/frozenset()/frozenset({x}) AND eval(srepr(expr))==expr. That path is the same one the issue uses => genuinely issue-specific, not unrelated-passing.\n- sT() also enforces round-trip, so '{}' / 'set()' / 'frozenset()' / '{Symbol('x'): Symbol('y')}' are all eval-reconstructable.\n\nREGRESSION CHECK: search_repository 'srepr(set(' -> 0 matches; no existing public test asserts the old broken set/dict output, so making _print_set/_print_dict active is not a regression on repo tests. _print_dict/_print_set are new method names previously absent (verified by reading repr.py), so no previously-used dispatch is overridden.\n\nHONEST GAPS / WHAT IS NOT ESTABLISHED:\n1. Two-element set literal ({x, y}) ordering is NOT asserted anywhere — a Python set of two Symbols has nondeterministic iteration order, so upstream deliberately tested only the 1-element case. Ordering stability is therefore UNVERIFIED and arguably not assertable.\n2. Multi-key dict ordering likewise unasserted.\n3. Nested containers (e.g. srepr({x: {y}}) or set containing a list) not covered by added tests.\n4. Full test_repr.py is NOT green: 43 passed / 2 errors (test_Add, test_Mul) from pre-existing py3.9 sympify(evaluate=False) baseline breakage, unrelated to this patch but still a red full-file result.\n5. I did not run the repo-wide full suite; only printer-file scope.\n6. srepr of dict/set as arg to other printers (e.g. inside FiniteSet) not separately checked.\n\nCONCLUSION: the change genuinely implements the issue; accept stands for the covered behavior. Gaps 1-3 are test-coverage breadth, not demonstrated defects; gap 4 must be disclosed in delivery. No repair warranted from my side — code authoring/delivery is member_001's."
+          }
+        }
+      ],
+      "packages": [
+        {
+          "task_id": "work_root",
+          "scope": [
+            "dict",
+            "set",
+            "existing_containers"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": {
+            "patch_id": "patch-1",
+            "author": "member_001",
+            "identity": {
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v3"
+              },
+              "files_sha256": "84d9c025efab9921bf565afd53630212eeff6f16c0f2587e4460c285eef84056",
+              "entry_metadata_sha256": "b1822c3aad2169d55f49c35b773030b3983c2af8dcf5d891139c8fb2b521ae37"
+            },
+            "test_sequence": 30,
+            "task_revision": 1,
+            "kind": "code",
+            "work_epoch": 0,
+            "dependency_epochs": {}
+          },
+          "missing": []
+        }
+      ],
+      "joint_offers": {},
+      "first_submission_file": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/SINGLE/first-submission-usage.json",
+        "sha256": "b1e7cc0c691d22b7cbf09dfd6a924da53c5468e2bbd40cea8086d766457e1970",
+        "bytes": 108741
+      },
+      "sources": {
+        "result.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/SINGLE/result.json",
+          "sha256": "480633d172278a3904e00aa52af93e523ddd5d2c26ebd6e050a81bf3b4609606",
+          "bytes": 471
+        },
+        "boundary.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/SINGLE/boundary.json",
+          "sha256": "bc40a1dac8265da1af65cede8e36dbf91788d10b0097e232c7c566dd7bd9a653",
+          "bytes": 549435
+        },
+        "dynamic-final.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/SINGLE/dynamic-final.json",
+          "sha256": "761d8fb5c59536a402011c5ebfa04ebc756297f7cc4f8fe4a831ecfc04f771eb",
+          "bytes": 2448
+        }
+      },
+      "initial_plan_followed_without_new_split": true
+    },
+    {
+      "instance_id": "sympy__sympy-19346",
+      "condition": "COMBO",
+      "generation_status": "closed",
+      "code": true,
+      "delivery": false,
+      "formal_delivery_present": false,
+      "usage": {
+        "tokens": 4978640,
+        "cost_CNY_upper": 8.23796088,
+        "requests": 93
+      },
+      "stops": {
+        "member_002": "team_budget_exhausted",
+        "member_001": "team_budget_exhausted"
+      },
+      "tools": {
+        "dynamic_status": 3,
+        "no_tool": 8,
+        "split_work": 1,
+        "add_collaboration": 3,
+        "org_status": 1,
+        "assign_verification": 3,
+        "search_repository": 7,
+        "read_file": 10,
+        "work_todo": 5,
+        "work_readiness": 5,
+        "offer_joint_arrangement": 1,
+        "send_message": 4,
+        "read_work_event": 2,
+        "begin_work": 3,
+        "accept_joint_arrangement": 1,
+        "replace_file": 4,
+        "search_file": 4,
+        "run_tests": 6,
+        "read_test_result": 3,
+        "diff_workspace": 3,
+        "fix_patch": 2,
+        "work_note": 3,
+        "complete_work": 2,
+        "delivery_checklist": 2,
+        "integrate_patch": 1,
+        "complete_evidence": 2
+      },
+      "errors": [
+        {
+          "tool": "begin_work",
+          "code": "evidence_only_no_edit",
+          "message": "Run actual checks and complete_evidence; no edit context is created",
+          "arguments": {
+            "task_id": "work_577032bb28"
+          }
+        },
+        {
+          "tool": "complete_work",
+          "code": "work_revision_test_required",
+          "message": "Current work revision needs actual same-version test evidence",
+          "arguments": {
+            "task_id": "work_6ab47d7085",
+            "patch_id": "patch-1"
+          }
+        },
+        {
+          "tool": "complete_work",
+          "code": "work_revision_test_required",
+          "message": "Current work revision needs actual same-version test evidence",
+          "arguments": {
+            "patch_id": "patch-1",
+            "task_id": "work_6ab47d7085"
+          }
+        },
+        {
+          "tool": "complete_evidence",
+          "code": "work_revision_test_required",
+          "message": "Current work revision needs actual same-version test evidence",
+          "arguments": {
+            "task_id": "work_577032bb28",
+            "requirements": [
+              "existing_containers"
+            ],
+            "test_sequence": 53,
+            "reason": "Evidence for scope existing_containers: srepr already prints list and tuple elements correctly, and patch-1 (integrated into my private tree, no conflicts) must not regress them. Verified on exact same version: run_tests(kind=sympy, targets=[sympy/printing/tests/test_repr.py]) on source_reference obj-520aa9e6ee8ece99dce73855/v2, report test-report-f71dec94d6be66ec8b8e7738, report event sequence 53. Real counts: passed=42, errors=2, failed=0, tests_run=42, validation_status=failed — I do NOT claim a full pass. Diff inspection: patch-1 only ADDS _print_set/_print_frozenset/_print_dict after _print_tuple's return; _print_list and _print_tuple are byte-identical to baseline v1, so existing container behavior is untouched. Evidence of no regression: baseline v1 gave 40 passed / 2 errors; v2 gives 42 passed / 2 errors (+2 = the new test_dict and test_set, both passing, 44 collected). All list/tuple container tests continue to pass. The 2 remaining errors are PRE-EXISTING environment failures with unchanged identity: test_Add (test_repr.py:64) and test_Mul (test_repr.py:220), both sympify(..., evaluate=False) -> sympy/parsing/sympy_parser.py:1006 compile(evaluateFalse(code)) -> ValueError: Name node can't be used with 'False' constant, a Python 3.9.20 evaluateFalse incompatibility unrelated to ReprPrinter. No code contribution from me."
+          }
+        },
+        {
+          "tool": "complete_evidence",
+          "code": "work_revision_test_required",
+          "message": "Current work revision needs actual same-version test evidence",
+          "arguments": {
+            "reason": "Evidence-only package for scope existing_containers (no code contributed by me). Same-version actual run on current workspace v2 (obj-520aa9e6ee8ece99dce73855/v2, files_sha256 ff121db4...), run_tests(kind=sympy, targets=[sympy/printing/tests/test_repr.py]), report test-report-31337d9a89d704357646f2ad, report event sequence 63. Real counts: passed=42, errors=2, failed=0, tests_run=42, validation_status=failed — I do NOT claim a pass. Findings: (1) patch-1 changes are purely additive — _print_set/_print_frozenset/_print_dict added after _print_tuple's return; _print_list and _print_tuple are unchanged from baseline, so existing list/tuple container printing is not regressed. (2) All existing container tests (list, tuple) still pass. (3) Delta vs baseline v1 run (sequence 42: 40 passed / 2 errors) is +2 passed, corresponding exactly to the new test_dict and test_set, both passing. (4) The 2 errors are PRE-EXISTING environment failures with unchanged identity: test_Add (test_repr.py:64) and test_Mul (test_repr.py:220), both sympify(..., evaluate=False) -> sympy/parsing/sympy_parser.py:1006 compile(evaluateFalse(code)) -> ValueError: Name node can't be used with 'False' constant — a Python 3.9.20 evaluateFalse incompatibility, unrelated to ReprPrinter container handlers.",
+            "requirements": [
+              "existing_containers"
+            ],
+            "task_id": "work_577032bb28",
+            "test_sequence": 63
+          }
+        }
+      ],
+      "packages": [
+        {
+          "task_id": "work_6ab47d7085",
+          "scope": [
+            "dict"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_577032bb28",
+          "scope": [
+            "existing_containers"
+          ],
+          "owner": "member_002",
+          "reviewer": "member_001",
+          "work_epoch": 0,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_6ee0eb490f",
+          "scope": [
+            "set"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        }
+      ],
+      "joint_offers": {
+        "joint-1": {
+          "offer_id": "joint-1",
+          "task_id": "work_577032bb28",
+          "from_member": "member_001",
+          "to_member": "member_002",
+          "reviewer": "member_001",
+          "mode": "evidence",
+          "task_revision": 1,
+          "work_epoch": 0,
+          "previous_reviewer": "member_002",
+          "status": "accepted",
+          "reason": "Frozen midwork_adjustment: trigger met (target still unfinished, no authors, no test yet). Propose member_002 owner in evidence mode with member_001 as reviewer. Consent is not automatic; recipient must accept explicitly."
+        }
+      },
+      "first_submission_file": null,
+      "sources": {
+        "result.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/COMBO/result.json",
+          "sha256": "72a4606f8a4f200bcc0f3b42d75d39609fdbc3c3904a1002fe1ef7e37249996c",
+          "bytes": 471
+        },
+        "boundary.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/COMBO/boundary.json",
+          "sha256": "0852a7edbca314ee781a4f7e9e0c13d6bbb2c882a1eae7cea2fb86610ab7df02",
+          "bytes": 570483
+        },
+        "dynamic-final.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-00/COMBO/dynamic-final.json",
+          "sha256": "7630dedaf7f607f8a747d5778361aadf6514860c0fa30f9ad23169c44e22acf4",
+          "bytes": 4063
+        }
+      },
+      "initial_plan_followed_without_new_split": true,
+      "midwork_event_order": [
+        {
+          "sequence": 25,
+          "kind": "organization_v212:joint_offered",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 28,
+          "kind": "organization_v212:joint_accepted",
+          "actor": "member_002"
+        },
+        {
+          "sequence": 30,
+          "kind": "organization_v212:work_performed",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 34,
+          "kind": "organization_v212:work_performed",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 38,
+          "kind": "test",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 42,
+          "kind": "test",
+          "actor": "member_002"
+        },
+        {
+          "sequence": 47,
+          "kind": "test",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 53,
+          "kind": "test",
+          "actor": "member_002"
+        },
+        {
+          "sequence": 60,
+          "kind": "organization_v212:work_performed",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 63,
+          "kind": "test",
+          "actor": "member_002"
+        },
+        {
+          "sequence": 67,
+          "kind": "organization_v212:work_performed",
+          "actor": "member_001"
+        },
+        {
+          "sequence": 69,
+          "kind": "test",
+          "actor": "member_001"
+        }
+      ],
+      "coordinator_proposal": {
+        "eligible": false,
+        "at": 1794989964.5765808,
+        "trigger_event_sequence": 39,
+        "request": {
+          "task_id": "work_577032bb28",
+          "trigger": "first actual executed public test after any actual code contribution, target still unfinished without authors",
+          "from_member": "member_001",
+          "to_member": "member_002",
+          "reviewer": "member_001",
+          "mode": "evidence",
+          "expected_revision": 1,
+          "hold_target_until_trigger": true,
+          "automatic_acceptance": false,
+          "if_not_eligible": "record_not_executed_no_replacement"
+        },
+        "automatic_execution": false
+      }
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-25775",
+      "condition": "SINGLE",
+      "generation_status": "closed",
+      "code": true,
+      "delivery": false,
+      "formal_delivery_present": false,
+      "usage": {
+        "tokens": 4945503,
+        "cost_CNY_upper": 8.3124512,
+        "requests": 89
+      },
+      "stops": {
+        "member_002": "team_budget_exhausted",
+        "member_001": "team_budget_exhausted"
+      },
+      "tools": {
+        "no_tool": 8,
+        "org_status": 2,
+        "dynamic_status": 4,
+        "add_collaboration": 3,
+        "work_readiness": 5,
+        "assign_verification": 2,
+        "search_repository": 18,
+        "begin_work": 3,
+        "read_file": 13,
+        "split_work": 1,
+        "offer_joint_arrangement": 1,
+        "replace_file": 9,
+        "diff_workspace": 2,
+        "run_tests": 3,
+        "delivery_checklist": 1,
+        "fix_patch": 2,
+        "complete_work": 2,
+        "integrate_patch": 2,
+        "send_message": 1,
+        "accept_joint_arrangement": 1,
+        "search_file": 2
+      },
+      "errors": [],
+      "packages": [
+        {
+          "task_id": "work_text_api",
+          "scope": [
+            "text_api",
+            "annotations"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": {
+            "patch_id": "patch-1",
+            "author": "member_001",
+            "identity": {
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v8"
+              },
+              "files_sha256": "3e0a372af4d8b1be5a5d2070a5655c2a68e94ae2ca3d94f2bf00a26e0df5f31d",
+              "entry_metadata_sha256": "1cfa30c19361e71a0335739d41b4b98599a9c2ef0c1195966fa8decbd9ed2636"
+            },
+            "test_sequence": 56,
+            "task_revision": 1,
+            "kind": "code",
+            "work_epoch": 0,
+            "dependency_epochs": {}
+          },
+          "missing": [
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_backend_drawing",
+          "scope": [
+            "drawing"
+          ],
+          "owner": "member_002",
+          "reviewer": "member_001",
+          "work_epoch": 0,
+          "completion": {
+            "patch_id": "patch-2",
+            "author": "member_002",
+            "identity": {
+              "source_reference": {
+                "object_id": "obj-520aa9e6ee8ece99dce73855",
+                "version_id": "v4"
+              },
+              "files_sha256": "493253e7280953baaf46218bca183fdc3eca26dce648da1bf91974ee67964f57",
+              "entry_metadata_sha256": "1cfa30c19361e71a0335739d41b4b98599a9c2ef0c1195966fa8decbd9ed2636"
+            },
+            "test_sequence": 77,
+            "task_revision": 1,
+            "kind": "code",
+            "work_epoch": 0,
+            "dependency_epochs": {}
+          },
+          "missing": [
+            "independent_current_review"
+          ]
+        }
+      ],
+      "joint_offers": {
+        "joint-1": {
+          "offer_id": "joint-1",
+          "task_id": "work_backend_drawing",
+          "from_member": "member_001",
+          "to_member": "member_002",
+          "reviewer": "member_001",
+          "mode": "implementation",
+          "task_revision": 1,
+          "work_epoch": 0,
+          "previous_reviewer": null,
+          "status": "accepted",
+          "reason": "Propose member_002 as owner/author of the backend drawing package (GraphicsContext antialiased state and Agg/Cairo/mathtext consumption), with member_001 as the independent non-author reviewer. This lets member_002 contribute real code while member_001 keeps the text_api package."
+        }
+      },
+      "first_submission_file": null,
+      "sources": {
+        "result.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-02/SINGLE/result.json",
+          "sha256": "f5a5febcaebf2aa182c7fe70d63d24da93e0fa6b8d48a7b40f6258b380bd71ca",
+          "bytes": 482
+        },
+        "boundary.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-02/SINGLE/boundary.json",
+          "sha256": "15a38f782a3dff7b0507ff94799c53298a965383a5ed11547e1913b9a7db188d",
+          "bytes": 899873
+        },
+        "dynamic-final.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-02/SINGLE/dynamic-final.json",
+          "sha256": "1d9384787f6bf02cdd60dff9379b59e7d824dbd397620ddfef47c4eff5344d0c",
+          "bytes": 5750
+        }
+      },
+      "initial_plan_followed_without_new_split": false
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-25775",
+      "condition": "COMBO",
+      "generation_status": "closed",
+      "code": true,
+      "delivery": false,
+      "formal_delivery_present": false,
+      "usage": {
+        "tokens": 4977028,
+        "cost_CNY_upper": 8.35120616,
+        "requests": 87
+      },
+      "stops": {
+        "member_001": "team_budget_exhausted",
+        "member_002": "team_budget_exhausted"
+      },
+      "tools": {
+        "dynamic_status": 2,
+        "split_work": 1,
+        "org_status": 2,
+        "assign_work": 2,
+        "accept_transfer": 2,
+        "add_collaboration": 3,
+        "assign_verification": 3,
+        "change_dependency": 1,
+        "run_tests": 2,
+        "search_repository": 18,
+        "no_tool": 5,
+        "read_file": 11,
+        "work_readiness": 3,
+        "begin_work": 2,
+        "search_file": 6,
+        "work_todo": 2,
+        "send_message": 3,
+        "read_work_event": 2,
+        "work_note": 3,
+        "replace_file": 5,
+        "fix_patch": 1,
+        "integrate_patch": 1,
+        "complete_work": 1,
+        "handoff_patch": 1,
+        "read_task": 1
+      },
+      "errors": [],
+      "packages": [
+        {
+          "task_id": "work_295df243c6",
+          "scope": [
+            "annotations"
+          ],
+          "owner": "member_002",
+          "reviewer": "member_001",
+          "work_epoch": 0,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_27f3282691",
+          "scope": [
+            "drawing"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_e1af7c013a",
+          "scope": [
+            "text_api"
+          ],
+          "owner": "member_002",
+          "reviewer": "member_001",
+          "work_epoch": 0,
+          "completion": {
+            "patch_id": "patch-1",
+            "author": "member_002",
+            "identity": {
+              "source_reference": {
+                "object_id": "obj-520aa9e6ee8ece99dce73855",
+                "version_id": "v6"
+              },
+              "files_sha256": "6389caf7f91fe4601b48303da8c78497e5cf0029e69ce9269c4ad303076bc420",
+              "entry_metadata_sha256": "1cfa30c19361e71a0335739d41b4b98599a9c2ef0c1195966fa8decbd9ed2636"
+            },
+            "test_sequence": 71,
+            "task_revision": 1,
+            "kind": "code",
+            "work_epoch": 0,
+            "dependency_epochs": {}
+          },
+          "missing": [
+            "independent_current_review"
+          ]
+        }
+      ],
+      "joint_offers": {},
+      "first_submission_file": null,
+      "sources": {
+        "result.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-02/COMBO/result.json",
+          "sha256": "85ce3612b95e39db76a0af793e5703fabe493d5296b9ec0c0755fe5fe01d63cb",
+          "bytes": 481
+        },
+        "boundary.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-02/COMBO/boundary.json",
+          "sha256": "ae8680cf1a18b56835a0b33661c1c73af8f3063a18d1a9d9bd63d48483b3e688",
+          "bytes": 666867
+        },
+        "dynamic-final.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-02/COMBO/dynamic-final.json",
+          "sha256": "1d4d88f2d3b349f8f3896c65ee7c177118a8c9f1797b749a8eff7c65f6600bfa",
+          "bytes": 4656
+        }
+      },
+      "initial_plan_followed_without_new_split": true
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "condition": "SINGLE",
+      "generation_status": "closed",
+      "code": true,
+      "delivery": true,
+      "formal_delivery_present": true,
+      "usage": {
+        "tokens": 4747397,
+        "cost_CNY_upper": 8.04271232,
+        "requests": 84
+      },
+      "stops": {},
+      "tools": {
+        "org_status": 4,
+        "dynamic_status": 1,
+        "org_declare_role": 2,
+        "add_collaboration": 1,
+        "assign_verification": 1,
+        "work_readiness": 2,
+        "search_repository": 7,
+        "begin_work": 1,
+        "read_file": 14,
+        "send_message": 2,
+        "read_work_event": 1,
+        "work_note": 4,
+        "no_tool": 4,
+        "replace_file": 3,
+        "diff_workspace": 5,
+        "run_tests": 8,
+        "search_file": 4,
+        "read_test_result": 2,
+        "fix_patch": 1,
+        "integrate_patch": 1,
+        "complete_work": 1,
+        "handoff_patch": 1,
+        "org_review_patch": 1,
+        "submit_integration": 1,
+        "staff_done": 2,
+        "delivery_checklist": 2,
+        "work_todo": 1
+      },
+      "errors": [
+        {
+          "tool": "read_test_result",
+          "code": "test_report_cursor_invalid",
+          "message": "The cursor does not identify a page of this saved report. Omit cursor to restart this same report, then copy page.next_cursor. Do not rerun tests to recover a page; edits do not invalidate saved report cursors.",
+          "arguments": {
+            "report_id": "test-report-0e5c853404d65d23edffea9e",
+            "cursor": "239:last"
+          }
+        }
+      ],
+      "packages": [
+        {
+          "task_id": "work_root",
+          "scope": [
+            "one_mask",
+            "both_masks",
+            "neither_mask"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": {
+            "patch_id": "patch-1",
+            "author": "member_001",
+            "identity": {
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v4"
+              },
+              "files_sha256": "71b5941188de8d2e0513def6975b69b3236a9c149ab87c16208cf26b55441a3d",
+              "entry_metadata_sha256": "a21870e02a452465ced5b7366049b5c7faad9c255b11da9ed263518e05e910c5"
+            },
+            "test_sequence": 31,
+            "task_revision": 1,
+            "kind": "code",
+            "work_epoch": 0,
+            "dependency_epochs": {}
+          },
+          "missing": []
+        }
+      ],
+      "joint_offers": {},
+      "first_submission_file": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/SINGLE/first-submission-usage.json",
+        "sha256": "a855e512ddb8130a234adce0df1c3da6c5bbe50b95ce62b30a00299f9901a572",
+        "bytes": 96744
+      },
+      "sources": {
+        "result.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/SINGLE/result.json",
+          "sha256": "2129e3c35fcc00290e4c6c7088dff7a4072f313fd527a6f4cca686ff2514609a",
+          "bytes": 475
+        },
+        "boundary.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/SINGLE/boundary.json",
+          "sha256": "9e5fc1236b6a471469763479f3a395c7288d68c51d311b89c2a2607233679d46",
+          "bytes": 2812284
+        },
+        "dynamic-final.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/SINGLE/dynamic-final.json",
+          "sha256": "7e162241d85de28c307420f7bf44ba0406057867aed8f20e75c712d898878cf3",
+          "bytes": 2456
+        }
+      },
+      "initial_plan_followed_without_new_split": true
+    },
+    {
+      "instance_id": "astropy__astropy-14995",
+      "condition": "COMBO",
+      "generation_status": "closed",
+      "code": false,
+      "delivery": false,
+      "formal_delivery_present": false,
+      "usage": {
+        "tokens": 4998757,
+        "cost_CNY_upper": 8.29818816,
+        "requests": 93
+      },
+      "stops": {
+        "member_002": "team_budget_exhausted",
+        "member_001": "model_budget_exhausted"
+      },
+      "tools": {
+        "dynamic_status": 2,
+        "split_work": 1,
+        "org_status": 2,
+        "assign_work": 1,
+        "accept_transfer": 1,
+        "add_collaboration": 3,
+        "assign_verification": 3,
+        "work_readiness": 2,
+        "begin_work": 3,
+        "search_repository": 3,
+        "work_todo": 2,
+        "read_file": 18,
+        "replace_file": 9,
+        "run_tests": 4,
+        "search_file": 10,
+        "fix_patch": 2,
+        "complete_work": 3,
+        "work_note": 2,
+        "handoff_patch": 1,
+        "no_tool": 4,
+        "read_test_result": 5,
+        "diff_workspace": 1,
+        "integrate_patch": 2,
+        "reopen_work": 2
+      },
+      "errors": [
+        {
+          "tool": "replace_file",
+          "code": "work_setup_incomplete",
+          "message": "Finish explicit setup/current dependencies before code work",
+          "arguments": {
+            "path": "astropy/nddata/mixins/ndarithmetic.py",
+            "old": "<<<<<<< working-copy\n        # If one of the operands has no mask (e.g. the operand is a scalar or\n        # an NDData without a mask), the existing mask is simply copied over.\n        # This mirrors the behaviour of astropy 5.2: ``operand.mask`` may be\n        # ``None`` and must not be handed to ``handle_mask`` (calling e.g.\n        # ``np.bitwise_or`` on ``None`` would raise a TypeError). The same\n        # applies when ``self`` has no mask while the operand does.\n        elif operand is None or operand.mask is None:\n            return deepcopy(self.mask)\n        elif self.mask is None:\n            # Make a copy so there is no reference in the result.\n            return deepcopy(operand.mask)\n||||||| frozen-base\n        elif self.mask is None and operand is not None:\n            # Make a copy so there is no reference in the result.\n            return deepcopy(operand.mask)\n        elif operand is None:\n            return deepcopy(self.mask)\n=======\n        elif operand is None or operand.mask is None:",
+            "new": "        elif operand is None or operand.mask is None:"
+          }
+        },
+        {
+          "tool": "replace_file",
+          "code": "work_setup_incomplete",
+          "message": "Finish explicit setup/current dependencies before code work",
+          "arguments": {
+            "path": "astropy/nddata/mixins/ndarithmetic.py",
+            "old": "<<<<<<< working-copy\n        elif operand is None or operand.mask is None:\n            # The second operand either does not exist at all (arithmetic with\n            # a scalar, list or array) or it exists but carries no mask. Only\n            # ``self.mask`` is available then, so it is propagated (copied so\n            # the result owns no reference) rather than being passed on to\n            # ``handle_mask``, which would receive a ``None`` mask.\n            return deepcopy(self.mask)\n        elif self.mask is None:\n            # Symmetric case: ``self`` carries no mask but the second operand\n            # does. Only ``operand.mask`` is available, so propagate it\n            # instead of handing a ``None`` first argument to ``handle_mask``.\n            return deepcopy(operand.mask)\n||||||| frozen-base\n        elif self.mask is None and operand is not None:\n            # Make a copy so there is no reference in the result.\n            return deepcopy(operand.mask)\n        elif operand is None:\n            return deepcopy(self.mask)\n=======\n        # If one of the operands has no mask (e.g. the operand is a scalar or\n        # an NDData without a mask), the existing mask is simply copied over.\n        # This mirrors the behaviour of astropy 5.2: ``operand.mask`` may be\n        # ``None`` and must not be handed to ``handle_mask`` (calling e.g.\n        # ``np.bitwise_or`` on ``None`` would raise a TypeError). The same\n        # applies when ``self`` has no mask while the operand does.\n        elif operand is None or operand.mask is None:\n            return deepcopy(self.mask)\n        elif self.mask is None:\n            # Make a copy so there is no reference in the result.\n            return deepcopy(operand.mask)\n>>>>>>> incoming-patch",
+            "new": "        elif operand is None or operand.mask is None:\n            # The second operand either does not exist at all (arithmetic with\n            # a scalar, list or array) or it exists but carries no mask. Only\n            # ``self.mask`` is available then, so it is propagated (copied so\n            # the result owns no reference) rather than being passed on to\n            # ``handle_mask``, which would receive a ``None`` mask and e.g.\n            # raise \"TypeError: unsupported operand type(s) for |\".\n            return deepcopy(self.mask)\n        elif self.mask is None:\n            # Symmetric case: ``self`` carries no mask but the second operand\n            # does. Only ``operand.mask`` is available, so propagate it\n            # instead of handing a ``None`` first argument to ``handle_mask``.\n            # Make a copy so there is no reference in the result.\n            return deepcopy(operand.mask)"
+          }
+        }
+      ],
+      "packages": [
+        {
+          "task_id": "work_dd57a293f1",
+          "scope": [
+            "both_masks"
+          ],
+          "owner": "member_002",
+          "reviewer": "member_001",
+          "work_epoch": 1,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_c72c14baa8",
+          "scope": [
+            "neither_mask"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 0,
+          "completion": {
+            "patch_id": "patch-2",
+            "author": "member_001",
+            "identity": {
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v7"
+              },
+              "files_sha256": "6dfcf7cbe483303206125e9d0a8024110aef188a6628f7d7d1788cd3280b399c",
+              "entry_metadata_sha256": "a21870e02a452465ced5b7366049b5c7faad9c255b11da9ed263518e05e910c5"
+            },
+            "test_sequence": 77,
+            "task_revision": 1,
+            "kind": "code",
+            "work_epoch": 0,
+            "dependency_epochs": {}
+          },
+          "missing": [
+            "independent_current_review"
+          ]
+        },
+        {
+          "task_id": "work_9d9895496c",
+          "scope": [
+            "one_mask"
+          ],
+          "owner": "member_001",
+          "reviewer": "member_002",
+          "work_epoch": 1,
+          "completion": null,
+          "missing": [
+            "complete_current_code_or_evidence",
+            "independent_current_review"
+          ]
+        }
+      ],
+      "joint_offers": {},
+      "first_submission_file": null,
+      "sources": {
+        "result.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/COMBO/result.json",
+          "sha256": "29cefdf5b0714835ff3e81f14c07bbec04bdedf72f0ea596f0118db657aec430",
+          "bytes": 474
+        },
+        "boundary.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/COMBO/boundary.json",
+          "sha256": "94420c8870b1235f5f4d9e87f22691744e105f84e9c206fc3c8c04e27eb4018f",
+          "bytes": 2304071
+        },
+        "dynamic-final.json": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v212/stage-a6-r1/task-04/COMBO/dynamic-final.json",
+          "sha256": "e1d37ca20e9df78b6a166a8600a457085632008f55a35ec153d2511f8f6960ed",
+          "bytes": 4626
+        }
+      },
+      "initial_plan_followed_without_new_split": true
+    }
+  ],
+  "groups": [
+    {
+      "condition": "SINGLE",
+      "n": 3,
+      "code_pass": 3,
+      "legal_delivery_pass": 2,
+      "formal_delivery_present": 2,
+      "average_tokens": 4676113.666666667,
+      "cost_CNY_upper": 23.59893536
+    },
+    {
+      "condition": "COMBO",
+      "n": 3,
+      "code_pass": 2,
+      "legal_delivery_pass": 0,
+      "formal_delivery_present": 0,
+      "average_tokens": 4984808.333333333,
+      "cost_CNY_upper": 24.887355200000002
+    }
+  ],
+  "new_model_calls": 0,
+  "old_generation_or_scoring_modified": false,
+  "interpretation": {
+    "confirmed": "Misleading failed-test diagnostic; actual baseline failures; same-file merge conflicts; early midwork plan exposure; one SINGLE branch split autonomously",
+    "structural_risk_not_measured_causal_effect": "Whole-tree review identity conflicts with retaining independent local edits; new immutable review may help but gain not yet measured",
+    "budget_censoring": "All three COMBO and one SINGLE hit token reservation boundary; no cash cutoff"
+  }
+}
