@@ -1,5 +1,5 @@
 """Update the existing review document from recorded outcomes, without experiments."""
-import json,sqlite3,hashlib,inspect,importlib.util,datetime,re
+import json,datetime,re
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from proworksim.software_benchmark_candidates_v054 import reference
@@ -41,13 +41,11 @@ def main():
   for v in row['strategies'].values():
    assert f'{v["quality"]*100:.2f}%' in text and f'{v["tokens"]/10000:.2f}万' in text
  for z,v in facts['latest']['groups'].items():assert f'{v["mean_logical_tokens"]/10000:.2f}万' in text
- # Reuse the established local OOXML exporter, without changing its frozen source.
- spec=importlib.util.spec_from_file_location('existing_audit_export',R/'tools/build_recent_experiment_audit_20261120.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
- source=inspect.getsource(m.docx_from_markdown).replace("r'\\1 [\\2]'","r'\\1'").replace('实验审计汇总 · ','项目图与组织图阶段汇报 · ')
- ns=dict(vars(m));exec(compile(source,__file__+':local-export','exec'),ns);result=ns['docx_from_markdown'](text,DOC.with_suffix('.docx'))
+ # User preference: update Markdown only; leave historical Word files untouched.
+ result={'format':'Markdown','word_generated':False}
  # Local Markdown sources must resolve. Web requests are unnecessary for local results.
  links=re.findall(r'\[[^\]]+\]\(([^)]+)\)',text)
  for link in links:assert (DOC.parent/link).is_file(),link
- result.update({'facts':reference(OUT/'facts.json'),'markdown':reference(DOC.with_suffix('.md')),'word':reference(DOC.with_suffix('.docx')),'local_source_links_checked':len(links),'result_tables_recomputed':True,'user_prior_text_preserved_separately':True,'provider_calls':0})
- save(OUT/'publication-check.json',result);print(json.dumps(result,ensure_ascii=False))
+ result.update({'facts':reference(OUT/'facts.json'),'markdown':reference(DOC.with_suffix('.md')),'local_source_links_checked':len(links),'result_tables_recomputed':True,'user_prior_text_preserved_separately':True,'provider_calls':0})
+ save(OUT/'markdown-publication-check.json',result);print(json.dumps(result,ensure_ascii=False))
 if __name__=='__main__':main()
