@@ -60,3 +60,9 @@ W0 有一次写入缺少当前工作包。W1 有一次带诊断交接标记的�
 r2 的观察字段另在三类历史现场上作了零付费核对。稳定窗口里，两名观察者各自可见的两个公开测试成功回执保留了成功标记；SymPy 的实际合并冲突呈现为合并冲突；依赖阻塞窗口保留了开工被拒的代码 `work_setup_incomplete`。最后一个代码本身只说明开工条件未满足，更细的上游依赖须结合原回执读取。这些回放供检查证据呈现，独立于本批新任务的结果。[逐条证据记录](../../artifacts/software-benchmark-v228/paired-audit-r1/observation-check.json)
 
 [结果核对工具](../../tools/report_graph_control_v228.py)逐题区分正常配对、未遇目标现场、未获完整预约和技术异常。完成的两臂需要有相同的保存点和决策时剩余预算，代码与交付的结论各自链接对应评分回执。API 用量按供应商已结算请求汇总，公共前缀只算一次。运行期间可用 `.venv/bin/python tools/report_graph_control_v228.py` 查看账目，全部队列结束后可导出最终明细。
+
+## r2 自然运行观察
+
+**Xarray-3095** 预定检验稳定推进。运行第 84 次操作机会结束时，指定观察者有 3 个仍然开放的持续修复失败节点，未取得稳定现场，不进入 W0/W1 对比。最终工作树通过官方测试。成员已固定补丁，伙伴也已打开候选复核，但到达预算边界前没有正式提交动作。结果为代码通过、合法交付失败。87 次供应商请求合计 4,920,232 token，费用 8.05630760 元。此题保留在 8 题计划中，分析分工效果时没有可比较的两条分支。[代码评分回执](../../runs/software-benchmark-v228/control-r1/task-01/PREFIX-code/receipt.json) · [交付回执](../../runs/software-benchmark-v228/control-r1/task-01/PREFIX-delivery/receipt.json)
+
+本批已启动普通用户归档服务，在队列产生结束记录后核对逐臂保存点、评分回执和实际用量，写入 `runs/software-benchmark-v228/control-r1/final-evidence.json`；运行中的预算预约与已结算费用分开记录。

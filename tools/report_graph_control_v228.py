@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import sqlite3
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -105,11 +106,17 @@ def collect():
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',type=Path)
+    parser.add_argument('--wait',action='store_true',help='Wait for the frozen queue to end before writing final evidence')
     args=parser.parse_args()
+    if args.wait:
+        if not args.output:parser.error('--wait needs a final evidence destination')
+        while not (RUN/'ended-1.json').is_file():
+            time.sleep(30)
     result=collect()
     if args.output:
         if not result['queue_ended']:parser.error('Queue still active; only live readout is available')
         args.output.parent.mkdir(parents=True,exist_ok=True)
-        args.output.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+        from proworksim.storage import atomic_write,json_bytes
+        atomic_write(args.output,json_bytes(result))
     else:
         print(json.dumps({k:result[k] for k in ('planned_cases','queue_ended','status_counts','actual_settled')},indent=2))
