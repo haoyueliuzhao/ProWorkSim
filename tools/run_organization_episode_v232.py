@@ -42,7 +42,7 @@ def disabled(*args, **kwargs):
     raise RuntimeError("No external action in checkpoint rehearsal")
 
 
-def episode(index, arm, out, rehearsal):
+def episode(index, arm, out, rehearsal, *, slot_namespace="v232"):
     design = read_json(DESIGN)
     state = design["states"][index]
     row = panel_row(state)
@@ -61,7 +61,7 @@ def episode(index, arm, out, rehearsal):
         PYTHON_DOTENV_DISABLED="1",
         OPENHANDS_SUPPRESS_BANNER="1",
     )
-    slot = f"v232:{state['case']}:{arm}"
+    slot = f"{slot_namespace}:{state['case']}:{arm}"
     actor = rt = None
     meter = None
     admitted = False
