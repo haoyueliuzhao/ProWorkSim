@@ -1,0 +1,1145 @@
+{
+  "case": "Sphinx-9591",
+  "status": "closed",
+  "termination": "budget_boundary_without_delivery",
+  "effective_duties": {
+    "work_root": {
+      "owner": "member_002",
+      "recipient": "member_001",
+      "status": "handed_off",
+      "scope": "independent diagnosis and evidence handoff",
+      "message_sequence": 67,
+      "evidence": 65,
+      "sender_decisions": [
+        {
+          "choice": "DIAG",
+          "sequence": 67,
+          "body": "DIAG 65 Finding: the repeated failure is NOT in PropertyDocumenter — it is in test_autodoc_typed_inherited_instance_variables (tests/test_ext_autodoc.py, decorator at ~line 1837-1839; body starts `def test_autodoc_typed_inherited_instance_variables(app):` with options members/undoc-members/inherited-members and `do_autodoc(app, 'class', 'ta...`). That test documents a CLASS with inherited members, so it does not exercise the property code path you are changing. Two edits (v4 replace_file, v7 replace_file) plus two failures (seq 56 @v4, seq 67 @v7 — same nodeid, 1 failed/1 passed of 2 collected) therefore indicate the expected-output list in that test is stale or your edit changed class-level instance-variable emission, not that restify itself is wrong.\n\nRecommended next step for you as owner: read the saved failure detail (delivery_readiness final_test sequence 63 counts failed=1) to get the exact expected-vs-actual diff lines rather than re-running the same nodeid a third time unchanged. Two concrete hypotheses worth checking:\n1) If you changed InstanceAttributeDocumenter/AttributeDocumenter or something shared, the `:type:` lines now render with role markup (e.g. ':class:`~target.typehints.Point`') while this test still expects plain text — then THIS test's expectations must be updated in the same patch, and your property test should be added separately.\n2) If the diff shows no type-line change, the edit touched an unrelated code path and should be reverted to keep the patch minimal.\n\nMy review criteria remain: PropertyDocumenter.add_directive_header must use restify() for the `:type:` line, broken/None annotations must stay guarded (the existing TypeError/ValueError except block around inspect.signature must be preserved), a public test must assert the role markup form for a property return annotation, and no other autodoc tests may regress. I have made no edits to the tree."
+        }
+      ],
+      "recipient_disposition": {
+        "choice": "SKIP",
+        "reason": "Diagnosis confirmed by the actual saved diff, and your hypothesis (1) is not the cause — the fix is unrelated to type-line markup. Real cause: I added two properties to the `Derived` fixture (typed_vars.py) so a property return annotation exists to test. `test_autodoc_typed_inherited_instance_variables` documents `Derived` with `inherited-members` and enumerates its members explicitly, so its expected list is now missing `Derived.prop1` / `Derived.prop2`. Error was `Left contains 14 more items` (actual has extra property blocks; expected lacks them). PropertyDocumenter change is correct and test_autodoc_typed_instance_variables already PASSES at v7 (1 passed / 1 failed of 2). Next: append the two property blocks to the inherited test's expectations, rerun both, then fix_patch for your independent review. No revert needed; restify is the right minimal change. Your review criteria (restify for the :type: line, preserved TypeError/ValueError guard, public test asserting role markup, no unrelated regressions) are all satisfied and I will make sure the regression set is green before publishing.",
+        "message_sequence": 67,
+        "response_sequence": 68,
+        "own_evidence": 63,
+        "source_reference": {
+          "object_id": "obj-c567f5b9c7d905481548e89b",
+          "version_id": "v7"
+        },
+        "full_exposure_request": null
+      }
+    }
+  },
+  "anomaly_endpoint": {
+    "resolved": null,
+    "recurrences": null,
+    "reason": "no_postdecision_evidence"
+  },
+  "official": {
+    "code": {
+      "status": "official_report",
+      "resolved": false,
+      "cleanup_errors": [],
+      "receipt": "runs/software-benchmark-v232-7/diagnosis-receipts-r1/Sphinx-9591/SEARCHRECEIPT-code/receipt.json"
+    },
+    "delivery": {
+      "status": "no_legal_delivery",
+      "resolved": false,
+      "cleanup_errors": [],
+      "receipt": "runs/software-benchmark-v232-7/diagnosis-receipts-r1/Sphinx-9591/SEARCHRECEIPT-delivery/receipt.json"
+    }
+  },
+  "control_events": [
+    {
+      "kind": "repair_reserved",
+      "native_id": [
+        1,
+        67
+      ],
+      "agent_id": "member_002",
+      "request_id": null,
+      "result": "repair_reserved",
+      "details": {
+        "tokens": 131072,
+        "task": "work_root"
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "new_duty"
+      ],
+      "agent_id": "member_002",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0028",
+      "result": "provider_returned",
+      "details": {
+        "response_id": "ae032f60-9abc-45b6-b6ac-bacd142541ea"
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "sender_disposition"
+      ],
+      "agent_id": "member_002",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0029",
+      "result": "provider_returned",
+      "details": {
+        "response_id": "794723dd-15ca-407a-bb18-9542e62c208d"
+      }
+    },
+    {
+      "kind": "handoff_example",
+      "native_id": [
+        1,
+        69
+      ],
+      "agent_id": "member_002",
+      "request_id": null,
+      "result": "handoff_example",
+      "details": {
+        "arguments": {
+          "recipient": "member_001",
+          "task_id": "work_root",
+          "body": "DIAG 65 <your specific finding supported by this event>"
+        }
+      }
+    },
+    {
+      "kind": "repair_released",
+      "native_id": [
+        1,
+        71
+      ],
+      "agent_id": "member_002",
+      "request_id": null,
+      "result": "repair_released",
+      "details": {
+        "reason": "duty_closed"
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "receive_handoff"
+      ],
+      "agent_id": "member_001",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0046",
+      "result": "provider_returned",
+      "details": {
+        "response_id": "97afc041-c31f-4708-ab37-59c60e9bb7cd"
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "verification"
+      ],
+      "agent_id": "member_002",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0033",
+      "result": "provider_returned",
+      "details": {
+        "response_id": "e6e445be-dd8b-4408-9b26-028f8e0bb122"
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "delivery"
+      ],
+      "agent_id": "member_001",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0050",
+      "result": "provider_returned",
+      "details": {
+        "response_id": "a491ab58-1d53-4489-b7a3-9d4552245136"
+      }
+    }
+  ],
+  "message_attempts": [
+    {
+      "actor": "member_002",
+      "call": "call_00_NBmuACayVR99a3gJ7Ia38237",
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-71",
+      "keys": [
+        "body",
+        "recipient",
+        "task_id"
+      ],
+      "formal_prefix": true,
+      "header": [
+        "DIAG",
+        "65"
+      ],
+      "body_sha256": "f487906905c9ef6ebff7eb04cf88ac83c7480950ccd7dbfc24565c34f5c1f12f",
+      "body_chars": 1910,
+      "example_shown": true,
+      "task": "work_root",
+      "recipient": "member_001",
+      "world_accepted": true,
+      "message_sequence": 67,
+      "format_error": null,
+      "recipient_saw_body_at": [],
+      "later_recipient_opportunities": [
+        72,
+        74,
+        76,
+        78,
+        79,
+        81
+      ],
+      "later_recipient_worker_requests": 5,
+      "exposures": [
+        {
+          "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-72",
+          "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:857a5d1c-fe29-4f06-8f85-99600e12d6ac",
+          "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0046",
+          "verified_prefix_chars": 500,
+          "body_chars": 1910,
+          "full_text_present": true,
+          "notice_on_wire": {
+            "message_sequence": 67,
+            "displayed_characters": 500,
+            "total_characters": 1910,
+            "read_full_text": {
+              "tool": "read_work_event",
+              "arguments": {
+                "sequence": 67
+              }
+            }
+          },
+          "exact_full_tool_result_present": false,
+          "lookup_attempts": []
+        },
+        {
+          "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-74",
+          "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:f697d18d-bf2d-4161-9d65-b78ae8a77cff",
+          "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0047",
+          "verified_prefix_chars": 500,
+          "body_chars": 1910,
+          "full_text_present": true,
+          "notice_on_wire": {
+            "message_sequence": 67,
+            "displayed_characters": 500,
+            "total_characters": 1910,
+            "read_full_text": {
+              "tool": "read_work_event",
+              "arguments": {
+                "sequence": 67
+              }
+            }
+          },
+          "exact_full_tool_result_present": false,
+          "lookup_attempts": []
+        },
+        {
+          "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-76",
+          "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:a1137c7f-3bb6-4197-87b0-3ecc267f2066",
+          "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0048",
+          "verified_prefix_chars": 500,
+          "body_chars": 1910,
+          "full_text_present": true,
+          "notice_on_wire": {
+            "message_sequence": 67,
+            "displayed_characters": 500,
+            "total_characters": 1910,
+            "read_full_text": {
+              "tool": "read_work_event",
+              "arguments": {
+                "sequence": 67
+              }
+            }
+          },
+          "exact_full_tool_result_present": false,
+          "lookup_attempts": []
+        },
+        {
+          "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-78",
+          "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:f63e7b9d-ff9b-4392-beca-98aca338e75c",
+          "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0049",
+          "verified_prefix_chars": 500,
+          "body_chars": 1910,
+          "full_text_present": true,
+          "notice_on_wire": {
+            "message_sequence": 67,
+            "displayed_characters": 500,
+            "total_characters": 1910,
+            "read_full_text": {
+              "tool": "read_work_event",
+              "arguments": {
+                "sequence": 67
+              }
+            }
+          },
+          "exact_full_tool_result_present": false,
+          "lookup_attempts": []
+        },
+        {
+          "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-79",
+          "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:9bcf63f8-ca0a-4f43-85a7-cdbce746f71f",
+          "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0050",
+          "verified_prefix_chars": 500,
+          "body_chars": 1910,
+          "full_text_present": true,
+          "notice_on_wire": {
+            "message_sequence": 67,
+            "displayed_characters": 500,
+            "total_characters": 1910,
+            "read_full_text": {
+              "tool": "read_work_event",
+              "arguments": {
+                "sequence": 67
+              }
+            }
+          },
+          "exact_full_tool_result_present": false,
+          "lookup_attempts": []
+        }
+      ],
+      "offline_addressed_read": {
+        "tool": "read_work_event",
+        "arguments": {
+          "sequence": 67
+        },
+        "recipient": "member_001",
+        "characters": 1910,
+        "whole_body_hash_matches": true,
+        "online_execution": false
+      },
+      "truncated_handoff_test_applicable": true,
+      "accepted_full_lookup_count": 0
+    },
+    {
+      "actor": "member_001",
+      "call": "call_00_ThLCwuaFXQPcynD6pEkC9233",
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-72",
+      "keys": [
+        "body",
+        "recipient",
+        "task_id"
+      ],
+      "formal_prefix": false,
+      "header": [
+        "SKIP",
+        "67"
+      ],
+      "body_sha256": "b1e51fed69cc7c8d42cd519b65189317b544025e77c2fd3fec657a5b51ee97b9",
+      "body_chars": 1117,
+      "example_shown": false,
+      "task": "work_root",
+      "recipient": "member_002",
+      "world_accepted": true,
+      "message_sequence": 68,
+      "format_error": null,
+      "recipient_saw_body_at": [],
+      "later_recipient_opportunities": [
+        73,
+        75,
+        77,
+        80,
+        82
+      ],
+      "later_recipient_worker_requests": 4
+    },
+    {
+      "actor": "member_002",
+      "call": "call_00_zlTN7IAgOq2u67nPUu874912",
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-80",
+      "keys": [
+        "body",
+        "recipient",
+        "task_id"
+      ],
+      "formal_prefix": false,
+      "header": [
+        "Status",
+        "from"
+      ],
+      "body_sha256": "df703fcb5e3c1baec599fd6826d381011fc7f8db7be0ee273673b2e201699497",
+      "body_chars": 2156,
+      "example_shown": true,
+      "task": "work_root",
+      "recipient": "member_001",
+      "world_accepted": true,
+      "message_sequence": 74,
+      "format_error": null,
+      "recipient_saw_body_at": [],
+      "later_recipient_opportunities": [
+        81
+      ],
+      "later_recipient_worker_requests": 0
+    }
+  ],
+  "world_tools": {
+    "search_repository": 1,
+    "read_file": 3,
+    "send_message": 3,
+    "delivery_readiness": 1,
+    "replace_file": 2,
+    "delivery_status": 1,
+    "run_tests": 1
+  },
+  "physical": {
+    "settled": 13,
+    "input": 938953,
+    "output": 3075,
+    "cost_nanoyuan": 1649618960,
+    "cache_hit": 129024,
+    "requests_showing_example": 5
+  },
+  "inherited_controller_usage": 1910,
+  "new_controller_calls": 0,
+  "old_osa": {
+    "option": "D1",
+    "termination": "budget_boundary_without_delivery",
+    "provider_usage": {
+      "requests": 14,
+      "input": 907615,
+      "output": 3087,
+      "cost_nanoyuan": 1587038960,
+      "cache_hit": 129024,
+      "local_input": 906497,
+      "template_residual": 33282
+    },
+    "member002_messages": [],
+    "send_message_model_intents": [
+      {
+        "agent": "member_002",
+        "physical_request": "v232:Sphinx-9591:OSA:1470c12d-50f5-4f3e-8051-96792b97d1c8",
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-80",
+        "tool_call_id": "call_00_yTobcbeBYOG82YQwolEW8442",
+        "formal_prefix": true,
+        "body_leading_fields": [
+          "DIAG",
+          "74"
+        ],
+        "body_characters": 3100,
+        "unexpected_arguments": [
+          "recipe"
+        ],
+        "missing_required": [],
+        "task": "work_root",
+        "recipient": "member_001",
+        "shown_duty": {
+          "tasks": {
+            "work_root": "member_001"
+          },
+          "own_eligible_event_sequences": [
+            72,
+            74,
+            76
+          ],
+          "handoff": "After examining evidence, use send_message for the listed task and recipient. Start body with DIAG <own event number> followed by a space and your concrete finding."
+        },
+        "native_format_error": "Arguments violate the public tool schema"
+      }
+    ],
+    "anomaly_endpoint": {
+      "resolved": false,
+      "recurrences": 0,
+      "last_opportunity": 73,
+      "status": "OPEN"
+    },
+    "effective_duties": {
+      "work_root": {
+        "owner": "member_002",
+        "recipient": "member_001",
+        "status": "pending",
+        "scope": "independent diagnosis and evidence handoff"
+      }
+    }
+  },
+  "observer_errors": [],
+  "actor_cleanup": {
+    "owned_actor_removed": true,
+    "transport_errors": [],
+    "other_objects_touched": false
+  },
+  "reserved_requests": 0,
+  "cumulative_nanoyuan": 116297835360,
+  "available_nanoyuan": 28076831040,
+  "prior_handoff_trial": {
+    "case": "Sphinx-9591",
+    "termination": "budget_boundary_without_delivery",
+    "effective_duties": {
+      "work_root": {
+        "owner": "member_002",
+        "recipient": "member_001",
+        "status": "handed_off",
+        "scope": "independent diagnosis and evidence handoff",
+        "message_sequence": 78,
+        "evidence": 75
+      }
+    },
+    "anomaly_endpoint": {
+      "resolved": null,
+      "recurrences": null,
+      "reason": "no_postdecision_evidence"
+    },
+    "official": {
+      "code": {
+        "status": "official_report",
+        "resolved": false,
+        "cleanup_errors": [],
+        "receipt": "runs/software-benchmark-v232-1/handoff-r1/Sphinx-9591/HANDOFF-code/receipt.json"
+      },
+      "delivery": {
+        "status": "no_legal_delivery",
+        "resolved": false,
+        "cleanup_errors": [],
+        "receipt": "runs/software-benchmark-v232-1/handoff-r1/Sphinx-9591/HANDOFF-delivery/receipt.json"
+      }
+    },
+    "message_attempts": [
+      {
+        "actor": "member_002",
+        "call": "call_00_LvnZs0wBRanXbFTIjtRy0367",
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-80",
+        "keys": [
+          "body",
+          "recipient",
+          "task_id"
+        ],
+        "formal_prefix": true,
+        "header": [
+          "DIAG",
+          "75"
+        ],
+        "body_sha256": "142d0d14c10c473e6321a52d0debad4f4b2937345b7d133c17ea0ef60c89aa78",
+        "body_chars": 2300,
+        "example_shown": true,
+        "task": "work_root",
+        "recipient": "member_001",
+        "world_accepted": true,
+        "message_sequence": 78,
+        "format_error": null,
+        "recipient_saw_body_at": [],
+        "later_recipient_opportunities": [
+          81
+        ],
+        "later_recipient_worker_requests": 0
+      }
+    ],
+    "physical": {
+      "settled": 13,
+      "input": 886980,
+      "output": 2460,
+      "cost_nanoyuan": 1540752960,
+      "cache_hit": 129024,
+      "requests_showing_example": 4
+    }
+  },
+  "recipient_scheduler": [
+    {
+      "kind": "recipient_reserved",
+      "result": "recipient_reserved",
+      "native_id": [
+        1,
+        67
+      ],
+      "org_graph_version": 1,
+      "details": {
+        "task": "work_root",
+        "tokens": 131072
+      }
+    },
+    {
+      "kind": "recipient_eligible",
+      "result": "recipient_eligible",
+      "native_id": [
+        1,
+        71
+      ],
+      "org_graph_version": 1,
+      "details": {
+        "task": "work_root",
+        "message_sequence": 67,
+        "evidence": 65
+      }
+    }
+  ],
+  "action_sequence": [
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-71",
+      "actor": "member_002",
+      "action": "send_message",
+      "world_ok": true,
+      "message_sequence": 67
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-72",
+      "actor": "member_001",
+      "action": "send_message",
+      "world_ok": true,
+      "message_sequence": 68
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-74",
+      "actor": "member_001",
+      "action": "replace_file",
+      "world_ok": false
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-78",
+      "actor": "member_001",
+      "action": "replace_file",
+      "world_ok": true,
+      "source_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v8"
+      }
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-79",
+      "actor": "member_001",
+      "action": "run_tests",
+      "world_ok": true,
+      "counts": {
+        "collected": 2,
+        "errors": 0,
+        "failed": 0,
+        "passed": 2,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "tests_run": 2
+      },
+      "passed": true,
+      "source_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v8"
+      }
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-80",
+      "actor": "member_002",
+      "action": "send_message",
+      "world_ok": true,
+      "message_sequence": 74
+    }
+  ],
+  "recipient_responses_after_verified_exposure": [
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-72",
+      "recipient": "member_001",
+      "message_sequence": 67,
+      "response_id": "97afc041-c31f-4708-ab37-59c60e9bb7cd",
+      "exposure": {
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-72",
+        "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:857a5d1c-fe29-4f06-8f85-99600e12d6ac",
+        "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0046",
+        "verified_prefix_chars": 500,
+        "body_chars": 1910,
+        "full_text_present": true
+      },
+      "actions": [
+        {
+          "id": "call_00_ThLCwuaFXQPcynD6pEkC9233",
+          "tool": "send_message",
+          "executed_ok": true,
+          "locators": {
+            "recipient": "member_002",
+            "task_id": "work_root"
+          }
+        }
+      ]
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-74",
+      "recipient": "member_001",
+      "message_sequence": 67,
+      "response_id": "fcdf4e77-436b-409c-bd6a-1ec217c7c2b5",
+      "exposure": {
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-74",
+        "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:f697d18d-bf2d-4161-9d65-b78ae8a77cff",
+        "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0047",
+        "verified_prefix_chars": 500,
+        "body_chars": 1910,
+        "full_text_present": true
+      },
+      "actions": [
+        {
+          "id": "call_00_7ijmb8swIKlCq0IfHrOc8028",
+          "tool": "replace_file",
+          "executed_ok": false,
+          "locators": {
+            "path": "tests/test_ext_autodoc.py"
+          }
+        }
+      ]
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-76",
+      "recipient": "member_001",
+      "message_sequence": 67,
+      "response_id": "0d565771-6600-4be9-8813-ba2b5179441e",
+      "exposure": {
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-76",
+        "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:a1137c7f-3bb6-4197-87b0-3ecc267f2066",
+        "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0048",
+        "verified_prefix_chars": 500,
+        "body_chars": 1910,
+        "full_text_present": true
+      },
+      "actions": [
+        {
+          "id": "call_00_mm1g5AM9fcqFAeEuwBrT3066",
+          "tool": "read_file",
+          "executed_ok": true,
+          "locators": {
+            "path": "tests/test_ext_autodoc.py"
+          }
+        }
+      ]
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-78",
+      "recipient": "member_001",
+      "message_sequence": 67,
+      "response_id": "f6ccbbf6-7cc8-454d-bfad-b9a83535a3a1",
+      "exposure": {
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-78",
+        "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:f63e7b9d-ff9b-4392-beca-98aca338e75c",
+        "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0049",
+        "verified_prefix_chars": 500,
+        "body_chars": 1910,
+        "full_text_present": true
+      },
+      "actions": [
+        {
+          "id": "call_00_3Ui33F4z4wnQg7JpY2q21970",
+          "tool": "replace_file",
+          "executed_ok": true,
+          "locators": {
+            "path": "tests/test_ext_autodoc.py"
+          }
+        }
+      ]
+    },
+    {
+      "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-79",
+      "recipient": "member_001",
+      "message_sequence": 67,
+      "response_id": "a491ab58-1d53-4489-b7a3-9d4552245136",
+      "exposure": {
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-79",
+        "provider_request": "v232:Sphinx-9591:SEARCHRECEIPT:9bcf63f8-ca0a-4f43-85a7-cdbce746f71f",
+        "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0050",
+        "verified_prefix_chars": 500,
+        "body_chars": 1910,
+        "full_text_present": true
+      },
+      "actions": [
+        {
+          "id": "call_00_WUXGfaqXDg4rcWBoD69R4474",
+          "tool": "run_tests",
+          "executed_ok": true,
+          "locators": {
+            "selection": {
+              "kind": "pytest",
+              "targets": [
+                "tests/test_ext_autodoc.py::test_autodoc_typed_instance_variables",
+                "tests/test_ext_autodoc.py::test_autodoc_typed_inherited_instance_variables"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "prior_recipient_trial": {
+    "termination": "budget_boundary_without_delivery",
+    "effective_duties": {
+      "work_root": {
+        "owner": "member_002",
+        "recipient": "member_001",
+        "status": "handed_off",
+        "scope": "independent diagnosis and evidence handoff",
+        "message_sequence": 74,
+        "evidence": 69
+      }
+    },
+    "anomaly_endpoint": {
+      "resolved": null,
+      "recurrences": null,
+      "reason": "no_postdecision_evidence"
+    },
+    "official": {
+      "code": {
+        "status": "official_report",
+        "resolved": false,
+        "cleanup_errors": [],
+        "receipt": "runs/software-benchmark-v232-3/recipient-r1/Sphinx-9591/RECEIVE-code/receipt.json"
+      },
+      "delivery": {
+        "status": "no_legal_delivery",
+        "resolved": false,
+        "cleanup_errors": [],
+        "receipt": "runs/software-benchmark-v232-3/recipient-r1/Sphinx-9591/RECEIVE-delivery/receipt.json"
+      }
+    },
+    "message_attempts": [
+      {
+        "actor": "member_002",
+        "call": "call_00_EAJacdYVmgNukk6jLaG28135",
+        "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-77",
+        "keys": [
+          "body",
+          "recipient",
+          "task_id"
+        ],
+        "formal_prefix": true,
+        "header": [
+          "DIAG",
+          "69"
+        ],
+        "body_sha256": "83a25ded5bdf6eeffe6ae19a2ab24fd250f58ad124303bb35c65178ef2254145",
+        "body_chars": 1934,
+        "example_shown": true,
+        "task": "work_root",
+        "recipient": "member_001",
+        "world_accepted": true,
+        "message_sequence": 74,
+        "format_error": null,
+        "recipient_saw_body_at": [],
+        "later_recipient_opportunities": [
+          78,
+          80,
+          82
+        ],
+        "later_recipient_worker_requests": 2,
+        "exposures": [
+          {
+            "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-78",
+            "provider_request": "v232:Sphinx-9591:RECEIVE:5ba6db29-b443-4734-95cc-198cf69e54f7",
+            "request_id": "v232:Sphinx-9591:RECEIVE:member_001:0050",
+            "verified_prefix_chars": 500,
+            "body_chars": 1934,
+            "full_text_present": false
+          },
+          {
+            "opportunity": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-80",
+            "provider_request": "v232:Sphinx-9591:RECEIVE:1399e32b-a424-4266-8a3b-a4f0de4c892a",
+            "request_id": "v232:Sphinx-9591:RECEIVE:member_001:0051",
+            "verified_prefix_chars": 500,
+            "body_chars": 1934,
+            "full_text_present": false
+          }
+        ],
+        "offline_addressed_read": {
+          "tool": "read_work_event",
+          "arguments": {
+            "sequence": 74
+          },
+          "recipient": "member_001",
+          "characters": 1934,
+          "whole_body_hash_matches": true,
+          "online_execution": false
+        }
+      }
+    ],
+    "physical": {
+      "settled": 13,
+      "input": 889724,
+      "output": 2335,
+      "cost_nanoyuan": 1543233920,
+      "cache_hit": 130048,
+      "requests_showing_example": 2
+    }
+  },
+  "sender_boundary": [
+    {
+      "ordinal": 82,
+      "available": 28092,
+      "quoted": 122036,
+      "boundary": "team_budget_exhausted",
+      "limits": [
+        "team_max_total_tokens"
+      ]
+    }
+  ],
+  "sender_tool_intents": [
+    "staff_wait",
+    "send_message",
+    "read_file",
+    "delivery_status",
+    "send_message",
+    "search_repository",
+    "delivery_readiness"
+  ],
+  "physical_requests_with_notice": 5,
+  "qualifying_long_handoffs": 1,
+  "conditional_readback_observable": true,
+  "readback_endpoint_evaluable": true,
+  "v232_4_reference": {
+    "physical": {
+      "settled": 13,
+      "input": 911291,
+      "output": 2472,
+      "cost_nanoyuan": 1585456880,
+      "cache_hit": 131072,
+      "requests_showing_example": 4
+    },
+    "effective_duties": {
+      "work_root": {
+        "owner": "member_002",
+        "recipient": "member_001",
+        "status": "pending",
+        "scope": "independent diagnosis and evidence handoff"
+      }
+    },
+    "official": {
+      "code": {
+        "status": "official_report",
+        "resolved": false,
+        "cleanup_errors": [],
+        "receipt": "runs/software-benchmark-v232-4/preview-r1/Sphinx-9591/PREVIEW-code/receipt.json"
+      },
+      "delivery": {
+        "status": "no_legal_delivery",
+        "resolved": false,
+        "cleanup_errors": [],
+        "receipt": "runs/software-benchmark-v232-4/preview-r1/Sphinx-9591/PREVIEW-delivery/receipt.json"
+      }
+    },
+    "termination": "budget_boundary_without_delivery",
+    "qualifying_long_handoffs": 0
+  },
+  "disposition_opportunities": [
+    {
+      "kind": "disposition_credits_reserved",
+      "native_id": [
+        1,
+        67
+      ],
+      "agent_id": "member_001",
+      "request_id": null,
+      "details": {
+        "task": "work_root",
+        "sender": 131072,
+        "recipient_followup": 131072
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "sender_disposition"
+      ],
+      "agent_id": "member_002",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0029",
+      "details": {
+        "response_id": "794723dd-15ca-407a-bb18-9542e62c208d"
+      }
+    },
+    {
+      "kind": "grant-dispatched",
+      "native_id": [
+        1,
+        "receive_handoff"
+      ],
+      "agent_id": "member_001",
+      "request_id": "v232:Sphinx-9591:SEARCHRECEIPT:member_001:0046",
+      "details": {
+        "response_id": "97afc041-c31f-4708-ab37-59c60e9bb7cd"
+      }
+    }
+  ],
+  "executed_actions": [
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-68",
+      "actor": "member_002",
+      "tool": "search_repository",
+      "ok": true,
+      "sequence": null,
+      "source_reference": {
+        "object_id": "obj-520aa9e6ee8ece99dce73855",
+        "version_id": "v1"
+      },
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-69",
+      "actor": "member_002",
+      "tool": "read_file",
+      "ok": false,
+      "sequence": null,
+      "source_reference": null,
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-70",
+      "actor": "member_001",
+      "tool": "read_file",
+      "ok": true,
+      "sequence": null,
+      "source_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v7"
+      },
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-71",
+      "actor": "member_002",
+      "tool": "send_message",
+      "ok": true,
+      "sequence": 67,
+      "source_reference": null,
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-72",
+      "actor": "member_001",
+      "tool": "send_message",
+      "ok": true,
+      "sequence": 68,
+      "source_reference": null,
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-73",
+      "actor": "member_002",
+      "tool": "delivery_readiness",
+      "ok": true,
+      "sequence": null,
+      "source_reference": null,
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-74",
+      "actor": "member_001",
+      "tool": "replace_file",
+      "ok": false,
+      "sequence": null,
+      "source_reference": null,
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-76",
+      "actor": "member_001",
+      "tool": "read_file",
+      "ok": true,
+      "sequence": null,
+      "source_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v7"
+      },
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-77",
+      "actor": "member_002",
+      "tool": "delivery_status",
+      "ok": true,
+      "sequence": null,
+      "source_reference": {
+        "object_id": "obj-520aa9e6ee8ece99dce73855",
+        "version_id": "v1"
+      },
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-78",
+      "actor": "member_001",
+      "tool": "replace_file",
+      "ok": true,
+      "sequence": null,
+      "source_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v8"
+      },
+      "patch_id": null,
+      "counts": null
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-79",
+      "actor": "member_001",
+      "tool": "run_tests",
+      "ok": true,
+      "sequence": null,
+      "source_reference": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v8"
+      },
+      "patch_id": null,
+      "counts": {
+        "collected": 2,
+        "errors": 0,
+        "failed": 0,
+        "passed": 2,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "tests_run": 2
+      }
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-80",
+      "actor": "member_002",
+      "tool": "send_message",
+      "ok": true,
+      "sequence": 74,
+      "source_reference": null,
+      "patch_id": null,
+      "counts": null
+    }
+  ],
+  "rejections": [
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-69",
+      "tool": "read_file",
+      "code": "sender_disposition_due"
+    },
+    {
+      "op": "staff-opportunity-4d8838307bd44cf2b41a8aed5e6b2210-74",
+      "tool": "replace_file",
+      "code": "replacement_not_unique"
+    }
+  ],
+  "processed_world_receipt": true,
+  "unconditional_primary_success": true,
+  "repository_search_handoffs": [
+    {
+      "sequence": 65,
+      "world_matches": 1,
+      "tool_receipt_requests": [
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0029",
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0030",
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0031",
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0032",
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0033",
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0034"
+      ],
+      "eligible_list_requests": [
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0029",
+        "v232:Sphinx-9591:SEARCHRECEIPT:member_002:0030"
+      ],
+      "cited_in_accepted_diagnosis": true
+    }
+  ],
+  "block_intents": [],
+  "official_code_tests": {
+    "patch_applied": true,
+    "infrastructure_failure": false,
+    "target_failures": [
+      "tests/test_domain_py.py::test_pyproperty"
+    ],
+    "regressions_passed": 44,
+    "regressions_failed": []
+  }
+}

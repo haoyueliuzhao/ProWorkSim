@@ -101,14 +101,7 @@ class Endpoint:
                 if d.get("owner") == actor and d.get("status") == "pending"
             }
             if duties:
-                boundary = control["versions"][-1]["after_event"]
-                eligible = [
-                    e["sequence"]
-                    for e in events
-                    if e["sequence"] > boundary
-                    and e["actor_id"] == actor
-                    and (e["kind"] in ("read", "test", "search") or "review" in e["kind"])
-                ]
+                eligible = world.diagnosis_evidence(actor)
                 i = manifest["snapshots"][-1]["index"]
                 v = object_text(shown["messages"][i]["content"])
                 v["pending_diagnosis"] = {

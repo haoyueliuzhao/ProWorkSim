@@ -96,6 +96,16 @@ def activate(world, node, observer, frozen, choice, *, origin):
 
 
 class ControlledWorld(NaturalWorld):
+    source_evidence_kinds = frozenset({"read", "search", "test"})
+
+    def diagnosis_evidence(self, actor):
+        boundary = self.protocol()["graph_control"]["versions"][-1]["after_event"]
+        return [
+            event["sequence"] for event in self.state["software_events"]
+            if event["sequence"] > boundary and event["actor_id"] == actor
+            and (event["kind"] in self.source_evidence_kinds or "review" in event["kind"])
+        ]
+
     def _action_dynamic_status(self,actor,project_id):
         result=super()._action_dynamic_status(actor,project_id)
         ctrl=self.protocol().get('graph_control')
@@ -129,10 +139,7 @@ class ControlledWorld(NaturalWorld):
             if handoff:
                 seq=parts[1]
                 if not (duty and duty['owner']==actor and arguments.get('recipient')==duty['recipient']
-                        and seq.isdecimal() and any(e['sequence']==int(seq) and e['actor_id']==actor
-                            and e['sequence']>ctrl['versions'][-1]['after_event']
-                            and (e['kind'] in ('read','test','search') or 'review' in e['kind'])
-                            for e in self.state['software_events'])):
+                        and seq.isdecimal() and int(seq) in self.diagnosis_evidence(actor)):
                     self.org_reject('Cite your own new work evidence and address the assigned owner.','graph_evidence_required')
             elif parts[1] not in BLOCK_TYPES:
                 self.org_reject('Report permission, dependency, in_flight, budget or state_conflict.','graph_blocker_kind')

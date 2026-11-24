@@ -92,7 +92,7 @@ def freeze():
     atomic_write(path, json_bytes(data))
 
 
-def launch():
+def launch(scope="one v232.6 NEED follow-up continuation"):
     p = read_json(PLAN / "protocol.json")
     check_sources(p)
     for k in ("comparison", "old_decision", "old_activation", "baseline"):
@@ -101,7 +101,7 @@ def launch():
     if auth["cap_nanoyuan"] != p["account_cap_nanoyuan"]:
         raise ValueError("Different cash cap")
     auth.update(
-        scope="one v232.6 NEED follow-up continuation",
+        scope=scope,
         available_on_approval_nanoyuan=p["approved_available_nanoyuan"],
     )
     auth_file = RUN / "authority.json"

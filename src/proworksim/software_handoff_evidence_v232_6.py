@@ -1,5 +1,6 @@
 """A reply to NEED is correspondence; allow one subsequent independent verification."""
 
+from .software_graph_controller_v228 import BLOCK_TYPES
 from .software_handoff_disposition_v232_5 import DecisionWorld, DispositionExecution
 
 VERIFICATION_TOOLS = {
@@ -12,6 +13,34 @@ VERIFICATION_TOOLS = {
 
 
 class ReplyAwareWorld(DecisionWorld):
+    source_evidence_kinds = DecisionWorld.source_evidence_kinds | {"repository_search"}
+
+    def _action_search_repository(self, actor, project_id, text, path_prefix=None, cursor=None):
+        result = super()._action_search_repository(actor, project_id, text, path_prefix, cursor)
+        event = self.state["software_events"][-1]
+        if event["kind"] != "repository_search" or event["actor_id"] != actor:
+            raise RuntimeError("Search returned without its evidence event")
+        return {**result, "event_sequence": event["sequence"]}
+
+    def _check_message_recipient(self, actor, recipient, task_id, body):
+        parts = body.split(maxsplit=2)
+        duty = (self.protocol().get("graph_control") or {}).get("duties", {}).get(task_id)
+        if (
+            body.startswith("BLOCK ")
+            and len(parts) == 3
+            and parts[1] in BLOCK_TYPES
+            and duty
+            and duty["status"] == "pending"
+            and duty["owner"] == actor
+            and duty["recipient"] == recipient
+            and recipient != actor
+            and recipient in self.live_members()
+        ):
+            # A blocker closes an assigned diagnosis. Recording it creates no work or dispatch.
+            self._edge(actor, recipient)
+            return
+        super()._check_message_recipient(actor, recipient, task_id, body)
+
     def _tool_project_action(self, actor, project_id, tool, arguments, interface_profile=None):
         tid = getattr(self, "decision_task", None)
         duty = (self.protocol().get("graph_control") or {}).get("duties", {}).get(tid)

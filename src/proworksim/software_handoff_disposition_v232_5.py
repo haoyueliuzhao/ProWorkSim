@@ -25,7 +25,7 @@ def eligible_existing(world, actor):
         for e in world.state["software_events"]
         if e["actor_id"] == actor
         and e.get("source_reference") == ref
-        and e["kind"] in ("read", "search", "test")
+        and e["kind"] in world.source_evidence_kinds
     ]
 
 
@@ -231,14 +231,7 @@ class DispositionExecution(PreviewExecution):
             if self.sender_credit and ("new_duty", self.diagnostician) not in self.grants:
                 self.sender_credit = False
                 if duty["status"] == "pending":
-                    eligible = [
-                        e["sequence"]
-                        for e in w.state["software_events"]
-                        if e["sequence"]
-                        > w.protocol()["graph_control"]["versions"][-1]["after_event"]
-                        and e["actor_id"] == self.diagnostician
-                        and (e["kind"] in ("read", "test", "search") or "review" in e["kind"])
-                    ]
+                    eligible = w.diagnosis_evidence(self.diagnostician)
                     sample = {
                         "recipient": self.recipient,
                         "task_id": tid,

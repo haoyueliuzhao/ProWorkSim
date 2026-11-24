@@ -121,18 +121,9 @@ class HandoffExecution(OrganizationExecution):
             self.pending_task = None
             return super().select_next()
         if not self.example_sent:
-            boundary = world.protocol()["graph_control"]["versions"][-1]["after_event"]
-            seq = next(
-                (
-                    e["sequence"]
-                    for e in reversed(world.state["software_events"])
-                    if e["actor_id"] == self.diagnostician
-                    and e["sequence"] > boundary
-                    and (e["kind"] in ("read", "test", "search") or "review" in e["kind"])
-                ),
-                None,
-            )
-            if seq is not None:
+            eligible = world.diagnosis_evidence(self.diagnostician)
+            if eligible:
+                seq = eligible[-1]
                 args = {
                     "recipient": duty["recipient"],
                     "task_id": self.pending_task,

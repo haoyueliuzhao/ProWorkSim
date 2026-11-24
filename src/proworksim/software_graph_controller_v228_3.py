@@ -20,12 +20,5 @@ class ControlledWorld(PriorWorld):
             duty=control['duties'].get(arguments.get('task_id'))
             if (exc.rejection['code']=='graph_evidence_required' and duty and duty['status']=='pending'
                     and duty['owner']==actor and duty['recipient']==arguments.get('recipient')):
-                boundary=control['versions'][-1]['after_event']
-                latest=[]
-                for event in reversed(self.state['software_events']):
-                    if event['sequence']<=boundary:break
-                    if event['actor_id']==actor and (event['kind'] in ('read','test','search') or 'review' in event['kind']):
-                        latest.append(event['sequence'])
-                        if len(latest)==6:break
-                exc.rejection['context']['available_own_evidence_sequences']=latest
+                exc.rejection['context']['available_own_evidence_sequences'] = self.diagnosis_evidence(actor)[-6:][::-1]
             raise

@@ -237,8 +237,11 @@ class SoftwareCollaborationWorld(previous.SoftwareCollaborationWorld):
                     previous_task=before, task_snapshot=task, reason=reason)
         return copy.deepcopy(task)
 
-    def _action_send_message(self, actor, project_id, recipient, task_id, body, fixed_reference=None):
+    def _check_message_recipient(self, actor, recipient, task_id, body):
         self._available_recipient(actor, recipient)
+
+    def _action_send_message(self, actor, project_id, recipient, task_id, body, fixed_reference=None):
+        self._check_message_recipient(actor, recipient, task_id, body)
         if task_id != ROOT_GOAL_ID:
             self._task(task_id)
         if not body.strip():
