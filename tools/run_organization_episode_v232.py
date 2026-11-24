@@ -42,13 +42,13 @@ def disabled(*args, **kwargs):
     raise RuntimeError("No external action in checkpoint rehearsal")
 
 
-def episode(index, arm, out, rehearsal, *, slot_namespace="v232"):
+def episode(index, arm, out, rehearsal, *, slot_namespace="v232", expected_case="Sphinx-9591"):
     design = read_json(DESIGN)
     state = design["states"][index]
     row = panel_row(state)
     source = ROOT / state["source_prefix"]
-    if index != 1 or state["case"] != "Sphinx-9591":
-        raise ValueError("Outside approved first pair")
+    if state["case"] != expected_case:
+        raise ValueError("Checkpoint does not match the registered case")
     point = source / "checkpoint"
     out = out.resolve()
     out.mkdir(parents=True, exist_ok=False)

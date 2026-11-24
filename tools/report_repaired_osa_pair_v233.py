@@ -74,7 +74,7 @@ def next_sites(balance):
     return rows
 
 
-def run():
+def run(*, namespace="v233", include_inventory=True):
     read_json(RUN / "completed.json")
     p = read_json(PLAN / "protocol.json")
     auth = read_json(RUN / "authority.json")
@@ -84,10 +84,14 @@ def run():
     with sqlite3.connect("file:" + auth["ledger"] + "?mode=ro", uri=True) as db:
         balance = (
             auth["cap_nanoyuan"]
-            - db.execute("select sum(cost) from requests where status='settled'").fetchone()[0]
+            - db.execute(
+                "select sum(cost) from requests where status='settled' and rowid <= (select max(rowid) from requests where slot like ?)",
+                (namespace + ":%",),
+            ).fetchone()[0]
         )
         reserved = db.execute(
-            "select count(*) from requests where slot like 'v233:%' and status='reserved'"
+            "select count(*) from requests where slot like ? and status='reserved'",
+            (namespace + ":%",),
         ).fetchone()[0]
         for arm in ARMS:
             dest = folder / arm
@@ -211,7 +215,7 @@ def run():
         arms=records,
         realized_utility_difference=difference,
         CN_updates=0,
-        independent_sites=next_sites(balance),
+        independent_sites=next_sites(balance) if include_inventory else [],
         distinct_checkpoints=int(paired),
         reserved_requests=reserved,
         balance_nanoyuan=balance,

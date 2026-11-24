@@ -71,16 +71,16 @@ def freeze():
     save(dest, data)
 
 
-def reserve(auth, p):
+def reserve(auth, p, *, namespace="v233", block=BLOCK):
     ledger = PairedLedger.load(auth)
-    expected = [(f"v233:{CASE}:{a}", p["arm_limit"]) for a in ARMS]
+    expected = [(f"{namespace}:{p['case']}:{a}", p["arm_limit"]) for a in ARMS]
     with ledger.db() as db:
         if db.execute("select value from meta where key='cap'").fetchone() != (
             str(p["account_cap_nanoyuan"]),
         ):
             raise ValueError("Ledger cap changed")
         existing = db.execute(
-            "select slot,token_limit from block_slots where block_id=? order by slot", (BLOCK,)
+            "select slot,token_limit from block_slots where block_id=? order by slot", (block,)
         ).fetchall()
         if existing:
             if existing != expected:
@@ -99,7 +99,7 @@ def reserve(auth, p):
             raise ValueError("Insufficient funds for this complete pair")
         db.executemany(
             "insert into block_slots values(?,?,?,'pending')",
-            [(slot, BLOCK, lim) for slot, lim in expected],
+            [(slot, block, lim) for slot, lim in expected],
         )
 
 
@@ -120,13 +120,16 @@ def launch():
     if read_json(auth) != previous:
         raise ValueError("Ledger identity differs")
     reserve(auth, p)
-    folder = RUN / CASE
+    run_pair(RUN, CASE, panel_row(read_json(DESIGN)["states"][1]), Path(__file__).name)
+
+
+def run_pair(run, case, row, script):
+    folder = run / case
     folder.mkdir(exist_ok=True)
-    row = panel_row(read_json(DESIGN)["states"][1])
 
     def branch(arm):
         dest = folder / arm
-        result = stored_run(Path(__file__).name, ["--arm", arm], dest, "result.json")
+        result = stored_run(script, ["--arm", arm], dest, "result.json")
         if result["status"] == "closed":
             score(row, dest, arm)
         return {k: result.get(k) for k in ("status", "termination", "option", "error")}
@@ -140,8 +143,8 @@ def launch():
                 records[arm] = future.result()
             except Exception as exc:
                 records[arm] = {"status": "technical_unknown", "error": repr(exc)}
-            save(RUN / "progress.json", records)
-    save(RUN / "completed.json", records)
+            save(run / "progress.json", records)
+    save(run / "completed.json", records)
 
 
 if __name__ == "__main__":
