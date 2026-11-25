@@ -209,17 +209,30 @@ def main():
                     raise
                 records.append(dict(case=case, status="deferred_cash"))
                 continue
-            spec = panel.previous.spec_for(r)
-            baseline = read_json(PLAN / panel.CASE / "protocol.json")
-            spec.update(
-                protocol=baseline["protocol"],
-                files=baseline["files"] + [reference(Path(__file__))],
-                resources=dict(remaining=r["initial_budget"]),
-                orders=panel.orders.orders(r["row"]),
-            )
-            panel.previous.freeze(specfile, spec)
+            latest = ROOT / "tools/run_current_event_pair.py"
+            if specfile.exists():
+                spec = read_json(specfile)
+                if spec["roster"] != [r]:
+                    raise ValueError("Previously registered checkpoint differs")
+            else:
+                spec = panel.previous.spec_for(r)
+                baseline = read_json(PLAN / panel.CASE / "protocol.json")
+                spec.update(
+                    protocol=baseline["protocol"]
+                    + " Version-aware D5 handoff on reopening and completed successor candidates.",
+                    handoff_revision="v243.1",
+                    files=baseline["files"]
+                    + [
+                        reference(latest),
+                        reference(ROOT / "src/proworksim/software_review_handoff_v243_1.py"),
+                    ],
+                    resources=dict(remaining=r["initial_budget"]),
+                    orders=panel.orders.orders(r["row"]),
+                )
+                panel.previous.freeze(specfile, spec)
             active[r["instance"]] = kind
-            command, env = launch_spec([str(Path(panel.__file__)), "--case", case])
+            runner = latest if spec.get("handoff_revision") == "v243.1" else Path(panel.__file__)
+            command, env = launch_spec([str(runner), "--case", case])
             code = subprocess.run(command, env=env, cwd=ROOT).returncode
             records.append(
                 dict(case=case, returncode=code, status="ran" if code == 0 else "execution_error")

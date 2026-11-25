@@ -1,0 +1,25 @@
+{
+  "site": "q14",
+  "arm": "KEEP",
+  "expected": "A2",
+  "label": "A2",
+  "valid": true,
+  "order": "none",
+  "route": "K|pkg_drawing/dependency/pkg_text_api/INSPECT_UPSTREAM_ARTIFACT",
+  "reason": "E1 (work_readiness for pkg_drawing) shows ready=false with a single gap, upstream_not_current on pkg_text_api, so pkg_drawing is blocked by a dependency rather than by its own execution. The dependency edge carries artifact_state=unknown and completion_record=missing_or_stale, meaning the upstream version/handoff is not established — this is a dependency anomaly (A2), not sustained repair failure, conflict, verification failure, or delivery stall. The probed obligation EXECUTE_UPSTREAM_WORK (package pkg_text_api) is CONDITIONAL with completion UNKNOWN: its condition requires artifact_state == 'absent', which is not established, so producing the upstream work is not yet proven owed; only evidence is missing. Still owed in the chosen package: CURRENT_HANDOFF (release_upstream, completion UNSATISFIED) — a registered current handoff reference from pkg_text_api, conditional on inspecting before assuming production is needed. Because the artifact existence is unknown rather than absent, the first step is inspection (route K on INSPECT_UPSTREAM_ARTIFACT), which is the evidence-gathering step required by the handoff's own condition; the inspection itself is UNKNOWN and not an outstanding debt, so it is only a route. The worker's choice set is K/INSPECT (member_002 owns and gathers evidence on pkg_drawing) versus the handoff execution order; the handoff order binds member_001 as responsible for pkg_text_api and would deliver a distinct product (the usable upstream artifact), but it presumes production that inspection may show to be unnecessary, and keeping the present division plus inspection leaves CURRENT_HANDOFF as the only recorded debt. Therefore choose INSPECT_UPSTREAM_ARTIFACT with no organizational change ('none'): the K patch has no operations, and D1/T2–style reassignments add no distinct product beyond evidence gathering. The missing upstream completion on its own leaves the artifact's existence unknown, so we do not escalate to EXECUTE_UPSTREAM_WORK or PROCEED_DOWNSTREAM.",
+  "settlement": [
+    [
+      "settled",
+      1,
+      4462,
+      12492480
+    ]
+  ],
+  "receipts": [
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v243-1/review-handoff-r1/classification/q14/KEEP/f0b38724-682a-4e26-afc5-c02f862bf186/response.json",
+      "sha256": "28ae44d928c3c0569514920b764c6c3ef6cd5b3d14f24c2bab7ec80d50743622",
+      "bytes": 3642
+    }
+  ]
+}
