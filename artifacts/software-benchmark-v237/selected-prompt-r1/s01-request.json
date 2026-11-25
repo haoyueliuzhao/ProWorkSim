@@ -1,0 +1,132 @@
+{
+  "model": "deepseek-flash",
+  "thinking": {
+    "type": "disabled"
+  },
+  "temperature": 1.0,
+  "top_p": 1.0,
+  "max_tokens": 1024,
+  "stream": false,
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "activate_organization",
+        "description": "Return one evidence-bound organization decision.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "situation": {
+              "type": "string",
+              "enum": [
+                "A1",
+                "A2",
+                "A3",
+                "A4",
+                "STABLE",
+                "UNKNOWN"
+              ]
+            },
+            "stage": {
+              "type": "string",
+              "enum": [
+                "localization",
+                "implementation",
+                "diagnosis",
+                "integration",
+                "verification",
+                "delivery"
+              ]
+            },
+            "needs_new_responsibility": {
+              "type": "boolean"
+            },
+            "option": {
+              "type": "string",
+              "enum": [
+                "K",
+                "D1"
+              ]
+            },
+            "package": {
+              "type": "string",
+              "enum": [
+                "work_root"
+              ]
+            },
+            "next_step": {
+              "type": "string",
+              "enum": [
+                "investigate_failure",
+                "finish_upstream",
+                "adopt_upstream",
+                "resolve_merge",
+                "retest_integrated_tree",
+                "complete_package",
+                "review_current_version",
+                "fix_and_submit",
+                "continue_current_work",
+                "report_blocker"
+              ]
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "E1",
+                  "E2",
+                  "E3",
+                  "E4"
+                ]
+              },
+              "minItems": 1
+            },
+            "extra_coordination": {
+              "type": "string",
+              "enum": [
+                "none",
+                "one_handoff",
+                "multiple_handoffs"
+              ]
+            },
+            "verification": {
+              "type": "string",
+              "enum": [
+                "public_test",
+                "dependency_receipt",
+                "conflict_retest",
+                "independent_patch_review",
+                "submission_receipt",
+                "inspect_evidence"
+              ]
+            }
+          },
+          "required": [
+            "situation",
+            "stage",
+            "needs_new_responsibility",
+            "option",
+            "package",
+            "next_step",
+            "evidence",
+            "extra_coordination",
+            "verification"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are the organization controller for two coding workers. Assess only the attached member-visible evidence. A1 = same repair repeatedly fails; A2 = upstream dependency blocks work; A3 = merge conflict or post-integration regression; A4 = outstanding verification or review; STABLE = normal progress; UNKNOWN = insufficient evidence. Return one activate_organization call. Name the remaining package, a feasible next operation, all observations needed to support the classification (cite both runs for repeated failure), and what the next verification and coordination will cost. An uncollected or absent test is not a pass. First identify the situation and phase. Then identify the concrete outstanding obligation and whether the current roles already cover it. Finally decide whether new responsibility is needed. Bind any change to this unfinished package and the extra work, handoff and verification it requires. Evaluate continuing under the current assignments on equal terms. Return only the function call with these short fields. extra_coordination estimates added coordination over the current assignments; verification names the check for the proposed next step. Activation reserves are conservative capacity bounds. Existing workers still consume tokens under KEEP. Compare two concrete paths before choosing. Under the current assignments, who can take the next useful action, and what evidence shows that path is working or stalled? Under a change, what additional work would the assigned member produce, who needs it, and what handoff would it add? An unfinished step can be normal progress. If the current people can complete it and no observed obstacle calls for another responsibility, keep their assignments and select the next step. If the current path is demonstrably stuck and a listed change offers a distinct feasible way forward, choose that change. Count only coordination added by the change."
+    },
+    {
+      "role": "user",
+      "content": "{\"organization\":{\"members\":[\"member_001\",\"member_002\"],\"work\":{\"work_root\":{\"owner\":\"member_001\",\"reviewer\":\"member_002\",\"scope\":[\"scope_1\",\"scope_2\"],\"depends_on\":[],\"children\":[]}},\"collaboration\":[[\"work_root\",\"member_001\",\"member_002\"],[\"work_root\",\"member_002\",\"member_001\"]],\"duties\":{}},\"package_status\":{\"work_root\":{\"completed\":false,\"authors\":[\"member_001\"]}},\"observed\":{\"E1\":{\"operation\":\"replace_file\",\"accepted\":true,\"reference\":{\"object_id\":\"obj-c567f5b9c7d905481548e89b\",\"version_id\":\"v4\"},\"path\":\"tests/test_ext_autodoc.py\"},\"E2\":{\"operation\":\"run_tests\",\"accepted\":true,\"reference\":{\"object_id\":\"obj-c567f5b9c7d905481548e89b\",\"version_id\":\"v4\"},\"executed\":true,\"passed\":false,\"failed_cases\":[\"tests/test_ext_autodoc.py::test_autodoc_typed_inherited_instance_variables\",\"tests/test_ext_autodoc.py::test_autodoc_typed_instance_variables\"],\"counts\":{\"collected\":2,\"errors\":0,\"failed\":2,\"passed\":0,\"skipped\":0,\"xfailed\":0,\"xpassed\":0,\"tests_run\":2}},\"E3\":{\"operation\":\"replace_file\",\"accepted\":true,\"reference\":{\"object_id\":\"obj-c567f5b9c7d905481548e89b\",\"version_id\":\"v7\"},\"path\":\"tests/test_ext_autodoc.py\"},\"E4\":{\"operation\":\"run_tests\",\"accepted\":true,\"reference\":{\"object_id\":\"obj-c567f5b9c7d905481548e89b\",\"version_id\":\"v7\"},\"executed\":true,\"passed\":false,\"failed_cases\":[\"tests/test_ext_autodoc.py::test_autodoc_typed_inherited_instance_variables\"],\"counts\":{\"collected\":2,\"errors\":0,\"failed\":1,\"passed\":1,\"skipped\":0,\"xfailed\":0,\"xpassed\":0,\"tests_run\":2}}},\"remaining_team_tokens\":972030,\"options\":{\"K\":{\"op\":\"keep\",\"effect\":\"Existing owner and reviewer continue their duties, including tests, review and delivery. No new handoff.\",\"additional_activation_reserve\":{\"controller\":6144}},\"D1\":{\"op\":\"diagnosis\",\"task\":\"work_root\",\"assignee\":\"member_002\",\"effect\":\"Add an independent evidence-gathering and handoff duty; current owner and reviewer keep their existing work.\",\"additional_activation_reserve\":{\"controller\":6144,\"diagnosis\":524288,\"implementation\":131072,\"verification\":131072,\"delivery\":131072}}}}"
+    }
+  ]
+}
