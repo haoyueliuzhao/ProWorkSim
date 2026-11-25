@@ -253,13 +253,15 @@ def wire(row):
     )
 
 
-def validate(row, body):
+def validate(row, body, *, schema_builder=wire, distinguish_future=False):
     calls = body["choices"][0]["message"].get("tool_calls") or []
     if len(calls) != 1 or calls[0]["function"]["name"] != "activate_organization":
         raise ValueError("expected one controller call")
     proposal = json.loads(calls[0]["function"]["arguments"])
     err = next(
-        Draft202012Validator(wire(row)["tools"][0]["function"]["parameters"]).iter_errors(proposal),
+        Draft202012Validator(schema_builder(row)["tools"][0]["function"]["parameters"]).iter_errors(
+            proposal
+        ),
         None,
     )
     if err:
@@ -297,16 +299,24 @@ def validate(row, body):
             or set(a["graph_dimensions"]) != set(dims)
         ):
             raise ValueError("alternative does not match legal graph")
-        if (
+        if (d["result"] == "CHANGE" or not distinguish_future) and (
             a["additional_product"] == "none"
             or a["consumer"] == "none"
             or a["verification"] == "none"
         ):
             raise ValueError("missing verifiable additional product")
-        if op["op"] == "diagnosis" and (
-            a["additional_product"] != "independent_diagnosis"
-            or a["consumer"] != w["owner"]
-            or a["handoff"] == "none"
+        if (
+            op["op"] == "diagnosis"
+            and (
+                d["result"] == "CHANGE"
+                or not distinguish_future
+                or a["additional_product"] != "none"
+            )
+            and (
+                a["additional_product"] != "independent_diagnosis"
+                or a["consumer"] != w["owner"]
+                or a["handoff"] == "none"
+            )
         ):
             raise ValueError("diagnostic handoff identity")
     if d["result"] == "CHANGE" and (a["option"] == "NONE" or not keep["blockers"]):

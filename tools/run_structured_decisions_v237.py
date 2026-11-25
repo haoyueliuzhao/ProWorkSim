@@ -74,7 +74,7 @@ def design():
     return rows, spec
 
 
-def reconcile(rows, spec, meter):
+def reconcile(rows, spec, meter, *, namespace="v237"):
     lookup = {r["id"]: r for r in rows}
     reviews = {v["id"]: v for v in read_json(PLAN / "independent-review.json")["states"]}
     records = []
@@ -82,7 +82,7 @@ def reconcile(rows, spec, meter):
         for label in sorted(spec["labels"]):
             sid, arm = label.split("-")
             row = lookup[sid]
-            slot = "v237:structure:" + label
+            slot = namespace + ":structure:" + label
             charges = c.execute(
                 "select id,status,tokens,cost,provider_id from requests where slot=?", (slot,)
             ).fetchall()
@@ -196,20 +196,22 @@ def reconcile(rows, spec, meter):
     )
 
 
-def run(rows, spec):
+def run(rows, spec, *, namespace="v237"):
     lookup = {r["id"]: r for r in rows}
     auth = RUN / "authority.json"
     a = read_json(prior.RUN / "authority.json")
     a.update(
-        scope="v237 structured decision panel only",
-        available_on_approval_nanoyuan=read_json(prior.PLAN / "results.json")["balance_nanoyuan"],
+        scope=namespace + " structured decision panel only",
+        available_on_approval_nanoyuan=spec.get(
+            "opening_balance", read_json(prior.PLAN / "results.json")["balance_nanoyuan"]
+        ),
     )
     save(auth, a)
     engine = prior.prior
     meter = PairedLedger.load(auth)
     labels = sorted(spec["labels"])
     engine.clone_function(engine.reserve, {**engine.reserve.__globals__, "ARMS": labels})(
-        auth, spec, namespace="v237", block="v237:structure"
+        auth, spec, namespace=namespace, block=namespace + ":structure"
     )
     counter = engine.OfficialDeepSeekCounter(
         engine.TOKENIZER, manifest_sha256=reference(engine.TOKENIZER)["sha256"]
@@ -219,7 +221,7 @@ def run(rows, spec):
     def call(label):
         sid, arm = label.split("-")
         row = lookup[sid]
-        slot = "v237:structure:" + label
+        slot = namespace + ":structure:" + label
         folder = RUN / label
         folder.mkdir(exist_ok=True)
         with meter.db() as db:
@@ -257,7 +259,7 @@ def run(rows, spec):
 
     with ThreadPoolExecutor(4) as pool:
         list(pool.map(call, spec["labels"]))
-    reconcile(rows, spec, meter)
+    reconcile(rows, spec, meter, namespace=namespace)
 
 
 if __name__ == "__main__":
