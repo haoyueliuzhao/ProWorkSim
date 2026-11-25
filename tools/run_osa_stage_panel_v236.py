@@ -51,21 +51,23 @@ def freeze(panel):
     )
 
 
-def execute(panel, spec):
+def execute(panel, spec, *, namespace="v236", opening_balance=None):
     lookup = {r["id"]: r for r in panel}
     labels = sorted(x for pair in spec["schedule"] for x in pair)
     authority = read_json(prior.RUN / "authority.json")
     authority.update(
-        scope="v236 twelve matched decision states only",
+        scope=f"{namespace} twelve matched decision states only",
         available_on_approval_nanoyuan=read_json(prior.PLAN / "results.json")[
             "balance_after_settlement_nanoyuan"
-        ],
+        ]
+        if opening_balance is None
+        else opening_balance,
     )
     auth = RUN / "authority.json"
     save(auth, authority)
     meter = PairedLedger.load(auth)
     prior.clone_function(prior.reserve, {**prior.reserve.__globals__, "ARMS": labels})(
-        auth, spec, namespace="v236", block="v236:decision-panel"
+        auth, spec, namespace=namespace, block=f"{namespace}:decision-panel"
     )
     counter = prior.OfficialDeepSeekCounter(
         prior.TOKENIZER, manifest_sha256=reference(prior.TOKENIZER)["sha256"]
@@ -75,7 +77,7 @@ def execute(panel, spec):
     def pair(names):
         for name in names:
             sid, arm = name.split("-")
-            slot = "v236:stage-panel:" + name
+            slot = namespace + ":stage-panel:" + name
             folder = RUN / name
             folder.mkdir(exist_ok=True)
             with meter.db() as db:
@@ -126,7 +128,7 @@ def execute(panel, spec):
             folder = RUN / name
             req = db.execute(
                 "select id,tokens,cost,provider_id from requests where slot=? and status='settled'",
-                ("v236:stage-panel:" + name,),
+                (namespace + ":stage-panel:" + name,),
             ).fetchall()
             entry = dict(
                 id=sid,

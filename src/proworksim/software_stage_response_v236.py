@@ -119,12 +119,12 @@ def wire(row, condition):
     }
 
 
-def validate(row, body):
+def validate(row, body, *, schema_builder=wire):
     calls = body["choices"][0]["message"].get("tool_calls") or []
     if len(calls) != 1 or calls[0]["function"]["name"] != "activate_organization":
         raise ValueError("Expected one decision")
     d = json.loads(calls[0]["function"]["arguments"])
-    props = wire(row, "direct")["tools"][0]["function"]["parameters"]["properties"]
+    props = schema_builder(row, "direct")["tools"][0]["function"]["parameters"]["properties"]
     if not isinstance(d, dict) or set(d) != set(props):
         raise ValueError("Invalid decision fields")
     for k, p in props.items():
@@ -140,7 +140,7 @@ def validate(row, body):
         or any(x not in row["evidence"] for x in d["evidence"])
     ):
         raise ValueError("Unknown evidence")
-    for k in ("reason", "cost_and_check"):
+    for k in (k for k, field in props.items() if "maxLength" in field):
         if not isinstance(d[k], str) or not 0 < len(d[k].strip()) <= props[k]["maxLength"]:
             raise ValueError("Invalid explanation")
     graph = deepcopy(row["graph"])
