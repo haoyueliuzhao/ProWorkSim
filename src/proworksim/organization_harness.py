@@ -3,4 +3,16 @@
 from .software_context_v232 import DEFAULT_CONTEXT
 from .software_organization_v232 import OrganizationExecution
 
-__all__ = ["DEFAULT_CONTEXT", "OrganizationExecution"]
+
+def run_worker_fragment(prepared, runtime, *, source="ordinary", **kwargs):
+    """Run the existing Worker schedule with a zero-call observer on settled opportunities."""
+    if source == "ordinary":
+        from .software_event_intake_v243 import run_ordinary
+
+        return run_ordinary(prepared, runtime, **kwargs)
+    from .software_event_harness_v243 import run_worker_fragment as observed
+
+    return observed(prepared, runtime, source=source, **kwargs)
+
+
+__all__ = ["DEFAULT_CONTEXT", "OrganizationExecution", "run_worker_fragment"]

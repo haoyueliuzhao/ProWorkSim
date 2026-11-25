@@ -1,0 +1,221 @@
+{
+  "checkpoint": "8bf3c99daacaebe695e9698ed25e706600cd38b3727e20888b74092bf68163c5",
+  "graphs": {
+    "project_graph": {
+      "observer": "member_001",
+      "facts": {
+        "E1": {
+          "fact_id": "77583e7e7bfb6c42377908147447bcdeec48b2898bb5ca621785ab8c7733f48e",
+          "receipt": {
+            "operation": "delivery_readiness",
+            "accepted": true,
+            "reference": null,
+            "ready": false,
+            "final_version": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v5"
+            },
+            "public_test": {
+              "passed": true,
+              "executed": true,
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v5"
+              }
+            },
+            "fixed": [
+              "patch-1"
+            ],
+            "packages": [
+              {
+                "task_id": "work_root",
+                "owner": "member_001",
+                "reviewer": "member_002",
+                "missing": [
+                  "independent_current_review"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "dependencies": [],
+      "packages": {
+        "work_root": {
+          "completed": true,
+          "authors": [
+            "member_001"
+          ]
+        }
+      }
+    },
+    "obligation_graph": {
+      "work_root/complete_package": {
+        "package": "work_root",
+        "label": "complete_package",
+        "completion": "SATISFIED",
+        "readiness": "NOT_APPLICABLE",
+        "requires": [],
+        "evidence": [
+          "E1"
+        ],
+        "completion_evidence": "fresh receipt for complete_package",
+        "source": "satisfied"
+      },
+      "work_root/independent_review": {
+        "package": "work_root",
+        "label": "independent_review",
+        "completion": "UNSATISFIED",
+        "readiness": "READY",
+        "requires": [
+          "work_root/complete_package"
+        ],
+        "evidence": [
+          "E1"
+        ],
+        "completion_evidence": "fresh receipt for independent_review",
+        "source": "explicit_contract_gap"
+      },
+      "work_root/fix_tree": {
+        "package": "work_root",
+        "label": "fix_tree",
+        "completion": "SATISFIED",
+        "readiness": "NOT_APPLICABLE",
+        "requires": [
+          "work_root/independent_review"
+        ],
+        "evidence": [
+          "E1"
+        ],
+        "completion_evidence": "fresh receipt for fix_tree",
+        "source": "satisfied"
+      },
+      "work_root/submit": {
+        "package": "work_root",
+        "label": "submit",
+        "completion": "UNKNOWN",
+        "readiness": "CONDITIONAL",
+        "requires": [
+          "work_root/fix_tree"
+        ],
+        "evidence": [
+          "E1"
+        ],
+        "completion_evidence": "fresh receipt for submit",
+        "source": "workflow_successor"
+      }
+    },
+    "organization_graph": {
+      "version": "e85f2556704474cb94f299ae9af3de4d6545382f41afc2b91dc46c8974274419",
+      "nodes": [
+        [
+          "Member",
+          "member_001"
+        ],
+        [
+          "Member",
+          "member_002"
+        ],
+        [
+          "Role",
+          "owner"
+        ],
+        [
+          "Role",
+          "verifier"
+        ],
+        [
+          "WorkPackage",
+          "work_root"
+        ]
+      ],
+      "edges": [
+        [
+          "COLLABORATES_WITH",
+          "member_001",
+          "member_002",
+          "work_root"
+        ],
+        [
+          "COLLABORATES_WITH",
+          "member_002",
+          "member_001",
+          "work_root"
+        ],
+        [
+          "HAS_ROLE",
+          "member_001",
+          "owner",
+          "work_root"
+        ],
+        [
+          "HAS_ROLE",
+          "member_002",
+          "verifier",
+          "work_root"
+        ],
+        [
+          "OWNS",
+          "member_001",
+          "work_root"
+        ],
+        [
+          "VERIFIES",
+          "member_002",
+          "work_root"
+        ]
+      ],
+      "constraints": {
+        "worker_count": 2,
+        "independent_review": true,
+        "execution_dimensions": [
+          "D0",
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "D7"
+        ]
+      }
+    }
+  },
+  "orders": {
+    "review:work_root": {
+      "dimension": "D5",
+      "task": "work_root",
+      "actor": "member_002",
+      "recipient": "member_001",
+      "artifact": "patch-1",
+      "version": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v5"
+      },
+      "evidence": "E1",
+      "product": "Independent verdict on the identified patch, with public review evidence; give the owner the verdict."
+    }
+  },
+  "source": {
+    "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v243/event-pairs-r1/Django-15916/OSA/osa-api/d76cff0b-994d-4fb0-8572-f00097f01a27/request.json",
+    "sha256": "5d5e6fb36bf614cb14716361a7e0e99deeba876af741123f9f4c4d2131effff4",
+    "bytes": 10497
+  },
+  "target_fingerprint": "3566112226cb878c4a68e591569a6d867286aa27f6b61d86df1e8ee36d6c6017",
+  "world_orders": {
+    "review:work_root": {
+      "dimension": "D5",
+      "task": "work_root",
+      "actor": "member_002",
+      "recipient": "member_001",
+      "artifact": "patch-1",
+      "version": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v5"
+      },
+      "evidence": "E1",
+      "product": "Independent verdict on the identified patch, with public review evidence; give the owner the verdict."
+    }
+  },
+  "graph_matched": true
+}

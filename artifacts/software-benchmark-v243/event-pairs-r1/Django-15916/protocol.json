@@ -1,0 +1,273 @@
+{
+  "roster": [
+    {
+      "case": "Django-15916",
+      "instance": "django__django-15916",
+      "kind": "A4",
+      "row": {
+        "id": "q10",
+        "instance": "django__django-15916",
+        "world_instance": "fce5684a767748e5bd56254acbc27bf1",
+        "reference_type": "A4",
+        "observer": "member_001",
+        "targets": [
+          "work_root"
+        ],
+        "graph": {
+          "members": [
+            "member_001",
+            "member_002"
+          ],
+          "work": {
+            "work_root": {
+              "owner": "member_001",
+              "reviewer": "member_002",
+              "scope": [
+                "scope_1",
+                "scope_2"
+              ],
+              "depends_on": [],
+              "children": []
+            }
+          },
+          "collaboration": [
+            [
+              "work_root",
+              "member_001",
+              "member_002"
+            ],
+            [
+              "work_root",
+              "member_002",
+              "member_001"
+            ]
+          ],
+          "duties": {}
+        },
+        "options": {
+          "K": {
+            "op": "keep"
+          }
+        },
+        "work_status": {
+          "work_root": {
+            "completed": true,
+            "authors": [
+              "member_001"
+            ]
+          }
+        },
+        "evidence": {
+          "E1": {
+            "operation": "delivery_readiness",
+            "accepted": true,
+            "reference": null,
+            "ready": false,
+            "final_version": {
+              "object_id": "obj-c567f5b9c7d905481548e89b",
+              "version_id": "v5"
+            },
+            "public_test": {
+              "passed": true,
+              "executed": true,
+              "source_reference": {
+                "object_id": "obj-c567f5b9c7d905481548e89b",
+                "version_id": "v5"
+              }
+            },
+            "fixed": [
+              "patch-1"
+            ],
+            "packages": [
+              {
+                "task_id": "work_root",
+                "owner": "member_001",
+                "reviewer": "member_002",
+                "missing": [
+                  "independent_current_review"
+                ]
+              }
+            ]
+          }
+        },
+        "available_tokens": 2349661,
+        "provenance": {
+          "source": "runs/software-benchmark-v229/dev1-r1/task-01/PREFIX/observations.json",
+          "ordinals": [
+            47
+          ],
+          "request": "runs/software-benchmark-v229/dev1-r1/task-01/PREFIX/api/b3381021-349f-40d1-9e8f-e451317878be/request.json",
+          "commands": [
+            "command:member_001:staff-a7f7ca96e6434d3e87639deb9e733408-44"
+          ],
+          "receipt_hashes": [
+            "1838bc60328e94267ab1901f6eb89d788d2cb131bc2342ce1d18a4d3ce9fbd7d"
+          ],
+          "registered_menu": "runs/software-benchmark-v229/dev1-r1/task-01/PREFIX/candidate-bank.json",
+          "checkpoint": "8bf3c99daacaebe695e9698ed25e706600cd38b3727e20888b74092bf68163c5"
+        },
+        "source_id": "s07",
+        "probe_id": "work_root/independent_review"
+      },
+      "task": {
+        "index": 1,
+        "phase": "dev1",
+        "instance_id": "django__django-15916",
+        "repo": "django/django",
+        "base_commit": "88e67a54b7ed0210c11523a337b498aadb2f5187",
+        "public_problem": "Allow ModelForm meta to specify formfield_callback.\nDescription\n\t \n\t\t(last modified by Klaas-Jan Gorter)\n\t \nThe function django.forms.modelform_factory returns a form class based on the class it recieves as form argument. As an additional argument it accepts a formfield_callback function. When no callback is provided the class uses no callback instead of the formfield_callback of the base form provided.\nExample:\nfrom django import forms\nform django.db import models\nclass MyModel(forms.Model):\n\tactive = models.BooleanField()\n\tname = models.CharField(max_length=64, blank=True, null=True)\n\t\ndef all_required(field, **kwargs):\n\tformfield = field.formfield(**kwargs)\n\tformfield.required = True\n\treturn formfield\nclass MyForm(forms.ModelForm):\n\tformfield_callback = all_required\n\tclass Meta:\n\t\tmodel = MyModel\n\t\tformfield_callback = all_required\n\t\tfields = ['active', 'name']\nFactoryForm = forms.modelform_factory(MyModel, form=MyForm)\nThe expected behavior would be that the FactoryForm uses the formfield_callback specified in the Meta attribute of MyForm and that therefore the fields would be required in both the FactoryForm and MyForm. However, under the current behavior of modelform_factory the formfield_callback is overwritten (with the default argument None) before the new class is constructed and in FactoryForm the fields are not required.\nI believe this is a bug, because this behavior has been observed before in Ticket #18573 in Django 1.3. The test that was proposed there was incorrect, because under the expected behavior the callback should have been called four times not two times as was asserted. (I believe this test has been removed from version 2, because I find no equivalent test in tests/model_formsets_regress.)\n",
+        "public_problem_sha256": "561a7dff2336249703a63a8fbfcf8e868324859d74b3da2ade1a4fee5ed23d61",
+        "requirements": [
+          {
+            "id": "scope_1",
+            "exact_public_quote": "ModelForm",
+            "start_character": 6,
+            "end_character": 15
+          },
+          {
+            "id": "scope_2",
+            "exact_public_quote": "formfield_callback",
+            "start_character": 32,
+            "end_character": 50
+          }
+        ],
+        "coverage_type": "shared_interface",
+        "configuration": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v064/full-verified-r1/configs/3720.json",
+          "sha256": "a6a5c8da98f14a6ed264aaa39fb07451e562669863f4711a7e7ebc446ee19278",
+          "bytes": 7402
+        },
+        "actor_image_id": "sha256:1e271ee1c8cdaf369f9553e7c8ee7c5b8a2bd9be7c3a0573b6791f048b739f16",
+        "scorer_image_id": "sha256:e347356c79405be12c1c6d90476eb68302542b814b12bfb95ae479250e22b65c",
+        "historically_exposed": true,
+        "selection": {
+          "seed": "v217-panel-20261119",
+          "method": "public issue review of deterministic hash shortlists; exclude three old regression tasks and earlier same-week CN confirmation django14155",
+          "no_solution_or_scores_read": true,
+          "scenario_is_hypothesis_not_gain_label": true
+        },
+        "seed": 2192938440,
+        "source_index": 18,
+        "scorer_script": "score_project_relations_v217_1.py",
+        "environment": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v217/environment-r2/task-18/qualification.json",
+          "sha256": "40e97477145017ab09398837c71ea60aef2981ba54f61c34916497afb2de9675",
+          "bytes": 584
+        },
+        "source_panel": {
+          "path": "/data0/zhuxinrui/projects/ProWorkSim/artifacts/software-benchmark-v217/protocol-r1/candidate-tasks.json",
+          "sha256": "759d5aba8bf5f2ac0f7c7ac8eee1540c10c9c09e613256314e2dac765357cdaa",
+          "bytes": 141932
+        }
+      },
+      "configuration": {
+        "path": "/data0/zhuxinrui/projects/ProWorkSim/runs/software-benchmark-v064/full-verified-r1/configs/3720.json",
+        "sha256": "a6a5c8da98f14a6ed264aaa39fb07451e562669863f4711a7e7ebc446ee19278",
+        "bytes": 7402
+      },
+      "initial_budget": 2349661,
+      "pair_hold_nanoyuan": 37594576000,
+      "checkpoint": "8bf3c99daacaebe695e9698ed25e706600cd38b3727e20888b74092bf68163c5",
+      "score_script": "score_project_relations_v217_1.py",
+      "score_index": 18,
+      "state": {
+        "case": "Django-15916",
+        "source_prefix": "runs/software-benchmark-v229/dev1-r1/task-01/PREFIX",
+        "checkpoint": "8bf3c99daacaebe695e9698ed25e706600cd38b3727e20888b74092bf68163c5",
+        "shared_prefix_usage": 2650339
+      }
+    }
+  ],
+  "cap": 230000000000,
+  "block_hold": 37594576000,
+  "files": [
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_multitype_worker_v242.py",
+      "sha256": "7c4ef3992ebabfee76262ddf42edaf8c5860bd2435a283cca13c8669afcafc56",
+      "bytes": 6704
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_multitype_execution_v242.py",
+      "sha256": "f184ecb76eceaf7b81af734e89dfeb7e420443842403aee89c2022f9f0ac0ee5",
+      "bytes": 5826
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_commitment_prompt_v240_4.py",
+      "sha256": "b8fc1b743b3400239068e2a7b90663087c7b3a1cf7adde5ed67f7b71286476f3",
+      "bytes": 1655
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_organization_episode_v232.py",
+      "sha256": "e6d5080c8ad022ad38e77ebdfd1a5854528275d24b0f5eb9a01598909819f99b",
+      "bytes": 13709
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/analyze_multitype_v242.py",
+      "sha256": "a866ebc2f57cc6a689cf747d769b6b3cf2652b61296a57b89e055a81f8bdfa43",
+      "bytes": 3851
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_anomaly_lifecycle_v242.py",
+      "sha256": "02fc7d2d9228af1cbedd7b61651d5ad009b7efc69676cee3ac53b72a2eda5044",
+      "bytes": 6289
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/tools/run_event_pairs_v243.py",
+      "sha256": "d5f358bb8b61cb07c5c43f8a3c2bf607936abbd78d2b285c06296cba2cf60b7e",
+      "bytes": 5657
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_event_orders_v243.py",
+      "sha256": "21c45098c436595ccf550d1b3efb3f095428be6da631f76707cfe1b40d6b8d72",
+      "bytes": 15245
+    },
+    {
+      "path": "/data0/zhuxinrui/projects/ProWorkSim/src/proworksim/software_event_harness_v243.py",
+      "sha256": "4c4d2012aef1ef51c41df9b80d2a56002f2fa90d3be0ec9a6cc7cbd28633d1e1",
+      "bytes": 7640
+    }
+  ],
+  "protocol": "v243 same-state OSA/KEEP; one live OSA call inside the shared 5M envelope, fixed two members, exact code and legal candidate grading. Fresh version-bound D4 handoff, D5 review dispatch, D6 integration and associated D7 opportunity reservation. Explicit abstention. Passive capture on both ordinary Worker continuations; descendant states identified as dependent. No C/N update or forced CHANGE.",
+  "targets": {
+    "A2": 2,
+    "A1": 2,
+    "A3": 1,
+    "A4": 1
+  },
+  "priority": [
+    "A2",
+    "A1",
+    "A3",
+    "A4"
+  ],
+  "opening_available": 68661986640,
+  "cohort": "supplementary A4; historical development checkpoint, no independent A2/A1 sites available",
+  "resources": {
+    "osa_max": 8192,
+    "phases": {
+      "new_work": 131072,
+      "handoff_and_disposition": 393216,
+      "implementation": 131072,
+      "verification": 131072,
+      "fix_and_submit": 262144
+    },
+    "required": 1056768,
+    "remaining": 2349661,
+    "enough": true
+  },
+  "orders": {
+    "review:work_root": {
+      "dimension": "D5",
+      "task": "work_root",
+      "actor": "member_002",
+      "recipient": "member_001",
+      "artifact": "patch-1",
+      "version": {
+        "object_id": "obj-c567f5b9c7d905481548e89b",
+        "version_id": "v5"
+      },
+      "evidence": "E1",
+      "product": "Independent verdict on the identified patch, with public review evidence; give the owner the verdict."
+    }
+  }
+}
