@@ -48,6 +48,32 @@ def paired(rows, endpoint):
     )
 
 
+def matched_fixture_scores(base):
+    revised = {}
+    for arm in ARMS:
+        raw_path = base / (arm + "-code") / "receipt.json"
+        new_path = base / (arm + "-code-fixture") / "receipt.json"
+        if not new_path.exists():
+            return {}
+        raw = read_json(raw_path)
+        new = read_json(new_path)
+        if (
+            new.get("status") != "official_report"
+            or new.get("environment_revision") != "v217.3-official-test-fixture-collision"
+            or new.get("instance_id") != "sphinx-doc__sphinx-8595"
+            or new["model_calls"] != 0
+            or new.get("cleanup_errors")
+        ):
+            return {}
+        for k in ("candidate_tree_sha256", "endpoint_lock", "official_image", "official_version"):
+            if raw[k] != new[k]:
+                raise ValueError(f"Supplemental official scoring changed {k}")
+        if raw["patch"]["sha256"] != new["patch"]["sha256"] or raw["run_id"] == new["run_id"]:
+            raise ValueError("Mismatched candidate or grading cache")
+        revised[arm] = new
+    return revised
+
+
 def main():
     spec = read_json(PLAN / "roster.json")
     records = []
@@ -59,8 +85,11 @@ def main():
         for c in spec["roster"]:
             row = dict(instance=c["instance"], checkpoint=c["checkpoint"], prefix=c["prefix"])
             records.append(row)
+            base = RUN / str(c["index"])
+            revised = (
+                matched_fixture_scores(base) if c["instance"] == "sphinx-doc__sphinx-8595" else {}
+            )
             for arm in ARMS:
-                base = RUN / str(c["index"])
                 dst = base / arm
                 result = read_json(dst / "result.json") if (dst / "result.json").exists() else {}
                 paid = counts(db, f"v244:{c['index']}:{arm}")["paid"]
@@ -68,8 +97,20 @@ def main():
                 for k in ["code", "delivery"]:
                     path = base / (arm + "-" + k) / "receipt.json"
                     if path.exists():
-                        rec = read_json(path)
+                        original = read_json(path)
+                        rec = revised[arm] if k == "code" and revised else original
                         score[k] = {f: rec.get(f) for f in ["status", "resolved"]}
+                        if rec is not original:
+                            score[k].update(
+                                raw_status=original["status"],
+                                raw_resolved=original["resolved"],
+                                environment_revision=rec["environment_revision"],
+                                patch_sha256=rec["patch"]["sha256"],
+                                raw_run_id=original["run_id"],
+                                new_run_id=rec["run_id"],
+                            )
+                        if rec.get("failure_evidence"):
+                            score[k]["candidate_failure"] = rec["failure_evidence"]
                         if rec.get("official_result"):
                             iid, data = rec["official_result"]
                             score[k]["tests"] = {
@@ -86,7 +127,23 @@ def main():
                 totals[arm].update(paid)
                 if (dst / "decision.json").exists():
                     dec = read_json(dst / "decision.json")
+                    choice = dec["active"]["decision"]["option"]
+                    common_view = read_json(dst / "decision-input.json")
+                    menu = common_view["row"]["options"]
+                    lock = dst / "closure/terminal-code/lock.json"
+                    if lock.exists():
+                        endpoint = read_json(lock)
+                        prefix_identity = common_view["view"]["final_identity"]
+                        row[arm]["code_same_as_prefix"] = all(
+                            endpoint[k] == prefix_identity[k]
+                            for k in ("files_sha256", "entry_metadata_sha256")
+                        )
+                        row[arm]["final_tree"] = endpoint["tree_sha256"]
+                    assigned = (
+                        menu.get(choice) or (dec["info"].get("orders") or {}).get(choice) or {}
+                    )
                     row[arm].update(
+                        assignment=assigned,
                         changed=dec["active"].get("changed"),
                         decision_input_sha256=sha256(
                             (dst / "decision-input.json").read_bytes()
@@ -109,6 +166,17 @@ def main():
                 if (dst / "boundary.json").exists():
                     outcomes = read_json(dst / "boundary.json")["outcomes"]
                     row[arm]["member_actions"] = dict(Counter(o["worker_id"] for o in outcomes))
+                    row[arm]["submit_receipts"] = [
+                        dict(
+                            actor=o["worker_id"],
+                            accepted=o["response"].get("ok"),
+                            code=((o["response"].get("error") or {}).get("rejection") or {}).get(
+                                "code"
+                            ),
+                        )
+                        for o in outcomes
+                        if (o.get("decision") or {}).get("action") == "submit_integration"
+                    ]
                     row[arm]["public_tests"] = [
                         dict(
                             actor=o["worker_id"],

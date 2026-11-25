@@ -33,6 +33,23 @@ def disposition(arm):
     return "维持"
 
 
+def assignment(arm):
+    if not arm.get("changed"):
+        return disposition(arm)
+    op = arm.get("assignment", {})
+    names = {
+        "verify": "承担独立复核",
+        "diagnosis": "承担诊断",
+        "transfer_unstarted": "接手尚未开工的工作包",
+        "release_diagnosis": "解除诊断职责",
+        "D4": "执行交接",
+        "D5": "按指定版本复核",
+        "D6": "负责集成",
+    }
+    who = op.get("assignee") or op.get("actor") or ""
+    return f"{who.removeprefix('member_')} {names.get(op.get('op') or op.get('dimension'), '执行新安排')} {op.get('task', '')}".strip()
+
+
 def render(r):
     rows = r["rows"]
     n = len(rows)
@@ -66,11 +83,33 @@ def render(r):
             )
             + " |"
         )
-    if code["exact_mcnemar_two_sided_if_complete"] is not None:
+    rerun = next(
+        (row for row in rows if row["OSA"]["scores"].get("code", {}).get("environment_revision")),
+        None,
+    )
+    if rerun:
         lines.extend(
             [
                 "",
-                f"代码端点使用同题配对的精确 McNemar 双侧检验，p = {code['exact_mcnemar_two_sided_if_complete']:.3g}。每题占 6.67 个百分点，同一保存点的两次生成各只运行一次。",
+                f"Sphinx-8595 首轮评分为 KEEP 通过、OSA 未定。候选与官方测试均新增同名测试文件，导致官方测试补丁无法安装。采用既有 v217.3 评分侧修订，用相同镜像、分别锁定的原补丁和新的评分标识复测两组，结果为 KEEP {label(value(rerun['KEEP'], 'code'))}、OSA {label(value(rerun['OSA'], 'code'))}。表中采用这次同口径结果；补评新增模型调用为零。",
+            ]
+        )
+    delivery = r["endpoints"]["delivery"]
+    d = delivery["pass_count_bounds"]
+    lines.extend(
+        [
+            "",
+            f"正确合法交付率为 KEEP {percent(*d['KEEP'], n)}、OSA {percent(*d['OSA'], n)}。合法交付要求模型实际提交一个符合项目流程、且通过官方验收的版本。",
+        ]
+    )
+    if (
+        code["exact_mcnemar_two_sided_if_complete"] is not None
+        and delivery["exact_mcnemar_two_sided_if_complete"] is not None
+    ):
+        lines.extend(
+            [
+                "",
+                f"代码端点使用同题配对的精确 McNemar 双侧检验，p = {code['exact_mcnemar_two_sided_if_complete']:.3g}。正确合法交付端点 p = {delivery['exact_mcnemar_two_sided_if_complete']:.3g}。每题占 6.67 个百分点，同一保存点的两次生成各只运行一次。",
             ]
         )
     lines.extend(
@@ -89,6 +128,30 @@ def render(r):
         avg = f"{t.get('tokens', 0) / k:,.0f}" if k else "—"
         lines.append(
             f"| {a} | {k} | {t.get('input', 0):,} | {t.get('output', 0):,} | {avg} | {osa:,} | ¥{t.get('nanoyuan', 0) / 1e9:.2f} |"
+        )
+    lines.extend(
+        [
+            "",
+            "表中用量取自供应商返回的输入和输出 token，金额是项目按缓存命中、未命中及输出的登记费率计入本批账本的人民币金额。",
+        ]
+    )
+    if all(row[a].get("status") == "closed" for row in rows for a in ARMS):
+        delta = sum(row["KEEP"]["paid"]["tokens"] - row["OSA"]["paid"]["tokens"] for row in rows)
+        improved = [
+            row
+            for row in rows
+            if value(row["OSA"], "delivery") and not value(row["KEEP"], "delivery")
+        ]
+        elsewhere = delta - sum(
+            row["KEEP"]["paid"]["tokens"] - row["OSA"]["paid"]["tokens"] for row in improved
+        )
+        ended = sum("budget" in str(row["KEEP"].get("ending", "")) for row in improved)
+        direction = "少用" if delta >= 0 else "多用"
+        lines.extend(
+            [
+                "",
+                f"计入组织决策后，OSA 全组新增 token 合计比 KEEP {direction} {abs(delta):,}（{abs(delta) / r['total']['KEEP']['tokens']:.1%}）。在只有 OSA 正确交付的 {len(improved)} 题上，KEEP 减 OSA 的用量差合计 {delta - elsewhere:+,} token，其中 {ended} 题的 KEEP 支到预算边界才结束；其余题合计差 {elsewhere:+,} token。该分解反映本批成本集中在哪里，仍受每题仅一次生成的影响。",
+            ]
         )
     ds = Counter(disposition(row["OSA"]) for row in rows)
     lines += [
@@ -111,6 +174,103 @@ def render(r):
         lines.append(
             f"| {row['instance'].split('__')[-1]} | {pairs[0]} | {pairs[1]} | {disposition(row['OSA'])} | {costs} |"
         )
+    lines.extend(
+        [
+            "",
+            "## 实际改组与维持分工的题",
+            "",
+            "| OSA 实际行为 | 题数 | KEEP／OSA 代码通过 | KEEP／OSA 正确交付 | KEEP／OSA 平均新增万 token |",
+            "| --- | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for flag, title in [(True, "改组生效"), (False, "组织图维持")]:
+        sub = [row for row in rows if row["OSA"].get("changed") is flag]
+        if not sub:
+            continue
+        vals = [
+            "／".join(
+                percent(
+                    sum(value(row[a], ep) is True for row in sub),
+                    sum(value(row[a], ep) is not False for row in sub),
+                    len(sub),
+                )
+                for a in ARMS
+            )
+            for ep in ("code", "delivery")
+        ]
+        tks = "／".join(
+            f"{sum(row[a]['paid'].get('tokens', 0) for row in sub) / len(sub) / 10000:.1f}"
+            for a in ARMS
+        )
+        lines.append(f"| {title} | {len(sub)} | {vals[0]} | {vals[1]} | {tks} |")
+    lines.append("")
+    lines.append(
+        "这些小组由 OSA 看到现场后自行选择，适合解释实际行为。全体 15 题的同题比较才是事前设定的主结果。"
+    )
+    comparable = [row for row in rows if all(row[a].get("final_tree") for a in ARMS)]
+    same = sum(row["KEEP"]["final_tree"] == row["OSA"]["final_tree"] for row in comparable)
+    inherited = [
+        row["instance"].split("__")[-1]
+        for row in rows
+        if any(row[a].get("code_same_as_prefix") and value(row[a], "code") is True for a in ARMS)
+    ]
+    lines.extend(
+        ["", f"核对已锁定的完整代码树：{len(comparable)} 对可比，{same} 对最终树完全一致。"]
+    )
+    if inherited:
+        lines.append(
+            "有 "
+            + str(len(inherited))
+            + " 题至少一支的最终文件及文件元数据与共同起点完全一致，且通过官方验收。因此这些题在分支前就已有可通过的代码："
+            + "、".join(inherited)
+            + "。"
+        )
+    lines.append("其余题若最终代码发生变化，仅凭最终评分还无法判断起点代码能否通过。")
+    lines.extend(["", "## 代码通过后，能否完成交付", ""])
+    for a in ARMS:
+        gaps = [
+            row
+            for row in rows
+            if value(row[a], "code") is True and value(row[a], "delivery") is False
+        ]
+        budget = sum("budget" in str(row[a].get("ending", "")) for row in gaps)
+        unsubmitted = sum(not row[a].get("submit_receipts") for row in gaps)
+        lines.append(
+            f"- {a} 有 {len(gaps)} 题最终代码通过，未取得正确合法交付。其中 {budget} 题在预算边界结束，{unsubmitted} 题在本次续跑中未发起正式提交。这两个计数可以重叠。"
+        )
+    delivery_only = [
+        row for row in rows if {value(row[a], "delivery") for a in ARMS} == {False, True}
+    ]
+    if delivery_only:
+        lines.extend(
+            [
+                "",
+                "下列同题交付结果不同。复核和提交次数仅计分支开始后的调用。",
+                "",
+                "| 任务 | 成功交付的一组 | OSA 生效安排 | KEEP／OSA 复核次数 | KEEP／OSA 提交尝试 |",
+                "| --- | --- | --- | ---: | ---: |",
+            ]
+        )
+        for row in delivery_only:
+            success = next(a for a in ARMS if value(row[a], "delivery"))
+            term = assignment(row["OSA"])
+            reviews = "／".join(
+                str(row[a].get("operations", {}).get("org_review_patch", 0)) for a in ARMS
+            )
+            nsubs = "／".join(str(len(row[a].get("submit_receipts", []))) for a in ARMS)
+            lines.append(
+                f"| {row['instance'].split('__')[-1]} | {success} | {term} | {reviews} | {nsubs} |"
+            )
+    shared_failure = {
+        row["instance"] for row in rows if all(value(row[a], "code") is False for a in ARMS)
+    }
+    examples = {
+        "astropy__astropy-14598": "Astropy-14598 的两支都通过 175 项原有回归，唯一目标用例都因长 FITS 字符串的单引号数量不符而失败。KEEP 修改写入时的切分，OSA 修改读取时的解析并增加测试；这两种修法都遗漏了官方覆盖的边界。",
+        "django__django-12663": "Django-12663 的两支都通过 135 项原有回归，但在同一延迟对象子查询测试中失败。KEEP 分支在需要数字 ID 时交给字段一个 Manager 对象；OSA 分支交给字段的仍是包装后的 SimpleLazyObject。两份候选都没有修通目标行为。",
+    }
+    if shared_failure.intersection(examples):
+        lines.extend(["", "## 两组都失败的具体例子", ""])
+        lines.extend("- " + msg for iid, msg in examples.items() if iid in shared_failure)
     discordant = [row for row in rows if {value(row[a], "code") for a in ARMS} == {False, True}]
     if discordant:
         lines += ["", "## 哪些题拉开了通过率", ""]
@@ -130,6 +290,9 @@ def render(r):
                 if failed
                 else ""
             )
+            failure = row[bad]["scores"]["code"].get("candidate_failure") or {}
+            if failure.get("classification") == "unresolved_candidate_merge_conflict":
+                detail = f"。{bad} 锁定的最终代码在 {failure['path']} 第 {failure['line']} 行留有未解决的合并标记，补丁已应用，评分程序因语法错误退出；该错误已在锁定代码上复现"
             lines.append(
                 f"- **{row['instance'].split('__')[-1]}** 仅 {good} 通过。OSA {disposition(row['OSA'])}{what}{detail}。"
             )
