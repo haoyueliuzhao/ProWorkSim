@@ -7,6 +7,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_repaired_osa_pair_v233 as paired
+from proworksim import software_structured_activation as activation
 from run_obligation_scope_v237_1 import PLAN as DECISIONS, RUN as SOURCE, validate
 from run_structured_decisions_v237 import PLAN as ORIGINAL_PANEL
 from proworksim.software_handoff_evidence_v232_6 import EvidenceFollowupExecution
@@ -70,6 +71,7 @@ def freeze():
                 Path(__file__),
                 ORIGINAL_PANEL / "panel.json",
                 Path(paired.episode_module.__file__),
+                Path(activation.__file__),
                 ROOT / "tools/run_obligation_scope_v237_1.py",
                 ROOT / "src/proworksim/software_structured_policy_v237.py",
             )
@@ -95,7 +97,8 @@ class StructuredExecution(EvidenceFollowupExecution):
         if arm == "KEEP":
             return super().decide(node, observer, frozen, "KEEP")
         body = read_json(checked(self.binding["decision"]))
-        d, target = validate(row, body)
+        requested, requested_target = validate(row, body)
+        d, target, evidence_hold = activation.executable_decision(row, requested, requested_target)
         native_refs = {r["command_id"]: k for k, r in frozen["evidence"].items()}
         refmap = dict(zip(row["evidence"], row["provenance"]["commands"]))
         # The actual controller accepts only previously authorized evidence, never guessed IDs.
@@ -142,7 +145,10 @@ class StructuredExecution(EvidenceFollowupExecution):
         return active, dict(
             source="registered_structured_osa",
             arm=arm,
-            proposal=d,
+            proposal=requested,
+            requested_effect=requested_target,
+            effective_decision=d["decision"],
+            evidence_hold=evidence_hold,
             validator="rejected" if rejected else "accepted",
             activation_rejection=rejected,
             intended_effect=target,
