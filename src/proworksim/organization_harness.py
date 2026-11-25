@@ -8,6 +8,9 @@ def run_worker_fragment(prepared, runtime, *, source="ordinary", **kwargs):
     """Run the existing Worker schedule with a zero-call observer on settled opportunities."""
     if source == "ordinary":
         from .software_event_intake_v243 import run_ordinary
+        from .software_prefix_resume_v243_2 import release_on_ordinary_entry
+
+        release_on_ordinary_entry(runtime, kwargs.get("folder"))
 
         return run_ordinary(prepared, runtime, **kwargs)
     from .software_event_harness_v243 import run_worker_fragment as observed

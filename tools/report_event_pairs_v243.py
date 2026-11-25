@@ -14,6 +14,7 @@ from close_multitype_v242 import resource_receipts
 from proworksim.software_fixed_organization_clone_v131 import clone_function
 from proworksim.software_benchmark_candidates_v054 import checked, reference
 from proworksim.software_successor_evidence_v242 import evaluate
+from proworksim.software_dependency_chain_v243_2 import dependency_chain
 from proworksim.storage import read_json
 
 PLAN, RUN = study.PLAN, study.RUN
@@ -131,7 +132,7 @@ def mechanism(folder, item, active, decision, process, lock):
                 products.append(
                     {**ev, "verdict": v["decision"], "sequence": v.get("event_sequence")}
                 )
-        if order["dimension"] in ("D4", "D6") and origin:
+        if order["dimension"] == "D6" and origin:
             pkg = order.get("upstream", order["task"])
             if tool in ("complete_work", "complete_evidence") and args.get("task_id") == pkg:
                 aid = patch or v.get("evidence_id") or args.get("evidence_id")
@@ -140,9 +141,9 @@ def mechanism(folder, item, active, decision, process, lock):
             if (
                 tool == "handoff_patch"
                 and patch in published
-                and args.get("recipient") == order["recipient"]
+                and args.get("to_member") == v.get("recipient") == order["recipient"]
             ):
-                products.append(ev)
+                products.append({**ev, "sequence": v.get("handoff_sequence")})
         if consumer and products:
             if tool == "read_work_event" and any(
                 p.get("sequence") is not None and v.get("sequence") == p["sequence"]
@@ -166,6 +167,24 @@ def mechanism(folder, item, active, decision, process, lock):
                 delivery = read_json(checked(lock["last_legal_delivery"]))
                 if delivery.get("source_reference") == order["version"]:
                     uses.append({**ev, "kind": "adopt"})
+    chain = None
+    if order and order["dimension"] == "D4":
+        chain = dependency_chain(
+            outcomes,
+            boundary=decision["original_ordinal"],
+            start=decision["original_ordinal"] + 1,
+            upstream=order["upstream"],
+            downstream=order["task"],
+            producer=order["actor"],
+            consumer=order["recipient"],
+            known_artifact=order.get("artifact"),
+        )
+        products = [r for r in chain["events"] if r["kind"] == "addressed_handoff"]
+        uses = [
+            {**r, "kind": "adopt" if r["kind"] == "adopted" else "read"}
+            for r in chain["events"]
+            if r["kind"] == "read_handoff" or (r["kind"] == "adopted" and r["addressed"])
+        ]
     booked = next((r for r in rows if action and r[1] == action["actor"]), None)
     return dict(
         proposal=decision.get("proposal"),
@@ -186,6 +205,7 @@ def mechanism(folder, item, active, decision, process, lock):
         informal_read=reads,
         edits_after_read=edits,
         order_products=products,
+        dependency_chain=chain,
         downstream_receipts=uses,
         readiness=readiness,
         recorded_reopen=reopened,
