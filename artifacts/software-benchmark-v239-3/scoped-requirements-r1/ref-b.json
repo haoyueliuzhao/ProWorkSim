@@ -1,0 +1,56 @@
+[
+  {
+    "id": "y01",
+    "obligations": [
+      ["complete_package", "independent_review"],
+      ["assign_verifier", "complete_package", "independent_review"]
+    ],
+    "actions": ["complete_package", "assign_verifier"],
+    "choices": ["KEEP", "CHANGE"],
+    "action_bindings": [
+      {"actor": "member_001", "action": "complete_package", "package": "pkg_standalone_kbd"},
+      {"actor": "member_001", "action": "complete_package", "package": "pkg_compound_kbd"},
+      {"actor": "member_002", "action": "assign_verifier", "package": "pkg_compound_kbd"}
+    ],
+    "reason": "E1 explicitly lists completion and independent review for both packages. The second package also lacks a verifier. Its vacant position can be filled by V2. The owner can already progress either package under K. Both packages have empty author lists, so neither has current work available for substantive review. No test outcome is reported."
+  },
+  {
+    "id": "y02",
+    "obligations": [
+      ["diagnose_failure", "repair_target", "complete_package", "independent_review"],
+      ["diagnose_failure", "repair_target", "assign_verifier", "complete_package", "independent_review"]
+    ],
+    "actions": ["diagnose_failure", "assign_verifier", "complete_package"],
+    "choices": ["KEEP", "CHANGE"],
+    "action_bindings": [
+      {"actor": "member_001", "action": "diagnose_failure", "package": "flush_wrapper"},
+      {"actor": "member_002", "action": "diagnose_failure", "package": "flush_wrapper"},
+      {"actor": "member_002", "action": "diagnose_failure", "package": "migrate_output"},
+      {"actor": "member_002", "action": "assign_verifier", "package": "migrate_output"},
+      {"actor": "member_001", "action": "complete_package", "package": "migrate_output"}
+    ],
+    "reason": "The failed public test ran on the exact v2 delivery object. Diagnosis and corrective work are due for that failure. E1 does not identify a failing package. D1 and D2 therefore identify possible investigation scopes, and K allows the existing author to investigate flush_wrapper. The first obligation set uses the flush_wrapper readiness row. The second uses the migrate_output row, which adds a vacant verification assignment. Independent work on migrate_output can start in parallel. Retesting the changed version comes after repair."
+  },
+  {
+    "id": "y03",
+    "obligations": [["diagnose_failure", "repair_target"]],
+    "actions": ["diagnose_failure", "repair_target"],
+    "choices": ["KEEP", "CHANGE"],
+    "action_bindings": [
+      {"actor": "member_001", "action": "diagnose_failure", "package": "pkg_rst_header_rows"},
+      {"actor": "member_001", "action": "repair_target", "package": "pkg_rst_header_rows"},
+      {"actor": "member_002", "action": "diagnose_failure", "package": "pkg_rst_header_rows"}
+    ],
+    "reason": "The same three RST tests failed on v5 and again on v6 after rst.py changed. The existing owner can investigate or continue correcting the implementation under K. D1 can assign a second investigator. Another test of the unchanged v6 would duplicate E3. Verification becomes due once another revision exists."
+  },
+  {
+    "id": "y04",
+    "obligations": [["release_upstream", "adopt_upstream"]],
+    "actions": ["release_upstream"],
+    "choices": ["KEEP"],
+    "action_bindings": [
+      {"actor": "member_001", "action": "release_upstream", "package": "one_mask"}
+    ],
+    "reason": "E1 identifies one_mask as the upstream package lacking a current handoff. Its owner can produce a current release, after which the owner of neither_mask can adopt it. The existing graph already assigns both roles. Neither diagnosis nor a downstream ownership transfer supplies the missing upstream version."
+  }
+]

@@ -1,0 +1,173 @@
+[
+  {
+    "id": "y01",
+    "obligations": [
+      [
+        "complete_package",
+        "independent_review"
+      ],
+      [
+        "assign_verifier",
+        "complete_package",
+        "independent_review"
+      ]
+    ],
+    "actions": [
+      "assign_verifier",
+      "complete_package"
+    ],
+    "choices": [
+      "KEEP",
+      "CHANGE"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_002",
+        "action": "assign_verifier",
+        "package": "pkg_compound_kbd"
+      },
+      {
+        "actor": "member_001",
+        "action": "complete_package",
+        "package": "pkg_standalone_kbd"
+      },
+      {
+        "actor": "member_001",
+        "action": "complete_package",
+        "package": "pkg_compound_kbd"
+      }
+    ],
+    "reason": "E1 separately lists completion and independent current review for standalone, and also an unfilled verification assignment for compound. V2 fills that assignment. Keeping the arrangement while the current owner starts standalone is also justified. An immediate review lacks completed work. No test outcome is recorded."
+  },
+  {
+    "id": "y02",
+    "obligations": [
+      [
+        "diagnose_failure",
+        "complete_package",
+        "independent_review"
+      ],
+      [
+        "diagnose_failure",
+        "assign_verifier",
+        "complete_package",
+        "independent_review"
+      ]
+    ],
+    "actions": [
+      "diagnose_failure",
+      "assign_verifier"
+    ],
+    "choices": [
+      "KEEP",
+      "CHANGE"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_001",
+        "action": "diagnose_failure",
+        "package": "flush_wrapper"
+      },
+      {
+        "actor": "member_002",
+        "action": "diagnose_failure",
+        "package": "flush_wrapper"
+      },
+      {
+        "actor": "member_002",
+        "action": "diagnose_failure",
+        "package": "migrate_output"
+      },
+      {
+        "actor": "member_002",
+        "action": "assign_verifier",
+        "package": "migrate_output"
+      }
+    ],
+    "reason": "The public test ran against final v2 and failed. The receipt gives no failing case or causal package. The flush author can investigate under K, or D1/D2 can assign a diagnostic investigation. V3 separately addresses the missing verifier for migrate. Both packages owe completion and independent current review. Failure resolution and a successful retest are needed for delivery, but the repair location remains open."
+  },
+  {
+    "id": "y03",
+    "obligations": [
+      [
+        "diagnose_failure",
+        "repair_target",
+        "complete_package",
+        "independent_review"
+      ]
+    ],
+    "actions": [
+      "diagnose_failure",
+      "repair_target"
+    ],
+    "choices": [
+      "KEEP",
+      "CHANGE"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_001",
+        "action": "diagnose_failure",
+        "package": "pkg_rst_header_rows"
+      },
+      {
+        "actor": "member_002",
+        "action": "diagnose_failure",
+        "package": "pkg_rst_header_rows"
+      },
+      {
+        "actor": "member_001",
+        "action": "repair_target",
+        "package": "pkg_rst_header_rows"
+      }
+    ],
+    "reason": "E3 repeats all three named failures on v6 after the owner-side RST change. The owner can debug and correct the implementation, or D1 can give the existing reviewer the diagnostic investigation. A successful retest should support completion, followed by independent review of the corrected work. No particular implementation defect has been established."
+  },
+  {
+    "id": "y04",
+    "obligations": [
+      [
+        "release_upstream",
+        "complete_package",
+        "independent_review"
+      ],
+      [
+        "adopt_upstream",
+        "complete_package",
+        "independent_review"
+      ],
+      [
+        "release_upstream",
+        "adopt_upstream",
+        "complete_package",
+        "independent_review"
+      ]
+    ],
+    "actions": [
+      "gather_evidence",
+      "release_upstream",
+      "adopt_upstream"
+    ],
+    "choices": [
+      "KEEP"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_002",
+        "action": "gather_evidence",
+        "package": "neither_mask"
+      },
+      {
+        "actor": "member_001",
+        "action": "release_upstream",
+        "package": "one_mask"
+      },
+      {
+        "actor": "member_002",
+        "action": "adopt_upstream",
+        "package": "neither_mask"
+      }
+    ],
+    "reason": "E1 identifies one_mask as the noncurrent dependency of neither_mask. The receipt has no publication or version reference. Check whether a current upstream version exists. Its owner may need to make it current and release it, or the dependent owner may need to adopt an available version. Release and adoption can both be required. These actions are conditional on that evidence. Once ready, neither_mask still has pending owner work and an assigned independent reviewer. The existing ownership supports this sequence."
+  }
+]

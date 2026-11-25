@@ -1,0 +1,169 @@
+[
+  {
+    "id": "y01",
+    "obligations": [
+      [
+        "complete_package",
+        "independent_review"
+      ],
+      [
+        "assign_verifier",
+        "complete_package",
+        "independent_review"
+      ]
+    ],
+    "actions": [
+      "assign_verifier",
+      "complete_package"
+    ],
+    "choices": [
+      "KEEP",
+      "CHANGE"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_002",
+        "action": "assign_verifier",
+        "package": "pkg_compound_kbd"
+      },
+      {
+        "actor": "member_001",
+        "action": "complete_package",
+        "package": "pkg_standalone_kbd"
+      },
+      {
+        "actor": "member_001",
+        "action": "complete_package",
+        "package": "pkg_compound_kbd"
+      }
+    ],
+    "reason": "E1 names two distinct package checklists. Both owners are member_001 and neither package has dependencies, so this owner may start either package under K. V2 fills the vacant verification role on compound. The empty author lists and incomplete status give no work to review yet. E1 records no test outcome."
+  },
+  {
+    "id": "y02",
+    "obligations": [
+      [
+        "diagnose_failure",
+        "complete_package",
+        "independent_review"
+      ],
+      [
+        "diagnose_failure",
+        "assign_verifier",
+        "complete_package",
+        "independent_review"
+      ]
+    ],
+    "actions": [
+      "diagnose_failure",
+      "assign_verifier",
+      "complete_package"
+    ],
+    "choices": [
+      "KEEP",
+      "CHANGE"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_001",
+        "action": "diagnose_failure",
+        "package": "flush_wrapper"
+      },
+      {
+        "actor": "member_002",
+        "action": "diagnose_failure",
+        "package": "flush_wrapper"
+      },
+      {
+        "actor": "member_002",
+        "action": "diagnose_failure",
+        "package": "migrate_output"
+      },
+      {
+        "actor": "member_002",
+        "action": "assign_verifier",
+        "package": "migrate_output"
+      },
+      {
+        "actor": "member_001",
+        "action": "complete_package",
+        "package": "migrate_output"
+      },
+      {
+        "action": "diagnose_failure",
+        "actor": "member_001",
+        "package": "migrate_output"
+      }
+    ],
+    "reason": "The executed v2 test failed on the final delivery object. Diagnosis is needed. Neither a failing case nor a cause is given, so repairing a particular package cannot yet be imposed as a scoped obligation. The owner of both packages can investigate either scope under K, or D1/D2 assign that investigation to member_002. E1 separately lists completion and independent review on both packages. V3 fills the migrate_output verification role, and the owner can start that unstarted package in parallel because it has no dependency. A passing retest will be needed for delivery."
+  },
+  {
+    "id": "y03",
+    "obligations": [
+      [
+        "diagnose_failure",
+        "repair_target"
+      ]
+    ],
+    "actions": [
+      "diagnose_failure",
+      "repair_target"
+    ],
+    "choices": [
+      "KEEP",
+      "CHANGE"
+    ],
+    "action_bindings": [
+      {
+        "actor": "member_001",
+        "action": "diagnose_failure",
+        "package": "pkg_rst_header_rows"
+      },
+      {
+        "actor": "member_002",
+        "action": "diagnose_failure",
+        "package": "pkg_rst_header_rows"
+      },
+      {
+        "actor": "member_001",
+        "action": "repair_target",
+        "package": "pkg_rst_header_rows"
+      }
+    ],
+    "reason": "E1 and E3 show the same three named RST tests failing on v5 and on the revised v6. Their scope and the intervening rst.py change support investigating and correcting this target now. The owner can act under K, or D1 can assign diagnostic work to the reviewer. The incomplete package and assigned reviewer describe later completion and review. The receipts do not establish a version ready for either sign-off."
+  },
+  {
+    "id": "y04",
+    "obligations": [
+      [
+        "release_upstream"
+      ],
+      [
+        "adopt_upstream"
+      ],
+      [
+        "release_upstream",
+        "adopt_upstream"
+      ]
+    ],
+    "actions": [
+      "gather_evidence"
+    ],
+    "choices": [
+      "KEEP"
+    ],
+    "action_bindings": [
+      {
+        "action": "gather_evidence",
+        "actor": "member_002",
+        "package": "neither_mask"
+      },
+      {
+        "action": "gather_evidence",
+        "actor": "member_001",
+        "package": "one_mask"
+      }
+    ],
+    "reason": "E1 identifies one_mask as a noncurrent dependency. It gives neither a released version reference nor an upstream status showing that a release can be made immediately. The downstream owner can inspect the missing handoff, or the upstream owner can check publication status, under K. If a current release exists the downstream owner must adopt it. If a current release is missing the upstream owner must supply it, with downstream adoption also required if the release does not clear readiness automatically. Release and adoption are possible obligations but their prerequisites are unverified as immediate executable steps. The downstream completion and review follow resolution of this gap."
+  }
+]
