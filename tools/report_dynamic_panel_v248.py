@@ -4,6 +4,7 @@ from collections import Counter
 from contextlib import closing
 from pathlib import Path
 import sqlite3, sys
+import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_dynamic_panel_v248_2 as repair
@@ -24,6 +25,29 @@ def details(root, index, arm):
     path = root / str(index) / arm
     close = read_json(path / "result.json")
     checks = []
+    format_errors = {}
+    for wire_file in path.glob("osa-api/*/http_response.raw"):
+        reply = json.loads(wire_file.read_bytes())
+        if not reply.get("choices"):
+            continue
+        choice = reply["choices"][0]
+        calls = choice["message"].get("tool_calls") or []
+        if len(calls) != 1:
+            continue
+        args = calls[0]["function"]["arguments"]
+        try:
+            json.loads(args)
+        except json.JSONDecodeError as exc:
+            sent = read_json(wire_file.with_name("request.json"))["payload"]
+            key = sent["request_id"].rsplit(":osa:", 1)[-1]
+            format_errors[key] = dict(
+                finish_reason=choice.get("finish_reason"),
+                completion_tokens=reply["usage"]["completion_tokens"],
+                max_output=sent["wire"]["max_tokens"],
+                error_offset=exc.pos,
+                argument_length=len(args),
+                argument_tail=args[-34:],
+            )
     for f in sorted(path.glob("decisions/*/decision.json")):
         state = read_json(f.with_name("state.json"))
         r = read_json(f)
@@ -48,6 +72,7 @@ def details(root, index, arm):
                 candidates=len(state["candidates"]),
                 executed=r.get("completed", []),
                 error=r.get("error"),
+                raw_format_error=format_errors.get(state["decision_key"]),
             )
         )
     outs = (
@@ -55,8 +80,8 @@ def details(root, index, arm):
         if (path / "boundary.json").exists()
         else []
     )
-    binding = read_json(path / "fork.json")
-    after = binding["proof"]["checkpoint_identity"]
+    binding = read_json(path / "fork.json") if (path / "fork.json").is_file() else {}
+    after = binding.get("proof", {}).get("checkpoint_identity")
     actions = Counter()
     by_worker = Counter()
     hooks = []
@@ -101,9 +126,11 @@ def details(root, index, arm):
         usage_per_member[request["member_id"]] += read_json(f)["total_tokens"]
     return dict(
         status=close["status"],
+        termination=close.get("termination"),
+        osa_tokens=close.get("osa_tokens"),
         incremental_member_tokens_this_deployment=dict(usage_per_member),
         checkpoint=after,
-        initial_size=binding["initial_size"],
+        initial_size=binding.get("initial_size"),
         final_members=close.get("final_members"),
         scores=scores,
         decision_count=len(checks),
@@ -146,6 +173,9 @@ def report():
                 paid=prefix,
             )
             enrollment["recruitment_window"] = commonroot.name
+            eligibility = cp.parent / "eligibility.json"
+            if eligibility.is_file():
+                enrollment["admission_evidence"] = read_json(eligibility)
             cohort.append(enrollment)
             if cr["status"] != "qualified":
                 continue
