@@ -99,7 +99,14 @@ def trajectories(db):
                 if f.exists():
                     intent = pairs.compiler.unpack(read_json(f))
                     if isinstance(intent, dict):
-                        check["audit"] = audit(read_json(d / "state.json"), intent)
+                        state = read_json(d / "state.json")
+                        check["audit"] = audit(state, intent)
+                        if check["status"] in {"CHANGE", "KEEP", "ABSTAIN", "partial"}:
+                            compiled = pairs.compiler.compile_intent(state, intent)
+                            check["proposal"] = compiled["decision"]
+                            check["membership"] = compiled["membership_decision"]
+                            check["expected"] = compiled["expected_contribution"]
+                            check["first_action"] = compiled["execution_plan"]["immediate_action"]
             arms[arm] = item
         historical = {
             a: dict(
