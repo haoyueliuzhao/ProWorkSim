@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_dynamic_panel_v248_2 as repair
 import recover_dynamic_test_history_v248_3 as replay
 import recover_dynamic_test_binding_v248_4 as canonical
+import run_expansion_supplement_v248 as supplement
 from report_ordinary_successor_v243_2 import counts
 from proworksim.storage import read_json
 
@@ -94,8 +95,13 @@ def details(root, index, arm):
     for k in ("code", "delivery"):
         receipt = path.parent / (arm + "-" + k) / "receipt.json"
         scores[k] = read_json(receipt).get("resolved") if receipt.is_file() else None
+    usage_per_member = Counter()
+    for f in path.glob("api/*/usage.json"):
+        request = read_json(f.with_name("request.json"))["payload"]
+        usage_per_member[request["member_id"]] += read_json(f)["total_tokens"]
     return dict(
         status=close["status"],
+        incremental_member_tokens_this_deployment=dict(usage_per_member),
         checkpoint=after,
         initial_size=binding["initial_size"],
         final_members=close.get("final_members"),
@@ -119,11 +125,13 @@ def report():
         sqlite3.connect(Path(read_json(first.AUTH)["ledger"]).as_uri() + "?mode=ro", uri=True)
     ) as db:
         db.execute("BEGIN")
-        for case in spec["rows"]:
+        for case in [*spec["rows"], read_json(supplement.PLAN / "protocol.json")["case"]]:
             i = case["index"]
             commonroot = (
                 first.RUN if (first.RUN / str(i) / "COMMON/result.json").is_file() else repair.RUN
             )
+            if (supplement.RUN / str(i) / "COMMON/result.json").is_file():
+                commonroot = supplement.RUN
             cp = commonroot / str(i) / "COMMON/result.json"
             if not cp.is_file():
                 continue
@@ -137,6 +145,7 @@ def report():
                 status=cr["status"],
                 paid=prefix,
             )
+            enrollment["recruitment_window"] = commonroot.name
             cohort.append(enrollment)
             if cr["status"] != "qualified":
                 continue
@@ -149,6 +158,7 @@ def report():
                         (repair.RUN, repair.resume_slot),
                         (replay.RUN, replay.slot),
                         (canonical.RUN, canonical.slot),
+                        (supplement.RUN, supplement.slot),
                     )
                     if (root / str(i) / arm / "result.json").is_file()
                 ]
