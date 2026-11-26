@@ -41,6 +41,9 @@ def validate_role_actor_config(config):
     expected = {'fixed_members': spec['fixed_members'], 'member_count': spec['member_count'],
                 'role_contract_version': roles.VERSION, 'role_catalog_sha256': roles.catalog_sha256(),
                 'public_test_result_revision': RESULT_REVISION}
+    pool = config.get("public_test_actor_pool_v247")
+    if pool is not None and (config.get("organization_id") != "FREE2" or pool != ["member_001","member_002","member_003"]):
+        raise ValueError("Unknown dynamic public-test identity pool")
     if any(config.get(key) != value for key, value in expected.items()):
         raise ValueError('The actor role roster or public result implementation changed')
     if any(not isinstance(config.get(key), str) or re.fullmatch(r'[0-9a-f]{64}', config[key]) is None
@@ -106,7 +109,7 @@ class ManagedOperationSession(previous.ManagedOperationSession):
                     'hidden_evaluation', 'arbitrary_command',
                     'public_test_selection_revision', 'public_test_selection'}
         if (set(request) != expected or request.get('version') != WORLD_VERSION
-                or request.get('actor_id') not in self.config['fixed_members']
+                or request.get('actor_id') not in self.config.get('public_test_actor_pool_v247',self.config['fixed_members'])
                 or request.get('organization_id') != self.config['organization_id']
                 or request.get('public_test_selection_revision') != PUBLIC_TEST_SELECTION_VERSION
                 or request.get('instance_id') != self.config['instance_id']

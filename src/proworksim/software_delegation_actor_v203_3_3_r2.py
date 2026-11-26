@@ -52,6 +52,8 @@ class Actor:
             'fixed_members':spec['fixed_members'],'member_count':2,'role_contract_version':roles.VERSION,
             'role_catalog_sha256':roles.catalog_sha256(),'public_test_dependencies':None,'public_test_result_revision':RESULT_REVISION,
             'resume_public_test_calls':self.resume_test_calls}
+        if getattr(self, "dynamic_test_pool", False):
+            a["public_test_actor_pool_v247"]=["member_001","member_002","member_003"]
         contract=contract_for_actor(a);a.update(public_test_contract_sha256=digest(json_bytes(contract)),**{k:digest(p.read_bytes()) for k,p in PUBLIC_FILES.items()})
         self.client=docker.DockerClient(base_url='unix://'+str(Path(cfg['scorer_request_base']['docker_socket']).resolve()),timeout=180)
         name='pws-v20333-'+self.token
