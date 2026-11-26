@@ -74,13 +74,22 @@ def comparison():
 
 def main():
     rows = comparison()
+    plan = len(rows)
+    pause_file = RUN / "pause.json"
+    pause = read_json(pause_file) if pause_file.exists() else {"paused": []}
+    for row in rows:
+        if row["index"] in pause["paused"]:
+            if row["status"] != "pending" or row["usage"]["states"]:
+                raise ValueError("Paused task has an attempt")
+            row["status"] = "paused_unstarted"
+    planned_rows = rows
+    rows = [r for r in rows if r["status"] != "paused_unstarted"]
     usage = Counter()
     prior = Counter()
     for row in rows:
         usage.update(row["usage"]["paid"])
         prior.update(row["old_paid"])
     closed = sum(r["status"] == "closed" for r in rows)
-    plan = len(rows)
     pending = sum(r["status"] == "pending" for r in rows)
     print(
         f"planned={plan} closed={closed} pending={pending} tokens={usage['tokens']} paid_CNY={usage['nanoyuan'] / 1e9:.2f}",
@@ -89,7 +98,14 @@ def main():
     if pending and not (RUN / "cash-boundary.json").exists():
         return
     old.save(
-        PLAN / "results.json", dict(rows=rows, planned=plan, generated=closed, usage=dict(usage))
+        PLAN / "results.json",
+        dict(
+            rows=planned_rows,
+            planned=plan,
+            paused_unstarted=pause["paused"],
+            generated=closed,
+            usage=dict(usage),
+        ),
     )
     labels = {True: "通过", False: "未通过", None: "未定"}
     lines = [
@@ -99,7 +115,7 @@ def main():
         "",
         "沿用上一轮 6 个仓库的 12 题，每题都从原始仓库和两个空白成员会话开始。使用 DeepSeek Flash 非思考模式，团队共享 500 万 token。两轮 OSA 均从第 12 次行动机会开始判断是否调整分工。这次启用新版组织决策提示词、可执行方案展示和逐工作包复核状态。每题每版各跑一次。",
         "",
-        f"计划 {plan} 题，正常完成生成 {closed} 题。旧账本累计上限 230 元，本批新增实际费用 {usage['nanoyuan'] / 1e9:.2f} 元。",
+        f"计划 {plan} 题，按用户要求暂停未启动题 {len(pause['paused'])} 道，正常完成生成 {closed} 题。下表两轮均取本批执行范围内的相同 {len(rows)} 题。旧账本累计上限 230 元，本批新增实际费用 {usage['nanoyuan'] / 1e9:.2f} 元。",
         "",
         "| 指标 | 上轮 | 本轮 |",
         "| --- | ---: | ---: |",
@@ -111,7 +127,7 @@ def main():
         lost = sum(r["old_" + kind] is True and r[kind] is False for r in rows)
         original = sum(r["old_" + kind] is True for r in rows)
         lines.append(
-            f"| {label} | {original}/{plan} | 已通过 {yes}，未定 {unknown}；逐题新增 {improved}、失去 {lost} |"
+            f"| {label} | {original}/{len(rows)} | 已通过 {yes}，未定 {unknown}；逐题新增 {improved}、失去 {lost} |"
         )
     for key, label in (
         ("input", "实际输入 token"),
