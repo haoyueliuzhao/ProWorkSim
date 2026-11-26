@@ -83,7 +83,8 @@ class Ledger:
             'actual_tokens':sum(r['tokens'] for r in rows if r['status']=='settled'),'requests':rows,'slots':slots,'unknown_reservations_are_actual_cost':False}
 
 class Backend:
-    def __init__(self,folder,ledger,slot,counter,transport,allowed_tools):
+    def __init__(self,folder,ledger,slot,counter,transport,allowed_tools, *, members=("member_001","member_002")):
+        self.members=frozenset(members)
         self.folder=Path(folder);self.folder.mkdir(parents=True,exist_ok=True)
         self.ledger,self.slot,self.counter,self.transport,self.allowed_tools=ledger,slot,counter,transport,set(allowed_tools)
         self.requests=0
@@ -95,7 +96,7 @@ class Backend:
             return {'prompt_tokens':n,'request_sha256':digest(json_bytes(wire)),'method':'official_original_member_incomplete_prefix','count_only_not_dispatchable':True}
         if route=='/tokenize':return self.counter.measure(wire)
         if route!='/chat/completions':raise ValueError('Unknown endpoint')
-        if payload.get('team_slot_id')!=self.slot or payload.get('member_id') not in ('member_001','member_002'):raise ValueError('Foreign slot/member')
+        if payload.get('team_slot_id')!=self.slot or payload.get('member_id') not in self.members:raise ValueError('Foreign slot/member')
         validate_payload(wire,self.allowed_tools,payload['usage_id'])
         estimate=self.counter.measure(wire)
         if estimate['prompt_tokens']>98304:raise ValueError('Experimental full-input bound')

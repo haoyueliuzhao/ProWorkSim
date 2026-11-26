@@ -42,7 +42,7 @@ GRAPH_FIELDS = set(
 
 
 def validate_role(wire, actor, role):
-    if actor not in ("member_001", "member_002"):
+    if actor not in ("member_001", "member_002", "member_003"):
         raise ValueError("Unbound member")
     names = {x["function"]["name"] for x in wire.get("tools", [])}
     if role == "osa":

@@ -135,7 +135,7 @@ def build_team_owner(post, *, organization_id, slot_id, condition_id, folder, de
         members=organization(organization_id)['fixed_members'], token_counter=observation_token_counter,
         tokenizer_id=observation_tokenizer_id, require_content_counter=require_content_counter)
     adapters, cash_boundaries, pre_dispatch_boundaries = {}, [], []
-    for member in organization(organization_id)['fixed_members']:
+    def make_adapter(member, tools):
         namespace = slot_id+':'+member
         def member_post(route, payload, *, member=member, namespace=namespace):
             value = copy.deepcopy(payload)
@@ -164,14 +164,17 @@ def build_team_owner(post, *, organization_id, slot_id, condition_id, folder, de
                 if route == '/chat/completions':
                     observation.safely('provider', observation.provider_uncertain, member, value)
                 raise
-        names = {row['function']['name'] for row in member_wire_tools(organization_id, member)}
-        adapters[member] = DeepSeekEpisodeAdapter(post=member_post, arm='PROJECT',
+        names = {row['function']['name'] for row in tools}
+        return DeepSeekEpisodeAdapter(post=member_post, arm='PROJECT',
             slot_id=namespace, condition_id=condition_id, token_budget=5_000_000,
             folder=Path(folder)/member, allowed_tool_names=names,
             soft_at=deadline.soft_at, hard_at=deadline.hard_at)
+    for member in organization(organization_id)['fixed_members']:
+        adapters[member] = make_adapter(member, member_wire_tools(organization_id, member))
     owner = ProjectOwner(adapters, window_id=slot_id, identity=identity,
         organization_id=organization_id, cash_boundaries=cash_boundaries, folder=folder)
     owner.pre_dispatch_boundaries = pre_dispatch_boundaries
+    owner.make_member_adapter = make_adapter
     owner.observation = observation
     owner.save()
     return owner
@@ -344,7 +347,7 @@ def decorate_reviews(runtime, owner, deadline):
     started = {key: getattr(deadline, key) for key in ('started', 'soft_at', 'hard_at')}
     limits = {'agent_decisions': 512, 'all_model_attempts': 512, 'input_plus_output_tokens': 5_000_000,
         'output_limit': MAX_OUTPUT_TOKENS, 'soft_seconds': 21600, 'hard_seconds': 23400}
-    for member, worker in runtime.policies.items():
+    def bind_member(member, worker):
         policy = FinishReviewPolicy(started=started, limits=limits, clock=deadline.clock,
             event_sink=lambda event, member=member: runtime.recorder.record('member_finish_review', event, worker_id=member))
         runtime.finish_review_policies[member] = policy
@@ -353,6 +356,9 @@ def decorate_reviews(runtime, owner, deadline):
         worker._v117_finish_review_adapter = owner.adapter
         worker._v117_pending_finish_review = None
         specialize_worker_controls(worker)
+    runtime.bind_member_review = bind_member
+    for member, worker in runtime.policies.items():
+        bind_member(member, worker)
     original_execute = runtime.execute
     def execute(self, label, name, arguments, association):
         if name != 'staff_done':
@@ -417,8 +423,11 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
     factory = worker_factory or worker_type()
     system = SYSTEM.replace('staff_done(reason) to stop your own work',
                             'staff_done(reason) to request completion of your current work')
+    membership = getattr(owner, "membership_profile", None)
     def create_member(member, record):
-        if member not in members or record['origin'] != 'initial_fixed_organization':
+        if membership is not None:
+            membership.validate_session(prepared.world, member, record)
+        elif member not in members or record['origin'] != 'initial_fixed_organization':
             raise ValueError('Only the original fixed private sessions may be created')
         own = owner.member_owners[member]
         gate = NativeDispatchGate(own.transport, deadline)
@@ -433,14 +442,17 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
             public_sink=lambda kind, value: recorder.record(kind, value, worker_id=member),
             world_sink=lambda payload, association: holder['runtime'].record_world_call(member, payload, association),
             harness_sink=lambda payload, association: holder['runtime'].record_harness_call(member, payload, association))
-        config = worker_config(own, prepared.case, member, public_initial_message=public_initial_message)
+        config = (membership.worker_config(own, prepared, member, public_initial_message) if membership is not None
+                  else worker_config(own, prepared.case, member, public_initial_message=public_initial_message))
         worker = factory(member, port.tools(), config, transport=context, team_budget=budget,
             execute=lambda name, arguments, association: holder['runtime'].execute(member, name, arguments, association),
             event_sink=lambda kind, value: recorder.record(kind, value, worker_id=member),
             directory=folder/'sdk-conversations'/member, context_selection='full_history', system_prompt=system)
         bind_project_worker(worker)
         _specialize_definitions(worker.definitions)
-        expected = member_wire_tools(owner.spec['id'], member)
+        if 'runtime' in holder:
+            gate.runtime = holder['runtime']
+        expected = membership.wire_tools() if membership is not None else member_wire_tools(owner.spec['id'], member)
         if [{'type': 'function', 'function': row} for row in worker.definitions] != expected:
             worker.close()
             raise ValueError('Actual SDK declarations differ from the predeclared member schema')
@@ -448,7 +460,8 @@ def build_runtime(owner, prepared, folder, *, deadline, public_initial_message, 
     ports, workers = {}, {}
     for member in members:
         ports[member], workers[member] = create_member(member, base._registry(prepared.world)[member])
-    runtime = OrganizationRuntime(ports, workers, prepared=prepared, team_budget=budget,
+    runtime_type = membership.runtime_type if membership is not None else OrganizationRuntime
+    runtime = runtime_type(ports, workers, prepared=prepared, team_budget=budget,
         recorder=recorder, member_factory=create_member, deadline=deadline)
     holder['runtime'], runtime.owner = runtime, owner
     for gate in gates.values():
@@ -569,7 +582,8 @@ def lock_fixed_candidates(prepared, folder, *, sdk_closed):
     with actual_world.store.lock():
         actual_world.state = actual_world.store.load()
         facts = actual_world._software()
-        spec = validate_organization(facts["case"]["fixed_organization"])
+        spec = (actual_world.validate_closing_roster() if hasattr(actual_world, "validate_closing_roster")
+                else validate_organization(facts["case"]["fixed_organization"]))
         members = tuple(spec["fixed_members"])
         actor = spec["delivery_member"]
         if actor != "member_001" or facts["case"]["active_roles"] != list(members):
